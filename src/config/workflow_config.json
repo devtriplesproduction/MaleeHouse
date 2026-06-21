@@ -1,0 +1,94 @@
+{
+  "stages": {
+    "project_created": {
+      "display_name": "Project Initialized",
+      "allowed_roles": ["admin", "engineer"],
+      "allow_rollback": false,
+      "transitions_to": ["data_collection"],
+      "task_generation": ["tsk_init_setup", "tsk_assign_team"],
+      "payment_gate": null,
+      "required_files": []
+    },
+    "data_collection": {
+      "display_name": "Data Collection (Field)",
+      "allowed_roles": ["admin", "engineer", "field"],
+      "allow_rollback": true,
+      "transitions_to": ["prototype"],
+      "task_generation": ["tsk_schedule_visit", "tsk_raw_gps", "tsk_field_photos"],
+      "payment_gate": "milestone_1",
+      "required_files": ["survey_data"]
+    },
+    "prototype": {
+      "display_name": "CAD Prototype & Drafts",
+      "allowed_roles": ["admin", "engineer", "cad"],
+      "allow_rollback": true,
+      "transitions_to": ["field_work"],
+      "task_generation": ["tsk_draft_v1", "tsk_internal_cad_check"],
+      "payment_gate": "milestone_2",
+      "required_files": ["cad_drawing"]
+    },
+    "field_work": {
+      "display_name": "Secondary Ground Staking",
+      "allowed_roles": ["admin", "engineer", "field"],
+      "allow_rollback": true,
+      "transitions_to": ["data_sync"],
+      "task_generation": ["tsk_stakeout_demarcation", "tsk_verification_coords"],
+      "payment_gate": null,
+      "required_files": ["survey_data"]
+    },
+    "data_sync": {
+      "display_name": "Review Submission & Validation",
+      "allowed_roles": ["admin", "engineer", "qc"],
+      "allow_rollback": true,
+      "transitions_to": ["review"],
+      "task_generation": ["tsk_compile_dossier", "tsk_pre_qc_check"],
+      "payment_gate": null,
+      "required_files": ["field_report"]
+    },
+    "review": {
+      "display_name": "QC Board & Final Sign-Off",
+      "allowed_roles": ["admin", "qc"],
+      "allow_rollback": true,
+      "transitions_to": ["completed"],
+      "task_generation": ["tsk_final_qc_signoff"],
+      "payment_gate": "milestone_final",
+      "required_files": ["qc_report"]
+    },
+    "completed": {
+      "display_name": "Project Deliverables Handed Over",
+      "allowed_roles": ["admin"],
+      "allow_rollback": false,
+      "transitions_to": [],
+      "task_generation": [],
+      "payment_gate": null,
+      "required_files": ["final_file"]
+    }
+  },
+  "templates": {
+    "topographic_survey": {
+      "display_name": "Topographic Survey",
+      "pipeline": ["project_created", "data_collection", "prototype", "data_sync", "completed"],
+      "billing_milestones": ["milestone_1", "milestone_final"]
+    },
+    "dgps_survey": {
+      "display_name": "DGPS Survey",
+      "pipeline": ["project_created", "data_collection", "data_sync", "review", "completed"],
+      "billing_milestones": ["milestone_1"]
+    },
+    "drone_mapping": {
+      "display_name": "Drone Mapping",
+      "pipeline": ["project_created", "data_collection", "prototype", "review", "completed"],
+      "billing_milestones": ["milestone_1", "milestone_2"]
+    },
+    "boundary_survey": {
+      "display_name": "Boundary Survey",
+      "pipeline": ["project_created", "data_collection", "prototype", "review", "completed"],
+      "billing_milestones": ["milestone_1", "milestone_final"]
+    },
+    "road_alignment_survey": {
+      "display_name": "Road Alignment Survey",
+      "pipeline": ["project_created", "data_collection", "prototype", "field_work", "data_sync", "review", "completed"],
+      "billing_milestones": ["milestone_1", "milestone_2", "milestone_final"]
+    }
+  }
+}

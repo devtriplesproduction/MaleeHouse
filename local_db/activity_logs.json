@@ -1,0 +1,1740 @@
+[
+  {
+    "id": "act-1781695572025-1sfa",
+    "project_id": "PRJ-2606-013",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-17T11:26:12.025Z"
+  },
+  {
+    "id": "act-1781695489881-0j6s",
+    "project_id": "PRJ-2606-009",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Approved"
+    },
+    "created_at": "2026-06-17T11:24:49.881Z"
+  },
+  {
+    "id": "act-1781695489877-cljb",
+    "project_id": "PRJ-2606-009",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_sent",
+      "new_status": "payment_pending",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T11:24:49.877Z"
+  },
+  {
+    "id": "act-1781695484874-29mv",
+    "project_id": "PRJ-2606-009",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Sent"
+    },
+    "created_at": "2026-06-17T11:24:44.874Z"
+  },
+  {
+    "id": "act-1781695484871-jszl",
+    "project_id": "PRJ-2606-009",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_requested",
+      "new_status": "quotation_sent",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T11:24:44.871Z"
+  },
+  {
+    "id": "act-1781695455419-z696",
+    "project_id": "PRJ-2606-009",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_CREATED",
+    "details": {
+      "quotation_id": "QUO-PRJ-2606-009-01",
+      "quotation_number": "QUO-PRJ-2606-009-01",
+      "version": 1
+    },
+    "created_at": "2026-06-17T11:24:15.419Z"
+  },
+  {
+    "id": "act-1781694822428-0g4d",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781628725381-test-pending",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-17T11:13:42.428Z"
+  },
+  {
+    "id": "act-1781694819539-bu1s",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T11:13:39.539Z"
+  },
+  {
+    "id": "act-1781694819533-qygs",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781694016711-1-xca5",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-17T11:13:39.533Z"
+  },
+  {
+    "id": "act-1781694561840-71by",
+    "project_id": "PRJ-2606-013",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781694561837-285h",
+      "revision_number": 3,
+      "file_name": "mimetype"
+    },
+    "created_at": "2026-06-17T11:09:21.840Z"
+  },
+  {
+    "id": "act-1781694555147-q6yi",
+    "project_id": "PRJ-2606-013",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781694555145-4o78",
+      "revision_number": 2,
+      "file_name": "mimetype"
+    },
+    "created_at": "2026-06-17T11:09:15.147Z"
+  },
+  {
+    "id": "act-1781694548553-5yht",
+    "project_id": "PRJ-2606-013",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781694548550-aevl",
+      "revision_number": 1,
+      "file_name": "mimetype"
+    },
+    "created_at": "2026-06-17T11:09:08.553Z"
+  },
+  {
+    "id": "act-1781694310056-6x78",
+    "project_id": "PRJ-2606-013",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-17T11:05:10.056Z"
+  },
+  {
+    "id": "act-1781694081880-i0lh",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781694016711-0-nlcp",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-17T11:01:21.880Z"
+  },
+  {
+    "id": "act-1781694016712",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 2
+    },
+    "created_at": "2026-06-17T11:00:16.712Z"
+  },
+  {
+    "id": "act-1781693954611-340y",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "payment_pending",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T10:59:14.611Z"
+  },
+  {
+    "id": "act-1781693954571",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 1
+    },
+    "created_at": "2026-06-17T10:59:14.571Z"
+  },
+  {
+    "id": "act-1781693844641-irf1",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Approved",
+      "comment": "yes"
+    },
+    "created_at": "2026-06-17T10:57:24.641Z"
+  },
+  {
+    "id": "act-1781693844638-6o2w",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_sent",
+      "new_status": "payment_pending",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T10:57:24.638Z"
+  },
+  {
+    "id": "act-1781693833750-zwt9",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Sent"
+    },
+    "created_at": "2026-06-17T10:57:13.750Z"
+  },
+  {
+    "id": "act-1781693833746-8j6m",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_requested",
+      "new_status": "quotation_sent",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T10:57:13.746Z"
+  },
+  {
+    "id": "act-1781693742048-7g9g",
+    "project_id": "PRJ-2606-013",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_CREATED",
+    "details": {
+      "quotation_id": "QUO-PRJ-2606-013-01",
+      "quotation_number": "QUO-PRJ-2606-013-01",
+      "version": 1
+    },
+    "created_at": "2026-06-17T10:55:42.048Z"
+  },
+  {
+    "id": "act-1781693491578",
+    "project_id": "PRJ-2606-013",
+    "user_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "action": "QUOTATION_REQUESTED",
+    "details": {
+      "message": "Sales finalized requirements and requested commercial quotation from Accounts."
+    },
+    "created_at": "2026-06-17T10:51:31.578Z"
+  },
+  {
+    "id": "act-1781683638886-aeyh",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "data_sync",
+      "new_status": "final_review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-17T08:07:18.886Z"
+  },
+  {
+    "id": "act-1781683638696-fau4",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781683638687-5ofg",
+      "revision_number": 5,
+      "file_name": "design .pdf"
+    },
+    "created_at": "2026-06-17T08:07:18.696Z"
+  },
+  {
+    "id": "act-1781683511591-kwrk",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781683511584-ns9j",
+      "revision_number": 4,
+      "file_name": "design .pdf"
+    },
+    "created_at": "2026-06-17T08:05:11.591Z"
+  },
+  {
+    "id": "act-1781683502573-ide5",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781683502567-mwes",
+      "revision_number": 3,
+      "file_name": "design .pdf"
+    },
+    "created_at": "2026-06-17T08:05:02.573Z"
+  },
+  {
+    "id": "act-1781683476798-u1a9",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "FIELD_SURVEY_APPROVED",
+    "details": {
+      "reviewNotes": ""
+    },
+    "created_at": "2026-06-17T08:04:36.798Z"
+  },
+  {
+    "id": "act-1781683476748-7k53",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "field_assigned",
+      "new_status": "data_sync",
+      "role": "cad"
+    },
+    "created_at": "2026-06-17T08:04:36.748Z"
+  },
+  {
+    "id": "act-1781681805206-q2a0",
+    "project_id": "PRJ-2606-012",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "field_assigned",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-17T07:36:45.206Z"
+  },
+  {
+    "id": "act-1781681805171-1t7o",
+    "project_id": "PRJ-2606-012",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "CAD_APPROVED",
+    "details": {
+      "revision_id": "cad-1781681763813-y2jd",
+      "review_notes": ""
+    },
+    "created_at": "2026-06-17T07:36:45.171Z"
+  },
+  {
+    "id": "act-1781681763990-akp9",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-17T07:36:03.990Z"
+  },
+  {
+    "id": "act-1781681763825-emt7",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781681763813-y2jd",
+      "revision_number": 2,
+      "file_name": "design .pdf"
+    },
+    "created_at": "2026-06-17T07:36:03.825Z"
+  },
+  {
+    "id": "act-1781681710041-mcak",
+    "project_id": "PRJ-2606-012",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-17T07:35:10.041Z"
+  },
+  {
+    "id": "act-1781681648763-xn5s",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "field_assigned",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T07:34:08.763Z"
+  },
+  {
+    "id": "act-1781681648695-h4ge",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781679061481-2-193z",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-17T07:34:08.695Z"
+  },
+  {
+    "id": "act-1781679701423-3s7s",
+    "project_id": "PRJ-2606-012",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "field_assigned",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-17T07:01:41.423Z"
+  },
+  {
+    "id": "act-1781679701417-9p6s",
+    "project_id": "PRJ-2606-012",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "CAD_APPROVED",
+    "details": {
+      "revision_id": "cad-1781679682409-u8ds",
+      "review_notes": ""
+    },
+    "created_at": "2026-06-17T07:01:41.417Z"
+  },
+  {
+    "id": "act-1781679682442-vugs",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-17T07:01:22.442Z"
+  },
+  {
+    "id": "act-1781679682411-jt4u",
+    "project_id": "PRJ-2606-012",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781679682409-u8ds",
+      "revision_number": 1,
+      "file_name": "cad prototype 1.pdf"
+    },
+    "created_at": "2026-06-17T07:01:22.411Z"
+  },
+  {
+    "id": "act-1781679635283-32ia",
+    "project_id": "PRJ-2606-012",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-17T07:00:35.283Z"
+  },
+  {
+    "id": "act-1781679629399-22b3",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781679061481-1-9qwe",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-17T07:00:29.399Z"
+  },
+  {
+    "id": "act-1781679543125-rve5",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T06:59:03.125Z"
+  },
+  {
+    "id": "act-1781679543121-oc6k",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781679061481-0-uy5g",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-17T06:59:03.121Z"
+  },
+  {
+    "id": "act-1781679307896",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_UNFROZEN",
+    "details": {
+      "comment": "resume it "
+    },
+    "created_at": "2026-06-17T06:55:07.896Z"
+  },
+  {
+    "id": "act-1781679270003",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_FROZEN",
+    "details": {
+      "reason": "financial_hold",
+      "comment": "trial hold"
+    },
+    "created_at": "2026-06-17T06:54:30.003Z"
+  },
+  {
+    "id": "act-1781679255728-yxbo",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_RESCHEDULED",
+    "details": {
+      "milestone_id": "ms-1781679061481-1-9qwe",
+      "new_due_date": "2026-06-19",
+      "reason": "date update"
+    },
+    "created_at": "2026-06-17T06:54:15.728Z"
+  },
+  {
+    "id": "act-1781679061501-4jxx",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "payment_pending",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T06:51:01.501Z"
+  },
+  {
+    "id": "act-1781679061481",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 3
+    },
+    "created_at": "2026-06-17T06:51:01.481Z"
+  },
+  {
+    "id": "act-1781678884109-7bq0",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Approved",
+      "comment": "approveld via call"
+    },
+    "created_at": "2026-06-17T06:48:04.109Z"
+  },
+  {
+    "id": "act-1781678884107-2tpo",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_sent",
+      "new_status": "payment_pending",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T06:48:04.107Z"
+  },
+  {
+    "id": "act-1781678855114-mydf",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Sent",
+      "comment": "client accepted quote verbally."
+    },
+    "created_at": "2026-06-17T06:47:35.114Z"
+  },
+  {
+    "id": "act-1781678855111-wksh",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_requested",
+      "new_status": "quotation_sent",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-17T06:47:35.111Z"
+  },
+  {
+    "id": "act-1781678769105-ih7q",
+    "project_id": "PRJ-2606-012",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_CREATED",
+    "details": {
+      "quotation_id": "QUO-PRJ-2606-012-01",
+      "quotation_number": "QUO-PRJ-2606-012-01",
+      "version": 1
+    },
+    "created_at": "2026-06-17T06:46:09.105Z"
+  },
+  {
+    "id": "act-1781678042957",
+    "project_id": "PRJ-2606-009",
+    "user_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "action": "QUOTATION_REQUESTED",
+    "details": {
+      "message": "Sales finalized requirements and requested commercial quotation from Accounts."
+    },
+    "created_at": "2026-06-17T06:34:02.957Z"
+  },
+  {
+    "id": "act-1781677861232",
+    "project_id": "PRJ-2606-012",
+    "user_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "action": "QUOTATION_REQUESTED",
+    "details": {
+      "message": "Sales finalized requirements and requested commercial quotation from Accounts."
+    },
+    "created_at": "2026-06-17T06:31:01.232Z"
+  },
+  {
+    "id": "act-1781677018457",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_UNFROZEN",
+    "details": {
+      "comment": "Unfrezze"
+    },
+    "created_at": "2026-06-17T06:16:58.457Z"
+  },
+  {
+    "id": "act-1781676977382",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_FROZEN",
+    "details": {
+      "reason": "financial_hold",
+      "comment": "Trial hold"
+    },
+    "created_at": "2026-06-17T06:16:17.382Z"
+  },
+  {
+    "id": "act-1781637994252-3x1a",
+    "project_id": "PRJ-2606-006",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-16T19:26:34.252Z"
+  },
+  {
+    "id": "act-1781637994241-0f3r",
+    "project_id": "PRJ-2606-006",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "CAD_REJECTED",
+    "details": {
+      "revision_id": "cad-1781637972601-8247",
+      "rejection_reason": "this is trial rejection"
+    },
+    "created_at": "2026-06-16T19:26:34.241Z"
+  },
+  {
+    "id": "act-1781637972632-siq2",
+    "project_id": "PRJ-2606-006",
+    "user_id": "9478e602-6099-4d2b-997a-3c9f84bf4172",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-16T19:26:12.632Z"
+  },
+  {
+    "id": "act-1781637972604-mdq1",
+    "project_id": "PRJ-2606-006",
+    "user_id": "9478e602-6099-4d2b-997a-3c9f84bf4172",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781637972601-8247",
+      "revision_number": 2,
+      "file_name": "cad prototype 1.pdf"
+    },
+    "created_at": "2026-06-16T19:26:12.604Z"
+  },
+  {
+    "id": "act-1781637787545-ctl4",
+    "project_id": "PRJ-2606-006",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-16T19:23:07.545Z"
+  },
+  {
+    "id": "act-1781637787539-q19x",
+    "project_id": "PRJ-2606-006",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "CAD_REJECTED",
+    "details": {
+      "revision_id": "cad-1781637568533-okx3",
+      "rejection_reason": "This is trial rejection"
+    },
+    "created_at": "2026-06-16T19:23:07.539Z"
+  },
+  {
+    "id": "act-1781637568559-4826",
+    "project_id": "PRJ-2606-006",
+    "user_id": "9478e602-6099-4d2b-997a-3c9f84bf4172",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-16T19:19:28.559Z"
+  },
+  {
+    "id": "act-1781637568536-4ii2",
+    "project_id": "PRJ-2606-006",
+    "user_id": "9478e602-6099-4d2b-997a-3c9f84bf4172",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781637568533-okx3",
+      "revision_number": 1,
+      "file_name": "cad prototype 1.pdf"
+    },
+    "created_at": "2026-06-16T19:19:28.536Z"
+  },
+  {
+    "id": "act-1781637459380-uus8",
+    "project_id": "PRJ-2606-006",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-16T19:17:39.380Z"
+  },
+  {
+    "id": "act-1781637397205-lzk1",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T19:16:37.205Z"
+  },
+  {
+    "id": "act-1781637397199-6rub",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781545892308-0-s3zt",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-16T19:16:37.200Z"
+  },
+  {
+    "id": "act-1781637389010",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_UNFROZEN",
+    "details": {
+      "comment": "Payment received"
+    },
+    "created_at": "2026-06-16T19:16:29.010Z"
+  },
+  {
+    "id": "act-1781634072182-bjui",
+    "project_id": "PRJ-2606-004",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_RESCHEDULED",
+    "details": {
+      "milestone_id": "ms-1781626476816-0-c73f",
+      "new_due_date": "2026-06-16",
+      "reason": "Trial"
+    },
+    "created_at": "2026-06-16T18:21:12.182Z"
+  },
+  {
+    "id": "act-1781632664248",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_FROZEN",
+    "details": {
+      "reason": "financial_hold",
+      "comment": "Trial hold"
+    },
+    "created_at": "2026-06-16T17:57:44.248Z"
+  },
+  {
+    "id": "act-1781632598033-5m8m",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_RESCHEDULED",
+    "details": {
+      "milestone_id": "ms-1781545892308-0-s3zt",
+      "new_due_date": "2026-06-23",
+      "reason": "Trial reschedule"
+    },
+    "created_at": "2026-06-16T17:56:38.033Z"
+  },
+  {
+    "id": "act-1781632578605-wg1f",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781545892308-0-s3zt",
+      "status": "hold",
+      "comment": "Payment placed on hold."
+    },
+    "created_at": "2026-06-16T17:56:18.605Z"
+  },
+  {
+    "id": "act-1781632531224",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_UNFROZEN",
+    "details": {
+      "comment": "Trial resume"
+    },
+    "created_at": "2026-06-16T17:55:31.224Z"
+  },
+  {
+    "id": "act-1781630214455-r58l",
+    "project_id": "PRJ-2606-004",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781626476816-0-c73f",
+      "status": "hold",
+      "comment": "Payment placed on hold."
+    },
+    "created_at": "2026-06-16T17:16:54.455Z"
+  },
+  {
+    "id": "act-1781628726787-d11q",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T16:52:06.787Z"
+  },
+  {
+    "id": "act-1781628726785-csge",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781545871318-0-7att",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-16T16:52:06.785Z"
+  },
+  {
+    "id": "act-1781628726079-tsun",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T16:52:06.079Z"
+  },
+  {
+    "id": "act-1781628726076-k9yo",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781545871318-0-7att",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-16T16:52:06.076Z"
+  },
+  {
+    "id": "act-1781628725381-71vz",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T16:52:05.381Z"
+  },
+  {
+    "id": "act-1781628725376-85fv",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781545871318-0-7att",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-16T16:52:05.376Z"
+  },
+  {
+    "id": "act-1781628604145-43ew",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T16:50:04.145Z"
+  },
+  {
+    "id": "act-1781628604143-qyid",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781544937530-0-9esd",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-16T16:50:04.143Z"
+  },
+  {
+    "id": "act-1781628603215-h3cq",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T16:50:03.215Z"
+  },
+  {
+    "id": "act-1781628603213-ket8",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781544937530-0-9esd",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-16T16:50:03.213Z"
+  },
+  {
+    "id": "act-1781628601446-2kt3",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "field_assigned",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T16:50:01.446Z"
+  },
+  {
+    "id": "act-1781628601436-zrf4",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781544937530-0-9esd",
+      "status": "paid",
+      "comment": "Milestone marked as complete from Collections Portal."
+    },
+    "created_at": "2026-06-16T16:50:01.436Z"
+  },
+  {
+    "id": "act-1781628352003-7fn5",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONE_STATUS_UPDATE",
+    "details": {
+      "milestone_id": "ms-1781545871318-0-7att",
+      "status": "hold",
+      "comment": "Payment placed on hold."
+    },
+    "created_at": "2026-06-16T16:45:52.004Z"
+  },
+  {
+    "id": "act-1781626476816",
+    "project_id": "PRJ-2606-004",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 1
+    },
+    "created_at": "2026-06-16T16:14:36.816Z"
+  },
+  {
+    "id": "act-1781626450429",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_FROZEN",
+    "details": {
+      "reason": "financial_hold",
+      "comment": "Put on hold from Accountant Portal"
+    },
+    "created_at": "2026-06-16T16:14:10.429Z"
+  },
+  {
+    "id": "act-1781626410767-wxfy",
+    "project_id": "PRJ-2606-004",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Approved",
+      "comment": "approved verbally"
+    },
+    "created_at": "2026-06-16T16:13:30.767Z"
+  },
+  {
+    "id": "act-1781626410765-0fxq",
+    "project_id": "PRJ-2606-004",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_sent",
+      "new_status": "payment_pending",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T16:13:30.765Z"
+  },
+  {
+    "id": "act-1781626402637-0rfj",
+    "project_id": "PRJ-2606-004",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Sent"
+    },
+    "created_at": "2026-06-16T16:13:22.637Z"
+  },
+  {
+    "id": "act-1781626402636-f41o",
+    "project_id": "PRJ-2606-004",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_requested",
+      "new_status": "quotation_sent",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-16T16:13:22.636Z"
+  },
+  {
+    "id": "act-1781626398415-a2ky",
+    "project_id": "PRJ-2606-004",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_CREATED",
+    "details": {
+      "quotation_id": "QUO-PRJ-2606-004-01",
+      "quotation_number": "QUO-PRJ-2606-004-01",
+      "version": 1
+    },
+    "created_at": "2026-06-16T16:13:18.415Z"
+  },
+  {
+    "id": "act-1781591092064-ahcg",
+    "project_id": "PRJ-2606-001",
+    "user_id": "5644e3e1-5eeb-4c1f-8a14-227e9a5de658",
+    "action": "FIELD_SURVEY_COMPLETED",
+    "details": {
+      "report_id": "fld-1781591092055-5v1r",
+      "description": "sssssss"
+    },
+    "created_at": "2026-06-16T06:24:52.064Z"
+  },
+  {
+    "id": "act-1781588716451-ntsx",
+    "project_id": "PRJ-2606-001",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "field_assigned",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-16T05:45:16.451Z"
+  },
+  {
+    "id": "act-1781588686616-zl8q",
+    "project_id": "PRJ-2606-001",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-16T05:44:46.616Z"
+  },
+  {
+    "id": "act-1781588685474-rq7i",
+    "project_id": "PRJ-2606-001",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781588685446-bcdr",
+      "revision_number": 4,
+      "file_name": "design.png"
+    },
+    "created_at": "2026-06-16T05:44:45.474Z"
+  },
+  {
+    "id": "act-1781588549157-rkf6",
+    "project_id": "PRJ-2606-001",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "QC_REJECTED",
+    "details": {
+      "note": "design inconsistance",
+      "return_stage": "prototype"
+    },
+    "created_at": "2026-06-16T05:42:29.158Z"
+  },
+  {
+    "id": "act-1781588548812-5zgm",
+    "project_id": "PRJ-2606-001",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-16T05:42:28.812Z"
+  },
+  {
+    "id": "act-1781588496284-es9k",
+    "project_id": "PRJ-2606-001",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "payment_pending",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-16T05:41:36.284Z"
+  },
+  {
+    "id": "act-1781588495789-cg6y",
+    "project_id": "PRJ-2606-001",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781588495756-h7ul",
+      "revision_number": 3,
+      "file_name": "design .pdf"
+    },
+    "created_at": "2026-06-16T05:41:35.789Z"
+  },
+  {
+    "id": "act-1781549768129-922c",
+    "project_id": "PRJ-2606-001",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "payment_pending",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-15T18:56:08.129Z"
+  },
+  {
+    "id": "act-1781547163634-c9ds",
+    "project_id": "PRJ-2606-001",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-15T18:12:43.634Z"
+  },
+  {
+    "id": "act-1781547163387-157y",
+    "project_id": "PRJ-2606-001",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781547163381-y1b7",
+      "revision_number": 2,
+      "file_name": "design .pdf"
+    },
+    "created_at": "2026-06-15T18:12:43.387Z"
+  },
+  {
+    "id": "act-1781547147705-tduk",
+    "project_id": "PRJ-2606-001",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-15T18:12:27.705Z"
+  },
+  {
+    "id": "act-1781547146864-bwwz",
+    "project_id": "PRJ-2606-001",
+    "user_id": "cb0b77e6-4ddf-43fe-83d1-31db5b46c52d",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781547146840-qz8g",
+      "revision_number": 1,
+      "file_name": "design .pdf"
+    },
+    "created_at": "2026-06-15T18:12:26.864Z"
+  },
+  {
+    "id": "act-1781546017704-csnt",
+    "project_id": "PRJ-2606-001",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-15T17:53:37.704Z"
+  },
+  {
+    "id": "act-1781545892310",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 1
+    },
+    "created_at": "2026-06-15T17:51:32.310Z"
+  },
+  {
+    "id": "act-1781545871320",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 1
+    },
+    "created_at": "2026-06-15T17:51:11.321Z"
+  },
+  {
+    "id": "act-1781545702689-o197",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "payment_pending",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-15T17:48:22.689Z"
+  },
+  {
+    "id": "act-1781545656474",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_UNFROZEN",
+    "details": {
+      "comment": "Resumed from Accountant Portal"
+    },
+    "created_at": "2026-06-15T17:47:36.474Z"
+  },
+  {
+    "id": "act-1781545553844-svhj",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "payment_pending",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-15T17:45:53.844Z"
+  },
+  {
+    "id": "act-1781545388058",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_FROZEN",
+    "details": {
+      "reason": "financial_hold",
+      "comment": "Put on hold from Accountant Portal"
+    },
+    "created_at": "2026-06-15T17:43:08.058Z"
+  },
+  {
+    "id": "act-1781545383988",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_UNFROZEN",
+    "details": {
+      "comment": "Resumed from Accountant Portal"
+    },
+    "created_at": "2026-06-15T17:43:03.988Z"
+  },
+  {
+    "id": "act-1781544937532",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 1
+    },
+    "created_at": "2026-06-15T17:35:37.532Z"
+  },
+  {
+    "id": "act-1781544873258-1n5e",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Approved"
+    },
+    "created_at": "2026-06-15T17:34:33.259Z"
+  },
+  {
+    "id": "act-1781544873241-maj9",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_sent",
+      "new_status": "payment_pending",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-15T17:34:33.242Z"
+  },
+  {
+    "id": "act-1781544676085",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_FROZEN",
+    "details": {
+      "reason": "financial_hold",
+      "comment": "Put on hold from Accountant Portal"
+    },
+    "created_at": "2026-06-15T17:31:16.086Z"
+  },
+  {
+    "id": "act-1781544606484",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_UNFROZEN",
+    "details": {
+      "comment": "Resumed from Accountant Portal"
+    },
+    "created_at": "2026-06-15T17:30:06.484Z"
+  },
+  {
+    "id": "act-1781544603382",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_FROZEN",
+    "details": {
+      "reason": "financial_hold",
+      "comment": "Put on hold from Accountant Portal"
+    },
+    "created_at": "2026-06-15T17:30:03.382Z"
+  },
+  {
+    "id": "act-1781544478015",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_UNFROZEN",
+    "details": {
+      "comment": "Resumed from Accountant Portal"
+    },
+    "created_at": "2026-06-15T17:27:58.015Z"
+  },
+  {
+    "id": "act-1781544471250",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "PROJECT_FROZEN",
+    "details": {
+      "reason": "financial_hold",
+      "comment": "Put on hold from Accountant Portal"
+    },
+    "created_at": "2026-06-15T17:27:51.250Z"
+  },
+  {
+    "id": "act-1781541852397-8ncz",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Sent"
+    },
+    "created_at": "2026-06-15T16:44:12.397Z"
+  },
+  {
+    "id": "act-1781541852377-dr1o",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_requested",
+      "new_status": "quotation_sent",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-15T16:44:12.377Z"
+  },
+  {
+    "id": "act-1781541770861-nowi",
+    "project_id": "PRJ-2606-001",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_CREATED",
+    "details": {
+      "quotation_id": "QUO-PRJ-2606-001-01",
+      "quotation_number": "QUO-PRJ-2606-001-01",
+      "version": 1
+    },
+    "created_at": "2026-06-15T16:42:50.862Z"
+  },
+  {
+    "id": "act-1781531540121",
+    "project_id": "PRJ-2606-001",
+    "user_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "action": "QUOTATION_REQUESTED",
+    "details": {
+      "message": "Sales finalized requirements and requested commercial quotation from Accounts."
+    },
+    "created_at": "2026-06-15T13:52:20.121Z"
+  },
+  {
+    "id": "act-1781528869380",
+    "project_id": "PRJ-2606-004",
+    "user_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "action": "QUOTATION_REQUESTED",
+    "details": {
+      "message": "Sales finalized requirements and requested commercial quotation from Accounts."
+    },
+    "created_at": "2026-06-15T13:07:49.380Z"
+  },
+  {
+    "id": "act-1781528848588",
+    "project_id": "PRJ-2606-005",
+    "user_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "action": "QUOTATION_REQUESTED",
+    "details": {
+      "message": "Sales finalized requirements and requested commercial quotation from Accounts."
+    },
+    "created_at": "2026-06-15T13:07:28.588Z"
+  },
+  {
+    "id": "act-1781522394254-vq4k",
+    "project_id": "PRJ-2606-003",
+    "user_id": "ce0d8c21-0dcd-4684-bcd1-8c39a3bea05f",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "review",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-15T11:19:54.254Z"
+  },
+  {
+    "id": "act-1781522394234-x8n5",
+    "project_id": "PRJ-2606-003",
+    "user_id": "ce0d8c21-0dcd-4684-bcd1-8c39a3bea05f",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781522394233-sxve",
+      "revision_number": 2,
+      "file_name": "cad prototype 1.pdf"
+    },
+    "created_at": "2026-06-15T11:19:54.234Z"
+  },
+  {
+    "id": "act-1781522387982-4u2o",
+    "project_id": "PRJ-2606-003",
+    "user_id": "ce0d8c21-0dcd-4684-bcd1-8c39a3bea05f",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "review",
+      "role": "cad"
+    },
+    "created_at": "2026-06-15T11:19:47.982Z"
+  },
+  {
+    "id": "act-1781522387964-d9x1",
+    "project_id": "PRJ-2606-003",
+    "user_id": "ce0d8c21-0dcd-4684-bcd1-8c39a3bea05f",
+    "action": "CAD_SUBMITTED",
+    "details": {
+      "revision_id": "cad-1781522387963-um7h",
+      "revision_number": 1,
+      "file_name": "cad prototype 1.pdf"
+    },
+    "created_at": "2026-06-15T11:19:47.964Z"
+  },
+  {
+    "id": "act-1781522124417-5g27",
+    "project_id": "PRJ-2606-003",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-15T11:15:24.417Z"
+  },
+  {
+    "id": "act-1781522121071-a4yb",
+    "project_id": "PRJ-2606-003",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "data_collection",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-15T11:15:21.071Z"
+  },
+  {
+    "id": "act-1781520845128",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 1
+    },
+    "created_at": "2026-06-15T10:54:05.128Z"
+  },
+  {
+    "id": "act-1781520819795",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "MILESTONES_CREATED",
+    "details": {
+      "count": 1
+    },
+    "created_at": "2026-06-15T10:53:39.795Z"
+  },
+  {
+    "id": "act-1781520745554-6ejt",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Approved"
+    },
+    "created_at": "2026-06-15T10:52:25.554Z"
+  },
+  {
+    "id": "act-1781520745553-k6sm",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_sent",
+      "new_status": "payment_pending",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-15T10:52:25.553Z"
+  },
+  {
+    "id": "act-1781520742124-xj11",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Sent"
+    },
+    "created_at": "2026-06-15T10:52:22.124Z"
+  },
+  {
+    "id": "act-1781520742123-2r44",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_requested",
+      "new_status": "quotation_sent",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-15T10:52:22.123Z"
+  },
+  {
+    "id": "act-1781520740141-h312",
+    "project_id": "PRJ-2606-006",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_CREATED",
+    "details": {
+      "quotation_id": "QUO-PRJ-2606-006-01",
+      "quotation_number": "QUO-PRJ-2606-006-01",
+      "version": 1
+    },
+    "created_at": "2026-06-15T10:52:20.141Z"
+  },
+  {
+    "id": "act-1781520251135-who1",
+    "project_id": "PRJ-2606-003",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-15T10:44:11.135Z"
+  },
+  {
+    "id": "act-1781520248333-39a9",
+    "project_id": "PRJ-2606-003",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "prototype",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-15T10:44:08.333Z"
+  },
+  {
+    "id": "act-1781519888588-1g6m",
+    "project_id": "PRJ-2606-003",
+    "user_id": "6010a8cd-3b3f-4f5c-9929-5e8c81fffd04",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "project_created",
+      "new_status": "prototype",
+      "role": "engineer"
+    },
+    "created_at": "2026-06-15T10:38:08.588Z"
+  },
+  {
+    "id": "act-1781519326057-3po7",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_sent",
+      "new_status": "project_created",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-15T10:28:46.057Z"
+  },
+  {
+    "id": "act-1781518566569-yvx1",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_STATUS_UPDATED",
+    "details": {
+      "status": "Sent"
+    },
+    "created_at": "2026-06-15T10:16:06.569Z"
+  },
+  {
+    "id": "act-1781518566568-ffba",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "STAGE_UPDATE",
+    "details": {
+      "from_status": "quotation_requested",
+      "new_status": "quotation_sent",
+      "role": "accountant"
+    },
+    "created_at": "2026-06-15T10:16:06.568Z"
+  },
+  {
+    "id": "act-1781518441069-ahee",
+    "project_id": "PRJ-2606-003",
+    "user_id": "usr-1779107993891-eu0j",
+    "action": "QUOTATION_CREATED",
+    "details": {
+      "quotation_id": "QUO-PRJ-2606-003-01",
+      "quotation_number": "QUO-PRJ-2606-003-01",
+      "version": 1
+    },
+    "created_at": "2026-06-15T10:14:01.069Z"
+  },
+  {
+    "id": "act-1781518122376",
+    "project_id": "PRJ-2606-003",
+    "user_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "action": "QUOTATION_REQUESTED",
+    "details": {
+      "message": "Sales finalized requirements and requested commercial quotation from Accounts."
+    },
+    "created_at": "2026-06-15T10:08:42.376Z"
+  }
+]

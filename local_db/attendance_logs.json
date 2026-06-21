@@ -1,0 +1,13 @@
+[
+  {
+    "id": "att-1779108878791-1wz2",
+    "employee_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "date": "2026-05-18",
+    "status": "present",
+    "signal_type": "eod_submission",
+    "finalized": false,
+    "notes": "EOD Submitted: logged 5 hours.",
+    "locked_payroll_cycle_id": null,
+    "created_at": "2026-05-18T12:54:38.791Z"
+  }
+]

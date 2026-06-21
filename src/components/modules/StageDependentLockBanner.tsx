@@ -1,0 +1,100 @@
+"use client";
+
+import React from "react";
+import { AlertTriangle, ShieldAlert, RotateCcw, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Milestone {
+  id: string;
+  title: string;
+  amount: number;
+  status: "pending" | "invoiced" | "paid";
+  linked_stage?: string;
+  block_after_stage?: string;
+  is_activation_gate?: boolean;
+}
+
+interface StageDependentLockBannerProps {
+  projectId: string;
+  isFrozen: boolean;
+  freezeReason: string | null;
+  frozenAt: string | null;
+  milestones: Milestone[];
+  currentStage: string;
+  isQcRejected?: boolean;
+}
+
+export function StageDependentLockBanner({
+  projectId,
+  isFrozen,
+  freezeReason,
+  frozenAt,
+  milestones = [],
+  currentStage,
+  isQcRejected = false,
+}: StageDependentLockBannerProps) {
+  
+  // 1. Global Freeze Check
+  if (isFrozen) {
+    return (
+      <div className="p-5 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl flex items-start gap-4 shadow-sm">
+        <div className="p-2.5 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl flex-shrink-0">
+          <AlertTriangle className="w-5 h-5" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold text-red-900 dark:text-red-100 uppercase tracking-wider">PROJECT OPERATIONS FROZEN</h3>
+          <p className="text-xs font-medium text-red-700 dark:text-red-300">
+            This project has been stopped. You will be notified when the accountant unfreezes it and operations can resume.
+          </p>
+          <div className="text-xs font-medium text-red-600 dark:text-red-400 pt-0.5 nums">
+            Locked At: {frozenAt ? new Date(frozenAt).toLocaleString() : "N/A"}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Stage-Dependent Payment Checks
+  const pendingMilestones = milestones.filter(
+    (m) => m.status !== "paid" && (m.linked_stage === currentStage || m.block_after_stage === currentStage)
+  );
+
+  if (pendingMilestones.length > 0) {
+    const activeMilestone = pendingMilestones[0];
+    return (
+      <div className="p-5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl flex items-start gap-4 shadow-sm animate-in slide-in-from-top-2 duration-300">
+        <div className="p-2.5 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl flex-shrink-0">
+          <Lock className="w-5 h-5" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100 uppercase tracking-wider">PAYMENT HOLD: STAGE BLOCKED</h3>
+          <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+            Operations for the current stage <b>[{currentStage.replace("_", " ")}]</b> have been suspended because the invoice for milestone <b>"{activeMilestone.title}"</b> (₹{activeMilestone.amount.toLocaleString()}) remains unpaid.
+          </p>
+          <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+            Please verify payment with Accounts to release this stage block and proceed with field/draft hand-offs.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. QC Rejection Check
+  if (isQcRejected) {
+    return (
+      <div className="p-5 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-2xl flex items-start gap-4 shadow-sm animate-in slide-in-from-top-2 duration-300">
+        <div className="p-2.5 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-xl flex-shrink-0">
+          <ShieldAlert className="w-5 h-5" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold text-purple-900 dark:text-purple-100 uppercase tracking-wider">QC BLOCKED: REWORK REQUESTED</h3>
+          <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
+            Quality control review has detected defects. Advancing to completion is blocked until drafting and field sync logs are re-submitted.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}

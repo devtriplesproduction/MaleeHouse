@@ -1,0 +1,38 @@
+[
+  {
+    "project_id": "PRJ-005",
+    "accountant_id": "usr-1779107993891-eu0j",
+    "assigned_by": "system",
+    "assigned_at": "2026-06-15T10:53:39.794Z"
+  },
+  {
+    "project_id": "PRJ-533873-1087",
+    "accountant_id": "usr-1779107993891-eu0j",
+    "assigned_by": "system",
+    "assigned_at": "2026-06-15T17:35:37.521Z"
+  },
+  {
+    "project_id": "PRJ-002",
+    "accountant_id": "usr-1779107993891-eu0j",
+    "assigned_by": "system",
+    "assigned_at": "2026-06-15T17:51:11.311Z"
+  },
+  {
+    "project_id": "PRJ-003",
+    "accountant_id": "usr-1779107993891-eu0j",
+    "assigned_by": "system",
+    "assigned_at": "2026-06-16T16:14:36.815Z"
+  },
+  {
+    "project_id": "PRJ-2606-012",
+    "accountant_id": "usr-1779107993891-eu0j",
+    "assigned_by": "system",
+    "assigned_at": "2026-06-17T06:51:01.480Z"
+  },
+  {
+    "project_id": "PRJ-2606-013",
+    "accountant_id": "usr-1779107993891-eu0j",
+    "assigned_by": "system",
+    "assigned_at": "2026-06-17T10:59:14.567Z"
+  }
+]

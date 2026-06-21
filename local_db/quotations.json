@@ -1,0 +1,303 @@
+[
+  {
+    "id": "QUO-PRJ-2606-009-01",
+    "project_id": "PRJ-2606-009",
+    "quotation_number": "QUO-PRJ-2606-009-01",
+    "client_token": "d3795cb2-adcb-495c-a916-f077c69fc9b4",
+    "client_details": null,
+    "items": [
+      {
+        "service_name": "Topographical Survey",
+        "description": "Full topographic survey with contour mapping",
+        "quantity": 1,
+        "unit_price": 1000000,
+        "total": 1000000
+      },
+      {
+        "service_name": "Boundary Verification",
+        "description": "Boundary demarcation and area verification",
+        "quantity": 1,
+        "unit_price": 1000000,
+        "total": 1000000
+      }
+    ],
+    "subtotal": 2000000,
+    "discount_pct": 2,
+    "discount_amount": 40000,
+    "gst_rate": 18,
+    "gst_amount": 352800,
+    "total_amount": 2312800,
+    "notes": "",
+    "terms": "VALIDITY OF QUOTATION:\nThis quotation is valid for a period of thirty (30) days from the date of issue. Prices quoted are based on current rates and scope discussed. Malee House Surveys reserves the right to revise the quotation should site conditions or scope materially differ from information provided.\n\nMOBILIZATION & ACCESS:\nThe client is responsible for securing all necessary site clearances, permissions, and safe access for our field crews. Delays caused by lack of access, security restrictions, or incomplete permissions will be subject to idle-time charges at INR 7,500 per half-day. Malee House Surveys will not be held liable for delays arising from third-party or government clearance timelines.\n\nPAYMENT SCHEDULE:\nA 50% mobilization advance is required prior to commencement of field work. The remaining 50% balance is payable strictly within seven (7) working days upon delivery of final survey maps, CAD outputs, and associated reports. Payments not received within the stipulated timeline will attract an overdue interest charge of 1.5% per month.\n\nACCURACY & EXCLUSIONS:\nSurvey accuracy will conform to applicable local and national land survey standards. Underground utilities, boundary dispute resolutions, legal witnessing, and any court-admissible survey works are specifically excluded from this scope unless individually itemized in the line items above. Malee House Surveys shall not be liable for pre-existing encroachments or title discrepancies.\n\nFORCE MAJEURE:\nNeither party shall be liable for failure or delay in performance caused by events beyond their reasonable control, including but not limited to natural disasters, floods, government-imposed lockdowns, civil unrest, or acts of war. The affected party shall notify the other within 48 hours of such an event.",
+    "internal_notes": {
+      "pricing_discussions": [],
+      "margin_notes": "",
+      "finance_notes": ""
+    },
+    "created_by": "usr-1779107993891-eu0j",
+    "status": "Approved",
+    "current_version": 1,
+    "created_at": "2026-06-17T11:24:15.416Z",
+    "updated_at": "2026-06-17T11:24:49.872Z",
+    "rejection_category": null,
+    "rejection_reason": null
+  },
+  {
+    "id": "QUO-PRJ-2606-013-01",
+    "project_id": "PRJ-2606-013",
+    "quotation_number": "QUO-PRJ-2606-013-01",
+    "client_token": "75fbbf9c-3f05-48b8-9c33-c90a8598cb9d",
+    "client_details": null,
+    "items": [
+      {
+        "service_name": "Road survey Existing Road",
+        "description": "",
+        "quantity": 1,
+        "unit_price": 1000000,
+        "total": 1000000
+      },
+      {
+        "service_name": "Boundary Verification",
+        "description": "Boundary demarcation and area verification",
+        "quantity": 1,
+        "unit_price": 2000000,
+        "total": 2000000
+      }
+    ],
+    "subtotal": 3000000,
+    "discount_pct": 4,
+    "discount_amount": 120000,
+    "gst_rate": 18,
+    "gst_amount": 518400,
+    "total_amount": 3398400,
+    "notes": "",
+    "terms": "VALIDITY OF QUOTATION:\nThis quotation is valid for a period of thirty (30) days from the date of issue. Prices quoted are based on current rates and scope discussed. Malee House Surveys reserves the right to revise the quotation should site conditions or scope materially differ from information provided.\n\nMOBILIZATION & ACCESS:\nThe client is responsible for securing all necessary site clearances, permissions, and safe access for our field crews. Delays caused by lack of access, security restrictions, or incomplete permissions will be subject to idle-time charges at INR 7,500 per half-day. Malee House Surveys will not be held liable for delays arising from third-party or government clearance timelines.\n\nPAYMENT SCHEDULE:\nA 50% mobilization advance is required prior to commencement of field work. The remaining 50% balance is payable strictly within seven (7) working days upon delivery of final survey maps, CAD outputs, and associated reports. Payments not received within the stipulated timeline will attract an overdue interest charge of 1.5% per month.\n\nACCURACY & EXCLUSIONS:\nSurvey accuracy will conform to applicable local and national land survey standards. Underground utilities, boundary dispute resolutions, legal witnessing, and any court-admissible survey works are specifically excluded from this scope unless individually itemized in the line items above. Malee House Surveys shall not be liable for pre-existing encroachments or title discrepancies.\n\nFORCE MAJEURE:\nNeither party shall be liable for failure or delay in performance caused by events beyond their reasonable control, including but not limited to natural disasters, floods, government-imposed lockdowns, civil unrest, or acts of war. The affected party shall notify the other within 48 hours of such an event.",
+    "internal_notes": {
+      "pricing_discussions": [],
+      "margin_notes": "",
+      "finance_notes": ""
+    },
+    "created_by": "usr-1779107993891-eu0j",
+    "status": "Approved",
+    "current_version": 1,
+    "created_at": "2026-06-17T10:55:42.045Z",
+    "updated_at": "2026-06-17T10:57:24.632Z",
+    "rejection_category": null,
+    "rejection_reason": null
+  },
+  {
+    "id": "QUO-PRJ-2606-012-01",
+    "project_id": "PRJ-2606-012",
+    "quotation_number": "QUO-PRJ-2606-012-01",
+    "client_token": "7085cdc3-b581-410c-9fca-ded88201c1af",
+    "client_details": null,
+    "items": [
+      {
+        "service_name": "Topographical Survey",
+        "description": "Full topographic survey with contour mapping",
+        "quantity": 1,
+        "unit_price": 95290,
+        "total": 95290
+      }
+    ],
+    "subtotal": 95290,
+    "discount_pct": 10,
+    "discount_amount": 9529,
+    "gst_rate": 18,
+    "gst_amount": 15436.98,
+    "total_amount": 101197.98,
+    "notes": "This is trial client note",
+    "terms": "WEATHER & FLIGHT CONDITIONS:\nFlight schedules are highly dependent on prevailing weather conditions, wind speeds (maximum 28 km/h), and applicable airspace regulations, including military and civil aviation authority restrictions. Rain, fog, or high wind conditions will automatically trigger rescheduling of flight missions at no additional cost to the client for the first rescheduling. Subsequent delays due to client-imposed constraints may attract standby charges.\n\nGROUND CONTROL POINTS (GCP):\nAll drone maps will be geo-referenced using high-accuracy RTK/PPK GNSS receivers achieving absolute spatial accuracy of ±3–5 cm horizontally and ±5–8 cm vertically. Ground Control Points (GCPs) will be established on site prior to flights and their coordinates verified against GTS benchmarks. GCP placement is excluded from this quote if the site is unoccupied and requires additional personnel for security.\n\nDELIVERABLES & LICENSING:\nStandard deliverables include: (a) GeoTIFF Orthophoto at 2–5 cm GSD, (b) Digital Elevation Model (DEM/DSM), (c) Raw and classified LiDAR or Photogrammetric Point Cloud (LAS format), and (d) Survey Report. Full data ownership is transferred to the client upon receipt of final payment. Malee House retains the right to use non-identifiable project outputs for marketing and portfolio purposes, unless the client explicitly requests otherwise in writing.\n\nDGCA & REGULATORY COMPLIANCE:\nAll drone operations are conducted in compliance with DGCA Civil Aviation Requirements (CAR) for Remotely Piloted Aircraft System (RPAS). Valid DGCA approvals, drone registration, and pilot certificates will be maintained throughout the project. The client must provide a No-Objection Certificate (NOC) if the site falls within a restricted or controlled airspace zone.",
+    "internal_notes": {
+      "pricing_discussions": [],
+      "margin_notes": "20% margin",
+      "finance_notes": ""
+    },
+    "created_by": "usr-1779107993891-eu0j",
+    "status": "Approved",
+    "current_version": 1,
+    "created_at": "2026-06-17T06:46:09.102Z",
+    "updated_at": "2026-06-17T06:48:04.104Z",
+    "rejection_category": null,
+    "rejection_reason": null
+  },
+  {
+    "id": "QUO-PRJ-2606-004-01",
+    "project_id": "PRJ-2606-004",
+    "quotation_number": "QUO-PRJ-2606-004-01",
+    "client_token": "f1507d6f-997b-4a6c-a2ce-3591c9a25c87",
+    "client_details": null,
+    "items": [
+      {
+        "service_name": "Drone Photogrammetry",
+        "description": "Aerial orthomosaic and 3D point-cloud generation",
+        "quantity": 1,
+        "unit_price": 50000,
+        "total": 50000
+      },
+      {
+        "service_name": "As-Built Survey",
+        "description": "Post-construction as-built documentation",
+        "quantity": 1,
+        "unit_price": 20000,
+        "total": 20000
+      }
+    ],
+    "subtotal": 70000,
+    "discount_pct": 5,
+    "discount_amount": 3500,
+    "gst_rate": 18,
+    "gst_amount": 11970,
+    "total_amount": 78470,
+    "notes": "",
+    "terms": "WEATHER & FLIGHT CONDITIONS:\nFlight schedules are highly dependent on prevailing weather conditions, wind speeds (maximum 28 km/h), and applicable airspace regulations, including military and civil aviation authority restrictions. Rain, fog, or high wind conditions will automatically trigger rescheduling of flight missions at no additional cost to the client for the first rescheduling. Subsequent delays due to client-imposed constraints may attract standby charges.\n\nGROUND CONTROL POINTS (GCP):\nAll drone maps will be geo-referenced using high-accuracy RTK/PPK GNSS receivers achieving absolute spatial accuracy of ±3–5 cm horizontally and ±5–8 cm vertically. Ground Control Points (GCPs) will be established on site prior to flights and their coordinates verified against GTS benchmarks. GCP placement is excluded from this quote if the site is unoccupied and requires additional personnel for security.\n\nDELIVERABLES & LICENSING:\nStandard deliverables include: (a) GeoTIFF Orthophoto at 2–5 cm GSD, (b) Digital Elevation Model (DEM/DSM), (c) Raw and classified LiDAR or Photogrammetric Point Cloud (LAS format), and (d) Survey Report. Full data ownership is transferred to the client upon receipt of final payment. Malee House retains the right to use non-identifiable project outputs for marketing and portfolio purposes, unless the client explicitly requests otherwise in writing.\n\nDGCA & REGULATORY COMPLIANCE:\nAll drone operations are conducted in compliance with DGCA Civil Aviation Requirements (CAR) for Remotely Piloted Aircraft System (RPAS). Valid DGCA approvals, drone registration, and pilot certificates will be maintained throughout the project. The client must provide a No-Objection Certificate (NOC) if the site falls within a restricted or controlled airspace zone.",
+    "internal_notes": {
+      "pricing_discussions": [],
+      "margin_notes": "",
+      "finance_notes": ""
+    },
+    "created_by": "usr-1779107993891-eu0j",
+    "status": "Approved",
+    "current_version": 1,
+    "created_at": "2026-06-16T16:13:18.413Z",
+    "updated_at": "2026-06-16T16:13:30.762Z",
+    "rejection_category": null,
+    "rejection_reason": null
+  },
+  {
+    "id": "QUO-PRJ-2606-001-01",
+    "project_id": "PRJ-2606-001",
+    "quotation_number": "QUO-PRJ-2606-001-01",
+    "client_token": "584e6ec4-4417-444b-8044-383984e9aa60",
+    "client_details": null,
+    "items": [
+      {
+        "service_name": "Road survey Existing Road",
+        "description": "",
+        "quantity": 1,
+        "unit_price": 10000,
+        "total": 10000
+      },
+      {
+        "service_name": "Boundary Verification",
+        "description": "Boundary demarcation and area verification",
+        "quantity": 1,
+        "unit_price": 100000,
+        "total": 100000
+      },
+      {
+        "service_name": "Topographical Survey",
+        "description": "Full topographic survey with contour mapping",
+        "quantity": 1,
+        "unit_price": 19999,
+        "total": 19999
+      }
+    ],
+    "subtotal": 129999,
+    "discount_pct": 1,
+    "discount_amount": 1299.99,
+    "gst_rate": 18,
+    "gst_amount": 23165.821799999998,
+    "total_amount": 151864.83179999999,
+    "notes": "approve quotation fast",
+    "terms": "WEATHER & FLIGHT CONDITIONS:\nFlight schedules are highly dependent on prevailing weather conditions, wind speeds (maximum 28 km/h), and applicable airspace regulations, including military and civil aviation authority restrictions. Rain, fog, or high wind conditions will automatically trigger rescheduling of flight missions at no additional cost to the client for the first rescheduling. Subsequent delays due to client-imposed constraints may attract standby charges.\n\nGROUND CONTROL POINTS (GCP):\nAll drone maps will be geo-referenced using high-accuracy RTK/PPK GNSS receivers achieving absolute spatial accuracy of ±3–5 cm horizontally and ±5–8 cm vertically. Ground Control Points (GCPs) will be established on site prior to flights and their coordinates verified against GTS benchmarks. GCP placement is excluded from this quote if the site is unoccupied and requires additional personnel for security.\n\nDELIVERABLES & LICENSING:\nStandard deliverables include: (a) GeoTIFF Orthophoto at 2–5 cm GSD, (b) Digital Elevation Model (DEM/DSM), (c) Raw and classified LiDAR or Photogrammetric Point Cloud (LAS format), and (d) Survey Report. Full data ownership is transferred to the client upon receipt of final payment. Malee House retains the right to use non-identifiable project outputs for marketing and portfolio purposes, unless the client explicitly requests otherwise in writing.\n\nDGCA & REGULATORY COMPLIANCE:\nAll drone operations are conducted in compliance with DGCA Civil Aviation Requirements (CAR) for Remotely Piloted Aircraft System (RPAS). Valid DGCA approvals, drone registration, and pilot certificates will be maintained throughout the project. The client must provide a No-Objection Certificate (NOC) if the site falls within a restricted or controlled airspace zone.",
+    "internal_notes": {
+      "pricing_discussions": [],
+      "margin_notes": "area",
+      "finance_notes": "milestone"
+    },
+    "created_by": "usr-1779107993891-eu0j",
+    "status": "Approved",
+    "current_version": 1,
+    "created_at": "2026-06-15T16:42:50.841Z",
+    "updated_at": "2026-06-15T17:34:33.216Z",
+    "rejection_category": null,
+    "rejection_reason": null
+  },
+  {
+    "id": "QUO-PRJ-2606-006-01",
+    "project_id": "PRJ-2606-006",
+    "quotation_number": "QUO-PRJ-2606-006-01",
+    "client_token": "95dd3be7-ce90-4a4d-aa47-7825386a7b1e",
+    "client_details": null,
+    "items": [
+      {
+        "service_name": "Construction Staking",
+        "description": "Layout grid and peg installation for construction",
+        "quantity": 1,
+        "unit_price": 23230,
+        "total": 23230
+      },
+      {
+        "service_name": "Boundary Verification",
+        "description": "Boundary demarcation and area verification",
+        "quantity": 1,
+        "unit_price": 33330,
+        "total": 33330
+      }
+    ],
+    "subtotal": 56560,
+    "discount_pct": 10,
+    "discount_amount": 5656,
+    "gst_rate": 18,
+    "gst_amount": 9162.72,
+    "total_amount": 60066.72,
+    "notes": "",
+    "terms": "VALIDITY OF QUOTATION:\nThis quotation is valid for a period of thirty (30) days from the date of issue. Prices quoted are based on current rates and scope discussed. Malee House Surveys reserves the right to revise the quotation should site conditions or scope materially differ from information provided.\n\nMOBILIZATION & ACCESS:\nThe client is responsible for securing all necessary site clearances, permissions, and safe access for our field crews. Delays caused by lack of access, security restrictions, or incomplete permissions will be subject to idle-time charges at INR 7,500 per half-day. Malee House Surveys will not be held liable for delays arising from third-party or government clearance timelines.\n\nPAYMENT SCHEDULE:\nA 50% mobilization advance is required prior to commencement of field work. The remaining 50% balance is payable strictly within seven (7) working days upon delivery of final survey maps, CAD outputs, and associated reports. Payments not received within the stipulated timeline will attract an overdue interest charge of 1.5% per month.\n\nACCURACY & EXCLUSIONS:\nSurvey accuracy will conform to applicable local and national land survey standards. Underground utilities, boundary dispute resolutions, legal witnessing, and any court-admissible survey works are specifically excluded from this scope unless individually itemized in the line items above. Malee House Surveys shall not be liable for pre-existing encroachments or title discrepancies.\n\nFORCE MAJEURE:\nNeither party shall be liable for failure or delay in performance caused by events beyond their reasonable control, including but not limited to natural disasters, floods, government-imposed lockdowns, civil unrest, or acts of war. The affected party shall notify the other within 48 hours of such an event.",
+    "internal_notes": {
+      "pricing_discussions": [],
+      "margin_notes": "",
+      "finance_notes": ""
+    },
+    "created_by": "usr-1779107993891-eu0j",
+    "status": "Approved",
+    "current_version": 1,
+    "created_at": "2026-06-15T10:52:20.139Z",
+    "updated_at": "2026-06-15T10:52:25.551Z",
+    "rejection_category": null,
+    "rejection_reason": null
+  },
+  {
+    "id": "QUO-PRJ-2606-003-01",
+    "project_id": "PRJ-2606-003",
+    "quotation_number": "QUO-PRJ-2606-003-01",
+    "client_token": "a66f1a55-c6c3-4aaa-a2a5-8594e26e0144",
+    "client_details": null,
+    "items": [
+      {
+        "service_name": "Boundary Verification",
+        "description": "Boundary demarcation and area verification",
+        "quantity": 1,
+        "unit_price": 523200,
+        "total": 523200
+      },
+      {
+        "service_name": "Drone Photogrammetry",
+        "description": "Aerial orthomosaic and 3D point-cloud generation",
+        "quantity": 1,
+        "unit_price": 23200,
+        "total": 23200
+      }
+    ],
+    "subtotal": 546400,
+    "discount_pct": 5,
+    "discount_amount": 27320,
+    "gst_rate": 18,
+    "gst_amount": 93434.4,
+    "total_amount": 612514.4,
+    "notes": "This is trial client note",
+    "terms": "WEATHER & FLIGHT CONDITIONS:\nFlight schedules are highly dependent on prevailing weather conditions, wind speeds (maximum 28 km/h), and applicable airspace regulations, including military and civil aviation authority restrictions. Rain, fog, or high wind conditions will automatically trigger rescheduling of flight missions at no additional cost to the client for the first rescheduling. Subsequent delays due to client-imposed constraints may attract standby charges.\n\nGROUND CONTROL POINTS (GCP):\nAll drone maps will be geo-referenced using high-accuracy RTK/PPK GNSS receivers achieving absolute spatial accuracy of ±3–5 cm horizontally and ±5–8 cm vertically. Ground Control Points (GCPs) will be established on site prior to flights and their coordinates verified against GTS benchmarks. GCP placement is excluded from this quote if the site is unoccupied and requires additional personnel for security.\n\nDELIVERABLES & LICENSING:\nStandard deliverables include: (a) GeoTIFF Orthophoto at 2–5 cm GSD, (b) Digital Elevation Model (DEM/DSM), (c) Raw and classified LiDAR or Photogrammetric Point Cloud (LAS format), and (d) Survey Report. Full data ownership is transferred to the client upon receipt of final payment. Malee House retains the right to use non-identifiable project outputs for marketing and portfolio purposes, unless the client explicitly requests otherwise in writing.\n\nDGCA & REGULATORY COMPLIANCE:\nAll drone operations are conducted in compliance with DGCA Civil Aviation Requirements (CAR) for Remotely Piloted Aircraft System (RPAS). Valid DGCA approvals, drone registration, and pilot certificates will be maintained throughout the project. The client must provide a No-Objection Certificate (NOC) if the site falls within a restricted or controlled airspace zone.",
+    "internal_notes": {
+      "pricing_discussions": [],
+      "margin_notes": "We will be operating on 20% margin for this project.",
+      "finance_notes": ""
+    },
+    "created_by": "usr-1779107993891-eu0j",
+    "status": "Approved",
+    "current_version": 1,
+    "created_at": "2026-06-15T10:14:01.068Z",
+    "updated_at": "2026-06-15T10:18:42.971Z",
+    "rejection_category": null,
+    "rejection_reason": null
+  }
+]

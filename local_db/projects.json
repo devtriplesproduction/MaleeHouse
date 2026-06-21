@@ -1,0 +1,383 @@
+[
+  {
+    "id": "PRJ-2606-013",
+    "name": "satara pune highway",
+    "client_name": "satar constructions",
+    "client_contact": "Phone: +91123457086, Email: satara@mail.com",
+    "client_address": "satara pune highway",
+    "site_type": "infrastructure",
+    "site_coordinates": "",
+    "survey_requirements": "use digital devices ",
+    "services": [
+      "Road survey Existing Road"
+    ],
+    "target_completion_date": null,
+    "status": "prototype",
+    "created_by": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "created_at": "2026-06-17T10:50:43.931Z",
+    "updated_at": "2026-06-17T11:26:12.023Z",
+    "deleted_at": null,
+    "requirement_checklist": {}
+  },
+  {
+    "id": "PRJ-2606-001",
+    "name": "satara highway",
+    "client_name": "satara construction",
+    "client_contact": "Phone: +91123456789, Email: satara@gma.i.com",
+    "client_address": "satara pune highway satara",
+    "site_type": "commercial",
+    "site_coordinates": "",
+    "survey_requirements": "use drone ",
+    "services": [
+      "Road survey Existing Road"
+    ],
+    "target_completion_date": null,
+    "status": "project_created",
+    "created_by": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "created_at": "2026-06-15T13:52:13.873Z",
+    "updated_at": "2026-06-16T16:50:04.145Z",
+    "deleted_at": null,
+    "requirement_checklist": {},
+    "is_frozen": false,
+    "freeze_reason": null,
+    "frozen_at": null,
+    "frozen_by": null
+  },
+  {
+    "id": "PRJ-2606-002",
+    "name": "DLF Cyber City Topographical Survey",
+    "client_name": "DLF Properties Ltd.",
+    "client_contact": "Rahul Sharma | +91 98765 43210 | rahul.s@dlf.in",
+    "client_address": "DLF Phase 2, Gurugram, Haryana 122002",
+    "site_type": "commercial",
+    "services": [
+      "Topographical Survey",
+      "Utility Locating"
+    ],
+    "survey_requirements": "High-density topographical mapping of the new Phase 2 extension block including all underground utilities.",
+    "status": "requirement_gathering",
+    "priority": "high",
+    "target_completion_date": "2026-07-30T10:02:56.125Z",
+    "created_at": "2026-06-13T10:02:56.126Z",
+    "updated_at": "2026-06-15T13:54:33.213Z",
+    "requirement_checklist": {
+      "timeline_confirmed": false,
+      "budget_discussed": false,
+      "site_images_received": true,
+      "client_requirements_verified": false,
+      "measurements_confirmed": false,
+      "satbara_uploaded": false
+    },
+    "description": "A comprehensive topographical survey required for the new extension block in DLF Phase 2. This includes identifying all underground utility lines to avoid conflicts during the foundation phase. The client expects high-accuracy deliverables in AutoCAD format."
+  },
+  {
+    "id": "PRJ-2606-003",
+    "name": "Navi Mumbai Airport Expansion Boundary Scan",
+    "client_name": "L&T Construction",
+    "client_contact": "Priya Desai | +91 87654 32109 | p.desai@lntecc.com",
+    "client_address": "NMIA Site Office, Panvel, Navi Mumbai, Maharashtra 410206",
+    "site_type": "infrastructure",
+    "services": [
+      "Boundary Verification",
+      "Drone Photogrammetry"
+    ],
+    "survey_requirements": "Verify exact perimeter coordinates for the new eastern terminal expansion using drone photogrammetry.",
+    "status": "project_created",
+    "priority": "urgent",
+    "target_completion_date": "2026-07-15T10:02:56.126Z",
+    "created_at": "2026-06-14T10:02:56.126Z",
+    "updated_at": "2026-06-16T16:52:06.786Z",
+    "requirement_checklist": {
+      "timeline_confirmed": true,
+      "budget_discussed": true,
+      "site_images_received": true,
+      "client_requirements_verified": true,
+      "measurements_confirmed": true,
+      "satbara_uploaded": true
+    },
+    "description": "Drone-based photogrammetry and boundary verification for the proposed eastern terminal expansion. High precision is required due to proximity to existing active runways. Requires daily progress reports.",
+    "follow_up_date": "2026-06-16T10:07:57.465Z",
+    "is_frozen": false,
+    "freeze_reason": null,
+    "frozen_at": null,
+    "frozen_by": null
+  },
+  {
+    "id": "PRJ-2606-004",
+    "name": "TCS Campus Drone Mapping",
+    "client_name": "Tata Consultancy Services",
+    "client_contact": "Anand Iyer | +91 76543 21098 | anand.i@tcs.com",
+    "client_address": "SIPCOT IT Park, Siruseri, Chennai, Tamil Nadu 603103",
+    "site_type": "industrial",
+    "services": [
+      "Drone Photogrammetry",
+      "As-Built Survey"
+    ],
+    "survey_requirements": "Create a 3D twin of the entire 70-acre campus for facility management purposes.",
+    "status": "payment_pending",
+    "priority": "medium",
+    "target_completion_date": "2026-08-14T10:02:56.126Z",
+    "created_at": "2026-06-10T10:02:56.126Z",
+    "updated_at": "2026-06-16T16:13:30.764Z",
+    "follow_up_date": "2026-06-15T12:07:57.465Z",
+    "requirement_checklist": {
+      "timeline_confirmed": true,
+      "budget_discussed": false,
+      "site_images_received": true,
+      "client_requirements_verified": false,
+      "measurements_confirmed": false,
+      "satbara_uploaded": false
+    },
+    "description": "Full 3D digital twin creation for the entire 70-acre TCS Siruseri IT Park campus. The deliverable will be integrated into their internal facility management platform. As-built surveys of major structures are also required."
+  },
+  {
+    "id": "PRJ-2606-005",
+    "name": "Reliance Refinery Pipeline Route",
+    "client_name": "Reliance Industries",
+    "client_contact": "Vikram Singh | +91 99887 76655 | v.singh@ril.com",
+    "client_address": "Motikhavdi, Jamnagar, Gujarat 361140",
+    "site_type": "industrial",
+    "services": [
+      "Utility Locating",
+      "Topographical Survey"
+    ],
+    "survey_requirements": "Locate and map existing underground utilities along the proposed 5km pipeline expansion route.",
+    "status": "quotation_requested",
+    "priority": "high",
+    "target_completion_date": "2026-07-05T10:02:56.126Z",
+    "created_at": "2026-06-12T10:02:56.126Z",
+    "updated_at": "2026-06-15T13:07:28.584Z",
+    "follow_up_date": "2026-06-15T14:07:57.465Z",
+    "requirement_checklist": {
+      "timeline_confirmed": true,
+      "budget_discussed": true,
+      "site_images_received": true,
+      "client_requirements_verified": false,
+      "measurements_confirmed": false,
+      "satbara_uploaded": false
+    },
+    "description": "Critical underground utility mapping along the proposed 5km pipeline route within the refinery premises. Must identify all existing high-pressure lines, electrical conduits, and water mains before trenching begins."
+  },
+  {
+    "id": "PRJ-2606-006",
+    "name": "Bangalore Metro Phase 3 Alignment",
+    "client_name": "BMRCL",
+    "client_contact": "Dr. K. Srinivas | +91 98877 66554 | ksrinivas@bmrc.co.in",
+    "client_address": "BMTC Complex, Shantinagar, Bengaluru, Karnataka 560027",
+    "site_type": "infrastructure",
+    "services": [
+      "Construction Staking",
+      "Boundary Verification"
+    ],
+    "survey_requirements": "Alignment verification for the new Phase 3 elevated corridor pillars.",
+    "status": "prototype",
+    "priority": "urgent",
+    "target_completion_date": "2026-09-13T10:02:56.126Z",
+    "created_at": "2026-06-08T10:02:56.126Z",
+    "updated_at": "2026-06-16T19:26:34.247Z",
+    "requirement_checklist": {
+      "timeline_confirmed": true,
+      "budget_discussed": true,
+      "site_images_received": true,
+      "client_requirements_verified": true,
+      "measurements_confirmed": true,
+      "satbara_uploaded": true
+    },
+    "description": "Alignment verification and construction staking for the new elevated metro corridor pillars. Tight tolerances are mandated by BMRCL. Daily structural monitoring during initial works is also needed.",
+    "is_frozen": false,
+    "freeze_reason": null,
+    "frozen_at": null,
+    "frozen_by": null
+  },
+  {
+    "id": "PRJ-2606-007",
+    "name": "Godrej Properties Residential Layout",
+    "client_name": "Godrej Properties",
+    "client_contact": "Neha Patil | +91 87766 55443 | neha.p@godrejproperties.com",
+    "client_address": "Hinjewadi Phase 1, Pune, Maharashtra 411057",
+    "site_type": "residential",
+    "services": [
+      "Topographical Survey",
+      "Boundary Verification"
+    ],
+    "survey_requirements": "15-acre land parcel survey for a new luxury residential township including contour mapping.",
+    "status": "quotation_requested",
+    "priority": "medium",
+    "target_completion_date": "2026-07-10T10:02:56.126Z",
+    "created_at": "2026-06-11T10:02:56.126Z",
+    "updated_at": "2026-06-13T10:02:56.126Z",
+    "requirement_checklist": {
+      "timeline_confirmed": true,
+      "budget_discussed": true,
+      "site_images_received": true,
+      "client_requirements_verified": true,
+      "measurements_confirmed": true,
+      "satbara_uploaded": true
+    },
+    "description": "Initial land parcel survey encompassing 15 acres for a new luxury township in Hinjewadi. Deliverables include a 0.5m contour map, existing tree locations, and verification of original land boundary records (Satbara)."
+  },
+  {
+    "id": "PRJ-2606-009",
+    "name": "Pune IT Park Layout Survey",
+    "client_name": "Piramal Realty",
+    "client_contact": "Phone: +91 98221 44567, Email: arjun.mehta@piramalrealty.com",
+    "client_address": "Piramal Agastya, Kurla, Mumbai, Maharashtra 400070",
+    "site_type": "commercial",
+    "services": [
+      "Topographical Survey",
+      "Boundary Verification"
+    ],
+    "survey_requirements": "Complete land parcel boundary verification and topographical mapping for the proposed 22-acre IT park in Hinjewadi Phase 3. Client requires AutoCAD deliverables with 0.5m contour intervals and all existing utility markings.",
+    "status": "payment_pending",
+    "priority": "high",
+    "target_completion_date": "2026-08-15T00:00:00.000Z",
+    "created_at": "2026-06-17T04:00:00.000Z",
+    "updated_at": "2026-06-17T11:24:49.876Z",
+    "created_by": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "deleted_at": null,
+    "follow_up_date": "2026-06-22T00:00:00.000Z",
+    "requirement_checklist": {
+      "timeline_confirmed": false,
+      "budget_discussed": false,
+      "site_images_received": true,
+      "client_requirements_verified": false,
+      "measurements_confirmed": false,
+      "satbara_uploaded": false
+    },
+    "description": "Piramal Realty is developing a new IT park in Hinjewadi Phase 3 and requires a comprehensive topographical and boundary survey. The 22-acre site needs high-accuracy mapping to support the project's master planning phase. The client has shared satellite imagery and expects the first deliverable within 6 weeks of mobilisation.",
+    "is_frozen": false,
+    "freeze_reason": null,
+    "frozen_at": null,
+    "frozen_by": null
+  },
+  {
+    "id": "PRJ-2606-012",
+    "name": "Bandra Kurla Complex High-Rise Survey",
+    "client_name": "Lodha Group",
+    "client_contact": "Phone: +91 99223 11223, Email: s.lodha@lodhagroup.com",
+    "client_address": "Lodha Excelus, Apollo Mills Compound, Mahalaxmi, Mumbai 400011",
+    "site_type": "commercial",
+    "services": [
+      "Topographical Survey"
+    ],
+    "survey_requirements": "Basic topographical survey for a proposed commercial high-rise in BKC.",
+    "status": "final_review",
+    "priority": "low",
+    "target_completion_date": "2026-09-01T00:00:00.000Z",
+    "created_at": "2026-06-17T07:00:00.000Z",
+    "updated_at": "2026-06-17T08:07:18.872Z",
+    "created_by": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "deleted_at": null,
+    "follow_up_date": "2026-06-21T00:00:00.000Z",
+    "requirement_checklist": {
+      "timeline_confirmed": false,
+      "budget_discussed": false,
+      "site_images_received": false,
+      "client_requirements_verified": false,
+      "measurements_confirmed": false,
+      "satbara_uploaded": false
+    },
+    "description": "Lodha Group inquired about a basic topographical survey for a new plot acquired in BKC. Requirements are very preliminary and no budget has been discussed. Just logging this as a fresh lead.",
+    "is_frozen": false,
+    "freeze_reason": null,
+    "frozen_at": null,
+    "frozen_by": null
+  },
+  {
+    "id": "PRJ-2606-010",
+    "name": "Nagpur Ring Road Alignment Study",
+    "client_name": "Maharashtra Road Development Corporation",
+    "client_contact": "Phone: +91 97305 88923, Email: r.deshmukh@msrdc.co.in",
+    "client_address": "MSRDC Bhavan, Bandra (East), Mumbai, Maharashtra 400051",
+    "site_type": "infrastructure",
+    "services": [
+      "Construction Staking",
+      "Drone Photogrammetry",
+      "Topographical Survey"
+    ],
+    "survey_requirements": "Drone photogrammetry and topographical survey along the 38km proposed ring road alignment around Nagpur. Cross-sections at every 50m and full corridor mapping up to 100m on each side required for DPR preparation.",
+    "status": "requirement_gathering",
+    "priority": "urgent",
+    "target_completion_date": "2026-07-31T00:00:00.000Z",
+    "created_at": "2026-06-17T05:00:00.000Z",
+    "updated_at": "2026-06-17T06:34:26.764Z",
+    "created_by": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "deleted_at": null,
+    "follow_up_date": "2026-06-20T00:00:00.000Z",
+    "requirement_checklist": {
+      "timeline_confirmed": true,
+      "budget_discussed": false,
+      "site_images_received": false,
+      "client_requirements_verified": false,
+      "measurements_confirmed": false,
+      "satbara_uploaded": false
+    },
+    "description": "MSRDC is in the DPR stage for a new 38km ring road around Nagpur city. They require a detailed topographical survey and drone photogrammetry along the full alignment corridor for the project feasibility and design report. The engagement is time-critical as the DPR submission deadline is end of August.",
+    "is_frozen": false,
+    "freeze_reason": null,
+    "frozen_at": null,
+    "frozen_by": null
+  },
+  {
+    "id": "PRJ-2606-011",
+    "name": "Hyderabad Pharma SEZ Site Assessment",
+    "client_name": "Aurobindo Pharma Ltd.",
+    "client_contact": "Phone: +91 96660 33712, Email: v.krishna@aurobindo.com",
+    "client_address": "Aurobindo Pharma Ltd., Plot No. 2, Maitrivihar, Ameerpet, Hyderabad 500038",
+    "site_type": "industrial",
+    "services": [
+      "Topographical Survey",
+      "Utility Locating",
+      "As-Built Survey"
+    ],
+    "survey_requirements": "As-built survey and underground utility mapping for a 65-acre pharma SEZ plot in Genome Valley, Hyderabad. All existing structures, drainage networks, and underground electrical/water lines must be documented for expansion planning.",
+    "status": "requirement_gathering",
+    "priority": "medium",
+    "target_completion_date": "2026-09-10T00:00:00.000Z",
+    "created_at": "2026-06-17T06:00:00.000Z",
+    "updated_at": "2026-06-17T06:34:40.158Z",
+    "created_by": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "deleted_at": null,
+    "follow_up_date": "2026-06-25T00:00:00.000Z",
+    "requirement_checklist": {
+      "timeline_confirmed": false,
+      "budget_discussed": true,
+      "site_images_received": true,
+      "client_requirements_verified": false,
+      "measurements_confirmed": false,
+      "satbara_uploaded": false
+    },
+    "description": "Aurobindo Pharma is planning an expansion of their existing pharma SEZ in Genome Valley. Before design work can begin, a complete as-built and utility survey of the existing 65-acre campus is needed to understand the current site conditions. The client has discussed budgets informally and is looking to engage a reputable surveying firm in the next few weeks.",
+    "is_frozen": false,
+    "freeze_reason": null,
+    "frozen_at": null,
+    "frozen_by": null
+  },
+  {
+    "id": "PRJ-2606-008",
+    "name": "Kolkata Riverfront Bathymetric Study",
+    "client_name": "KMDA",
+    "client_contact": "Amitabha Bose | +91 76655 44332 | abose@kmda.wb.gov.in",
+    "client_address": "Unnayan Bhavan, Salt Lake, Kolkata, West Bengal 700091",
+    "site_type": "infrastructure",
+    "services": [
+      "Bathymetric Mapping",
+      "Topographical Survey"
+    ],
+    "survey_requirements": "Underwater profiling of the Hooghly riverbed near the Howrah bridge structural supports.",
+    "status": "payment_pending",
+    "priority": "high",
+    "target_completion_date": "2026-07-20T10:02:56.126Z",
+    "created_at": "2026-06-05T10:02:56.126Z",
+    "updated_at": "2026-06-13T10:02:56.126Z",
+    "requirement_checklist": {
+      "timeline_confirmed": true,
+      "budget_discussed": true,
+      "site_images_received": true,
+      "client_requirements_verified": true,
+      "measurements_confirmed": true,
+      "satbara_uploaded": true
+    },
+    "description": "Specialized bathymetric and underwater topographical survey of the Hooghly riverbed near the Howrah bridge supports. Data will be used for structural integrity assessment and future dredging planning."
+  }
+]

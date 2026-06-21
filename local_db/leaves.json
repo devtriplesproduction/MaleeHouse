@@ -1,0 +1,65 @@
+[
+  {
+    "id": "071b3fc2-0c34-4d95-b0aa-bda4cd3149dd",
+    "employee_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "employee_name": "Sales Lead",
+    "start_date": "2026-05-21",
+    "end_date": "2026-05-25",
+    "reason": "I am in hospital",
+    "leave_type": "sick",
+    "status": "pending",
+    "created_at": "2026-05-18T12:55:12.747Z"
+  },
+  {
+    "id": "671652ba-5bae-4630-830e-0d29e4921cd4",
+    "employee_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "employee_name": "Sales Lead",
+    "start_date": "2026-06-18",
+    "end_date": "2026-06-19",
+    "reason": "just a casual leave",
+    "leave_type": "casual",
+    "status": "approved",
+    "created_at": "2026-05-17T11:14:14.086Z",
+    "updated_at": "2026-05-17T11:25:08.611Z",
+    "updated_by": "dcac6bfe-9f0f-4c94-9ff3-a4fd599ce5c6"
+  },
+  {
+    "id": "fb7fff3f-27d5-4916-8948-f3e92624d684",
+    "employee_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "employee_name": "Sales Lead",
+    "start_date": "2026-05-28",
+    "end_date": "2026-05-31",
+    "reason": "Going on a vactiion to hawai",
+    "leave_type": "vacation",
+    "status": "approved",
+    "created_at": "2026-05-17T11:12:48.049Z",
+    "updated_at": "2026-05-17T11:56:33.317Z",
+    "updated_by": "dcac6bfe-9f0f-4c94-9ff3-a4fd599ce5c6"
+  },
+  {
+    "id": "eaa25987-932f-4999-80a5-55f602243580",
+    "employee_id": "d05fa8bf-10be-41a1-942f-9dc103448329",
+    "employee_name": "Sales Lead",
+    "start_date": "2026-05-17",
+    "end_date": "2026-05-19",
+    "reason": "I am hospitalised",
+    "leave_type": "sick",
+    "status": "rejected",
+    "created_at": "2026-05-17T11:12:06.540Z",
+    "updated_at": "2026-05-17T11:56:25.270Z",
+    "updated_by": "dcac6bfe-9f0f-4c94-9ff3-a4fd599ce5c6"
+  },
+  {
+    "id": "bc898ea6-d118-4abc-9d3a-c64293bf5415",
+    "employee_id": "dcac6bfe-9f0f-4c94-9ff3-a4fd599ce5c6",
+    "employee_name": "System Admin",
+    "start_date": "2026-05-18",
+    "end_date": "2026-05-20",
+    "reason": "Medical recovery and health inspection protocol",
+    "leave_type": "sick",
+    "status": "rejected",
+    "created_at": "2026-05-17T08:44:17.227Z",
+    "updated_at": "2026-05-17T11:56:38.723Z",
+    "updated_by": "dcac6bfe-9f0f-4c94-9ff3-a4fd599ce5c6"
+  }
+]

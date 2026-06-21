@@ -1,0 +1,154 @@
+import React, { Suspense } from "react";
+
+export const dynamic = "force-dynamic";
+import { RealtimeStatsGrid } from "@/components/modules/RealtimeStatsGrid";
+import { TrendingUp, AlertCircle, FileText, Zap, ChevronDown, IndianRupee } from "lucide-react";
+import Link from "next/link";
+import { getQuotationIntakeQueueAction } from "@/actions/quotation.actions";
+import { createClient } from "@/lib/supabase/server";
+import DashboardNotificationCenter from "@/components/modules/DashboardNotificationCenter";
+import { QuotationIntakeQueue } from "@/features/accounts/QuotationIntakeQueue";
+import { UpcomingMilestonesWidget } from "@/features/accounts/UpcomingMilestonesWidget";
+import { getAllMilestonesAction } from "@/actions/finance.actions";
+
+export default async function AccountantDashboardPage() {
+  const supabase: any = await createClient();
+  // Fetch real database queue & quotations
+  const [intakeRes, quotationsRes, projectsRes, milestonesRes] = await Promise.all([
+    getQuotationIntakeQueueAction(),
+    supabase.from('quotations').select('*'),
+    supabase.from('projects').select('*'),
+    getAllMilestonesAction(),
+  ]);
+
+  const quotations = quotationsRes.data || [];
+  const projects = projectsRes.data || [];
+  const milestones = milestonesRes.success ? milestonesRes.data : [];
+
+
+
+  // Calculate the 4 requested metrics
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const monthlyProjectsCount = projects.filter((p: any) => {
+    if (!p.created_at) return false;
+    const d = new Date(p.created_at);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).length;
+
+  const verifiedQuotations = quotations.filter((q: any) => q.status === 'Approved' || q.status === 'Paid');
+  const monthlyRevenue = verifiedQuotations.filter((q: any) => {
+    const d = new Date(q.updated_at || q.created_at);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).reduce((sum: number, q: any) => sum + Number(q.total_amount || 0), 0);
+
+  const activeProjectsCount = projects.filter((p: any) => !p.deleted_at && p.status !== 'completed' && p.status !== 'archived').length;
+  const totalQuotationsCount = quotations.length;
+
+  return (
+    <div className="space-y-8 pb-20 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="border-b border-slate-200/60 dark:border-white/5 pb-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+          Accounts Overview
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Financial KPIs and pipeline at a glance.
+        </p>
+      </div>
+
+      {/* KPI Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <Zap className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Monthly Projects
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {monthlyProjectsCount}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <IndianRupee className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Monthly Revenue
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              ₹{(monthlyRevenue / 100000).toFixed(1)}L
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400 border border-sky-500/20">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Total Quotations
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {totalQuotationsCount}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Active Projects
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {activeProjectsCount}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Left column for summary grids */}
+        <div className="xl:col-span-2 space-y-6">
+
+
+          {/* Recent Quotations Row */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-slate-800 dark:text-white" />
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Quotation Intake Queue</h2>
+              </div>
+              <Link href="/accounts/intake" className="text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:underline">View All</Link>
+            </div>
+            
+            <div className="max-h-[360px] overflow-y-auto custom-scrollbar pr-2 -mr-2">
+              <QuotationIntakeQueue projects={intakeRes.data || []} hideSearch={true} />
+            </div>
+          </div>
+
+          <UpcomingMilestonesWidget milestones={milestones} />
+        </div>
+
+        {/* Right column for Notifications */}
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden h-full">
+            <DashboardNotificationCenter />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

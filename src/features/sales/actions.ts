@@ -1,0 +1,243 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { ActionResponse } from '@/actions/project.actions';
+import { getUserProfileAction } from '@/actions/auth.actions';
+import { createClient } from '@/lib/supabase/server';
+import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
+
+export async function getLeadsAction(): Promise<ActionResponse> {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+    const { data: leads, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('status', 'lead_created')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, data: leads };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getQuotationsAction(): Promise<ActionResponse<any[]>> {
+  try {
+    const supabase: any = await createClient();
+    
+    const { data: quotations, error } = await supabase
+      .from('quotations')
+      .select(`
+        id,
+        quotation_number,
+        total_amount,
+        status,
+        created_at,
+        projects:project_id (
+          name,
+          client_name
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, data: quotations };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateLeadStatusAction(projectId: string, status: string): Promise<ActionResponse> {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+    const { data: updated, error } = await supabase
+      .from('projects')
+      .update({
+        status: status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', projectId)
+      .select()
+      .single();
+
+    if (error) return { success: false, error: 'Project not found or update failed.' };
+
+    await revalidateAccountsPaths(projectId);
+    return { success: true, data: updated };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getClientsAction(): Promise<ActionResponse> {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+    const { data: activeProjects, error } = await supabase
+      .from('projects')
+      .select('*')
+      .is('deleted_at', null);
+
+    if (error) return { success: false, error: error.message };
+    
+    const clientsMap = new Map();
+    for (const item of activeProjects || []) {
+      if (!clientsMap.has(item.client_name)) {
+        clientsMap.set(item.client_name, {
+          client_name: item.client_name,
+          client_contact: item.client_contact || "No contact info",
+          client_address: item.client_address || "No address provided",
+          created_at: item.created_at || new Date().toISOString(),
+          projects: []
+        });
+      }
+      const clientObj = clientsMap.get(item.client_name);
+      
+      // Update created_at to earliest if needed
+      if (item.created_at && new Date(item.created_at).getTime() < new Date(clientObj.created_at).getTime()) {
+        clientObj.created_at = item.created_at;
+      }
+      
+      clientObj.projects.push({
+        id: item.id,
+        name: item.name,
+        status: item.status,
+        stage: item.stage,
+        created_at: item.created_at
+      });
+    }
+
+    return { success: true, data: Array.from(clientsMap.values()) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function recordFollowUpAction(
+  projectId: string, 
+  nextDate: string, 
+  status: string, 
+  outcome: string
+): Promise<ActionResponse> {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+
+    const taskId = `tsk-${crypto.randomUUID()}`;
+    const commentId = `cmt-${crypto.randomUUID()}`;
+
+    // 1. Create a task for the next follow-up
+    const { error: taskError } = await supabase.from('tasks').insert({
+      id: taskId,
+      project_id: projectId,
+      assigned_to: profile.id,
+      title: `Follow-up: ${status}`,
+      due_date: nextDate,
+      status: 'pending'
+    });
+    if (taskError) console.error("Task Insert Error:", taskError);
+
+    // 2. Record the outcome as a comment
+    const { error: commentError } = await supabase.from('comments').insert({
+      id: commentId,
+      project_id: projectId,
+      user_id: profile.id,
+      content: `Follow-up Outcome: ${outcome}\nStatus: ${status}\nNext Date: ${nextDate}`,
+      comment_type: 'follow_up',
+      created_at: new Date().toISOString(),
+      parent_comment_id: null,
+      is_edited: false
+    });
+    if (commentError) console.error("Comment Insert Error:", commentError);
+
+    // 3. Update project last updated & status
+    await supabase.from('projects').update({
+      status: 'requirement_gathering',
+      follow_up_date: nextDate,
+      updated_at: new Date().toISOString()
+    }).eq('id', projectId);
+
+    await revalidateAccountsPaths(projectId);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function finalizeRequirementsAction(projectId: string): Promise<ActionResponse> {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+
+    // 1. Update project status to quotation_requested
+    const { error: updateError } = await supabase.from('projects').update({
+      status: 'quotation_requested',
+      updated_at: new Date().toISOString()
+    }).eq('id', projectId);
+
+    if (updateError) return { success: false, error: 'Project not found or update failed.' };
+
+    // 2. Log activity
+    await supabase.from('activity_logs').insert({
+      project_id: projectId,
+      user_id: profile.id,
+      action: 'QUOTATION_REQUESTED',
+      details: { message: 'Sales finalized requirements and requested commercial quotation from Accounts.' },
+      created_at: new Date().toISOString()
+    });
+
+    await revalidateAccountsPaths(projectId);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateClientDetailsAction(
+  oldClientName: string,
+  newDetails: { client_name: string; client_contact: string; client_address: string }
+): Promise<ActionResponse> {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+
+    const { data: updatedProjects, error } = await supabase
+      .from('projects')
+      .update({
+        client_name: newDetails.client_name,
+        client_contact: newDetails.client_contact,
+        client_address: newDetails.client_address,
+        updated_at: new Date().toISOString()
+      })
+      .eq('client_name', oldClientName)
+      .select('id');
+
+    if (error) return { success: false, error: error.message };
+
+    if (updatedProjects && updatedProjects.length > 0) {
+      revalidatePath('/clients');
+    }
+
+    return { success: true, data: { updatedCount: updatedProjects?.length || 0 } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

@@ -1,0 +1,728 @@
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { notifyPaymentAction } from '@/actions/notification.actions';
+import { updateProjectStageAction } from '@/actions/workflow.actions';
+import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
+import { getUserProfileAction } from '@/actions/auth.actions';
+import { requireAuthContext, getAssignedProjectIds } from '@/lib/permissions/permissions';
+import { 
+  createInvoiceSchema, 
+  createPaymentSchema, 
+  type CreateInvoiceInput, 
+  type CreatePaymentInput 
+} from '@/validations/finance.schema';
+import { generateSequentialCode } from '@/lib/id-generator';
+
+export type ActionResponse<T = any> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+};
+
+async function verifyProjectNotLocked(projectId: string): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase: any = await createClient();
+    const { data: project, error } = await supabase.from('projects').select('status').eq('id', projectId).single();
+    if (error) return { success: false, error: error.message };
+    
+    if (project?.status === "completed" || project?.status === "archived") {
+      return { success: false, error: "Project is locked (completed/archived) and cannot be modified." };
+    }
+  } catch (err) {
+    console.error("verifyProjectNotLocked error:", err);
+  }
+  return { success: true, error: null };
+}
+
+export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<ActionResponse> {
+  try {
+    const validated = createInvoiceSchema.safeParse(payload);
+    if (!validated.success) {
+      return { success: false, error: validated.error.errors[0]?.message };
+    }
+
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const lockCheck = await verifyProjectNotLocked(payload.project_id);
+    if (!lockCheck.success) {
+      return { success: false, error: lockCheck.error || "Project is locked." };
+    }
+
+    const { amount, gst_rate } = validated.data;
+    const gst_amount = (amount * gst_rate) / 100;
+    const total_amount = amount + gst_amount;
+
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('invoices')
+      .insert({
+        ...validated.data,
+        gst_amount,
+        total_amount,
+        created_by: profile.id,
+        status: 'sent'
+      })
+      .select()
+      .single();
+
+    if (error) return { success: false, error: error.message };
+
+    await revalidateAccountsPaths(payload.project_id);
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function logPaymentAction(payload: CreatePaymentInput): Promise<ActionResponse> {
+  try {
+    const validated = createPaymentSchema.safeParse(payload);
+    if (!validated.success) {
+      return { success: false, error: validated.error.errors[0]?.message };
+    }
+
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
+
+    const lockCheck = await verifyProjectNotLocked(payload.project_id);
+    if (!lockCheck.success) {
+      return { success: false, error: lockCheck.error || "Project is locked." };
+    }
+
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('payments')
+      .insert({
+        ...validated.data,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) return { success: false, error: error.message };
+
+    await updateProjectStageAction(payload.project_id, 'payment_pending', 'Payment manually logged.');
+
+    await revalidateAccountsPaths(payload.project_id);
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function verifyPaymentAction(paymentId: string, status: 'verified' | 'rejected', reason?: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+    const { data: payment, error: fetchErr } = await supabase.from('payments').select('*').eq('id', paymentId).single();
+    if (fetchErr || !payment) return { success: false, error: 'Payment not found' };
+
+    const lockCheck = await verifyProjectNotLocked(payment.project_id);
+    if (!lockCheck.success) {
+      return { success: false, error: lockCheck.error || "Project is locked." };
+    }
+
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({
+        status,
+        verified_by: profile.id,
+        verified_at: new Date().toISOString(),
+        rejection_reason: reason
+      })
+      .eq('id', paymentId);
+
+    if (updateError) return { success: false, error: updateError.message };
+
+    if (status === 'verified') {
+      let isActivationGatePaid = false;
+      let milestoneLinkedStage = null;
+
+      if (payment.invoice_id) {
+        await supabase.from('invoices').update({ status: 'paid' }).eq('id', payment.invoice_id);
+
+        const { data: invoice } = await supabase.from('invoices').select('milestone_id, visit_id').eq('id', payment.invoice_id).single();
+        if (invoice) {
+          if (invoice.milestone_id) {
+            const { data: milestone } = await supabase
+              .from('project_milestones')
+              .update({ status: 'paid', updated_at: new Date().toISOString() })
+              .eq('id', invoice.milestone_id)
+              .select()
+              .single();
+            if (milestone) {
+              isActivationGatePaid = milestone.is_activation_gate;
+              milestoneLinkedStage = milestone.linked_stage;
+            }
+          }
+          if (invoice.visit_id) {
+            await supabase.from('project_visits').update({ status: 'paid' }).eq('id', invoice.visit_id);
+          }
+        }
+      }
+
+      const { data: project } = await supabase.from('projects').select('*').eq('id', payment.project_id).single();
+
+      if (isActivationGatePaid || !project || project.status === 'lead_created' || project.status === 'quotation_sent' || project.status === 'payment_pending') {
+        await updateProjectStageAction(payment.project_id, 'project_created', 'Payment verified. Project officially activated.');
+      } else if (milestoneLinkedStage) {
+        await updateProjectStageAction(payment.project_id, milestoneLinkedStage, `Payment verified. Stage unlocked.`);
+      }
+
+      notifyPaymentAction(payment.project_id).catch(console.error);
+
+      if (project && project.is_frozen && project.freeze_reason === 'payment_pending') {
+        await unfreezeProjectAction(payment.project_id, 'Payment verification complete. Auto-unfreezing project.');
+      }
+      
+      const { data: currentFinance } = await supabase.from('project_finances').select('*').eq('project_id', payment.project_id).maybeSingle();
+      if (currentFinance) {
+        await supabase.from('project_finances').update({
+          total_paid_amount: Number(currentFinance.total_paid_amount) + Number(payment.amount),
+          updated_at: new Date().toISOString()
+        }).eq('project_id', payment.project_id);
+      } else {
+        await supabase.from('project_finances').insert({
+          project_id: payment.project_id,
+          total_paid_amount: payment.amount
+        });
+      }
+    } else if (status === 'rejected') {
+      await updateProjectStageAction(payment.project_id, 'payment_pending', `Payment verification failed. Reason: ${reason}`);
+    }
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: payment.project_id,
+      user_id: profile.id,
+      action: 'PAYMENT_VERIFIED',
+      details: { payment_id: paymentId, status, reason },
+      created_at: new Date().toISOString()
+    });
+
+    await revalidateAccountsPaths(payment.project_id);
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getInvoicesAction(projectId?: string): Promise<ActionResponse> {
+  try {
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+    let query = supabase.from('invoices').select('*, projects(name, client_name)');
+    
+    if (projectId) {
+      query = query.eq('project_id', projectId);
+    } else {
+      const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
+      if (assignedIds !== null) {
+        if (assignedIds.length === 0) return { success: true, data: [] };
+        query = query.in('project_id', assignedIds);
+      }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getPaymentsAction(projectId?: string): Promise<ActionResponse> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+    let query = supabase.from('payments').select('*, projects(name, client_name)');
+    
+    if (projectId) {
+      query = query.eq('project_id', projectId);
+    } else {
+      const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
+      if (assignedIds !== null) {
+        if (assignedIds.length === 0) return { success: true, data: [] };
+        query = query.in('project_id', assignedIds);
+      }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function assignAccountantAction(projectId: string, accountantId: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (profile.role !== 'admin') {
+      return { success: false, error: 'Access denied. Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('project_accounts_owners')
+      .upsert({
+        project_id: projectId,
+        accountant_id: accountantId,
+        assigned_by: profile.id,
+        assigned_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) return { success: false, error: error.message };
+
+    await revalidateAccountsPaths(projectId);
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getAccountantOwnerAction(projectId: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('project_accounts_owners')
+      .select('*')
+      .eq('project_id', projectId)
+      .maybeSingle();
+
+    if (error) return { success: false, error: error.message };
+    if (!data) return { success: true, data: null };
+
+    if (profile.role !== 'admin' && profile.id !== data.accountant_id) {
+      return { success: false, error: 'Access denied.' };
+    }
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createMilestonesAction(
+  projectId: string,
+  milestones: Array<{
+    title: string;
+    description?: string;
+    amount: number;
+    due_date?: string;
+    linked_stage?: string;
+    is_activation_gate: boolean;
+  }>
+): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    let isAuthorized = profile.role === 'admin';
+    const supabase: any = await createClient();
+
+    if (!isAuthorized && profile.role === 'accountant') {
+      const { data: owner } = await supabase
+        .from('project_accounts_owners')
+        .select('accountant_id')
+        .eq('project_id', projectId)
+        .maybeSingle();
+      if (owner) {
+        isAuthorized = owner.accountant_id === profile.id;
+      } else {
+        isAuthorized = true;
+        await supabase
+          .from('project_accounts_owners')
+          .insert({
+            project_id: projectId,
+            accountant_id: profile.id,
+            assigned_by: profile.id,
+            assigned_at: new Date().toISOString()
+          });
+      }
+    }
+
+    if (!isAuthorized) {
+      return { success: false, error: 'Access denied. Only the assigned Accountant or Admin can create milestones.' };
+    }
+
+    const lockCheck = await verifyProjectNotLocked(projectId);
+    if (!lockCheck.success) {
+      return { success: false, error: lockCheck.error || "Project is locked." };
+    }
+
+    await supabase.from('project_milestones').delete().eq('project_id', projectId);
+
+    const dbMilestones = milestones.map((m: any) => ({
+      id: `mil-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: projectId,
+      title: m.title,
+      description: m.description,
+      amount: m.amount,
+      due_date: m.due_date,
+      linked_stage: m.linked_stage,
+      is_activation_gate: m.is_activation_gate,
+      status: 'pending'
+    }));
+
+    const { data, error } = await supabase
+      .from('project_milestones')
+      .insert(dbMilestones)
+      .select();
+
+    if (error) return { success: false, error: error.message };
+
+    await revalidateAccountsPaths(projectId);
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getMilestonesAction(projectId: string): Promise<ActionResponse> {
+  try {
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function freezeProjectAction(
+  projectId: string, 
+  reason: 'payment_pending' | 'financial_hold' | 'client_issue' | 'approval_issue' | 'manual_admin_hold', 
+  comment?: string
+): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const lockCheck = await verifyProjectNotLocked(projectId);
+    if (!lockCheck.success) {
+      return { success: false, error: lockCheck.error || "Project is locked." };
+    }
+
+    const supabase: any = await createClient();
+
+    const { data: currentProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
+
+    const { data, error } = await supabase
+      .from('projects')
+      .update({
+        is_frozen: true,
+        freeze_reason: reason,
+        frozen_at: new Date().toISOString(),
+        frozen_by: profile.id
+      })
+      .eq('id', projectId)
+      .select()
+      .single();
+
+    if (error) return { success: false, error: error.message };
+
+    await supabase.from('workflow_history').insert({
+      project_id: projectId,
+      from_stage: currentProject?.status,
+      to_stage: 'frozen',
+      changed_by: profile.id,
+      comment: comment || `Project frozen due to ${reason}.`
+    });
+
+    await revalidateAccountsPaths(projectId);
+    revalidatePath('/operations');
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function unfreezeProjectAction(projectId: string, comment?: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+
+    const { data: currentProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
+
+    const { data, error } = await supabase
+      .from('projects')
+      .update({
+        is_frozen: false,
+        freeze_reason: null,
+        frozen_at: null,
+        frozen_by: null
+      })
+      .eq('id', projectId)
+      .select()
+      .single();
+
+    if (error) return { success: false, error: error.message };
+
+    await supabase.from('workflow_history').insert({
+      project_id: projectId,
+      from_stage: 'frozen',
+      to_stage: currentProject?.status,
+      changed_by: profile.id,
+      comment: comment || 'Project unfrozen.'
+    });
+
+    await revalidateAccountsPaths(projectId);
+    revalidatePath('/operations');
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getAllMilestonesAction(): Promise<ActionResponse> {
+  try {
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('project_milestones')
+      .select('*, projects(name, client_name, status, is_frozen)')
+      .order('due_date', { ascending: true });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateMilestoneStatusAction(
+  milestoneId: string,
+  status: 'pending' | 'paid' | 'hold',
+  comment?: string
+): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+
+    const { data: milestone, error: fetchErr } = await supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('id', milestoneId)
+      .single();
+
+    if (fetchErr || !milestone) return { success: false, error: 'Milestone not found.' };
+
+    const { error: updateErr } = await supabase
+      .from('project_milestones')
+      .update({
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', milestoneId);
+
+    if (updateErr) return { success: false, error: updateErr.message };
+
+    await supabase.from('activity_logs').insert({
+      project_id: milestone.project_id,
+      user_id: profile.id,
+      action: 'MILESTONE_STATUS_UPDATE',
+      details: { milestone_id: milestoneId, status, comment }
+    });
+
+    if (status === 'paid') {
+      const { data: project } = await supabase
+        .from('projects')
+        .select('status')
+        .eq('id', milestone.project_id)
+        .single();
+
+      if (milestone.is_activation_gate || !project || ['lead_created', 'quotation_sent', 'payment_pending'].includes(project.status)) {
+        await updateProjectStageAction(milestone.project_id, 'project_created', comment || 'Activation gate milestone marked as paid.');
+      } else if (milestone.linked_stage) {
+        await updateProjectStageAction(milestone.project_id, milestone.linked_stage, comment || `Linked milestone "${milestone.title}" marked as paid.`);
+      }
+    }
+
+    await revalidateAccountsPaths(milestone.project_id);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function rescheduleMilestoneAction(
+  milestoneId: string,
+  newDueDate: string,
+  reason: string
+): Promise<ActionResponse> {
+  try {
+    if (!reason.trim()) {
+      return { success: false, error: 'A reason for rescheduling is required.' };
+    }
+
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+
+    const { data: milestone, error: fetchErr } = await supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('id', milestoneId)
+      .single();
+
+    if (fetchErr || !milestone) return { success: false, error: 'Milestone not found.' };
+
+    const { error: updateErr } = await supabase
+      .from('project_milestones')
+      .update({
+        due_date: newDueDate,
+        reschedule_reason: reason,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', milestoneId);
+
+    if (updateErr) return { success: false, error: updateErr.message };
+
+    await supabase.from('activity_logs').insert({
+      project_id: milestone.project_id,
+      user_id: profile.id,
+      action: 'MILESTONE_RESCHEDULED',
+      details: { milestone_id: milestoneId, new_due_date: newDueDate, reason }
+    });
+
+    await revalidateAccountsPaths(milestone.project_id);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): Promise<ActionResponse> {
+  try {
+    if (process.env.NODE_ENV === 'production' && cronSecret !== process.env.CRON_SECRET) {
+      return { success: false, error: 'Unauthorized cron request.' };
+    }
+
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + 5);
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const generatedInvoices = [];
+
+    const supabase: any = await createClient();
+    
+    const { data: milestones, error: mErr } = await supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('due_date', targetDateStr);
+      
+    if (mErr || !milestones) return { success: false, error: mErr?.message || 'Failed to fetch milestones' };
+
+    for (const m of milestones) {
+      const { data: existing } = await supabase.from('invoices').select('id').eq('milestone_id', m.id).maybeSingle();
+      if (existing) continue;
+
+      const { data: existingInvoicesData } = await supabase.from('invoices').select('invoice_number');
+      const existingInvoiceNumbers = (existingInvoicesData || []).map((i: any) => i.invoice_number);
+      const invoiceNumber = generateSequentialCode('INV', existingInvoiceNumbers, m.project_id);
+
+      const gstRate = 18;
+      const gstAmount = (m.amount * gstRate) / 100;
+      const totalAmount = m.amount + gstAmount;
+      
+      const invoicePayload = {
+        project_id: m.project_id,
+        milestone_id: m.id,
+        invoice_number: invoiceNumber,
+        amount: m.amount,
+        gst_rate: gstRate,
+        gst_amount: gstAmount,
+        total_amount: totalAmount,
+        status: 'sent',
+        due_date: m.due_date,
+        notes: 'Auto-generated invoice 5 days prior to milestone deadline.',
+        created_by: null // System
+      };
+
+      const { data: newInvoice, error: invErr } = await supabase.from('invoices').insert(invoicePayload).select().single();
+      if (newInvoice && !invErr) {
+        generatedInvoices.push(newInvoice);
+        
+        const { data: currentFinance } = await supabase.from('project_finances').select('*').eq('project_id', m.project_id).maybeSingle();
+        if (currentFinance) {
+           await supabase.from('project_finances').update({
+             total_invoiced_amount: Number(currentFinance.total_invoiced_amount) + totalAmount,
+             updated_at: new Date().toISOString()
+           }).eq('project_id', m.project_id);
+        } else {
+           await supabase.from('project_finances').insert({
+             project_id: m.project_id,
+             total_quoted_amount: totalAmount,
+             total_invoiced_amount: totalAmount,
+             total_paid_amount: 0
+           });
+        }
+      }
+    }
+
+    return { success: true, data: { generated: generatedInvoices.length, invoices: generatedInvoices } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

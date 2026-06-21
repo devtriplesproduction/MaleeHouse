@@ -1,0 +1,807 @@
+"use client";
+
+import React, { useState, useEffect, Suspense } from "react";
+import { createPortal } from "react-dom";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getProjectsListAction } from "@/actions/project.actions";
+import { getMilestonesAction, createMilestonesAction, getPaymentsAction, freezeProjectAction, unfreezeProjectAction } from "@/actions/finance.actions";
+import { getAllQuotationsAction } from "@/actions/quotation.actions";
+import { transitionWorkflowAction } from "@/actions/workflow.actions";
+import { getFieldVisitsAction, logFieldVisitAction } from "@/actions/operations.actions";
+import { 
+  Target, 
+  Search, 
+  Clock, 
+  Building, 
+  Plus, 
+  X, 
+  Save, 
+  Trash2, 
+  Calendar,
+  IndianRupee,
+  Activity,
+  ArrowRight,
+  Pause,
+  Play,
+  MapPin
+} from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import DashboardLoading from "@/app/(modules)/loading";
+import { motion, AnimatePresence } from "framer-motion";
+import { PremiumDatePicker } from "@/components/ui/PremiumDatePicker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const ACTIVE_SURVEY_STATUSES = [
+  "payment_pending",
+  "payment_done",
+  "project_created", 
+  "data_collection", 
+  "prototype", 
+  "review", 
+  "field_work", 
+  "data_sync", 
+  "post_processing", 
+  "final_review",
+  "delivery"
+];
+
+// Helper to format currency
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+function ProjectMilestonesContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectIdParam = searchParams.get("project");
+  const planParam = searchParams.get("plan");
+
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Slide-over State
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [milestones, setMilestones] = useState<any[]>([]);
+  const [fieldVisits, setFieldVisits] = useState<any[]>([]);
+  const [loadingMilestones, setLoadingMilestones] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // Tabs in slideover
+  const [activeTab, setActiveTab] = useState<"milestones" | "visits">("milestones");
+  const [newVisitDate, setNewVisitDate] = useState<Date | undefined>(undefined);
+  const [newVisitPrice, setNewVisitPrice] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
+
+  const [projectToHold, setProjectToHold] = useState<any | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchProjects();
+  }, []);
+
+  // Auto-open panel based on query parameter
+  useEffect(() => {
+    if (projectIdParam && projects.length > 0) {
+      const project = projects.find((p: any) => p.id === projectIdParam);
+      if (project) {
+        handleOpenPanel(project);
+      }
+    }
+  }, [projectIdParam, projects]);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const [projRes, quotesRes, paymentsRes] = await Promise.all([
+        getProjectsListAction(),
+        getAllQuotationsAction(),
+        getPaymentsAction()
+      ]);
+
+      if (projRes?.success && projRes.data) {
+        // Filter to only active operational/survey projects (or matching search param)
+        const active = projRes.data.filter((p: any) => {
+          if (projectIdParam && p.id === projectIdParam) return true;
+          return ACTIVE_SURVEY_STATUSES.includes(p.status);
+        });
+        
+        // Map contract values and payments
+        if (quotesRes?.success && quotesRes.data) {
+          active.forEach((p: any) => {
+             const approvedQuote = quotesRes.data.find((q: any) => q.project_id === p.id && q.status?.toLowerCase() === 'approved');
+             p.contract_value = approvedQuote ? approvedQuote.total_amount : 0;
+             
+             let received = 0;
+             if (paymentsRes?.success && paymentsRes.data) {
+               const projectPayments = paymentsRes.data.filter((pay: any) => pay.project_id === p.id && pay.status === 'verified');
+               received = projectPayments.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0);
+             }
+             
+             p.received_amount = received;
+             p.pending_amount = Math.max(0, p.contract_value - received);
+          });
+        }
+
+        setProjects(active);
+      }
+    } catch (err) {
+      toast.error("Failed to load projects.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenPanel = async (project: any) => {
+    setSelectedProject(project);
+    setLoadingMilestones(true);
+    setMilestones([]);
+    setFieldVisits([]);
+    setActiveTab("milestones");
+    
+    try {
+      const [msRes, visitsRes] = await Promise.all([
+        getMilestonesAction(project.id),
+        getFieldVisitsAction(project.id)
+      ]);
+      
+      if (msRes?.success && msRes.data) {
+        setMilestones(msRes.data);
+      } else {
+        toast.error("Could not fetch existing milestones.");
+      }
+
+      if (visitsRes?.success && visitsRes.data) {
+        setFieldVisits(visitsRes.data);
+      }
+    } catch (err) {
+      toast.error("Unexpected error loading data.");
+    } finally {
+      setLoadingMilestones(false);
+    }
+  };
+
+  const closePanel = () => {
+    setSelectedProject(null);
+    setMilestones([]);
+    setFieldVisits([]);
+    setNewVisitDate(undefined);
+    setNewVisitPrice("");
+  };
+
+  const addMilestoneRow = () => {
+    setMilestones([
+      ...milestones,
+      {
+        id: `temp-${Date.now()}`,
+        title: "",
+        amount: 0,
+        due_date: "",
+        is_activation_gate: false,
+        linked_stage: ""
+      }
+    ]);
+  };
+
+  const removeMilestone = (index: number) => {
+    const updated = [...milestones];
+    updated.splice(index, 1);
+    setMilestones(updated);
+  };
+
+  const updateMilestone = (index: number, field: string, value: any) => {
+    const updated = [...milestones];
+    updated[index] = { ...updated[index], [field]: value };
+    setMilestones(updated);
+  };
+
+  const handleSaveMilestones = async () => {
+    if (!selectedProject) return;
+    
+    // Validate
+    for (let m of milestones) {
+      if (!m.title.trim()) {
+        toast.error("All milestones must have a title.");
+        return;
+      }
+      if (Number(m.amount) < 0) {
+        toast.error("Milestone amounts cannot be negative.");
+        return;
+      }
+    }
+
+    try {
+      setSaving(true);
+      const payload = milestones.map((m: any) => ({
+        title: m.title,
+        description: m.description || "",
+        amount: Number(m.amount) || 0,
+        due_date: m.due_date || undefined,
+        linked_stage: m.linked_stage || undefined,
+        is_activation_gate: Boolean(m.is_activation_gate)
+      }));
+
+      const res = await createMilestonesAction(selectedProject.id, payload);
+      
+      if (res?.success) {
+        toast.success("Milestones saved successfully.");
+        
+        if (planParam === "true") {
+          toast.info("Dispatching project to Survey Operations...");
+          const dispatchRes = await transitionWorkflowAction(
+            selectedProject.id,
+            "project_created",
+            "Milestones configured. Project dispatched to Engineering survey department."
+          );
+          if (dispatchRes?.success) {
+            toast.success("Project successfully dispatched to Survey Operations.");
+            setTimeout(() => {
+              router.push("/accounts/approvals");
+            }, 1000);
+          } else {
+            toast.error(dispatchRes?.error || "Failed to dispatch to Survey.");
+          }
+        }
+        
+        closePanel();
+        fetchProjects();
+      } else {
+        toast.error(res?.error || "Failed to save milestones.");
+      }
+    } catch (err) {
+      toast.error("An unexpected error occurred.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleHoldProject = (e: React.MouseEvent, project: any) => {
+    e.stopPropagation();
+    setProjectToHold(project);
+  };
+
+  const confirmHoldProject = async () => {
+    if (!projectToHold) return;
+    const isCurrentlyHeld = projectToHold.status === "on_hold" || projectToHold.is_frozen;
+
+    try {
+      if (isCurrentlyHeld) {
+         if (projectToHold.is_frozen) {
+             await unfreezeProjectAction(projectToHold.id, "Resumed from Accountant Portal");
+         }
+         if (projectToHold.status === "on_hold") {
+             await transitionWorkflowAction(projectToHold.id, "project_created", "Resumed from Accountant Portal");
+         }
+         toast.success("Project resumed successfully.");
+      } else {
+         await freezeProjectAction(projectToHold.id, "financial_hold", "Put on hold from Accountant Portal");
+         toast.success("Project put on hold.");
+      }
+      fetchProjects();
+    } catch (err) {
+      toast.error("Unexpected error.");
+    } finally {
+      setProjectToHold(null);
+    }
+  };
+
+  const handleScheduleVisit = async () => {
+    if (!newVisitDate || !selectedProject) return;
+    try {
+      const priceVal = newVisitPrice ? Number(newVisitPrice) : 0;
+      const res = await logFieldVisitAction(
+        selectedProject.id, 
+        newVisitDate.toISOString(), 
+        "Scheduled from Milestones Portal", 
+        priceVal
+      );
+      if (res?.success && res.data) {
+        toast.success("Field visit scheduled.");
+        setFieldVisits([...fieldVisits, res.data]);
+        setNewVisitDate(undefined);
+        setNewVisitPrice("");
+      } else {
+        toast.error(res?.error || "Failed to schedule visit.");
+      }
+    } catch (err) {
+      toast.error("Unexpected error.");
+    }
+  };
+
+  if (loading) return <DashboardLoading />;
+
+  const filteredProjects = projects.filter((p) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      p.name?.toLowerCase().includes(q) ||
+      p.client_name?.toLowerCase().includes(q) ||
+      p.id?.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="space-y-8 pb-20 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-6">
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">
+            Financial Control
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            Project <span className="text-indigo-600 dark:text-indigo-400">Milestones</span>
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Manage custom payment milestones for all active projects dispatched to survey operations.
+          </p>
+        </div>
+
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by project name or client..."
+            className="w-full pl-9 pr-4 h-10 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs outline-none focus:bg-white dark:focus:bg-slate-950 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 dark:text-white placeholder:text-slate-400"
+          />
+        </div>
+      </div>
+
+      {filteredProjects.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl bg-white/30 dark:bg-white/[0.01]">
+          <Target className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-3" />
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            No active survey projects found.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <AnimatePresence mode="popLayout">
+            {filteredProjects.map((p) => (
+              <motion.div
+                key={p.id}
+                layout
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative group overflow-hidden"
+              >
+                <div className="flex flex-col h-full justify-between gap-6">
+                  
+                  {/* Top Section */}
+                  <div className="flex items-start gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center flex-shrink-0 text-indigo-600 dark:text-indigo-400">
+                      <Target className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <h3 className="text-base font-semibold text-slate-900 dark:text-white truncate">
+                        {p.name}
+                      </h3>
+                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-medium flex-wrap">
+                        <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300">
+                          <Building className="w-3.5 h-3.5 text-slate-400" />
+                          {p.client_name || "Direct Client"}
+                        </span>
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <Activity className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                          <span className="truncate">Stage:</span> <span className="text-indigo-600 dark:text-indigo-400 uppercase tracking-widest text-[9px] font-bold bg-indigo-50 dark:bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-500/20 whitespace-nowrap">{p.status.replace(/_/g, ' ')}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Middle Section (Financials) */}
+                  <div className="grid grid-cols-3 gap-4 bg-slate-50 dark:bg-white/[0.02] rounded-xl p-4 border border-slate-100 dark:border-white/5">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Total Amount</p>
+                      <p className="text-base font-bold text-slate-900 dark:text-white nums truncate">
+                        {formatCurrency(p.contract_value || 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Received</p>
+                      <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 nums truncate">
+                        {formatCurrency(p.received_amount || 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Pending</p>
+                      <p className="text-base font-bold text-rose-600 dark:text-rose-400 nums truncate">
+                        {formatCurrency(p.pending_amount || 0)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Bottom Action Row */}
+                  <div className="flex items-center gap-3 mt-auto pt-2">
+                    <button
+                      onClick={() => handleOpenPanel(p)}
+                      className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+                    >
+                      <span>Manage</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => handleHoldProject(e, p)}
+                      className="px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20 border border-amber-200/50 dark:border-amber-500/20 text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 flex-shrink-0"
+                    >
+                      {p.status === "on_hold" || p.is_frozen ? (
+                        <>
+                          <Play className="w-3.5 h-3.5" />
+                          Resume
+                        </>
+                      ) : (
+                        <>
+                          <Pause className="w-3.5 h-3.5" />
+                          Hold
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Modal card */}
+      {mounted && typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {selectedProject && (
+            <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-900/50 dark:bg-black/70 backdrop-blur-xl z-[100]"
+              onClick={closePanel}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
+            >
+              <div
+                className="pointer-events-auto w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#0f121b] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 flex flex-col overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+              <div className="flex items-center justify-between p-6 border-b border-slate-200/60 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Milestone Configuration</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{selectedProject.name}</p>
+                </div>
+                <button
+                  onClick={closePanel}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Tabs Header */}
+              <div className="flex items-center gap-6 px-6 border-b border-slate-200/60 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01] overflow-x-auto scrollbar-hide pt-2">
+                <button
+                  onClick={() => setActiveTab("milestones")}
+                  className={cn(
+                    "pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2",
+                    activeTab === "milestones"
+                      ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                      : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                  )}
+                >
+                  <Target className="w-4 h-4" />
+                  Payment Milestones
+                </button>
+                <button
+                  onClick={() => setActiveTab("visits")}
+                  className={cn(
+                    "pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2",
+                    activeTab === "visits"
+                      ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                      : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                  )}
+                >
+                  <MapPin className="w-4 h-4" />
+                  Field Visits
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6 bg-slate-50/30 dark:bg-transparent">
+                {loadingMilestones ? (
+                  <div className="flex flex-col items-center justify-center h-40">
+                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs font-medium text-slate-500 mt-3">Loading milestones...</p>
+                  </div>
+                ) : activeTab === "milestones" ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Target className="w-4 h-4 text-indigo-500" />
+                        Payment Milestones
+                      </h3>
+                      <button
+                        onClick={addMilestoneRow}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Milestone
+                      </button>
+                    </div>
+
+                    {milestones.length === 0 ? (
+                      <div className="text-center py-10 border border-dashed border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-white/[0.02]">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">No milestones configured yet.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <AnimatePresence mode="popLayout">
+                          {milestones.map((m, idx) => (
+                            <motion.div
+                              key={m.id || idx}
+                              layout
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              className="bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm relative group"
+                            >
+                              <button
+                                onClick={() => removeMilestone(idx)}
+                                className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
+                                title="Remove Milestone"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              
+                              <div className="space-y-4 pr-6">
+                                <div>
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Milestone Title</label>
+                                  <input
+                                    type="text"
+                                    value={m.title}
+                                    onChange={(e) => updateMilestone(idx, 'title', e.target.value)}
+                                    placeholder="e.g. 50% Advance Payment"
+                                    className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                  />
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Amount (₹)</label>
+                                    <div className="relative">
+                                      <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                      <input
+                                        type="number"
+                                        value={m.amount}
+                                        onChange={(e) => updateMilestone(idx, 'amount', e.target.value)}
+                                        className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Due Date (Optional)</label>
+                                    <PremiumDatePicker
+                                      value={m.due_date?.split('T')[0] || ""}
+                                      onChange={(date) => updateMilestone(idx, 'due_date', date)}
+                                      side="right"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Linked Workflow Stage (Optional)</label>
+                                  <select
+                                    value={m.linked_stage || ""}
+                                    onChange={(e) => updateMilestone(idx, 'linked_stage', e.target.value)}
+                                    className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                  >
+                                    <option value="">-- No linked stage --</option>
+                                    <optgroup label="Field Visits">
+                                      {fieldVisits.map((v, vIdx) => (
+                                        <option key={v.id} value={`visit:${v.id}`}>
+                                          Visit #{vIdx + 1} ({format(new Date(v.visit_date), "MMM d, yyyy")})
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                    <optgroup label="Workflow Stages">
+                                      <option value="data_collection">Data Collection</option>
+                                      <option value="prototype">Prototype</option>
+                                      <option value="review">Review</option>
+                                      <option value="field_work">Field Work</option>
+                                      <option value="data_sync">Data Sync</option>
+                                      <option value="final_review">Final Review</option>
+                                      <option value="completed">Completed</option>
+                                    </optgroup>
+                                  </select>
+                                </div>
+
+                                <div className="pt-2">
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={m.is_activation_gate || false}
+                                      onChange={(e) => updateMilestone(idx, 'is_activation_gate', e.target.checked)}
+                                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                      Make this an Activation Gate
+                                    </span>
+                                  </label>
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 pl-6 leading-relaxed">
+                                    If enabled, operations cannot proceed to the linked stage until this payment is verified.
+                                  </p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // FIELD VISITS TAB
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-indigo-500" />
+                        Scheduled Visits
+                      </h3>
+                    </div>
+
+                    <div className="bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm mb-6">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-3">Schedule New Visit</h4>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Date</label>
+                          <PremiumDatePicker
+                            value={newVisitDate ? format(newVisitDate, "yyyy-MM-dd") : ""}
+                            onChange={(dateStr) => setNewVisitDate(dateStr ? new Date(dateStr) : undefined)}
+                            side="right"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Price (₹, Optional)</label>
+                          <div className="relative">
+                            <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                            <input
+                              type="number"
+                              value={newVisitPrice}
+                              onChange={(e) => setNewVisitPrice(e.target.value)}
+                              placeholder="e.g. 5000"
+                              className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleScheduleVisit}
+                        disabled={!newVisitDate}
+                        className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Schedule Field Visit
+                      </button>
+                    </div>
+
+                    {fieldVisits.length === 0 ? (
+                      <div className="text-center py-10 border border-dashed border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-white/[0.02]">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">No field visits logged yet.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {fieldVisits.map((v, vIdx) => (
+                          <div key={v.id} className="flex items-center justify-between p-4 bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-[10px]">
+                                #{vIdx + 1}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                  {format(new Date(v.visit_date), "MMMM d, yyyy")}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 text-[10px] font-medium text-slate-500 uppercase tracking-wider font-semibold">
+                                  <span>Status: {v.status.replace(/_/g, " ")}</span>
+                                  {v.price > 0 && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">Price: {formatCurrency(v.price)}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="p-6 border-t border-slate-200/60 dark:border-white/5 bg-white dark:bg-[#0f121b] flex items-center justify-between">
+                <div className="text-xs font-semibold text-slate-500">
+                  Total Milestones: <span className="text-slate-900 dark:text-white nums">{milestones.length}</span>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={closePanel}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveMilestones}
+                    disabled={saving || loadingMilestones}
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Save Configuration
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
+
+      <AlertDialog open={!!projectToHold} onOpenChange={(open) => !open && setProjectToHold(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {projectToHold?.status === "on_hold" || projectToHold?.is_frozen ? "Resume Project" : "Put Project on Hold"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {projectToHold?.status === "on_hold" || projectToHold?.is_frozen 
+                ? `Are you sure you want to resume "${projectToHold?.name}"?` 
+                : `Are you sure you want to put "${projectToHold?.name}" on hold?`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmHoldProject}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+export default function ProjectMilestonesPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <ProjectMilestonesContent />
+    </Suspense>
+  );
+}

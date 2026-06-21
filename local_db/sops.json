@@ -1,0 +1,26 @@
+[
+  {
+    "id": "66cf8561-169e-497f-ae6c-e83b34b12210",
+    "title": "Quotation prepartion SOP",
+    "content": "As an Accounts Executive in the Quotation Department, your primary responsibility is to prepare and manage quotations based on client requirements and company pricing standards. You will coordinate with the sales and management teams to ensure quotations are accurate, professional, and delivered on time.\n\n**Key Responsibilities**\n- Prepare quotations according to customer requirements and company policies.\n- Maintain pricing records and update quotation details accurately.\n- Coordinate with sales and technical teams for required project information.\n- Verify calculations, taxes, and pricing before sharing quotations.\n- Maintain proper records of quotations, invoices, and customer data.\n- Follow up on quotation approvals and revisions when required.\n- Ensure timely submission of quotations to clients.",
+    "target_role": "accountant",
+    "created_by": "dcac6bfe-9f0f-4c94-9ff3-a4fd599ce5c6",
+    "created_at": "2026-05-17T10:33:43.655Z"
+  },
+  {
+    "id": "71f6f636-59f5-4d8a-a56f-68ba107e041a",
+    "title": "CAD Engineer – Role Overview",
+    "content": "As a CAD Engineer, your primary responsibility is to create accurate technical drawings, layouts, and design documents based on project requirements and client specifications. You will work closely with the technical and project teams to ensure designs are prepared efficiently and meet company standards.\n\n** Key Responsibilities**\n- Prepare and modify CAD drawings, layouts, and technical designs.\n- Understand project requirements and convert concepts into detailed drawings.\n- Maintain accuracy and quality in all engineering designs and documents.\n- Coordinate with project teams for design updates and revisions.\n- Ensure drawings are completed within project timelines.\n- Maintain proper documentation and drawing records.\n- Follow company standards and technical guidelines during design preparation.",
+    "target_role": "cad",
+    "created_by": "dcac6bfe-9f0f-4c94-9ff3-a4fd599ce5c6",
+    "created_at": "2026-05-17T10:32:32.614Z"
+  },
+  {
+    "id": "6c3ce1ae-e584-4d40-955b-d1ebdc93fa9d",
+    "title": "Sales Executive – Role Overview",
+    "content": "As a Sales Executive, your primary responsibility is to connect with potential leads through phone calls and collect accurate customer information for survey and business purposes. You will act as the first point of contact between the company and customers, ensuring professional communication and a positive experience during every interaction.\n\n**Key Responsibilities**\n- Call assigned leads and introduce the company’s services professionally.\n- Collect customer details and survey-related information accurately.\n- Maintain proper records of conversations and responses in the system.\n- Follow communication scripts and company guidelines during calls.\n- Build trust and maintain polite communication with customers.\n- Coordinate with the internal team for lead updates and follow-ups.\n- Ensure daily calling and data collection targets are completed.\n\n**Skills Required**\n- Good communication and listening skills.\n- Basic computer and data entry knowledge.\n- Confidence in speaking with customers over phone calls.",
+    "target_role": "sales",
+    "created_by": "dcac6bfe-9f0f-4c94-9ff3-a4fd599ce5c6",
+    "created_at": "2026-05-17T10:31:04.414Z"
+  }
+]
