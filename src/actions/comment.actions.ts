@@ -69,21 +69,34 @@ export async function addProjectCommentAction(
     const authorName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email
     const textLower = trimmed.toLowerCase()
 
-    const { data: allProfiles } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, email')
-      .eq('is_active', true)
-
     const mentionedUserIds = new Set<string>()
-    for (const p of allProfiles || []) {
-      if (p.id === profile.id) continue
-      const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim()
-      const firstName = p.first_name?.trim()
-      const email = p.email?.trim()
-      if ((fullName && textLower.includes(`@${fullName.toLowerCase()}`)) ||
-          (firstName && textLower.includes(`@${firstName.toLowerCase()}`)) ||
-          (email && textLower.includes(`@${email.toLowerCase()}`))) {
-        mentionedUserIds.add(p.id)
+
+    if (textLower.includes('@')) {
+      const singleWordMatches = textLower.match(/@([a-z0-9._-]+)/g) || []
+      const searchTerms = Array.from(new Set(singleWordMatches.map(m => m.slice(1).trim()))).filter(t => t.length > 1)
+
+      if (searchTerms.length > 0) {
+        const orConditions = searchTerms.map(term => 
+          `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`
+        ).join(',')
+
+        const { data: matchedProfiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email')
+          .eq('is_active', true)
+          .or(orConditions)
+
+        for (const p of matchedProfiles || []) {
+          if (p.id === profile.id) continue
+          const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim()
+          const firstName = p.first_name?.trim()
+          const email = p.email?.trim()
+          if ((fullName && textLower.includes(`@${fullName.toLowerCase()}`)) ||
+              (firstName && textLower.includes(`@${firstName.toLowerCase()}`)) ||
+              (email && textLower.includes(`@${email.toLowerCase()}`))) {
+            mentionedUserIds.add(p.id)
+          }
+        }
       }
     }
 

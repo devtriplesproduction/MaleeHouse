@@ -49,7 +49,16 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
 
     const supabase: any = await createClient();
 
-    const { data: existingQuotations } = await supabase.from('quotations').select('id, quotation_number');
+    const date = new Date();
+    const yy = date.getFullYear().toString().slice(-2);
+    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+    const searchPrefix = payload.project_id ? `QUO-${payload.project_id}-` : `QUO-${yy}${mm}-`;
+
+    const { data: existingQuotations } = await supabase
+      .from('quotations')
+      .select('id, quotation_number')
+      .ilike('id', `${searchPrefix}%`);
+
     const existingIds = (existingQuotations || []).map((q: any) => q.id);
     const existingNumbers = (existingQuotations || []).map((q: any) => q.quotation_number);
     

@@ -84,6 +84,28 @@ async function sendLocalNotification(
   });
 }
 
+async function sendLocalNotifications(
+  userIds: string[],
+  title: string,
+  message: string,
+  type: string,
+  projectId: string
+) {
+  if (!userIds || userIds.length === 0) return;
+  const supabase: any = createAdminClient();
+  const notifications = userIds.map((userId: string) => ({
+    id: generateId("ntf"),
+    user_id: userId,
+    title,
+    message,
+    type,
+    is_read: false,
+    related_project_id: projectId,
+    created_at: new Date().toISOString(),
+  }));
+  await supabase.from('notifications').insert(notifications);
+}
+
 async function getProjectName(projectId: string): Promise<string> {
   const supabase: any = await createClient();
   const { data: p } = await supabase.from('projects').select('name').eq('id', projectId).single();
@@ -212,10 +234,15 @@ export async function getTeamAssignmentsAction(projectId: string): Promise<OpRes
   try {
     const supabase: any = await createClient();
     const { data: assignments } = await supabase.from('project_assignments').select('*').eq('project_id', projectId);
-    const projectAssignments = await Promise.all((assignments || []).map(async (a: any) => ({
+    
+    const userIds = Array.from(new Set()).filter(Boolean);
+    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    const projectAssignments = (assignments || []).map((a: any) => ({
       ...a,
-      user_profile: await getUserById(a.user_id),
-    })));
+      user_profile: profileMap.get(a.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" },
+    }));
     return { success: true, error: null, data: projectAssignments };
   } catch (err: any) {
     return { success: false, error: err.message, data: [] };
@@ -295,15 +322,14 @@ export async function submitCADRevisionAction(
     });
 
     const { data: engineers } = await supabase.from('profiles').select('id').in('role', ['engineer', 'admin']);
-    for (const eng of engineers || []) {
-      await sendLocalNotification(
-        eng.id,
-        "CAD Revision Submitted",
-        `Revision #${revisionNumber} for "${projectName}" is ready for review.`,
-        "approval",
-        projectId
-      );
-    }
+    const engineerIds = (engineers || []).map((eng: any) => eng.id);
+    await sendLocalNotifications(
+      engineerIds,
+      "CAD Revision Submitted",
+      `Revision #${revisionNumber} for "${projectName}" is ready for review.`,
+      "approval",
+      projectId
+    );
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/cad");
@@ -462,11 +488,16 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
   try {
     const supabase: any = await createClient();
     const { data: revisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
-    const data = await Promise.all((revisions || []).map(async (r: any) => ({
+    
+    const userIds = Array.from(new Set()).filter(Boolean);
+    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    const data = (revisions || []).map((r: any) => ({
       ...r,
-      submitted_by_profile: await getUserById(r.submitted_by),
-      reviewed_by_profile: r.reviewed_by ? await getUserById(r.reviewed_by) : null,
-    })));
+      submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" },
+      reviewed_by_profile: r.reviewed_by ? (profileMap.get(r.reviewed_by) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" }) : null,
+    }));
     data.sort((a: any, b: any) => b.revision_number - a.revision_number);
     return { success: true, error: null, data };
   } catch (err: any) {
@@ -553,15 +584,14 @@ export async function submitFieldReportAction(
 
     if (reportType === "issue") {
       const { data: engineers } = await supabase.from('profiles').select('id').in('role', ['engineer', 'admin']);
-      for (const eng of engineers || []) {
-        await sendLocalNotification(
-          eng.id,
-          "⚠️ Field Issue Reported",
-          `Field issue on "${projectName}": ${description.slice(0, 100)}`,
-          "rejection",
-          projectId
-        );
-      }
+      const engineerIds = (engineers || []).map((eng: any) => eng.id);
+      await sendLocalNotifications(
+        engineerIds,
+        "⚠️ Field Issue Reported",
+        `Field issue on "${projectName}": ${description.slice(0, 100)}`,
+        "rejection",
+        projectId
+      );
     }
 
     revalidatePath(`/projects/${projectId}`);
@@ -576,10 +606,15 @@ export async function getFieldReportsAction(projectId: string): Promise<OpRespon
   try {
     const supabase: any = await createClient();
     const { data: reports } = await supabase.from('field_reports').select('*').eq('project_id', projectId);
-    const data = await Promise.all((reports || []).map(async (r: any) => ({
+    
+    const userIds = Array.from(new Set()).filter(Boolean);
+    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    const data = (reports || []).map((r: any) => ({
       ...r,
-      submitted_by_profile: await getUserById(r.submitted_by),
-    })));
+      submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" },
+    }));
     data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return { success: true, error: null, data };
   } catch (err: any) {
@@ -784,15 +819,14 @@ export async function completeFieldVisitAction(
     await logActivity(projectId, profile.id, "FIELD_VISIT_COMPLETED", { visit_id: visitId });
 
     const { data: accountants } = await supabase.from('profiles').select('id').in('role', ['accountant', 'admin']);
-    for (const acc of accountants || []) {
-      await sendLocalNotification(
-        acc.id,
-        "Visit Completed (Ready to Invoice)",
-        `A field visit for "${projectName}" has been completed and is ready for invoicing.`,
-        "billing",
-        projectId
-      );
-    }
+    const accountantIds = (accountants || []).map((acc: any) => acc.id);
+    await sendLocalNotifications(
+      accountantIds,
+      "Visit Completed (Ready to Invoice)",
+      `A field visit for "${projectName}" has been completed and is ready for invoicing.`,
+      "billing",
+      projectId
+    );
 
     revalidatePath(`/projects/${projectId}`);
     return { success: true, error: null };
@@ -822,8 +856,10 @@ export async function getOperationsQueueAction() {
       "completed",
     ];
 
-    let { data: projects } = await supabase.from('projects').select('*').is('deleted_at', null).in('status', operationalStages);
-    const { data: assignments } = await supabase.from('project_assignments').select('*');
+    let [{ data: projects }, { data: assignments }] = await Promise.all([
+      supabase.from('projects').select('*').is('deleted_at', null).in('status', operationalStages),
+      supabase.from('project_assignments').select('*')
+    ]);
 
     if (!projects) projects = [];
 
@@ -836,14 +872,18 @@ export async function getOperationsQueueAction() {
       filteredProjects = filteredProjects.filter((p: any) => assignedIds.includes(p.id));
     }
 
-    const enriched = await Promise.all(filteredProjects.map(async (p: any) => {
+    const allUserIds = Array.from(new Set()).filter(Boolean);
+    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', allUserIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    const enriched = filteredProjects.map((p: any) => {
       const projectAssigments = (assignments || []).filter((a: any) => a.project_id === p.id);
-      const team = await Promise.all(projectAssigments.map(async (a: any) => ({
+      const team = projectAssigments.map((a: any) => ({
         ...a,
-        user_profile: await getUserById(a.user_id)
-      })));
+        user_profile: profileMap.get(a.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" }
+      }));
       return { ...p, team };
-    }));
+    });
 
     const queue = {
       active: enriched.filter((p: any) =>
@@ -900,10 +940,14 @@ export async function getProjectActivityAction(projectId: string) {
     const supabase: any = await createClient();
     const { data: activityLogs } = await supabase.from('activity_logs').select('*').eq('project_id', projectId);
 
-    const logs = await Promise.all((activityLogs || []).map(async (l: any) => ({
+    const userIds = Array.from(new Set()).filter(Boolean);
+    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    const logs = (activityLogs || []).map((l: any) => ({
       ...l,
-      user_profile: await getUserById(l.user_id),
-    })));
+      user_profile: profileMap.get(l.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" },
+    }));
 
     logs.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -932,22 +976,28 @@ export async function getIncomingOperationsProjectsAction() {
     else if (role === "field") operationalStages = ["field_work", "data_sync"];
     else operationalStages = ["project_created", "data_collection", "prototype", "field_work", "data_sync", "review"];
 
-    const { data: projects } = await supabase.from('projects').select('*').is('deleted_at', null).in('status', operationalStages);
-    const { data: assignments } = await supabase.from('project_assignments').select('*');
+    const [{ data: projects }, { data: assignments }] = await Promise.all([
+      supabase.from('projects').select('*').is('deleted_at', null).in('status', operationalStages),
+      supabase.from('project_assignments').select('*')
+    ]);
 
     const incomingProjects = (projects || []).filter((p: any) => {
       const projectAssignments = (assignments || []).filter((a: any) => a.project_id === p.id);
       return !projectAssignments.some((a: any) => a.role === role);
     });
 
-    const enriched = await Promise.all(incomingProjects.map(async (p: any) => {
+    const allUserIds = Array.from(new Set()).filter(Boolean);
+    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', allUserIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    const enriched = incomingProjects.map((p: any) => {
       const projectAssignments = (assignments || []).filter((a: any) => a.project_id === p.id);
-      const team = await Promise.all(projectAssignments.map(async (a: any) => ({
+      const team = projectAssignments.map((a: any) => ({
         ...a,
-        user_profile: await getUserById(a.user_id)
-      })));
+        user_profile: profileMap.get(a.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" }
+      }));
       return { ...p, team };
-    }));
+    });
 
     return { success: true, error: null, data: enriched };
   } catch (err: any) {
@@ -988,8 +1038,10 @@ export async function getUnassignedQueueAction(role: string): Promise<OpResponse
     if (targetStages.length === 0) return { success: true, error: null, data: [] };
 
     const supabase: any = await createClient();
-    const { data: projects } = await supabase.from('projects').select('*').is('deleted_at', null).in('status', targetStages);
-    const { data: assignments } = await supabase.from('project_assignments').select('*');
+    const [{ data: projects }, { data: assignments }] = await Promise.all([
+      supabase.from('projects').select('*').is('deleted_at', null).in('status', targetStages),
+      supabase.from('project_assignments').select('*')
+    ]);
 
     const unassignedProjects = (projects || []).filter((p: any) => {
       const hasRoleAssigned = (assignments || []).some((a: any) => a.project_id === p.id && a.role === role);

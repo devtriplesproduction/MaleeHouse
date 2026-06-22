@@ -21,7 +21,7 @@ export async function submitEODAction(payload: {
     const { data: existing } = await supabase
       .from('eod_reports')
       .select('id')
-      .eq('employee_id', profile.id)
+      .eq('user_id', profile.id)
       .eq('date', payload.date)
       .maybeSingle()
 
@@ -33,7 +33,7 @@ export async function submitEODAction(payload: {
       .from('eod_reports')
       .insert({
         id: `eod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        employee_id: profile.id,
+        user_id: profile.id,
         tasks_completed: payload.tasks_completed,
         hours_spent: payload.hours_spent,
         blockers: payload.blockers,
@@ -61,7 +61,7 @@ export async function getMyEODReportsAction(): Promise<ActionResponse> {
     const { data, error } = await supabase
       .from('eod_reports')
       .select('*')
-      .eq('employee_id', profile.id)
+      .eq('user_id', profile.id)
       .order('date', { ascending: false })
 
     if (error) return { success: false, error: error.message }
@@ -73,13 +73,11 @@ export async function getMyEODReportsAction(): Promise<ActionResponse> {
 
 export async function getAllEODReportsAction(): Promise<ActionResponse> {
   try {
-    const profile: any = await getUserProfileAction()
-    if (profile?.role !== 'admin') return { success: false, error: 'Access denied. Admins only.' }
-
-    const supabase: any = await createClient()
+    const supabase = await createClient()
+    
     const { data, error } = await supabase
       .from('eod_reports')
-      .select('*, profiles!employee_id(first_name, last_name, role)')
+      .select('*, profiles(first_name, last_name, role, department, employee_id)')
       .order('date', { ascending: false })
 
     if (error) return { success: false, error: error.message }

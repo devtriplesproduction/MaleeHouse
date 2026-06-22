@@ -324,20 +324,20 @@ export async function transitionWorkflowAction(
     try {
       const generatedTaskTitles = getTasksForStage(newStage);
       if (generatedTaskTitles && generatedTaskTitles.length > 0) {
-        for (const title of generatedTaskTitles) {
-          const defaultDueDate = new Date();
-          defaultDueDate.setDate(defaultDueDate.getDate() + 2); // default +48 hours
-
-          await supabase.from("tasks").insert({
-            project_id: projectId,
-            stage: newStage,
-            title: title.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
-            status: "pending",
-            due_date: defaultDueDate.toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-        }
+        const defaultDueDate = new Date();
+        defaultDueDate.setDate(defaultDueDate.getDate() + 2); // default +48 hours
+        
+        const tasksToInsert = generatedTaskTitles.map((title: any) => ({
+          project_id: projectId,
+          stage: newStage,
+          title: title.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          status: "pending",
+          due_date: defaultDueDate.toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        
+        await supabase.from("tasks").insert(tasksToInsert);
       }
     } catch (taskErr) {
       console.error("Auto-task generation failed:", taskErr);
@@ -372,24 +372,25 @@ export async function getProjectActivityAction(projectId: string) {
   try {
     const supabase: any = await createClient();
 
-    const { data: history } = await supabase
-      .from("workflow_history")
-      .select(`
-        *,
-        changed_by_profile:profiles!changed_by(first_name, last_name, email, role)
-      `)
-      .eq("project_id", projectId)
-      .order("created_at", { ascending: false });
-
-    const { data: comments } = await supabase
-      .from("comments")
-      .select(`
-        *,
-        author_profile:profiles!user_id(first_name, last_name, email, role)
-      `)
-      .eq("project_id", projectId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+    const [ { data: history }, { data: comments } ] = await Promise.all([
+      supabase
+        .from("workflow_history")
+        .select(`
+          *,
+          changed_by_profile:profiles!changed_by(first_name, last_name, email, role)
+        `)
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("comments")
+        .select(`
+          *,
+          author_profile:profiles!user_id(first_name, last_name, email, role)
+        `)
+        .eq("project_id", projectId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+    ]);
 
     return {
       success: true,
@@ -598,9 +599,11 @@ export async function reopenProjectAction(
     });
 
     // 5. Notify Team
-    const { data: assignments } = await supabase.from("project_assignments").select("user_id").eq("project_id", projectId);
+    const [ { data: assignments }, { data: admins } ] = await Promise.all([
+      supabase.from("project_assignments").select("user_id").eq("project_id", projectId),
+      supabase.from("profiles").select("id").eq("role", "admin")
+    ]);
     const recipientIds = new Set<string>((assignments || []).map((a: any) => a.user_id));
-    const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin");
     (admins || []).forEach((a: any) => recipientIds.add(a.id));
 
     const { insertNotification } = await import("@/actions/notification.actions");

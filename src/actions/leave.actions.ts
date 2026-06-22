@@ -20,7 +20,7 @@ export async function applyLeaveAction(payload: {
       .from('leaves')
       .insert({
         id: `lv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        employee_id: profile.id,
+        user_id: profile.id,
         start_date: payload.start_date,
         end_date: payload.end_date,
         reason: payload.reason,
@@ -49,7 +49,7 @@ export async function getMyLeavesAction(): Promise<ActionResponse> {
     const { data, error } = await supabase
       .from('leaves')
       .select('*')
-      .eq('employee_id', profile.id)
+      .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
 
     if (error) return { success: false, error: error.message }
@@ -67,7 +67,7 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient()
     const { data, error } = await supabase
       .from('leaves')
-      .select('*, profiles!employee_id(first_name, last_name, email, role)')
+      .select('*, profiles!user_id(first_name, last_name, email, role)')
       .order('created_at', { ascending: false })
 
     if (error) return { success: false, error: error.message }

@@ -194,7 +194,7 @@ export function AdminLeaveDashboard({ initialLeaves }: AdminLeaveDashboardProps)
 
     // Filter approved leaves for this employee
     const approvedEmployeeLeaves = leaves.filter(
-      l => l.employee_id === employeeId && l.status?.toLowerCase() === 'approved'
+      l => l.user_id === employeeId && l.status?.toLowerCase() === 'approved'
     );
 
     const paidTaken = approvedEmployeeLeaves
@@ -460,7 +460,7 @@ export function AdminLeaveDashboard({ initialLeaves }: AdminLeaveDashboardProps)
                         
                         {/* Inline Admin Balance View */}
                         {(() => {
-                          const stats = getEmployeeStats(leave.employee_id);
+                          const stats = getEmployeeStats(leave.user_id);
                           return (
                             <Badge variant="glass" className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-xs font-semibold px-2.5 py-0.5 shadow-sm">
                               Bal: <span className={cn("font-bold ml-0.5", stats.remainingPaid > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>

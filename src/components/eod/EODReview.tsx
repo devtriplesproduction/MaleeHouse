@@ -25,7 +25,7 @@ import { toast } from "sonner";
 
 interface EODReport {
   id: string;
-  employee_id: string;
+  user_id: string;
   employee_name: string;
   tasks_completed: string;
   hours_spent: number;
@@ -53,7 +53,7 @@ export function EODReview({ reports, staff }: EODReviewProps) {
   // Map staff to reports to get departments
   const reportsWithDept = useMemo(() => {
     return reports.map((report: any) => {
-      const member = staff.find((s: any) => s.id === report.employee_id);
+      const member = staff.find((s: any) => s.id === report.user_id);
       return {
         ...report,
         department: member?.department || member?.role || "Member"
@@ -71,7 +71,7 @@ export function EODReview({ reports, staff }: EODReviewProps) {
           report.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           report.department?.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const matchesEmployee = employeeFilter === "all" || report.employee_id === employeeFilter;
+        const matchesEmployee = employeeFilter === "all" || report.user_id === employeeFilter;
         
         let matchesDate = true;
         const reportDate = parseISO(report.date);

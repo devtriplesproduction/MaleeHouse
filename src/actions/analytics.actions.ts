@@ -1,4 +1,4 @@
-"use server";
+// Analytics actions - Server only, no "use server" directive because of unstable_cache
 
 import { createClient } from "@/lib/supabase/server";
 import { unstable_cache } from "next/cache";

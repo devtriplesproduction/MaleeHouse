@@ -173,27 +173,39 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          report_date: string
-          content: string
-          impediments: string | null
+          date: string
+          tasks_completed: string
+          hours_spent: number
+          blockers: string | null
+          status: string | null
+          adjusted_hours: number | null
+          admin_note: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id: string
           user_id: string
-          report_date?: string
-          content: string
-          impediments?: string | null
+          date?: string
+          tasks_completed: string
+          hours_spent?: number
+          blockers?: string | null
+          status?: string | null
+          adjusted_hours?: number | null
+          admin_note?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          report_date?: string
-          content?: string
-          impediments?: string | null
+          date?: string
+          tasks_completed?: string
+          hours_spent?: number
+          blockers?: string | null
+          status?: string | null
+          adjusted_hours?: number | null
+          admin_note?: string | null
           created_at?: string
           updated_at?: string
         }

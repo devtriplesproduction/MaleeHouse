@@ -186,8 +186,139 @@ interface ProjectDetailPageProps {
   };
 }
 
+async function ProjectContentWrapper({ project, profile, user, role, theme, params }: any) {
+  const supabase: any = await createClient();
+  const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
+
+  const [
+    historyRes,
+    commentsRes,
+    filesRes,
+    tasksRes,
+    assignmentsRes,
+    quotationsRes,
+    milestonesRes,
+    visitsRes,
+    accountantRes,
+    issuesRes,
+    activityLogsRes,
+    allUsersRes
+  ] = await Promise.all([
+    supabase.from('workflow_history').select('*, changed_by_profile:profiles!changed_by(first_name, last_name, email)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
+    supabase.from('comments').select('*, author_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
+    supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
+    supabase.from('tasks').select('*').eq('project_id', params.id),
+    supabaseAdmin.from('project_assignments').select('*, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id),
+    role !== 'sales' ? getProjectQuotationsAction(params.id) : Promise.resolve({ data: [] }),
+    getMilestonesAction(params.id),
+    getFieldVisitsAction(params.id),
+    getAccountantOwnerAction(params.id).catch(() => ({ success: true, data: null })),
+    getProjectIssuesAction(params.id),
+    supabase.from('activity_logs').select('*, actor_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
+    supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role')
+  ]);
+
+  const history = historyRes.data || [];
+  const comments = commentsRes.data || [];
+  const files = filesRes.data || [];
+  if (filesRes.error) console.error("Files Fetch Error:", filesRes.error);
+  const projectTasks = tasksRes.data || [];
+  const assignments = assignmentsRes.data || [];
+  if (assignmentsRes.error) console.error("Assignments Fetch Error:", assignmentsRes.error);
+  const quotations = quotationsRes.data || [];
+  const milestones = milestonesRes.data || [];
+  const visits = visitsRes.data || [];
+  const accountantOwner = accountantRes.data || null;
+  const projectIssues = issuesRes.data || [];
+  const activityLogs = activityLogsRes.data || [];
+  const allUsers = allUsersRes.data || [];
+
+  const isStageBlocked = (milestones || []).some(
+    (m: any) => m.status !== 'paid' && (m.linked_stage === project.status || m.block_after_stage === project.status)
+  );
+  const isOperationsFrozen = project.is_frozen || isStageBlocked;
+
+  const activeQuotation = quotations.find((q: any) => q.status === 'Sent' || q.status === 'Viewed' || q.status === 'Approved' || q.status === 'Draft');
+
+  // Fetch operational data from local DB for technical roles
+  const isOperationalRole = ['admin', 'engineer', 'cad', 'field', 'field_engineer', 'qc'].includes(profile?.role || '');
+  const [cadResult, fieldResult, checklistResult, localAssignmentsResult] = isOperationalRole
+    ? await Promise.all([
+        getCADRevisionsAction(params.id),
+        getFieldReportsAction(params.id),
+        getDeliveryChecklistAction(params.id),
+        getTeamAssignmentsAction(params.id),
+      ])
+    : [{ data: [] }, { data: [] }, { data: null }, { data: [] }];
+
+  const cadRevisions = cadResult.data || [];
+  const fieldReports = fieldResult.data || [];
+  const deliveryChecklist = checklistResult.data || null;
+  const localAssignments = localAssignmentsResult.data || [];
+
+  const teamMembers = (assignments || []).map((a: any) => ({
+    userId: a.user_id,
+    firstName: a.profiles?.first_name,
+    lastName: a.profiles?.last_name,
+    email: a.profiles?.email,
+    role: a.profiles?.role || a.role
+  }));
+
+  const isQcRejected = activityLogs.some((l: any) => l.action === "QC_REJECTED") && 
+          !activityLogs.some((l: any) => l.action === "QC_APPROVED");
+
+  return (
+    <>
+      {/* STAGE DEPENDENT DYNAMIC LOCK BANNER */}
+      <StageDependentLockBanner 
+        projectId={project.id}
+        isFrozen={project.is_frozen}
+        freezeReason={project.freeze_reason}
+        frozenAt={project.frozen_at}
+        milestones={milestones}
+        currentStage={project.status}
+        isQcRejected={isQcRejected}
+      />
+
+      {/* Central Clean Tab-based Layout */}
+      <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700 mt-5">
+        {project.is_frozen ? (
+          <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-red-200 dark:border-red-500/20 rounded-3xl bg-red-50/50 dark:bg-red-500/5 mt-10">
+            <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mb-6 shadow-inner">
+              <Lock className="w-10 h-10 text-red-500" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Project Access Locked</h2>
+            <p className="text-sm font-medium text-slate-500 text-center max-w-md">
+              All tabs, files, tasks, and communications are restricted while this project is frozen.
+            </p>
+          </div>
+        ) : (
+          <ProjectDetailTabs
+            project={project}
+            userRole={role}
+            currentUserId={user.id}
+            history={history}
+            activityLogs={activityLogs}
+            comments={comments}
+            files={files}
+            teamMembers={teamMembers}
+            milestones={milestones}
+            visits={visits}
+            accountantOwner={accountantOwner}
+            activeQuotation={activeQuotation}
+            allUsers={allUsers}
+            cadRevisions={cadRevisions}
+            fieldReports={fieldReports}
+            theme={theme}
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
-    const supabase: any = await createClient();
+  const supabase: any = await createClient();
 
   // 1. Fetch Core Project Data
   const { data: project } = await supabase.from('projects').select('*').eq('id', params.id).is('deleted_at', null).single() as { data: any };
@@ -223,97 +354,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     }
   }
 
-  const { data: historyData } = await supabase.from('workflow_history').select('*, changed_by_profile:profiles!changed_by(first_name, last_name, email)').eq('project_id', params.id).order('created_at', { ascending: false });
-  const history = historyData || [];
-
-  const { data: commentsData } = await supabase.from('comments').select('*, author_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false });
-  const comments = commentsData || [];
-
-  const { data: filesData, error: filesError } = await supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false });
-  if (filesError) console.error("Files Fetch Error:", filesError);
-  const files = filesData || [];
-
-  const { data: tasksData } = await supabase.from('tasks').select('*').eq('project_id', params.id);
-  const projectTasks = tasksData || [];
-
-  const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
-  const { data: assignmentsData, error: assignmentsError } = await supabaseAdmin.from('project_assignments').select('*, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id);
-  if (assignmentsError) console.error("Assignments Fetch Error:", assignmentsError);
-  const assignments = assignmentsData || [];
-  const quotationsRes = role !== 'sales' ? await getProjectQuotationsAction(params.id) : { data: [] };
-  const quotations = quotationsRes.data || [];
-
-  const [milestonesRes, visitsRes, accountantRes] = await Promise.all([
-    getMilestonesAction(params.id),
-    getFieldVisitsAction(params.id),
-    getAccountantOwnerAction(params.id).catch(() => ({ success: true, data: null }))
-  ]);
-
-  const milestones = milestonesRes.data || [];
-  const visits = visitsRes.data || [];
-  const accountantOwner = accountantRes.data || null;
-
-  const isStageBlocked = (milestones || []).some(
-    (m: any) => m.status !== 'paid' && (m.linked_stage === project.status || m.block_after_stage === project.status)
-  );
-  const isOperationsFrozen = project.is_frozen || isStageBlocked;
-
-  const activeQuotation = quotations.find((q: any) => q.status === 'Sent' || q.status === 'Viewed' || q.status === 'Approved' || q.status === 'Draft');
-
-
-  // Fetch operational data from local DB for technical roles
-  const isOperationalRole = ['admin', 'engineer', 'cad', 'field', 'field_engineer', 'qc'].includes(profile?.role || '');
-  const [cadResult, fieldResult, checklistResult, localAssignmentsResult] = isOperationalRole
-    ? await Promise.all([
-        getCADRevisionsAction(params.id),
-        getFieldReportsAction(params.id),
-        getDeliveryChecklistAction(params.id),
-        getTeamAssignmentsAction(params.id),
-      ])
-    : [{ data: [] }, { data: [] }, { data: null }, { data: [] }];
-
-  const cadRevisions = cadResult.data || [];
-  const fieldReports = fieldResult.data || [];
-  const deliveryChecklist = checklistResult.data || null;
-  const localAssignments = localAssignmentsResult.data || [];
-
-  const teamMembers = (assignments || []).map((a: any) => ({
-    userId: a.user_id,
-    firstName: a.profiles?.first_name,
-    lastName: a.profiles?.last_name,
-    email: a.profiles?.email,
-    role: a.profiles?.role || a.role
-  }));
-
-  const canReview = profile?.role === 'admin' || profile?.role === 'qc';
   const canArchive = profile?.role === 'admin' || profile?.role === 'accountant';
-  const isSalesOrAdmin = profile?.role === 'admin' || profile?.role === 'sales';
-
   const isSalesAndHandedOver = role === 'sales' && !['lead_created', 'quotation_requested'].includes(project.status);
-
-  // Retrieve project issues & calculate health dynamically
-  const issuesRes = await getProjectIssuesAction(params.id);
-  const projectIssues = issuesRes.data || [];
-  
-  const unpaidMilestonesCount = (milestones || []).filter((m: any) => m.status !== 'paid').length;
-  const overdueTasksCount = (projectTasks || []).filter((t: any) => t.status !== 'completed' && new Date(t.dueDate) < new Date()).length;
-  const rejectionCount = (cadRevisions || []).filter((r: any) => r.status === 'rejected').length;
-  const criticalIssuesCount = (projectIssues || []).filter((i: any) => i.status !== 'resolved' && (i.severity === 'high' || i.severity === 'critical')).length;
-  const slaViolationsCount = getSLAViolationsCount(projectTasks || []);
-
-  const healthResult = calculateProjectHealth({
-    isFrozen: isOperationsFrozen,
-    unpaidMilestonesCount,
-    overdueTasksCount,
-    rejectionCount,
-    criticalIssuesCount,
-    slaViolationsCount
-  });
-
-  const { data: activityLogsData } = await supabase.from('activity_logs').select('*, actor_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).order('created_at', { ascending: false });
-  const activityLogs = activityLogsData || [];
-
-  const { data: allUsers } = await supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role');
 
   const statusColors: Record<string, string> = {
     lead_created: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20",
@@ -337,8 +379,6 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const displayStatusColor = isSalesAndHandedOver
     ? "text-indigo-500 bg-indigo-500/10 border-indigo-500/20"
     : (statusColors[project.status] || "text-gray-500 bg-gray-500/10 border-gray-500/20");
-
-  const nextAction = getNextRequiredAction(project.status, files, teamMembers, activityLogs);
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -416,59 +456,14 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         </div>
       </div>
 
-      {/* STAGE DEPENDENT DYNAMIC LOCK BANNER */}
-      {(() => {
-        const isQcRejected = activityLogs.some((l: any) => l.action === "QC_REJECTED") && 
-          !activityLogs.some((l: any) => l.action === "QC_APPROVED");
-        return (
-          <StageDependentLockBanner 
-            projectId={project.id}
-        isFrozen={project.is_frozen}
-        freezeReason={project.freeze_reason}
-        frozenAt={project.frozen_at}
-        milestones={milestones}
-        currentStage={project.status}
-        isQcRejected={isQcRejected}
-      />
-      );
-      })()}
-
-
-
-      {/* Central Clean Tab-based Layout */}
-      <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700">
-        {project.is_frozen ? (
-          <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-red-200 dark:border-red-500/20 rounded-3xl bg-red-50/50 dark:bg-red-500/5 mt-10">
-            <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mb-6 shadow-inner">
-              <Lock className="w-10 h-10 text-red-500" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Project Access Locked</h2>
-            <p className="text-sm font-medium text-slate-500 text-center max-w-md">
-              All tabs, files, tasks, and communications are restricted while this project is frozen.
-            </p>
-          </div>
-        ) : (
-          <ProjectDetailTabs
-            project={project}
-            userRole={role}
-            currentUserId={user.id}
-            history={history}
-            activityLogs={activityLogs}
-            comments={comments}
-            files={files}
-            teamMembers={teamMembers}
-            milestones={milestones}
-            visits={visits}
-            accountantOwner={accountantOwner}
-            activeQuotation={activeQuotation}
-            allUsers={allUsers}
-            cadRevisions={cadRevisions}
-            fieldReports={fieldReports}
-            theme={theme}
-          />
-        )}
-      </div>
+      <Suspense fallback={
+        <div className="flex flex-col items-center justify-center h-64 space-y-4 mt-10">
+          <div className="w-10 h-10 rounded-full border-[3px] border-indigo-500 border-t-transparent animate-spin" />
+          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Project Modules...</p>
+        </div>
+      }>
+        <ProjectContentWrapper project={project} profile={profile} user={user} role={role} theme={theme} params={params} />
+      </Suspense>
     </div>
   );
 }
-

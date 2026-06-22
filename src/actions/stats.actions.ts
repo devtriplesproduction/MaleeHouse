@@ -1,5 +1,6 @@
 'use server'
 
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getUserProfileAction } from './auth.actions'
 
@@ -13,13 +14,23 @@ export type StatItem = {
 export async function getGlobalStatsAction(): Promise<StatItem[]> {
   try {
     const supabase: any = await createClient()
-    const { data: projects } = await supabase.from('projects').select('status').is('deleted_at', null)
-    const all = projects || []
+    const [
+      { count: totalCount },
+      { count: paymentCount },
+      { count: fieldCount },
+      { count: completedCount }
+    ] = await Promise.all([
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending'),
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'field_work'),
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'completed')
+    ]);
+
     return [
-      { label: 'Total Projects', value: all.length, description: 'All active project assignments' },
-      { label: 'Pending Payments', value: all.filter((p: any) => p.status === 'payment_pending').length, trend: 'Action Required', description: 'Projects awaiting verification' },
-      { label: 'Live Field Work', value: all.filter((p: any) => p.status === 'field_work').length, description: 'Surveys currently in progress' },
-      { label: 'Success Rate', value: all.filter((p: any) => p.status === 'completed').length, description: 'Total completed delivery' },
+      { label: 'Total Projects', value: totalCount || 0, description: 'All active project assignments' },
+      { label: 'Pending Payments', value: paymentCount || 0, trend: 'Action Required', description: 'Projects awaiting verification' },
+      { label: 'Live Field Work', value: fieldCount || 0, description: 'Surveys currently in progress' },
+      { label: 'Success Rate', value: completedCount || 0, description: 'Total completed delivery' },
     ]
   } catch {
     return [
@@ -34,12 +45,20 @@ export async function getGlobalStatsAction(): Promise<StatItem[]> {
 export async function getSalesStatsAction(): Promise<StatItem[]> {
   try {
     const supabase: any = await createClient()
-    const { data: projects } = await supabase.from('projects').select('status').is('deleted_at', null)
-    const all = projects || []
+    const [
+      { count: leadCount },
+      { count: quoteCount },
+      { count: paymentCount }
+    ] = await Promise.all([
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'lead'),
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'quotation_sent'),
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending')
+    ]);
+
     return [
-      { label: 'Inbound Leads', value: all.filter((p: any) => p.status === 'lead').length, description: 'Newly initiated requests' },
-      { label: 'Quotations Sent', value: all.filter((p: any) => p.status === 'quotation_sent').length, description: 'Proposals pending review' },
-      { label: 'Conversion Pending', value: all.filter((p: any) => p.status === 'payment_pending').length, description: 'Awaiting first payment' },
+      { label: 'Inbound Leads', value: leadCount || 0, description: 'Newly initiated requests' },
+      { label: 'Quotations Sent', value: quoteCount || 0, description: 'Proposals pending review' },
+      { label: 'Conversion Pending', value: paymentCount || 0, description: 'Awaiting first payment' },
     ]
   } catch {
     return [
@@ -53,16 +72,18 @@ export async function getSalesStatsAction(): Promise<StatItem[]> {
 export async function getEngineerStatsAction(userId: string): Promise<StatItem[]> {
   try {
     const supabase: any = await createClient()
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('status, due_date')
-      .eq('assigned_to', userId)
-      .neq('status', 'completed')
-    const all = tasks || []
     const now = new Date().toISOString()
+    const [
+      { count: queueCount },
+      { count: overdueCount }
+    ] = await Promise.all([
+      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed'),
+      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed').lt('due_date', now)
+    ]);
+    
     return [
-      { label: 'My Queue', value: all.length, description: 'Tasks currently assigned' },
-      { label: 'Overdue', value: all.filter((t: any) => t.due_date && t.due_date < now).length, description: 'Tasks past deadline' },
+      { label: 'My Queue', value: queueCount || 0, description: 'Tasks currently assigned' },
+      { label: 'Overdue', value: overdueCount || 0, description: 'Tasks past deadline' },
     ]
   } catch {
     return [
@@ -78,25 +99,25 @@ export async function getAccountantStatsAction(): Promise<StatItem[]> {
     const now = new Date()
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
-    const [{ data: projects }, { data: quotations }] = await Promise.all([
-      supabase.from('projects').select('status, created_at').is('deleted_at', null),
-      supabase.from('quotations').select('status, total_amount, updated_at'),
-    ])
+    const [
+      { count: monthlyCount },
+      { count: activeCount },
+      { count: totalQuotations },
+      { data: recentQuotations }
+    ] = await Promise.all([
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).gte('created_at', firstOfMonth),
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).not('status', 'in', '("completed","archived")'),
+      supabase.from('quotations').select('*', { count: 'exact', head: true }),
+      supabase.from('quotations').select('total_amount').eq('status', 'Approved').gte('updated_at', firstOfMonth),
+    ]);
 
-    const allProjects = projects || []
-    const allQuotations = quotations || []
-
-    const monthlyCount = allProjects.filter((p: any) => p.created_at >= firstOfMonth).length
-    const activeCount = allProjects.filter((p: any) => !['completed', 'archived'].includes(p.status)).length
-    const monthlyRevenue = allQuotations
-      .filter((q: any) => (q.status === 'Approved') && q.updated_at >= firstOfMonth)
-      .reduce((sum: any, q: any) => sum + Number(q.total_amount || 0), 0)
+    const monthlyRevenue = (recentQuotations || []).reduce((sum: any, q: any) => sum + Number(q.total_amount || 0), 0);
 
     return [
-      { label: 'Monthly Projects', value: monthlyCount, trend: 'This Month', description: 'New projects added this month' },
+      { label: 'Monthly Projects', value: monthlyCount || 0, trend: 'This Month', description: 'New projects added this month' },
       { label: 'Monthly Revenue', value: `INR ${(monthlyRevenue / 100000).toFixed(1)}L`, trend: 'This Month', description: 'Revenue from approved quotations' },
-      { label: 'Total Quotations', value: allQuotations.length, description: 'All quotations generated' },
-      { label: 'Active Projects', value: activeCount, trend: 'Live', description: 'Projects currently in progress' },
+      { label: 'Total Quotations', value: totalQuotations || 0, description: 'All quotations generated' },
+      { label: 'Active Projects', value: activeCount || 0, trend: 'Live', description: 'Projects currently in progress' },
     ]
   } catch {
     return [
@@ -111,14 +132,14 @@ export async function getAccountantStatsAction(): Promise<StatItem[]> {
 export async function getQCStatsAction(): Promise<StatItem[]> {
   try {
     const supabase: any = await createClient()
-    const { data: projects } = await supabase
+    const { count: reviewCount } = await supabase
       .from('projects')
-      .select('status')
+      .select('*', { count: 'exact', head: true })
       .in('status', ['review'])
       .is('deleted_at', null)
-    const reviewCount = (projects || []).length
+
     return [
-      { label: 'Pending Reviews', value: reviewCount, trend: reviewCount ? 'Urgent' : 'Clear', description: 'Projects awaiting QC sign-off' },
+      { label: 'Pending Reviews', value: reviewCount || 0, trend: reviewCount ? 'Urgent' : 'Clear', description: 'Projects awaiting QC sign-off' },
       { label: 'Avg. Turnaround', value: '4.2h', description: 'Review completion speed' },
       { label: 'Accuracy Rate', value: '98.5%', description: 'Based on last 50 reviews' },
     ]
@@ -148,19 +169,24 @@ export async function getQCPerformanceHistoryAction(): Promise<{ day: string; sc
 export async function getOperationsStatsAction(): Promise<StatItem[]> {
   try {
     const supabase: any = await createClient()
-    const [{ data: projects }, { data: tasks }] = await Promise.all([
-      supabase.from('projects').select('status').is('deleted_at', null),
-      supabase.from('tasks').select('status, due_date'),
-    ])
-    const all = projects || []
-    const allTasks = tasks || []
     const now = new Date().toISOString()
-    const alertCount = allTasks.filter((t: any) => t.status !== 'completed' && t.due_date && t.due_date < now).length
+    const [
+      { count: engineeringLoad },
+      { count: fieldDeployments },
+      { count: qcBacklog },
+      { count: alertCount }
+    ] = await Promise.all([
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).in('status', ['data_collection', 'prototype']),
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'field_work'),
+      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).in('status', ['review']),
+      supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'completed').lt('due_date', now)
+    ]);
+    
     return [
-      { label: 'Engineering Load', value: all.filter((p: any) => ['data_collection', 'prototype'].includes(p.status)).length, description: 'Active drafting & prototype' },
-      { label: 'Field Deployment', value: all.filter((p: any) => p.status === 'field_work').length, description: 'Teams on site' },
-      { label: 'QC Backlog', value: all.filter((p: any) => ['review'].includes(p.status)).length, description: 'Pending final sign-off' },
-      { label: 'Operational Alerts', value: alertCount, trend: alertCount > 0 ? 'Action Required' : 'Healthy', description: 'Overdue execution tasks' },
+      { label: 'Engineering Load', value: engineeringLoad || 0, description: 'Active drafting & prototype' },
+      { label: 'Field Deployment', value: fieldDeployments || 0, description: 'Teams on site' },
+      { label: 'QC Backlog', value: qcBacklog || 0, description: 'Pending final sign-off' },
+      { label: 'Operational Alerts', value: alertCount || 0, trend: (alertCount || 0) > 0 ? 'Action Required' : 'Healthy', description: 'Overdue execution tasks' },
     ]
   } catch {
     return [

@@ -632,7 +632,6 @@ export async function rescheduleMilestoneAction(
       .from('project_milestones')
       .update({
         due_date: newDueDate,
-        reschedule_reason: reason,
         updated_at: new Date().toISOString()
       })
       .eq('id', milestoneId);
@@ -662,31 +661,87 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 5);
     const targetDateStr = targetDate.toISOString().split('T')[0];
-    const generatedInvoices = [];
 
     const supabase: any = await createClient();
     
+    // 1. Fetch pending milestones
     const { data: milestones, error: mErr } = await supabase
       .from('project_milestones')
       .select('*')
       .eq('status', 'pending')
       .lte('due_date', targetDateStr);
       
-    if (mErr || !milestones) return { success: false, error: mErr?.message || 'Failed to fetch milestones' };
+    if (mErr || !milestones || milestones.length === 0) return { success: true, data: { generated: 0, invoices: [] } };
 
-    for (const m of milestones) {
-      const { data: existing } = await supabase.from('invoices').select('id').eq('milestone_id', m.id).maybeSingle();
-      if (existing) continue;
+    // 2. Fetch existing invoices for these milestones
+    const milestoneIds = milestones.map((m: any) => m.id);
+    const { data: existingInvoices } = await supabase
+      .from('invoices')
+      .select('milestone_id')
+      .in('milestone_id', milestoneIds);
+      
+    const existingMilestoneIds = new Set((existingInvoices || []).map((i: any) => i.milestone_id));
+    const milestonesToInvoice = milestones.filter((m: any) => !existingMilestoneIds.has(m.id));
 
-      const { data: existingInvoicesData } = await supabase.from('invoices').select('invoice_number');
-      const existingInvoiceNumbers = (existingInvoicesData || []).map((i: any) => i.invoice_number);
+    if (milestonesToInvoice.length === 0) {
+      return { success: true, data: { generated: 0, invoices: [] } };
+    }
+
+    // 3. Batch fetch existing invoice numbers
+    const projectIds = Array.from(new Set(milestonesToInvoice.map((m: any) => m.project_id).filter(Boolean))) as string[];
+    const date = new Date();
+    const yy = date.getFullYear().toString().slice(-2);
+    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+    const fallbackPrefix = `INV-${yy}${mm}-`;
+
+    const { data: projectInvoicesData } = await supabase
+      .from('invoices')
+      .select('invoice_number, project_id')
+      .in('project_id', projectIds);
+
+    const invoicesByProject = (projectInvoicesData || []).reduce((acc: any, inv: any) => {
+       if (inv.project_id) {
+         if (!acc[inv.project_id]) acc[inv.project_id] = [];
+         acc[inv.project_id].push(inv.invoice_number);
+       }
+       return acc;
+    }, {});
+
+    const { data: fallbackInvoicesData } = await supabase
+      .from('invoices')
+      .select('invoice_number')
+      .ilike('invoice_number', `${fallbackPrefix}%`);
+    const fallbackInvoiceNumbers = (fallbackInvoicesData || []).map((i: any) => i.invoice_number);
+
+    // 4. Prepare batch insert payloads
+    const invoicePayloads = [];
+    const newlyGeneratedNumbers: Record<string, string[]> = {};
+    const fallbackGenerated: string[] = [];
+    const totalAmountsByProject: Record<string, number> = {};
+
+    for (const m of milestonesToInvoice) {
+      const existingInvoiceNumbers = m.project_id 
+        ? [...(invoicesByProject[m.project_id] || []), ...(newlyGeneratedNumbers[m.project_id] || [])]
+        : [...fallbackInvoiceNumbers, ...fallbackGenerated];
+
       const invoiceNumber = generateSequentialCode('INV', existingInvoiceNumbers, m.project_id);
+      
+      if (m.project_id) {
+         if (!newlyGeneratedNumbers[m.project_id]) newlyGeneratedNumbers[m.project_id] = [];
+         newlyGeneratedNumbers[m.project_id].push(invoiceNumber);
+      } else {
+         fallbackGenerated.push(invoiceNumber);
+      }
 
       const gstRate = 18;
       const gstAmount = (m.amount * gstRate) / 100;
       const totalAmount = m.amount + gstAmount;
+
+      if (m.project_id) {
+         totalAmountsByProject[m.project_id] = (totalAmountsByProject[m.project_id] || 0) + totalAmount;
+      }
       
-      const invoicePayload = {
+      invoicePayloads.push({
         project_id: m.project_id,
         milestone_id: m.id,
         invoice_number: invoiceNumber,
@@ -697,31 +752,55 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
         status: 'sent',
         due_date: m.due_date,
         notes: 'Auto-generated invoice 5 days prior to milestone deadline.',
-        created_by: null // System
-      };
+        created_by: null
+      });
+    }
 
-      const { data: newInvoice, error: invErr } = await supabase.from('invoices').insert(invoicePayload).select().single();
-      if (newInvoice && !invErr) {
-        generatedInvoices.push(newInvoice);
-        
-        const { data: currentFinance } = await supabase.from('project_finances').select('*').eq('project_id', m.project_id).maybeSingle();
-        if (currentFinance) {
-           await supabase.from('project_finances').update({
-             total_invoiced_amount: Number(currentFinance.total_invoiced_amount) + totalAmount,
+    // 5. Batch Insert Invoices
+    const { data: generatedInvoices, error: invErr } = await supabase
+      .from('invoices')
+      .insert(invoicePayloads)
+      .select();
+      
+    if (invErr) throw invErr;
+
+    // 6. Batch Update project_finances
+    const validProjectIds = Object.keys(totalAmountsByProject);
+    if (validProjectIds.length > 0) {
+      const { data: currentFinances } = await supabase
+        .from('project_finances')
+        .select('*')
+        .in('project_id', validProjectIds);
+
+      const financeMap = new Map((currentFinances || []).map((f: any) => [f.project_id, f]));
+      
+      const upsertPayloads = validProjectIds.map(projectId => {
+         const addedAmount = totalAmountsByProject[projectId];
+         const existing = financeMap.get(projectId);
+         if (existing) {
+           return {
+             ...existing,
+             total_invoiced_amount: Number((existing as any).total_invoiced_amount || 0) + addedAmount,
              updated_at: new Date().toISOString()
-           }).eq('project_id', m.project_id);
-        } else {
-           await supabase.from('project_finances').insert({
-             project_id: m.project_id,
-             total_quoted_amount: totalAmount,
-             total_invoiced_amount: totalAmount,
-             total_paid_amount: 0
-           });
-        }
+           };
+         } else {
+           return {
+             project_id: projectId,
+             total_quoted_amount: addedAmount,
+             total_invoiced_amount: addedAmount,
+             total_paid_amount: 0,
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString()
+           };
+         }
+      });
+
+      if (upsertPayloads.length > 0) {
+        await supabase.from('project_finances').upsert(upsertPayloads, { onConflict: 'project_id' });
       }
     }
 
-    return { success: true, data: { generated: generatedInvoices.length, invoices: generatedInvoices } };
+    return { success: true, data: { generated: generatedInvoices?.length || 0, invoices: generatedInvoices } };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

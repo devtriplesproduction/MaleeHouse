@@ -159,8 +159,7 @@ export async function recordFollowUpAction(
       content: `Follow-up Outcome: ${outcome}\nStatus: ${status}\nNext Date: ${nextDate}`,
       comment_type: 'follow_up',
       created_at: new Date().toISOString(),
-      parent_comment_id: null,
-      is_edited: false
+      parent_comment_id: null
     });
     if (commentError) console.error("Comment Insert Error:", commentError);
 

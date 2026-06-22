@@ -13,13 +13,12 @@ import DashboardNotificationCenter from '@/components/modules/DashboardNotificat
 
 import { requireRole } from '@/lib/auth-guard';
 
-export default async function AdminDashboardPage() {
-  const { profile } = await requireRole('admin');
-
-  // Fetch real-time operational data
+async function TeamWorkloadHeatmapWrapper() {
   const workloadResult = await getTeamWorkloadAction();
-  const leaderboardResult = await getEfficiencyLeaderboardAction();
-  
+  return <TeamWorkloadHeatmap data={workloadResult.data || []} />;
+}
+
+async function ProjectVelocityChartWrapper() {
   const supabase: any = await createClient();
   const { data: latestProjects } = await supabase
     .from("projects")
@@ -34,9 +33,21 @@ export default async function AdminDashboardPage() {
       efficiencyData = efficiencyResult.data;
     }
   }
+  return <ProjectVelocityChart data={efficiencyData} />;
+}
 
-  // Fetch satisfaction metrics
+async function TeamPerformanceLeaderboardWrapper() {
+  const leaderboardResult = await getEfficiencyLeaderboardAction();
+  return <TeamPerformanceLeaderboard data={leaderboardResult.data || []} />;
+}
+
+async function ClientSatisfactionMetricWrapper() {
   const satisfactionResult = await getClientSatisfactionMetricsAction();
+  return <ClientSatisfactionMetric data={satisfactionResult.data || { average: 0, total: 0, distribution: [0, 0, 0, 0, 0] }} />;
+}
+
+export default async function AdminDashboardPage() {
+  await requireRole('admin');
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 p-2 md:p-4">
@@ -77,17 +88,17 @@ export default async function AdminDashboardPage() {
           {/* Performance Visualization */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <Suspense fallback={<div className="h-[400px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
-              <ProjectVelocityChart data={efficiencyData} />
+              <ProjectVelocityChartWrapper />
             </Suspense>
             
             <Suspense fallback={<div className="h-[400px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
-              <TeamWorkloadHeatmap data={workloadResult.data || []} />
+              <TeamWorkloadHeatmapWrapper />
             </Suspense>
           </div>
 
           {/* Team Performance Leaderboard */}
           <Suspense fallback={<div className="h-[400px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
-            <TeamPerformanceLeaderboard data={leaderboardResult.data || []} />
+            <TeamPerformanceLeaderboardWrapper />
           </Suspense>
         </div>
 
@@ -96,7 +107,7 @@ export default async function AdminDashboardPage() {
           <DashboardNotificationCenter />
 
           <Suspense fallback={<div className="h-[300px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
-            <ClientSatisfactionMetric data={satisfactionResult.data || { average: 0, total: 0, distribution: [0, 0, 0, 0, 0] }} />
+            <ClientSatisfactionMetricWrapper />
           </Suspense>
 
           <div className="glass-card p-0 border-white/10 overflow-hidden h-[600px]">

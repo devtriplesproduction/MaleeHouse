@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { createProjectSchema, type CreateProjectInput } from '@/validations/project.schema';
 import { getUserProfileAction } from './auth.actions';
@@ -41,7 +42,17 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
     }
 
     const supabase: any = await createClient();
-    const { data: existingProjects, error: fetchError } = await supabase.from('projects').select('id');
+    
+    const date = new Date();
+    const yy = date.getFullYear().toString().slice(-2);
+    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+    const searchPrefix = `PRJ-${yy}${mm}-`;
+
+    const { data: existingProjects, error: fetchError } = await supabase
+      .from('projects')
+      .select('id')
+      .ilike('id', `${searchPrefix}%`);
+
     if (fetchError) throw fetchError;
 
     const existingIds = (existingProjects || []).map((p: any) => p.id);
