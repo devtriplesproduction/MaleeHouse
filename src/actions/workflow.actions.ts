@@ -299,6 +299,7 @@ export async function transitionWorkflowAction(
 
     // 5. Log in Workflow History (audit trail)
     await supabase.from("workflow_history").insert({
+      id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: projectId,
       from_stage: fromStage,
       to_stage: newStage,

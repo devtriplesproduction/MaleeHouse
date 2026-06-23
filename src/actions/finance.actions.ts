@@ -465,6 +465,7 @@ export async function freezeProjectAction(
     if (error) return { success: false, error: error.message };
 
     await supabase.from('workflow_history').insert({
+      id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: projectId,
       from_stage: currentProject?.status,
       to_stage: 'frozen',
@@ -509,6 +510,7 @@ export async function unfreezeProjectAction(projectId: string, comment?: string)
     if (error) return { success: false, error: error.message };
 
     await supabase.from('workflow_history').insert({
+      id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: projectId,
       from_stage: 'frozen',
       to_stage: currentProject?.status,

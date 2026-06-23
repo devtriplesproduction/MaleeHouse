@@ -33,7 +33,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (forceLoading) setIsLoading(true);
     try {
       const profile: any = await getUserProfileAction();
-      
+
       if (!profile) {
         setUser(null);
         setRole(null);

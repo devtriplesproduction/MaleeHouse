@@ -291,6 +291,12 @@ export function ProjectsTable({ initialProjects, userRole = 'admin' }: ProjectsT
                           {status?.label || project.status}
                         </span>
                       )}
+                      {project.is_frozen && (
+                        <span className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                          On Hold
+                        </span>
+                      )}
                     </td>
 
                     {/* Client */}

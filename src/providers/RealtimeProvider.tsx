@@ -50,12 +50,12 @@ const NOTIFICATION_TOAST_CONFIG: Record<
   NotificationType,
   { title: string; variant: "default" | "success" | "error" | "warning" }
 > = {
-  assignment:       { title: "📋 New Assignment",      variant: "default"  },
-  stage_update:     { title: "⚡ Stage Updated",       variant: "default"  },
-  approval:         { title: "✅ Approved",             variant: "success"  },
-  rejection:        { title: "❌ Rejected",             variant: "error"    },
-  deadline_warning: { title: "⚠️ Deadline Warning",   variant: "warning"  },
-  system:           { title: "🔔 System Notification", variant: "default"  },
+  assignment: { title: "📋 New Assignment", variant: "default" },
+  stage_update: { title: "⚡ Stage Updated", variant: "default" },
+  approval: { title: "✅ Approved", variant: "success" },
+  rejection: { title: "❌ Rejected", variant: "error" },
+  deadline_warning: { title: "⚠️ Deadline Warning", variant: "warning" },
+  system: { title: "🔔 System Notification", variant: "default" },
 };
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
         const channelName = `notifications:user:${user.id}`;
         const channel = supabase.channel(channelName);
-        
+
         channel.on(
           "postgres_changes",
           {

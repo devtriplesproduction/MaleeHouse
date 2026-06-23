@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { 
-  AlertDialog, 
-  AlertDialogContent, 
-  AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogAction 
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction
 } from "@/components/ui/alert-dialog";
 import { ShieldAlert, Timer, LogOut } from "lucide-react";
 
@@ -24,7 +24,7 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
   const [countdown, setCountdown] = useState(COUNTDOWN_DURATION);
   const router = useRouter();
   const supabase: any = createClient();
-  
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -43,14 +43,14 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
     // Clear existing timers
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
-    
+
     setShowWarning(false);
     setCountdown(COUNTDOWN_DURATION);
 
     // Set new inactivity timeout
     timeoutRef.current = setTimeout(() => {
       setShowWarning(true);
-      
+
       // Start countdown
       countdownRef.current = setInterval(() => {
         setCountdown((prev) => {
@@ -67,7 +67,7 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Events to monitor for activity
     const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
-    
+
     const handleActivity = () => {
       if (!showWarning) {
         resetTimers();
@@ -76,7 +76,7 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
 
     // Attach listeners
     events.forEach((event) => window.addEventListener(event, handleActivity));
-    
+
     // Initial start
     resetTimers();
 
@@ -103,7 +103,7 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
               You've been inactive for a while. For your security, you will be logged out in:
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           <div className="py-8 flex flex-col items-center justify-center">
             <div className="relative">
               <svg className="w-24 h-24 transform -rotate-90">
@@ -135,13 +135,13 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
           </div>
 
           <AlertDialogFooter className="sm:justify-center gap-3">
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={resetTimers}
               className="btn-primary px-8"
             >
               I'm still here
             </AlertDialogAction>
-            <button 
+            <button
               onClick={handleLogout}
               className="text-sm font-bold text-slate-400 hover:text-rose-500 transition-colors flex items-center gap-2"
             >
