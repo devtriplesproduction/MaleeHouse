@@ -949,7 +949,7 @@ export function OperationsFileUploadPanel({
           <div>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                1. Control Point Images <span className="text-rose-500 text-xs uppercase font-black px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20">Required</span>
+                1. Control Point Images <span className="text-rose-500 text-xs   font-black px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20">Required</span>
               </h4>
               {(isAdmin || (isField && (projectStatus === 'field_work' || projectStatus === 'field_assigned'))) && !isProjectClosed && (
                 <label className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 cursor-pointer transition flex items-center gap-2 shadow-sm text-xs font-bold border border-emerald-100 dark:border-emerald-500/20">
@@ -1051,9 +1051,9 @@ export function OperationsFileUploadPanel({
               <button
                 onClick={() => handleReviewSurveyInline(false)}
                 disabled={isPending}
-                className="flex-1 py-3 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 disabled:opacity-50 text-sm font-black rounded-xl transition flex justify-center items-center gap-2"
+                className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-500 text-white disabled:opacity-50 text-sm font-black rounded-xl transition flex justify-center items-center gap-2 shadow-sm"
               >
-                Survey Collection (Rework)
+                Rework
               </button>
               <button
                 onClick={() => handleReviewSurveyInline(true)}
@@ -1061,7 +1061,7 @@ export function OperationsFileUploadPanel({
                 className="flex-[2] py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 text-sm font-black rounded-xl transition flex justify-center items-center gap-2 shadow-lg shadow-emerald-600/20"
               >
                 {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Survey Validation (Accept)
+                Accept
               </button>
             </div>
           )}

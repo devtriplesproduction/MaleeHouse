@@ -814,8 +814,10 @@ export async function getProjectsFinancialSummaryAction(projectIds: string[]): P
     
     const supabase: any = await createClient();
     
+    // We fetch all quotations instead of filtering by 'approved' only, because some 
+    // active projects might have 'Sent' or other status quotations if they skipped the formal approval flow.
     const [quotesRes, paymentsRes] = await Promise.all([
-      supabase.from('quotations').select('project_id, total_amount').in('project_id', projectIds).ilike('status', 'approved'),
+      supabase.from('quotations').select('project_id, total_amount, status').in('project_id', projectIds),
       supabase.from('payments').select('project_id, amount').in('project_id', projectIds).eq('status', 'verified')
     ]);
 
@@ -825,10 +827,23 @@ export async function getProjectsFinancialSummaryAction(projectIds: string[]): P
     });
 
     if (quotesRes.data) {
+      // Group quotes by project
+      const quotesByProject: Record<string, any[]> = {};
       quotesRes.data.forEach((q: any) => {
-        // If multiple approved quotes exist, it takes the sum (or we could just take the first)
-        summary[q.project_id].contract_value += Number(q.total_amount || 0);
+        if (!quotesByProject[q.project_id]) quotesByProject[q.project_id] = [];
+        quotesByProject[q.project_id].push(q);
       });
+
+      for (const pId of Object.keys(quotesByProject)) {
+        const quotes = quotesByProject[pId];
+        // Prefer 'Approved' quote, otherwise take the one with highest amount to be safe
+        const approvedQuote = quotes.find(q => q.status?.toLowerCase() === 'approved');
+        if (approvedQuote) {
+          summary[pId].contract_value = Number(approvedQuote.total_amount || 0);
+        } else {
+          summary[pId].contract_value = Math.max(...quotes.map(q => Number(q.total_amount || 0)), 0);
+        }
+      }
     }
 
     if (paymentsRes.data) {

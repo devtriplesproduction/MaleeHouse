@@ -94,8 +94,6 @@ export default function ProjectOverviewTab({
 
   const isSalesAndHandedOver = project.status !== 'lead_created' && project.status !== 'quotation_requested';
   
-  console.log("DEBUG OVERVIEW:", { currentUserId, isEngineer, teamMembers });
-
   const isClaimedByMe = teamMembers.some((m: any) => m.userId === currentUserId);
   const needsClaiming = isEngineer && !isClaimedByMe && !isAdmin;
 
@@ -364,11 +362,6 @@ export default function ProjectOverviewTab({
                 </div>
               </div>
 
-              <div className="text-xs text-red-500 font-mono break-all mb-4">
-                DEBUG: isClaimed={String(isClaimedByMe)} needsClaiming={String(needsClaiming)} user={currentUserId}
-                <br/>
-                team: {JSON.stringify(teamMembers)}
-              </div>
               <button
                 onClick={() => {
                   startTransition(async () => {
