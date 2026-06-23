@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { 
-  createQuotationSchema, 
+import {
+  createQuotationSchema,
   updateQuotationStatusSchema,
   type CreateQuotationInput,
   type UpdateQuotationStatusInput
@@ -34,20 +34,40 @@ async function getUserProfileById(userId: string) {
 }
 
 export async function createQuotationAction(payload: CreateQuotationInput): Promise<ActionResponse> {
+  console.log("createQuotationAction called with payload:", JSON.stringify(payload).substring(0, 200) + '...');
   try {
     const validated = createQuotationSchema.safeParse(payload);
     if (!validated.success) {
+      console.error("createQuotationAction validation failed:", validated.error.errors);
       return { success: false, error: validated.error.errors[0]?.message };
     }
 
     const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: 'Unauthorized' };
+    if (!profile) {
+      console.error("createQuotationAction: Unauthorized");
+      return { success: false, error: 'Unauthorized' };
+    }
 
     if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      console.error("createQuotationAction: Access denied");
       return { success: false, error: 'Access denied. Accountant or Admin only.' };
     }
 
     const supabase: any = await createClient();
+
+    if (profile.role === 'accountant' && payload.project_id) {
+      const { count, error: countError } = await supabase
+        .from('quotations')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', payload.project_id);
+
+      console.log(`createQuotationAction: Accountant project limit check. Existing count: ${count}`);
+      if (countError) throw countError;
+      if ((count || 0) >= 5) {
+        console.error("createQuotationAction: Limit reached");
+        return { success: false, error: 'Accountants cannot create more than 5 quotations for the same project.' };
+      }
+    }
 
     const date = new Date();
     const yy = date.getFullYear().toString().slice(-2);
@@ -61,7 +81,7 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
 
     const existingIds = (existingQuotations || []).map((q: any) => q.id);
     const existingNumbers = (existingQuotations || []).map((q: any) => q.quotation_number);
-    
+
     // Default to 'QUO' prefix if no project_id is provided
     const quotationId = generateSequentialCode('QUO', existingIds, payload.project_id || undefined);
     const quotationNumber = generateSequentialCode('QUO', existingNumbers, payload.project_id || undefined);
@@ -214,7 +234,7 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
     if (quotation.project_id) {
       try {
         notifyStageUpdateAction(quotation.project_id, quotation.status, payload.status).catch(console.error);
-      } catch (_) {}
+      } catch (_) { }
     }
 
     await revalidateAccountsPaths(quotation.project_id || undefined);
@@ -318,8 +338,10 @@ export async function getQuotationIntakeQueueAction(): Promise<ActionResponse> {
   }
 }
 
-export async function getProjectQuotationsAction(projectId: string): Promise<ActionResponse> {
+export async function getProjectQuotationsAction(projectId: string, _cacheBuster?: number): Promise<ActionResponse> {
   try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
 
@@ -654,7 +676,7 @@ export async function getQuotationByTokenAction(token: string): Promise<ActionRe
         client_viewed_at: new Date().toISOString()
       }).eq('id', quotation.id);
       quotation.status = 'Viewed';
-      
+
       await supabase.from('activity_logs').insert({
         id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         project_id: quotation.project_id,
@@ -663,7 +685,7 @@ export async function getQuotationByTokenAction(token: string): Promise<ActionRe
         details: { quotation_id: quotation.id, quotation_number: quotation.quotation_number },
         created_at: new Date().toISOString()
       });
-      
+
       await revalidateAccountsPaths(quotation.project_id);
     }
 

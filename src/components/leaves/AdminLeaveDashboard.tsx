@@ -75,7 +75,7 @@ export function AdminLeaveDashboard({ initialLeaves }: AdminLeaveDashboardProps)
     setLeaves(initialLeaves);
   }
 
-  const handleStatusUpdate = async (id: string, newStatus: 'approved' | 'rejected') => {
+  const handleStatusUpdate = async (id: string, newStatus: 'approved' | 'rejected' | 'pending') => {
     setProcessingId(id);
     try {
       const response = await updateLeaveStatusAction(id, newStatus);
@@ -482,21 +482,19 @@ export function AdminLeaveDashboard({ initialLeaves }: AdminLeaveDashboardProps)
                         <Select
                           value={leave.status?.toLowerCase()}
                           onValueChange={(val) => {
-                            if (val === 'approved' || val === 'rejected') {
-                              handleStatusUpdate(leave.id, val);
+                            if (val === 'approved' || val === 'rejected' || val === 'pending') {
+                              handleStatusUpdate(leave.id, val as any);
                             }
                           }}
                           className="w-36"
                           buttonClassName="h-9 px-3.5 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-900/50 shadow-sm text-sm font-medium text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                         >
-                          {leave.status?.toLowerCase() === 'pending' && (
-                            <SelectItem value="pending" className="font-medium text-sm text-slate-800 dark:text-slate-200">
-                              <div className="flex items-center">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)] shrink-0 mr-2 animate-pulse" />
-                                Pending
-                              </div>
-                            </SelectItem>
-                          )}
+                          <SelectItem value="pending" className="font-medium text-sm text-slate-800 dark:text-slate-200">
+                            <div className="flex items-center">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)] shrink-0 mr-2 animate-pulse" />
+                              Pending
+                            </div>
+                          </SelectItem>
                           <SelectItem value="approved" className="font-medium text-sm text-slate-800 dark:text-slate-200">
                             <div className="flex items-center">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0 mr-2" />

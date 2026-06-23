@@ -7,11 +7,11 @@ import { updateProjectStageAction } from '@/actions/workflow.actions';
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
 import { getUserProfileAction } from '@/actions/auth.actions';
 import { requireAuthContext, getAssignedProjectIds } from '@/lib/permissions/permissions';
-import { 
-  createInvoiceSchema, 
-  createPaymentSchema, 
-  type CreateInvoiceInput, 
-  type CreatePaymentInput 
+import {
+  createInvoiceSchema,
+  createPaymentSchema,
+  type CreateInvoiceInput,
+  type CreatePaymentInput
 } from '@/validations/finance.schema';
 import { generateSequentialCode } from '@/lib/id-generator';
 
@@ -26,7 +26,7 @@ async function verifyProjectNotLocked(projectId: string): Promise<{ success: boo
     const supabase: any = await createClient();
     const { data: project, error } = await supabase.from('projects').select('status').eq('id', projectId).single();
     if (error) return { success: false, error: error.message };
-    
+
     if (project?.status === "completed" || project?.status === "archived") {
       return { success: false, error: "Project is locked (completed/archived) and cannot be modified." };
     }
@@ -189,7 +189,7 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
       if (project && project.is_frozen && project.freeze_reason === 'payment_pending') {
         await unfreezeProjectAction(payment.project_id, 'Payment verification complete. Auto-unfreezing project.');
       }
-      
+
       const { data: currentFinance } = await supabase.from('project_finances').select('*').eq('project_id', payment.project_id).maybeSingle();
       if (currentFinance) {
         await supabase.from('project_finances').update({
@@ -230,7 +230,7 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
 
     const supabase: any = await createClient();
     let query = supabase.from('invoices').select('*, projects(name, client_name)');
-    
+
     if (projectId) {
       query = query.eq('project_id', projectId);
     } else {
@@ -259,7 +259,7 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
 
     const supabase: any = await createClient();
     let query = supabase.from('payments').select('*, projects(name, client_name)');
-    
+
     if (projectId) {
       query = query.eq('project_id', projectId);
     } else {
@@ -429,8 +429,8 @@ export async function getMilestonesAction(projectId: string): Promise<ActionResp
 }
 
 export async function freezeProjectAction(
-  projectId: string, 
-  reason: 'payment_pending' | 'financial_hold' | 'client_issue' | 'approval_issue' | 'manual_admin_hold', 
+  projectId: string,
+  reason: 'payment_pending' | 'financial_hold' | 'client_issue' | 'approval_issue' | 'manual_admin_hold',
   comment?: string
 ): Promise<ActionResponse> {
   try {
@@ -574,6 +574,7 @@ export async function updateMilestoneStatusAction(
     if (updateErr) return { success: false, error: updateErr.message };
 
     await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: milestone.project_id,
       user_id: profile.id,
       action: 'MILESTONE_STATUS_UPDATE',
@@ -639,6 +640,7 @@ export async function rescheduleMilestoneAction(
     if (updateErr) return { success: false, error: updateErr.message };
 
     await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: milestone.project_id,
       user_id: profile.id,
       action: 'MILESTONE_RESCHEDULED',
@@ -663,14 +665,14 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
     const targetDateStr = targetDate.toISOString().split('T')[0];
 
     const supabase: any = await createClient();
-    
+
     // 1. Fetch pending milestones
     const { data: milestones, error: mErr } = await supabase
       .from('project_milestones')
       .select('*')
       .eq('status', 'pending')
       .lte('due_date', targetDateStr);
-      
+
     if (mErr || !milestones || milestones.length === 0) return { success: true, data: { generated: 0, invoices: [] } };
 
     // 2. Fetch existing invoices for these milestones
@@ -679,7 +681,7 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
       .from('invoices')
       .select('milestone_id')
       .in('milestone_id', milestoneIds);
-      
+
     const existingMilestoneIds = new Set((existingInvoices || []).map((i: any) => i.milestone_id));
     const milestonesToInvoice = milestones.filter((m: any) => !existingMilestoneIds.has(m.id));
 
@@ -700,11 +702,11 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
       .in('project_id', projectIds);
 
     const invoicesByProject = (projectInvoicesData || []).reduce((acc: any, inv: any) => {
-       if (inv.project_id) {
-         if (!acc[inv.project_id]) acc[inv.project_id] = [];
-         acc[inv.project_id].push(inv.invoice_number);
-       }
-       return acc;
+      if (inv.project_id) {
+        if (!acc[inv.project_id]) acc[inv.project_id] = [];
+        acc[inv.project_id].push(inv.invoice_number);
+      }
+      return acc;
     }, {});
 
     const { data: fallbackInvoicesData } = await supabase
@@ -720,17 +722,17 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
     const totalAmountsByProject: Record<string, number> = {};
 
     for (const m of milestonesToInvoice) {
-      const existingInvoiceNumbers = m.project_id 
+      const existingInvoiceNumbers = m.project_id
         ? [...(invoicesByProject[m.project_id] || []), ...(newlyGeneratedNumbers[m.project_id] || [])]
         : [...fallbackInvoiceNumbers, ...fallbackGenerated];
 
       const invoiceNumber = generateSequentialCode('INV', existingInvoiceNumbers, m.project_id);
-      
+
       if (m.project_id) {
-         if (!newlyGeneratedNumbers[m.project_id]) newlyGeneratedNumbers[m.project_id] = [];
-         newlyGeneratedNumbers[m.project_id].push(invoiceNumber);
+        if (!newlyGeneratedNumbers[m.project_id]) newlyGeneratedNumbers[m.project_id] = [];
+        newlyGeneratedNumbers[m.project_id].push(invoiceNumber);
       } else {
-         fallbackGenerated.push(invoiceNumber);
+        fallbackGenerated.push(invoiceNumber);
       }
 
       const gstRate = 18;
@@ -738,9 +740,9 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
       const totalAmount = m.amount + gstAmount;
 
       if (m.project_id) {
-         totalAmountsByProject[m.project_id] = (totalAmountsByProject[m.project_id] || 0) + totalAmount;
+        totalAmountsByProject[m.project_id] = (totalAmountsByProject[m.project_id] || 0) + totalAmount;
       }
-      
+
       invoicePayloads.push({
         project_id: m.project_id,
         milestone_id: m.id,
@@ -761,7 +763,7 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
       .from('invoices')
       .insert(invoicePayloads)
       .select();
-      
+
     if (invErr) throw invErr;
 
     // 6. Batch Update project_finances
@@ -773,26 +775,26 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
         .in('project_id', validProjectIds);
 
       const financeMap = new Map((currentFinances || []).map((f: any) => [f.project_id, f]));
-      
+
       const upsertPayloads = validProjectIds.map(projectId => {
-         const addedAmount = totalAmountsByProject[projectId];
-         const existing = financeMap.get(projectId);
-         if (existing) {
-           return {
-             ...existing,
-             total_invoiced_amount: Number((existing as any).total_invoiced_amount || 0) + addedAmount,
-             updated_at: new Date().toISOString()
-           };
-         } else {
-           return {
-             project_id: projectId,
-             total_quoted_amount: addedAmount,
-             total_invoiced_amount: addedAmount,
-             total_paid_amount: 0,
-             created_at: new Date().toISOString(),
-             updated_at: new Date().toISOString()
-           };
-         }
+        const addedAmount = totalAmountsByProject[projectId];
+        const existing = financeMap.get(projectId);
+        if (existing) {
+          return {
+            ...existing,
+            total_invoiced_amount: Number((existing as any).total_invoiced_amount || 0) + addedAmount,
+            updated_at: new Date().toISOString()
+          };
+        } else {
+          return {
+            project_id: projectId,
+            total_quoted_amount: addedAmount,
+            total_invoiced_amount: addedAmount,
+            total_paid_amount: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+        }
       });
 
       if (upsertPayloads.length > 0) {
@@ -800,7 +802,42 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
       }
     }
 
-    return { success: true, data: { generated: generatedInvoices?.length || 0, invoices: generatedInvoices } };
+    return { success: true, data: { generated: generatedInvoices?.length || 0, invoices: generatedInvoices || [] } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getProjectsFinancialSummaryAction(projectIds: string[]): Promise<ActionResponse> {
+  try {
+    if (!projectIds || projectIds.length === 0) return { success: true, data: {} };
+    
+    const supabase: any = await createClient();
+    
+    const [quotesRes, paymentsRes] = await Promise.all([
+      supabase.from('quotations').select('project_id, total_amount').in('project_id', projectIds).ilike('status', 'approved'),
+      supabase.from('payments').select('project_id, amount').in('project_id', projectIds).eq('status', 'verified')
+    ]);
+
+    const summary: Record<string, { contract_value: number, received_amount: number }> = {};
+    projectIds.forEach(id => {
+      summary[id] = { contract_value: 0, received_amount: 0 };
+    });
+
+    if (quotesRes.data) {
+      quotesRes.data.forEach((q: any) => {
+        // If multiple approved quotes exist, it takes the sum (or we could just take the first)
+        summary[q.project_id].contract_value += Number(q.total_amount || 0);
+      });
+    }
+
+    if (paymentsRes.data) {
+      paymentsRes.data.forEach((p: any) => {
+        summary[p.project_id].received_amount += Number(p.amount || 0);
+      });
+    }
+
+    return { success: true, data: summary };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

@@ -6,15 +6,19 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function test() {
-  const { data: m, error: err1 } = await supabase.from('project_milestones').select('id').limit(1);
-  if (!m || m.length === 0) {
-    console.log("No milestones found", err1);
-    return;
-  }
-  const milestoneId = m[0].id;
+  const milestoneId = "ms-1781545892308-0-s3zt";
   const newDueDate = "2026-06-25";
-  const reason = "xxx";
+  const reason = "testing 123";
   
+  const { data: milestone, error: fetchErr } = await supabase
+    .from('project_milestones')
+    .select('*')
+    .eq('id', milestoneId)
+    .single();
+
+  console.log("Fetch Error:", fetchErr);
+  if (!milestone) return;
+
   const { error: updateErr } = await supabase
     .from('project_milestones')
     .update({
@@ -23,11 +27,17 @@ async function test() {
     })
     .eq('id', milestoneId);
 
-  if (updateErr) {
-    console.log("Update Error:", updateErr);
-  } else {
-    console.log("Update Success for milestone:", milestoneId);
-  }
+  console.log("Update Error:", updateErr);
+
+  const { error: logErr } = await supabase.from('activity_logs').insert({
+    id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    project_id: milestone.project_id,
+    user_id: null,
+    action: 'MILESTONE_RESCHEDULED',
+    details: { milestone_id: milestoneId, new_due_date: newDueDate, reason }
+  });
+
+  console.log("Activity Log Error:", logErr);
 }
 
 test();

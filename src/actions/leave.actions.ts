@@ -77,7 +77,7 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
   }
 }
 
-export async function updateLeaveStatusAction(id: string, status: 'approved' | 'rejected'): Promise<ActionResponse> {
+export async function updateLeaveStatusAction(id: string, status: 'approved' | 'rejected' | 'pending'): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction()
     if (profile?.role !== 'admin') return { success: false, error: 'Access denied. Admins only.' }
@@ -85,7 +85,7 @@ export async function updateLeaveStatusAction(id: string, status: 'approved' | '
     const supabase: any = await createClient()
     const { data, error } = await supabase
       .from('leaves')
-      .update({ status, updated_at: new Date().toISOString(), updated_by: profile.id })
+      .update({ status, updated_at: new Date().toISOString(), approved_by: profile.id, approved_at: status === 'approved' ? new Date().toISOString() : null })
       .eq('id', id)
       .select()
       .single()

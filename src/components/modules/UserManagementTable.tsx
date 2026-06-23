@@ -94,6 +94,10 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
   // Modals state
   const [isNewUserModalOpen, setIsNewUserModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<UserProfile | null>(null);
@@ -245,6 +249,16 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
       return matchesSearch && matchesDept && matchesRole && matchesStatus;
     });
   }, [users, searchTerm, selectedDept, selectedRole, selectedStatus]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedDept, selectedRole, selectedStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = useMemo(() => {
+    return filteredUsers.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
+  }, [filteredUsers, safeCurrentPage]);
 
   // Account Status administrative toggle
   const handleToggleStatus = async (userId: string, currentStatus: boolean, e: React.MouseEvent) => {
@@ -675,7 +689,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((user) => (
+                    paginatedUsers.map((user) => (
                       <tr 
                         key={user.id} 
                         onClick={() => setSelectedEmployee(user)}
@@ -824,21 +838,54 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
 
             {/* ── Footer ── */}
             {filteredUsers.length > 0 && (
-              <div className="px-6 py-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.01]">
+              <div className="px-6 py-3 border-t border-slate-100 dark:border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-white/[0.01]">
                 <p className="text-xs text-slate-400 font-medium">
                   Showing{' '}
                   <span className="font-bold text-slate-600 dark:text-slate-300">
-                    {filteredUsers.length}
+                    {(safeCurrentPage - 1) * PAGE_SIZE + 1}
+                  </span>{' '}
+                  –{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {Math.min(safeCurrentPage * PAGE_SIZE, filteredUsers.length)}
                   </span>{' '}
                   of{' '}
                   <span className="font-bold text-slate-600 dark:text-slate-300">
-                    {users.length}
+                    {filteredUsers.length}
                   </span>{' '}
                   personnel
                 </p>
-                <p className="text-xs text-slate-400">
-                  Click any row to open employee details
-                </p>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safeCurrentPage === 1}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${page === safeCurrentPage
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
+                            : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
+                          }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safeCurrentPage === totalPages}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

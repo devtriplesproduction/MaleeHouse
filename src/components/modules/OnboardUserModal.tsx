@@ -466,6 +466,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                       <PremiumDatePicker
                         value={watch("dob")}
                         onChange={(date) => setValue("dob", date, { shouldValidate: true })}
+                        side="right"
                       />
                     </div>
 
@@ -492,6 +493,11 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                       <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Phone Number</label>
                       <input 
                         {...register("phone_number")} 
+                        type="tel"
+                        maxLength={10}
+                        onInput={(e) => {
+                          e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
+                        }}
                         placeholder="10-digit number" 
                         className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
                       />

@@ -18,12 +18,12 @@ import { generateQuotationPDF } from "@/lib/pdf-generator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string; border: string; label: string }> = {
-  Sent: { 
-    icon: Send, 
-    color: "text-sky-600 dark:text-sky-400", 
-    bg: "bg-sky-50 dark:bg-sky-500/10", 
-    border: "border-sky-100 dark:border-sky-500/20", 
-    label: "Awaiting Client" 
+  Sent: {
+    icon: Send,
+    color: "text-sky-600 dark:text-sky-400",
+    bg: "bg-sky-50 dark:bg-sky-500/10",
+    border: "border-sky-100 dark:border-sky-500/20",
+    label: "Awaiting Client"
   },
   Viewed: {
     icon: Eye,
@@ -32,26 +32,26 @@ const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string; bg
     border: "border-violet-100 dark:border-violet-500/20",
     label: "Viewed by Client"
   },
-  "Revision Requested": { 
-    icon: AlertCircle, 
-    color: "text-amber-600 dark:text-amber-400", 
-    bg: "bg-amber-50 dark:bg-amber-500/10", 
-    border: "border-amber-100 dark:border-amber-500/20", 
-    label: "Revision Requested" 
+  "Revision Requested": {
+    icon: AlertCircle,
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-500/10",
+    border: "border-amber-100 dark:border-amber-500/20",
+    label: "Revision Requested"
   },
-  Approved: { 
-    icon: CheckCircle2, 
-    color: "text-emerald-600 dark:text-emerald-400", 
-    bg: "bg-emerald-50 dark:bg-emerald-500/10", 
-    border: "border-emerald-100 dark:border-emerald-500/20", 
-    label: "Approved" 
+  Approved: {
+    icon: CheckCircle2,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-500/10",
+    border: "border-emerald-100 dark:border-emerald-500/20",
+    label: "Approved"
   },
-  Rejected: { 
-    icon: XCircle, 
-    color: "text-rose-600 dark:text-rose-400", 
-    bg: "bg-rose-50 dark:bg-rose-500/10", 
-    border: "border-rose-100 dark:border-rose-500/20", 
-    label: "Rejected" 
+  Rejected: {
+    icon: XCircle,
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-50 dark:bg-rose-500/10",
+    border: "border-rose-100 dark:border-rose-500/20",
+    label: "Rejected"
   },
 };
 
@@ -485,7 +485,7 @@ export default function ClientApprovalsPage() {
                               ) : (
                                 <Hammer className="w-3 h-3" />
                               )}
-                              {isDispatching ? "Dispatching…" : "Send to Survey"}
+                              {isDispatching ? "Dispatching…" : "create MileStones"}
                             </button>
                           );
                         })()}
@@ -688,7 +688,7 @@ export default function ClientApprovalsPage() {
                 {selectedQuote.status === "Approved" && (
                   (() => {
                     const isDispatched = selectedQuote.project?.status && !["lead", "quotation_requested", "quotation_sent", "payment_pending", "payment_done"].includes(selectedQuote.project.status);
-                    
+
                     if (isDispatched) {
                       return (
                         <div className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-inner flex items-center justify-center gap-2">

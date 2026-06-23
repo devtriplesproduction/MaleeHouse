@@ -36,7 +36,7 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
   const [previewQuotation, setPreviewQuotation] = useState<any>(null);
 
   const isAccountant = userRole === 'accountant' || userRole === 'admin';
-  const isSales      = userRole === 'sales'      || userRole === 'admin';
+  const isSales = userRole === 'sales' || userRole === 'admin';
 
   const handleStatusUpdate = async (id: string, status: string) => {
     setLoading(id);
@@ -58,28 +58,28 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
 
   // ── Status helpers ────────────────────────────────────────────────────────
   const statusConfig: Record<string, { icon: React.ReactNode; cls: string; label: string }> = {
-    Draft:              { icon: <Clock         className="w-3.5 h-3.5" />, cls: 'bg-slate-500/10  text-slate-500  border-slate-500/20',  label: 'Draft'             },
-    Sent:               { icon: <Send          className="w-3.5 h-3.5" />, cls: 'bg-blue-500/10   text-blue-500   border-blue-500/20',   label: 'Awaiting Client'   },
-    Viewed:             { icon: <Eye           className="w-3.5 h-3.5" />, cls: 'bg-violet-500/10 text-violet-500 border-violet-500/20', label: 'Viewed by Client'  },
-    Approved:           { icon: <CheckCircle2  className="w-3.5 h-3.5" />, cls: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', label: 'Approved'       },
-    Rejected:           { icon: <XCircle       className="w-3.5 h-3.5" />, cls: 'bg-rose-500/10   text-rose-500   border-rose-500/20',   label: 'Rejected'          },
-    'Revision Requested': { icon: <AlertCircle className="w-3.5 h-3.5" />, cls: 'bg-amber-500/10  text-amber-600  border-amber-500/20',  label: 'Revision'          },
-    Expired:            { icon: <Clock         className="w-3.5 h-3.5" />, cls: 'bg-slate-400/10  text-slate-400  border-slate-400/20',  label: 'Expired'           },
+    Draft: { icon: <Clock className="w-3.5 h-3.5" />, cls: 'bg-slate-500/10  text-slate-500  border-slate-500/20', label: 'Draft' },
+    Sent: { icon: <Send className="w-3.5 h-3.5" />, cls: 'bg-blue-500/10   text-blue-500   border-blue-500/20', label: 'Awaiting Client' },
+    Viewed: { icon: <Eye className="w-3.5 h-3.5" />, cls: 'bg-violet-500/10 text-violet-500 border-violet-500/20', label: 'Viewed by Client' },
+    Approved: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, cls: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', label: 'Approved' },
+    Rejected: { icon: <XCircle className="w-3.5 h-3.5" />, cls: 'bg-rose-500/10   text-rose-500   border-rose-500/20', label: 'Rejected' },
+    'Revision Requested': { icon: <AlertCircle className="w-3.5 h-3.5" />, cls: 'bg-amber-500/10  text-amber-600  border-amber-500/20', label: 'Revision' },
+    Expired: { icon: <Clock className="w-3.5 h-3.5" />, cls: 'bg-slate-400/10  text-slate-400  border-slate-400/20', label: 'Expired' },
   };
 
   const getStatus = (s: string) => statusConfig[s] ?? statusConfig['Draft'];
 
   // ── Resolve display names ─────────────────────────────────────────────────
   const getDisplayName = (q: any) => {
-    if (q.project?.name)                          return q.project.name;
-    if (q.client_details?.project_title)          return q.client_details.project_title;
-    if (q.client_details?.company_name)           return q.client_details.company_name;
+    if (q.project?.name) return q.project.name;
+    if (q.client_details?.project_title) return q.client_details.project_title;
+    if (q.client_details?.company_name) return q.client_details.company_name;
     return 'Standalone Quotation';
   };
 
   const getCompanyName = (q: any) => {
-    if (q.project?.client_name)             return q.project.client_name;
-    if (q.client_details?.company_name)     return q.client_details.company_name;
+    if (q.project?.client_name) return q.project.client_name;
+    if (q.client_details?.company_name) return q.client_details.company_name;
     return null;
   };
 
@@ -95,8 +95,8 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
   return (
     <div className="space-y-3">
       {quotations.map((q) => {
-        const st      = getStatus(q.status);
-        const name    = getDisplayName(q);
+        const st = getStatus(q.status);
+        const name = getDisplayName(q);
         const company = getCompanyName(q);
         const version = q.current_version || 1;
 

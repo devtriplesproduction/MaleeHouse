@@ -189,11 +189,10 @@ function QuotationWorkspaceContent() {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${
-                        page === safeCurrentPage
+                      className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${page === safeCurrentPage
                           ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
                           : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>

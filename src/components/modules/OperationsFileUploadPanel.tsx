@@ -27,6 +27,7 @@ import { updateProjectStageAction } from '@/actions/workflow.actions';
 import { submitCADRevisionAction, reviewFieldSurveyAction, reviewLatestCADRevisionAction } from '@/actions/operations.actions';
 import { deleteFileAction, registerFileAction } from '@/actions/file.actions';
 import { notifySupplementalUploadAction } from '@/actions/notification.actions';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 function CollapsibleWidget({ title, icon: Icon, defaultExpanded = true, children, rightAction, badgeCount }: any) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -88,6 +89,11 @@ export function OperationsFileUploadPanel({
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const [rejectionModal, setRejectionModal] = useState<{ isOpen: boolean, type: 'survey' | 'final' | 'prototype' | null }>({ isOpen: false, type: null });
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionComments, setRejectionComments] = useState('');
+  const [rejectionInstructions, setRejectionInstructions] = useState('');
 
   const isAdmin = userRole === 'admin';
   const isEngineer = userRole === 'engineer';
@@ -497,26 +503,28 @@ export function OperationsFileUploadPanel({
   };
 
   const handleReviewSurveyInline = (isApproved: boolean) => {
-    const reason = isApproved ? "" : window.prompt("Enter rework reason for the survey data:");
-    if (!isApproved && !reason) return; // user cancelled prompt
-
-    startTransition(async () => {
-      const res = await reviewFieldSurveyAction(projectId, isApproved, reason || "");
-      if (res.success) {
-        toast({
-          title: isApproved ? 'Survey Validated' : 'Survey Sent for Rework',
-          description: isApproved ? 'Project moved to CAD Drafting.' : 'Sent back to field team.',
-          variant: 'success'
-        });
-        router.refresh();
-      } else {
-        toast({
-          title: 'Action Failed',
-          description: res.error || 'Failed to review survey.',
-          variant: 'error'
-        });
-      }
-    });
+    if (isApproved) {
+      startTransition(async () => {
+        const res = await reviewFieldSurveyAction(projectId, true, "");
+        if (res.success) {
+          toast({
+            title: 'Survey Validated',
+            description: 'Project moved to CAD Drafting.',
+            variant: 'success'
+          });
+          router.refresh();
+        } else {
+          toast({
+            title: 'Action Failed',
+            description: res.error || 'Failed to review survey.',
+            variant: 'error'
+          });
+        }
+      });
+    } else {
+      setRejectionReason('');
+      setRejectionModal({ isOpen: true, type: 'survey' });
+    }
   };
 
   const handleReviewFinalDeliverableInline = (isApproved: boolean) => {
@@ -541,52 +549,72 @@ export function OperationsFileUploadPanel({
         }
       });
     } else {
-      const reason = window.prompt("Enter Rejection Reason (Required):");
-      if (!reason) return; // user cancelled or left empty
-      const comments = window.prompt("Enter Comments (Optional):") || "";
-      const instructions = window.prompt("Enter Revision Instructions (Optional):") || "";
+      setRejectionReason('');
+      setRejectionComments('');
+      setRejectionInstructions('');
+      setRejectionModal({ isOpen: true, type: 'final' });
+    }
+  };
 
+  const handleReviewPrototypeInline = (isApproved: boolean) => {
+    if (isApproved) {
       startTransition(async () => {
-        const { engineerReviewFinalCADAction } = await import("@/actions/review.actions");
-        const res = await engineerReviewFinalCADAction(projectId, false, reason, comments, instructions);
+        const res = await reviewLatestCADRevisionAction(projectId, true, "");
         if (res.success) {
           toast({
-            title: 'Final Deliverable Rejected',
-            description: 'Project returned to CAD Finalization stage.',
+            title: 'Prototype Approved',
+            description: 'Project moved to Field Work stage.',
             variant: 'success'
           });
           router.refresh();
         } else {
           toast({
-            title: 'Rejection Failed',
-            description: res.error || 'An error occurred.',
+            title: 'Action Failed',
+            description: res.error || 'Failed to review prototype.',
             variant: 'error'
           });
         }
       });
+    } else {
+      setRejectionReason('');
+      setRejectionModal({ isOpen: true, type: 'prototype' });
     }
   };
 
-  const handleReviewPrototypeInline = (isApproved: boolean) => {
-    const reason = isApproved ? "" : window.prompt("Enter rework reason for the prototype file:");
-    if (!isApproved && !reason) return; // user cancelled prompt
+  const submitRejection = () => {
+    if (!rejectionReason.trim()) {
+      toast({ title: 'Validation', description: 'Rejection reason is required.', variant: 'error' });
+      return;
+    }
 
     startTransition(async () => {
-      const res = await reviewLatestCADRevisionAction(projectId, isApproved, reason || "");
-      if (res.success) {
-        toast({
-          title: isApproved ? 'Prototype Approved' : 'Prototype Rejected',
-          description: isApproved ? 'Project moved to Field Work stage.' : 'Sent back to CAD team.',
-          variant: 'success'
-        });
-        router.refresh();
-      } else {
-        toast({
-          title: 'Action Failed',
-          description: res.error || 'Failed to review prototype.',
-          variant: 'error'
-        });
+      if (rejectionModal.type === 'prototype') {
+        const res = await reviewLatestCADRevisionAction(projectId, false, rejectionReason);
+        if (res.success) {
+          toast({ title: 'Prototype Rejected', description: 'Sent back to CAD team.', variant: 'success' });
+          router.refresh();
+        } else {
+          toast({ title: 'Action Failed', description: res.error || 'Failed to review prototype.', variant: 'error' });
+        }
+      } else if (rejectionModal.type === 'survey') {
+        const res = await reviewFieldSurveyAction(projectId, false, rejectionReason);
+        if (res.success) {
+          toast({ title: 'Survey Sent for Rework', description: 'Sent back to field team.', variant: 'success' });
+          router.refresh();
+        } else {
+          toast({ title: 'Action Failed', description: res.error || 'Failed to review survey.', variant: 'error' });
+        }
+      } else if (rejectionModal.type === 'final') {
+        const { engineerReviewFinalCADAction } = await import("@/actions/review.actions");
+        const res = await engineerReviewFinalCADAction(projectId, false, rejectionReason, rejectionComments, rejectionInstructions);
+        if (res.success) {
+          toast({ title: 'Final Deliverable Rejected', description: 'Project returned to CAD Finalization stage.', variant: 'success' });
+          router.refresh();
+        } else {
+          toast({ title: 'Rejection Failed', description: res.error || 'An error occurred.', variant: 'error' });
+        }
       }
+      setRejectionModal({ isOpen: false, type: null });
     });
   };
 
@@ -650,6 +678,69 @@ export function OperationsFileUploadPanel({
 
   return (
     <div className="flex flex-col gap-5">
+      <Dialog open={rejectionModal.isOpen} onOpenChange={(open) => !open && setRejectionModal({ isOpen: false, type: null })}>
+        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <XCircle className="w-6 h-6 text-rose-500" />
+              Provide Rejection Reason
+            </DialogTitle>
+            <DialogDescription className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Please explain why this document is being rejected so the team can rework it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Rejection Reason *</label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Required explanation..."
+                className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all text-slate-800 dark:text-white min-h-[100px] resize-none"
+              />
+            </div>
+            {rejectionModal.type === 'final' && (
+              <>
+                <div className="space-y-1.5 text-left">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Comments (Optional)</label>
+                  <textarea
+                    value={rejectionComments}
+                    onChange={(e) => setRejectionComments(e.target.value)}
+                    placeholder="Any additional comments..."
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all text-slate-800 dark:text-white min-h-[60px] resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5 text-left">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Revision Instructions (Optional)</label>
+                  <textarea
+                    value={rejectionInstructions}
+                    onChange={(e) => setRejectionInstructions(e.target.value)}
+                    placeholder="Specific instructions for revision..."
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all text-slate-800 dark:text-white min-h-[60px] resize-none"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter className="mt-6 flex gap-3 sm:gap-0">
+            <button
+              disabled={isPending}
+              onClick={() => setRejectionModal({ isOpen: false, type: null })}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={isPending || !rejectionReason.trim()}
+              onClick={submitRejection}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+            >
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+              Reject Document
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Upload Progress Overlay */}
       {isUploading && (

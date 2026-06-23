@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   CheckCircle2, XCircle, MessageSquare, Send, Loader2,
   ShieldCheck, AlertTriangle, RefreshCw, UserCheck,
@@ -19,6 +20,7 @@ interface QuotationApprovalPanelProps {
 type Action = 'approve' | 'reject' | 'revision' | 'send' | 'approve_on_behalf' | null;
 
 export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate }: QuotationApprovalPanelProps) {
+  const router = useRouter();
   const [action, setAction] = useState<Action>(null);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,11 +28,11 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
   const isAccountant = userRole === 'accountant' || userRole === 'admin';
 
   // What's available per status
-  const canSend              = isAccountant && quotation.status === 'Draft';
-  const canMarkSentApproved  = isAccountant && (quotation.status === 'Sent' || quotation.status === 'Viewed');
-  const canMarkSentRejected  = isAccountant && (quotation.status === 'Sent' || quotation.status === 'Viewed');
-  const canRequestRevision   = isAccountant && (quotation.status === 'Sent' || quotation.status === 'Viewed');
-  const canRedraft           = isAccountant && quotation.status === 'Revision Requested';
+  const canSend = isAccountant && quotation.status === 'Draft';
+  const canMarkSentApproved = isAccountant && (quotation.status === 'Sent' || quotation.status === 'Viewed');
+  const canMarkSentRejected = isAccountant && (quotation.status === 'Sent' || quotation.status === 'Viewed');
+  const canRequestRevision = isAccountant && (quotation.status === 'Sent' || quotation.status === 'Viewed');
+  const canRedraft = isAccountant && quotation.status === 'Revision Requested';
 
   const noActions = !canSend && !canMarkSentApproved && !canMarkSentRejected && !canRequestRevision && !canRedraft;
 
@@ -42,33 +44,38 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
     }
 
     const statusMap: Record<string, string> = {
-      approve:           'Approved',
+      approve: 'Approved',
       approve_on_behalf: 'Approved',
-      reject:            'Rejected',
-      revision:          'Revision Requested',
-      send:              'Sent',
+      reject: 'Rejected',
+      revision: 'Revision Requested',
+      send: 'Sent',
     };
 
     setLoading(true);
     const res = await updateQuotationStatusAction({
-      id:               quotation.id,
-      status:           statusMap[action] as any,
-      comment:          comment || undefined,
+      id: quotation.id,
+      status: statusMap[action] as any,
+      comment: comment || undefined,
       rejection_reason: action === 'reject' ? comment : undefined,
     });
 
     if (res.success) {
       const messages: Record<string, string> = {
-        approve:           '🎉 Quotation Approved!',
+        approve: '🎉 Quotation Approved!',
         approve_on_behalf: '✅ Marked as Approved on behalf of client',
-        reject:            'Quotation rejected',
-        revision:          'Revision requested',
-        send:              'Quotation sent to client',
+        reject: 'Quotation rejected',
+        revision: 'Revision requested',
+        send: 'Quotation sent to client',
       };
       toast.success(messages[action] || 'Updated', { description: comment || 'Workflow updated.' });
       setAction(null);
       setComment('');
-      onUpdate();
+      
+      if (action === 'approve' || action === 'approve_on_behalf') {
+        router.push('/accounts/approvals');
+      } else {
+        onUpdate();
+      }
     } else {
       toast.error('Action failed', { description: res.error || 'An unexpected error occurred.' });
     }
@@ -179,9 +186,9 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
             onChange={e => setComment(e.target.value)}
             placeholder={
               action === 'approve_on_behalf' ? 'Optional: Add approval note (e.g. verbal approval received on call)...' :
-              action === 'reject'            ? 'Required: Reason for rejection...' :
-              action === 'revision'          ? 'Required: What needs to be revised...' :
-              'Optional: Add note for client...'
+                action === 'reject' ? 'Required: Reason for rejection...' :
+                  action === 'revision' ? 'Required: What needs to be revised...' :
+                    'Optional: Add note for client...'
             }
             rows={3}
             className="flat-input resize-none text-sm"
@@ -194,9 +201,9 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
             <button onClick={handleSubmit} disabled={loading}
               className={cn('flex-1 py-2.5 rounded-xl text-xs font-semibold text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-50',
                 action === 'approve_on_behalf' ? 'bg-emerald-600 hover:bg-emerald-700' :
-                action === 'reject'            ? 'bg-rose-600 hover:bg-rose-700' :
-                action === 'revision'          ? 'bg-amber-500 hover:bg-amber-600' :
-                'bg-blue-600 hover:bg-blue-700')}>
+                  action === 'reject' ? 'bg-rose-600 hover:bg-rose-700' :
+                    action === 'revision' ? 'bg-amber-500 hover:bg-amber-600' :
+                      'bg-blue-600 hover:bg-blue-700')}>
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
               Confirm
             </button>

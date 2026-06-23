@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Plus, Trash2, Calculator, FileText, ShieldCheck, Info,
   Save, X, Loader2, LayoutGrid, Receipt, RefreshCw, Scroll,
@@ -14,17 +15,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Service catalogue ────────────────────────────────────────────────────────
 const SERVICE_DESCRIPTIONS: Record<string, string> = {
-  'Topographical Survey':  'Full topographic survey with contour mapping',
+  'Topographical Survey': 'Full topographic survey with contour mapping',
   'Boundary Verification': 'Boundary demarcation and area verification',
-  'Construction Staking':  'Layout grid and peg installation for construction',
-  'Utility Locating':      'Underground utility detection and mapping',
-  'As-Built Survey':       'Post-construction as-built documentation',
-  'Drone Photogrammetry':  'Aerial orthomosaic and 3D point-cloud generation',
-  'Bathymetric Mapping':   'Underwater depth survey of water bodies',
-  'DGPS Survey':           'High-precision DGPS data collection',
-  'CAD Drafting':          'Technical drawing and CAD deliverables',
-  'Site Visit':            'On-site inspection and assessment',
-  'Revision Charge':       'Additional revision cycle',
+  'Construction Staking': 'Layout grid and peg installation for construction',
+  'Utility Locating': 'Underground utility detection and mapping',
+  'As-Built Survey': 'Post-construction as-built documentation',
+  'Drone Photogrammetry': 'Aerial orthomosaic and 3D point-cloud generation',
+  'Bathymetric Mapping': 'Underwater depth survey of water bodies',
+  'DGPS Survey': 'High-precision DGPS data collection',
+  'CAD Drafting': 'Technical drawing and CAD deliverables',
+  'Site Visit': 'On-site inspection and assessment',
+  'Revision Charge': 'Additional revision cycle',
 };
 const ALL_PRESET_SERVICES = Object.keys(SERVICE_DESCRIPTIONS);
 
@@ -36,7 +37,7 @@ function buildInitialItems(project: any, existingQuotation?: any) {
   if (existingQuotation?.items?.length) {
     return existingQuotation.items.map((item: any) => ({
       ...item,
-      quantity:   item.quantity   ?? item.default_quantity   ?? 1,
+      quantity: item.quantity ?? item.default_quantity ?? 1,
       unit_price: item.unit_price ?? item.default_unit_price ?? 0,
     }));
   }
@@ -58,6 +59,7 @@ interface QuotationBuilderEngineProps {
 export function QuotationBuilderEngine({
   project, existingQuotation, onCancel, onSuccess, isRevision,
 }: QuotationBuilderEngineProps) {
+  const router = useRouter();
   const isScratch = !project; // standalone quotation with no linked project
 
   // Client / company details (scratch mode only)
@@ -82,7 +84,7 @@ export function QuotationBuilderEngine({
   // Notes
   const [notes, setNotes] = useState(existingQuotation?.notes || '');
   const [internalNotes, setInternalNotes] = useState({
-    margin_notes:  existingQuotation?.internal_notes?.margin_notes  || '',
+    margin_notes: existingQuotation?.internal_notes?.margin_notes || '',
     finance_notes: existingQuotation?.internal_notes?.finance_notes || '',
   });
 
@@ -164,7 +166,7 @@ export function QuotationBuilderEngine({
   const handleSaveAsTemplate = async () => {
     const templateName = window.prompt("Enter a name for the new template:");
     if (!templateName || !templateName.trim()) return;
-    
+
     setLoading(true);
     const res = await saveQuotationTemplateAction({
       name: templateName.trim(),
@@ -172,7 +174,7 @@ export function QuotationBuilderEngine({
       is_default: false,
       clauses: activeClauses
     });
-    
+
     if (res.success) {
       toast.success("Template saved successfully");
       getQuotationTemplatesAction().then(r => {
@@ -205,57 +207,68 @@ export function QuotationBuilderEngine({
   };
 
   // ── Financials ──────────────────────────────────────────────────────────────
-  const subtotal       = items.reduce((s: any, i: any) => s + (i.total || 0), 0);
+  const subtotal = items.reduce((s: any, i: any) => s + (i.total || 0), 0);
   const discountPctVal = Math.min(Math.max(Number(discountPct) || 0, 0), 100);
-  const discountAmt    = (subtotal * discountPctVal) / 100;
-  const afterDiscount  = subtotal - discountAmt;
-  const gstAmount      = (afterDiscount * 18) / 100;
-  const total          = afterDiscount + gstAmount;
+  const discountAmt = (subtotal * discountPctVal) / 100;
+  const afterDiscount = subtotal - discountAmt;
+  const gstAmount = (afterDiscount * 18) / 100;
+  const total = afterDiscount + gstAmount;
   const fmt = (n: number) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (isScratch && !clientDetails.company_name.trim()) { toast.error('Company name is required.'); return; }
-    if (isScratch && !clientDetails.project_title.trim()) { toast.error('Project / quotation title is required.'); return; }
-    if (items.some((i: any) => !i.service_name.trim())) { toast.error('All line items require a service name.'); return; }
-    if (isRevision && !revisionReason.trim()) { toast.error('Revision reason is required.'); return; }
+    try {
+      if (isScratch && !clientDetails.company_name.trim()) { toast.error('Company name is required.'); return; }
+      if (isScratch && !clientDetails.project_title.trim()) { toast.error('Project / quotation title is required.'); return; }
+      if (items.some((i: any) => !(i.service_name || i.name)?.trim())) { toast.error('All line items require a service name.'); return; }
+      if (isRevision && !revisionReason.trim()) { toast.error('Revision reason is required.'); return; }
 
-    setLoading(true);
-    const compiledTerms = activeClauses.map((c: any) => `${c.title.toUpperCase()}:\n${c.content}`).join('\n\n');
+      setLoading(true);
+      const compiledTerms = activeClauses.map((c: any) => `${(c.title || '').toUpperCase()}:\n${c.content || ''}`).join('\n\n');
 
-    const payload = {
-      project_id:       project?.id ?? null,
-      quotation_number: existingQuotation?.quotation_number || `QTN-${Date.now().toString().slice(-6)}`,
-      ...(isScratch && { client_details: clientDetails }),
-      items:            items.map((i: any) => ({ ...i, total: Number(i.total) })),
-      discount_pct:     discountPctVal,
-      discount_amount:  discountAmt,
-      subtotal,
-      gst_rate:         18,
-      gst_amount:       gstAmount,
-      total_amount:     total,
-      notes,
-      terms:            compiledTerms,
-      clauses:          activeClauses,
-      assigned_to:      assignedTo || undefined,
-      internal_notes: {
-        pricing_discussions: [],
-        margin_notes:        internalNotes.margin_notes,
-        finance_notes:       internalNotes.finance_notes,
-      },
-    };
+      const payload = {
+        project_id: project?.id ?? null,
+        quotation_number: existingQuotation?.quotation_number || `QTN-${Date.now().toString().slice(-6)}`,
+        ...(isScratch && { client_details: clientDetails }),
+        items: items.map((i: any) => ({ ...i, total: Number(i.total) || 0 })),
+        discount_pct: discountPctVal,
+        discount_amount: discountAmt,
+        subtotal,
+        gst_rate: 18,
+        gst_amount: gstAmount,
+        total_amount: total,
+        notes,
+        terms: compiledTerms,
+        clauses: activeClauses,
+        assigned_to: assignedTo || undefined,
+        internal_notes: {
+          pricing_discussions: [],
+          margin_notes: internalNotes.margin_notes,
+          finance_notes: internalNotes.finance_notes,
+        },
+      };
 
-    const res = isRevision && existingQuotation
-      ? await createQuotationRevisionAction(existingQuotation.id, payload, revisionReason)
-      : await createQuotationAction(payload);
+      const res = isRevision && existingQuotation
+        ? await createQuotationRevisionAction(existingQuotation.id, payload, revisionReason)
+        : await createQuotationAction(payload);
 
-    if (res.success) {
-      toast.success(isRevision ? `Revision V${(existingQuotation.current_version || 1) + 1} created` : 'Quotation saved');
-      onSuccess();
-    } else {
-      toast.error('Failed to save quotation', { description: res.error });
+      if (res.success) {
+        toast.success(isRevision ? `Revision V${(existingQuotation.current_version || 1) + 1} created` : 'Quotation saved');
+        if (project?.id) {
+          window.location.assign(`/accounts/quotations?project=${project.id}&mode=manage`);
+        } else {
+          onSuccess();
+        }
+      } else {
+        alert("Failed to save quotation! Reason: " + res.error);
+        toast.error('Failed to save quotation', { description: res.error });
+      }
+    } catch (error: any) {
+      alert("Unexpected error crashed the save function: " + error.message);
+      toast.error('Unexpected error occurred', { description: error.message });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Presets not yet in items
@@ -583,14 +596,18 @@ export function QuotationBuilderEngine({
                         </div>
 
                         {/* Clause content — clearly visible */}
-                        <div className="p-4">
+                        <div className="p-4 relative">
                           <textarea
                             value={clause.content}
                             onChange={e => updateClause(idx, 'content', e.target.value)}
                             placeholder="Enter clause details…"
                             rows={4}
-                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-white/20 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 resize-y leading-relaxed transition-all"
+                            maxLength={500}
+                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] px-3 py-2.5 pb-7 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-white/20 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 resize-y leading-relaxed transition-all"
                           />
+                          <div className="absolute bottom-6 right-6 text-[10px] text-slate-400 font-medium pointer-events-none">
+                            {clause.content?.length || 0}/500
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -704,8 +721,8 @@ export function QuotationBuilderEngine({
                   Assigned Accountant
                 </label>
                 <div className="flat-input bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/65 dark:border-white/10 text-sm font-semibold py-2.5 px-3 rounded-lg text-slate-850 dark:text-slate-200">
-                  {staff.find((s: any) => s.id === assignedTo) 
-                    ? `${staff.find((s: any) => s.id === assignedTo)?.first_name || ''} ${staff.find((s: any) => s.id === assignedTo)?.last_name || ''}`.trim() 
+                  {staff.find((s: any) => s.id === assignedTo)
+                    ? `${staff.find((s: any) => s.id === assignedTo)?.first_name || ''} ${staff.find((s: any) => s.id === assignedTo)?.last_name || ''}`.trim()
                     : 'Unassigned'} {assignedTo === currentUserId ? '(You)' : ''}
                 </div>
                 {assignedTo === currentUserId && (

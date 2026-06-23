@@ -4,26 +4,27 @@ import React, { useState, useEffect, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getProjectsListAction } from "@/actions/project.actions";
-import { getMilestonesAction, createMilestonesAction, getPaymentsAction, freezeProjectAction, unfreezeProjectAction } from "@/actions/finance.actions";
-import { getAllQuotationsAction } from "@/actions/quotation.actions";
+import { getMilestonesAction, createMilestonesAction, getPaymentsAction, freezeProjectAction, unfreezeProjectAction, getProjectsFinancialSummaryAction } from "@/actions/finance.actions";
 import { transitionWorkflowAction } from "@/actions/workflow.actions";
 import { getFieldVisitsAction, logFieldVisitAction } from "@/actions/operations.actions";
-import { 
-  Target, 
-  Search, 
-  Clock, 
-  Building, 
-  Plus, 
-  X, 
-  Save, 
-  Trash2, 
+import {
+  Target,
+  Search,
+  Clock,
+  Building,
+  Plus,
+  X,
+  Save,
+  Trash2,
   Calendar,
   IndianRupee,
   Activity,
   ArrowRight,
   Pause,
   Play,
-  MapPin
+  MapPin,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -45,13 +46,13 @@ import {
 const ACTIVE_SURVEY_STATUSES = [
   "payment_pending",
   "payment_done",
-  "project_created", 
-  "data_collection", 
-  "prototype", 
-  "review", 
-  "field_work", 
-  "data_sync", 
-  "post_processing", 
+  "project_created",
+  "data_collection",
+  "prototype",
+  "review",
+  "field_work",
+  "data_sync",
+  "post_processing",
   "final_review",
   "delivery"
 ];
@@ -74,14 +75,16 @@ function ProjectMilestonesContent() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
   // Slide-over State
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [milestones, setMilestones] = useState<any[]>([]);
   const [fieldVisits, setFieldVisits] = useState<any[]>([]);
   const [loadingMilestones, setLoadingMilestones] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+
   // Tabs in slideover
   const [activeTab, setActiveTab] = useState<"milestones" | "visits">("milestones");
   const [newVisitDate, setNewVisitDate] = useState<Date | undefined>(undefined);
@@ -94,6 +97,10 @@ function ProjectMilestonesContent() {
     setMounted(true);
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // Auto-open panel based on query parameter
   useEffect(() => {
@@ -108,11 +115,7 @@ function ProjectMilestonesContent() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const [projRes, quotesRes, paymentsRes] = await Promise.all([
-        getProjectsListAction(),
-        getAllQuotationsAction(),
-        getPaymentsAction()
-      ]);
+      const projRes = await getProjectsListAction();
 
       if (projRes?.success && projRes.data) {
         // Filter to only active operational/survey projects (or matching search param)
@@ -120,21 +123,18 @@ function ProjectMilestonesContent() {
           if (projectIdParam && p.id === projectIdParam) return true;
           return ACTIVE_SURVEY_STATUSES.includes(p.status);
         });
+
+        const activeIds = active.map((p: any) => p.id);
         
-        // Map contract values and payments
-        if (quotesRes?.success && quotesRes.data) {
+        // Fetch only aggregated financials for the filtered active projects
+        const finRes = await getProjectsFinancialSummaryAction(activeIds);
+
+        if (finRes?.success && finRes.data) {
           active.forEach((p: any) => {
-             const approvedQuote = quotesRes.data.find((q: any) => q.project_id === p.id && q.status?.toLowerCase() === 'approved');
-             p.contract_value = approvedQuote ? approvedQuote.total_amount : 0;
-             
-             let received = 0;
-             if (paymentsRes?.success && paymentsRes.data) {
-               const projectPayments = paymentsRes.data.filter((pay: any) => pay.project_id === p.id && pay.status === 'verified');
-               received = projectPayments.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0);
-             }
-             
-             p.received_amount = received;
-             p.pending_amount = Math.max(0, p.contract_value - received);
+            const financials = finRes.data[p.id] || { contract_value: 0, received_amount: 0 };
+            p.contract_value = financials.contract_value;
+            p.received_amount = financials.received_amount;
+            p.pending_amount = Math.max(0, financials.contract_value - financials.received_amount);
           });
         }
 
@@ -153,13 +153,13 @@ function ProjectMilestonesContent() {
     setMilestones([]);
     setFieldVisits([]);
     setActiveTab("milestones");
-    
+
     try {
       const [msRes, visitsRes] = await Promise.all([
         getMilestonesAction(project.id),
         getFieldVisitsAction(project.id)
       ]);
-      
+
       if (msRes?.success && msRes.data) {
         setMilestones(msRes.data);
       } else {
@@ -212,7 +212,7 @@ function ProjectMilestonesContent() {
 
   const handleSaveMilestones = async () => {
     if (!selectedProject) return;
-    
+
     // Validate
     for (let m of milestones) {
       if (!m.title.trim()) {
@@ -227,6 +227,23 @@ function ProjectMilestonesContent() {
 
     try {
       setSaving(true);
+
+      // If user filled the visit fields but clicked Save Configuration instead of Schedule, save it automatically
+      if (newVisitDate) {
+        const priceVal = newVisitPrice ? Number(newVisitPrice) : 0;
+        const visitRes = await logFieldVisitAction(
+          selectedProject.id,
+          newVisitDate.toISOString(),
+          "Scheduled from Milestones Portal",
+          priceVal
+        );
+        if (visitRes?.success) {
+          toast.success("Field visit scheduled.");
+        } else {
+          toast.error(visitRes?.error || "Failed to schedule field visit.");
+        }
+      }
+
       const payload = milestones.map((m: any) => ({
         title: m.title,
         description: m.description || "",
@@ -237,10 +254,10 @@ function ProjectMilestonesContent() {
       }));
 
       const res = await createMilestonesAction(selectedProject.id, payload);
-      
+
       if (res?.success) {
         toast.success("Milestones saved successfully.");
-        
+
         if (planParam === "true") {
           toast.info("Dispatching project to Survey Operations...");
           const dispatchRes = await transitionWorkflowAction(
@@ -257,7 +274,7 @@ function ProjectMilestonesContent() {
             toast.error(dispatchRes?.error || "Failed to dispatch to Survey.");
           }
         }
-        
+
         closePanel();
         fetchProjects();
       } else {
@@ -281,16 +298,16 @@ function ProjectMilestonesContent() {
 
     try {
       if (isCurrentlyHeld) {
-         if (projectToHold.is_frozen) {
-             await unfreezeProjectAction(projectToHold.id, "Resumed from Accountant Portal");
-         }
-         if (projectToHold.status === "on_hold") {
-             await transitionWorkflowAction(projectToHold.id, "project_created", "Resumed from Accountant Portal");
-         }
-         toast.success("Project resumed successfully.");
+        if (projectToHold.is_frozen) {
+          await unfreezeProjectAction(projectToHold.id, "Resumed from Accountant Portal");
+        }
+        if (projectToHold.status === "on_hold") {
+          await transitionWorkflowAction(projectToHold.id, "project_created", "Resumed from Accountant Portal");
+        }
+        toast.success("Project resumed successfully.");
       } else {
-         await freezeProjectAction(projectToHold.id, "financial_hold", "Put on hold from Accountant Portal");
-         toast.success("Project put on hold.");
+        await freezeProjectAction(projectToHold.id, "financial_hold", "Put on hold from Accountant Portal");
+        toast.success("Project put on hold.");
       }
       fetchProjects();
     } catch (err) {
@@ -305,9 +322,9 @@ function ProjectMilestonesContent() {
     try {
       const priceVal = newVisitPrice ? Number(newVisitPrice) : 0;
       const res = await logFieldVisitAction(
-        selectedProject.id, 
-        newVisitDate.toISOString(), 
-        "Scheduled from Milestones Portal", 
+        selectedProject.id,
+        newVisitDate.toISOString(),
+        "Scheduled from Milestones Portal",
         priceVal
       );
       if (res?.success && res.data) {
@@ -316,10 +333,10 @@ function ProjectMilestonesContent() {
         setNewVisitDate(undefined);
         setNewVisitPrice("");
       } else {
-        toast.error(res?.error || "Failed to schedule visit.");
+        toast.error("Failed to schedule: " + (res?.error || "Unknown error."));
       }
-    } catch (err) {
-      toast.error("Unexpected error.");
+    } catch (err: any) {
+      toast.error("Unexpected error: " + (err.message || String(err)));
     }
   };
 
@@ -334,6 +351,10 @@ function ProjectMilestonesContent() {
       p.id?.toLowerCase().includes(q)
     );
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedProjects = filteredProjects.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
@@ -370,9 +391,10 @@ function ProjectMilestonesContent() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <AnimatePresence mode="popLayout">
-            {filteredProjects.map((p) => (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <AnimatePresence mode="popLayout">
+              {paginatedProjects.map((p) => (
               <motion.div
                 key={p.id}
                 layout
@@ -382,7 +404,7 @@ function ProjectMilestonesContent() {
                 className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative group overflow-hidden"
               >
                 <div className="flex flex-col h-full justify-between gap-6">
-                  
+
                   {/* Top Section */}
                   <div className="flex items-start gap-4 min-w-0">
                     <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center flex-shrink-0 text-indigo-600 dark:text-indigo-400">
@@ -426,7 +448,7 @@ function ProjectMilestonesContent() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Bottom Action Row */}
                   <div className="flex items-center gap-3 mt-auto pt-2">
                     <button
@@ -458,6 +480,45 @@ function ProjectMilestonesContent() {
             ))}
           </AnimatePresence>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, filteredProjects.length)} of {filteredProjects.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safeCurrentPage === 1}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${page === safeCurrentPage
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
+                      : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safeCurrentPage === totalPages}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       )}
 
       {/* Modal card */}
@@ -465,313 +526,313 @@ function ProjectMilestonesContent() {
         <AnimatePresence>
           {selectedProject && (
             <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-900/50 dark:bg-black/70 backdrop-blur-xl z-[100]"
-              onClick={closePanel}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 20 }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
-            >
-              <div
-                className="pointer-events-auto w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#0f121b] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 flex flex-col overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-slate-900/50 dark:bg-black/70 backdrop-blur-xl z-[100]"
+                onClick={closePanel}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 20 }}
+                transition={{ type: "spring", damping: 28, stiffness: 280 }}
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
               >
-              <div className="flex items-center justify-between p-6 border-b border-slate-200/60 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Milestone Configuration</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{selectedProject.name}</p>
-                </div>
-                <button
-                  onClick={closePanel}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors"
+                <div
+                  className="pointer-events-auto w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#0f121b] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 flex flex-col overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Tabs Header */}
-              <div className="flex items-center gap-6 px-6 border-b border-slate-200/60 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01] overflow-x-auto scrollbar-hide pt-2">
-                <button
-                  onClick={() => setActiveTab("milestones")}
-                  className={cn(
-                    "pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2",
-                    activeTab === "milestones"
-                      ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                      : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
-                  )}
-                >
-                  <Target className="w-4 h-4" />
-                  Payment Milestones
-                </button>
-                <button
-                  onClick={() => setActiveTab("visits")}
-                  className={cn(
-                    "pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2",
-                    activeTab === "visits"
-                      ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                      : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
-                  )}
-                >
-                  <MapPin className="w-4 h-4" />
-                  Field Visits
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6 bg-slate-50/30 dark:bg-transparent">
-                {loadingMilestones ? (
-                  <div className="flex flex-col items-center justify-center h-40">
-                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-xs font-medium text-slate-500 mt-3">Loading milestones...</p>
-                  </div>
-                ) : activeTab === "milestones" ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                        <Target className="w-4 h-4 text-indigo-500" />
-                        Payment Milestones
-                      </h3>
-                      <button
-                        onClick={addMilestoneRow}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Add Milestone
-                      </button>
+                  <div className="flex items-center justify-between p-6 border-b border-slate-200/60 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">Milestone Configuration</h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{selectedProject.name}</p>
                     </div>
+                    <button
+                      onClick={closePanel}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
 
-                    {milestones.length === 0 ? (
-                      <div className="text-center py-10 border border-dashed border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-white/[0.02]">
-                        <p className="text-xs text-slate-500 dark:text-slate-400">No milestones configured yet.</p>
+                  {/* Tabs Header */}
+                  <div className="flex items-center gap-6 px-6 border-b border-slate-200/60 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01] overflow-x-auto scrollbar-hide pt-2">
+                    <button
+                      onClick={() => setActiveTab("milestones")}
+                      className={cn(
+                        "pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2",
+                        activeTab === "milestones"
+                          ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                          : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                      )}
+                    >
+                      <Target className="w-4 h-4" />
+                      Payment Milestones
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("visits")}
+                      className={cn(
+                        "pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2",
+                        activeTab === "visits"
+                          ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                          : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                      )}
+                    >
+                      <MapPin className="w-4 h-4" />
+                      Field Visits
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6 bg-slate-50/30 dark:bg-transparent">
+                    {loadingMilestones ? (
+                      <div className="flex flex-col items-center justify-center h-40">
+                        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs font-medium text-slate-500 mt-3">Loading milestones...</p>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <AnimatePresence mode="popLayout">
-                          {milestones.map((m, idx) => (
-                            <motion.div
-                              key={m.id || idx}
-                              layout
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              className="bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm relative group"
-                            >
-                              <button
-                                onClick={() => removeMilestone(idx)}
-                                className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
-                                title="Remove Milestone"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                              
-                              <div className="space-y-4 pr-6">
-                                <div>
-                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Milestone Title</label>
-                                  <input
-                                    type="text"
-                                    value={m.title}
-                                    onChange={(e) => updateMilestone(idx, 'title', e.target.value)}
-                                    placeholder="e.g. 50% Advance Payment"
-                                    className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                  />
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Amount (₹)</label>
-                                    <div className="relative">
-                                      <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    ) : activeTab === "milestones" ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                            <Target className="w-4 h-4 text-indigo-500" />
+                            Payment Milestones
+                          </h3>
+                          <button
+                            onClick={addMilestoneRow}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Add Milestone
+                          </button>
+                        </div>
+
+                        {milestones.length === 0 ? (
+                          <div className="text-center py-10 border border-dashed border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-white/[0.02]">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">No milestones configured yet.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <AnimatePresence mode="popLayout">
+                              {milestones.map((m, idx) => (
+                                <motion.div
+                                  key={m.id || idx}
+                                  layout
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  className="bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm relative group"
+                                >
+                                  <button
+                                    onClick={() => removeMilestone(idx)}
+                                    className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
+                                    title="Remove Milestone"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+
+                                  <div className="space-y-4 pr-6">
+                                    <div>
+                                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Milestone Title</label>
                                       <input
-                                        type="number"
-                                        value={m.amount}
-                                        onChange={(e) => updateMilestone(idx, 'amount', e.target.value)}
-                                        className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums"
+                                        type="text"
+                                        value={m.title}
+                                        onChange={(e) => updateMilestone(idx, 'title', e.target.value)}
+                                        placeholder="e.g. 50% Advance Payment"
+                                        className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
                                       />
                                     </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Amount (₹)</label>
+                                        <div className="relative">
+                                          <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                          <input
+                                            type="number"
+                                            value={m.amount}
+                                            onChange={(e) => updateMilestone(idx, 'amount', e.target.value)}
+                                            className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Due Date (Optional)</label>
+                                        <PremiumDatePicker
+                                          value={m.due_date?.split('T')[0] || ""}
+                                          onChange={(date) => updateMilestone(idx, 'due_date', date)}
+                                          side="right"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Linked Workflow Stage (Optional)</label>
+                                      <select
+                                        value={m.linked_stage || ""}
+                                        onChange={(e) => updateMilestone(idx, 'linked_stage', e.target.value)}
+                                        className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                      >
+                                        <option value="">-- No linked stage --</option>
+                                        <optgroup label="Field Visits">
+                                          {fieldVisits.map((v, vIdx) => (
+                                            <option key={v.id} value={`visit:${v.id}`}>
+                                              Visit #{vIdx + 1} ({format(new Date(v.visit_date), "MMM d, yyyy")})
+                                            </option>
+                                          ))}
+                                        </optgroup>
+                                        <optgroup label="Workflow Stages">
+                                          <option value="data_collection">Data Collection</option>
+                                          <option value="prototype">Prototype</option>
+                                          <option value="review">Review</option>
+                                          <option value="field_work">Field Work</option>
+                                          <option value="data_sync">Data Sync</option>
+                                          <option value="final_review">Final Review</option>
+                                          <option value="completed">Completed</option>
+                                        </optgroup>
+                                      </select>
+                                    </div>
+
+                                    <div className="pt-2">
+                                      <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={m.is_activation_gate || false}
+                                          onChange={(e) => updateMilestone(idx, 'is_activation_gate', e.target.checked)}
+                                          className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                          Make this an Activation Gate
+                                        </span>
+                                      </label>
+                                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 pl-6 leading-relaxed">
+                                        If enabled, operations cannot proceed to the linked stage until this payment is verified.
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Due Date (Optional)</label>
-                                    <PremiumDatePicker
-                                      value={m.due_date?.split('T')[0] || ""}
-                                      onChange={(date) => updateMilestone(idx, 'due_date', date)}
-                                      side="right"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Linked Workflow Stage (Optional)</label>
-                                  <select
-                                    value={m.linked_stage || ""}
-                                    onChange={(e) => updateMilestone(idx, 'linked_stage', e.target.value)}
-                                    className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                  >
-                                    <option value="">-- No linked stage --</option>
-                                    <optgroup label="Field Visits">
-                                      {fieldVisits.map((v, vIdx) => (
-                                        <option key={v.id} value={`visit:${v.id}`}>
-                                          Visit #{vIdx + 1} ({format(new Date(v.visit_date), "MMM d, yyyy")})
-                                        </option>
-                                      ))}
-                                    </optgroup>
-                                    <optgroup label="Workflow Stages">
-                                      <option value="data_collection">Data Collection</option>
-                                      <option value="prototype">Prototype</option>
-                                      <option value="review">Review</option>
-                                      <option value="field_work">Field Work</option>
-                                      <option value="data_sync">Data Sync</option>
-                                      <option value="final_review">Final Review</option>
-                                      <option value="completed">Completed</option>
-                                    </optgroup>
-                                  </select>
-                                </div>
-
-                                <div className="pt-2">
-                                  <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={m.is_activation_gate || false}
-                                      onChange={(e) => updateMilestone(idx, 'is_activation_gate', e.target.checked)}
-                                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                      Make this an Activation Gate
-                                    </span>
-                                  </label>
-                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 pl-6 leading-relaxed">
-                                    If enabled, operations cannot proceed to the linked stage until this payment is verified.
-                                  </p>
-                                </div>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </AnimatePresence>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  // FIELD VISITS TAB
-                  <>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-indigo-500" />
-                        Scheduled Visits
-                      </h3>
-                    </div>
-
-                    <div className="bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm mb-6">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-3">Schedule New Visit</h4>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Date</label>
-                          <PremiumDatePicker
-                            value={newVisitDate ? format(newVisitDate, "yyyy-MM-dd") : ""}
-                            onChange={(dateStr) => setNewVisitDate(dateStr ? new Date(dateStr) : undefined)}
-                            side="right"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Price (₹, Optional)</label>
-                          <div className="relative">
-                            <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                            <input
-                              type="number"
-                              value={newVisitPrice}
-                              onChange={(e) => setNewVisitPrice(e.target.value)}
-                              placeholder="e.g. 5000"
-                              className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums"
-                            />
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
                           </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleScheduleVisit}
-                        disabled={!newVisitDate}
-                        className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm active:scale-95"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Schedule Field Visit
-                      </button>
-                    </div>
-
-                    {fieldVisits.length === 0 ? (
-                      <div className="text-center py-10 border border-dashed border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-white/[0.02]">
-                        <p className="text-xs text-slate-500 dark:text-slate-400">No field visits logged yet.</p>
-                      </div>
+                        )}
+                      </>
                     ) : (
-                      <div className="space-y-3">
-                        {fieldVisits.map((v, vIdx) => (
-                          <div key={v.id} className="flex items-center justify-between p-4 bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-[10px]">
-                                #{vIdx + 1}
-                              </div>
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                                  {format(new Date(v.visit_date), "MMMM d, yyyy")}
-                                </p>
-                                <div className="flex items-center gap-2 mt-0.5 text-[10px] font-medium text-slate-500 uppercase tracking-wider font-semibold">
-                                  <span>Status: {v.status.replace(/_/g, " ")}</span>
-                                  {v.price > 0 && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">Price: {formatCurrency(v.price)}</span>
-                                    </>
-                                  )}
-                                </div>
+                      // FIELD VISITS TAB
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-indigo-500" />
+                            Scheduled Visits
+                          </h3>
+                        </div>
+
+                        <div className="bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm mb-6">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-3">Schedule New Visit</h4>
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Date</label>
+                              <PremiumDatePicker
+                                value={newVisitDate ? format(newVisitDate, "yyyy-MM-dd") : ""}
+                                onChange={(dateStr) => setNewVisitDate(dateStr ? new Date(dateStr) : undefined)}
+                                side="right"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Price (₹, Optional)</label>
+                              <div className="relative">
+                                <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                <input
+                                  type="number"
+                                  value={newVisitPrice}
+                                  onChange={(e) => setNewVisitPrice(e.target.value)}
+                                  placeholder="e.g. 5000"
+                                  className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums"
+                                />
                               </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+                          <button
+                            onClick={handleScheduleVisit}
+                            disabled={!newVisitDate}
+                            className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Schedule Field Visit
+                          </button>
+                        </div>
 
-              <div className="p-6 border-t border-slate-200/60 dark:border-white/5 bg-white dark:bg-[#0f121b] flex items-center justify-between">
-                <div className="text-xs font-semibold text-slate-500">
-                  Total Milestones: <span className="text-slate-900 dark:text-white nums">{milestones.length}</span>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={closePanel}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveMilestones}
-                    disabled={saving || loadingMilestones}
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
-                  >
-                    {saving ? (
-                      <>
-                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        Save Configuration
+                        {fieldVisits.length === 0 ? (
+                          <div className="text-center py-10 border border-dashed border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-white/[0.02]">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">No field visits logged yet.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {fieldVisits.map((v, vIdx) => (
+                              <div key={v.id} className="flex items-center justify-between p-4 bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-[10px]">
+                                    #{vIdx + 1}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                      {format(new Date(v.visit_date), "MMMM d, yyyy")}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-0.5 text-[10px] font-medium text-slate-500 uppercase tracking-wider font-semibold">
+                                      <span>Status: {v.status.replace(/_/g, " ")}</span>
+                                      {v.price > 0 && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="text-indigo-600 dark:text-indigo-400 font-bold">Price: {formatCurrency(v.price)}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </>
                     )}
-                  </button>
+                  </div>
+
+                  <div className="p-6 border-t border-slate-200/60 dark:border-white/5 bg-white dark:bg-[#0f121b] flex items-center justify-between">
+                    <div className="text-xs font-semibold text-slate-500">
+                      Total Milestones: <span className="text-slate-900 dark:text-white nums">{milestones.length}</span>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={closePanel}
+                        className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveMilestones}
+                        disabled={saving || loadingMilestones}
+                        className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                      >
+                        {saving ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4" />
+                            Save Configuration
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>,
-      document.body
-    )}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       <AlertDialog open={!!projectToHold} onOpenChange={(open) => !open && setProjectToHold(null)}>
         <AlertDialogContent>
@@ -780,8 +841,8 @@ function ProjectMilestonesContent() {
               {projectToHold?.status === "on_hold" || projectToHold?.is_frozen ? "Resume Project" : "Put Project on Hold"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {projectToHold?.status === "on_hold" || projectToHold?.is_frozen 
-                ? `Are you sure you want to resume "${projectToHold?.name}"?` 
+              {projectToHold?.status === "on_hold" || projectToHold?.is_frozen
+                ? `Are you sure you want to resume "${projectToHold?.name}"?`
                 : `Are you sure you want to put "${projectToHold?.name}" on hold?`
               }
             </AlertDialogDescription>

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Users, 
   Clock, 
@@ -16,33 +16,51 @@ interface Stat {
   description: string;
 }
 
-export function SalesStatsOverview() {
-  const stats: Stat[] = [
-    { 
-      label: 'New Leads', 
-      value: '24', 
-      change: '+12%', 
-      icon: Users, 
-      color: 'text-indigo-500',
-      description: 'Incoming enquiries'
-    },
-    { 
-      label: 'Follow-ups Today', 
-      value: '8', 
-      change: 'High Priority', 
-      icon: CalendarDays, 
-      color: 'text-amber-500',
-      description: 'Scheduled reminders'
-    },
-    { 
-      label: 'Pending Quotations', 
-      value: '12', 
-      change: '4 Urgent', 
-      icon: Clock, 
-      color: 'text-blue-500',
-      description: 'Awaiting submission'
-    }
-  ];
+interface SalesStatsOverviewProps {
+  leads?: any[];
+}
+
+export function SalesStatsOverview({ leads = [] }: SalesStatsOverviewProps) {
+  const stats: Stat[] = useMemo(() => {
+    const newLeadsCount = leads.filter(l => l.status === 'lead_created').length;
+    
+    const todayStr = new Date().toDateString();
+    const followUpsToday = leads.filter(l => {
+      if (!l.follow_up_date) return false;
+      return new Date(l.follow_up_date).toDateString() === todayStr;
+    }).length;
+
+    const pendingQuotes = leads.filter(l => 
+      l.status === 'quotation_requested' || l.status === 'quotation_sent'
+    ).length;
+
+    return [
+      { 
+        label: 'New Leads', 
+        value: newLeadsCount, 
+        change: newLeadsCount > 0 ? 'Active' : '', 
+        icon: Users, 
+        color: 'text-indigo-500',
+        description: 'Incoming enquiries'
+      },
+      { 
+        label: 'Follow-ups Today', 
+        value: followUpsToday, 
+        change: followUpsToday > 0 ? 'High Priority' : 'All clear', 
+        icon: CalendarDays, 
+        color: 'text-amber-500',
+        description: 'Scheduled reminders'
+      },
+      { 
+        label: 'Pending Quotations', 
+        value: pendingQuotes, 
+        change: pendingQuotes > 0 ? 'Action Needed' : '', 
+        icon: Clock, 
+        color: 'text-blue-500',
+        description: 'Awaiting submission'
+      }
+    ];
+  }, [leads]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">

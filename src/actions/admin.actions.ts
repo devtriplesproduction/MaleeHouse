@@ -105,6 +105,7 @@ export async function onboardEmployeeAction(
     branch?: string
     office_location?: string
     operational_zone?: string
+    profile_photo?: string
   },
   documents: any[] = []
 ) {
@@ -200,6 +201,7 @@ export async function onboardEmployeeAction(
       branch: data.branch || 'Malee House HQ',
       office_location: data.office_location || 'Singapore',
       operational_zone: data.operational_zone || 'Central Business District',
+      profile_photo: data.profile_photo || null,
       documents: documents,
       created_at: new Date().toISOString(),
     } as any)

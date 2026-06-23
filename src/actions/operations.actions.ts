@@ -752,7 +752,7 @@ export async function logFieldVisitAction(
   visitDate: string,
   description?: string,
   price?: number
-): Promise<OpResponse> {
+): Promise<OpResponse<any>> {
   try {
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: "Unauthorized." };
@@ -768,18 +768,19 @@ export async function logFieldVisitAction(
     const newVisit = {
       id: generateId("vst"),
       project_id: projectId,
-      visit_date: visitDate,
-      completed_at: null,
+      scheduled_date: visitDate,
       status: "scheduled",
-      reported_by: profile.id,
-      description: description || "",
-      invoice_id: null,
-      price: price || 0,
-      created_at: new Date().toISOString()
+      purpose: description || "Scheduled from Milestones Portal",
+      assigned_team: [],
+      visit_cost: price || 0,
+      is_billable: price ? true : false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    const supabase: any = await createClient();
-    await supabase.from('project_visits').insert(newVisit);
+    const supabase: any = await createAdminClient();
+    const { error: insertErr } = await supabase.from('project_visits').insert(newVisit);
+    if (insertErr) return { success: false, error: insertErr.message };
 
     await logActivity(projectId, profile.id, "FIELD_VISIT_SCHEDULED", {
       visit_id: newVisit.id,
@@ -788,7 +789,7 @@ export async function logFieldVisitAction(
     });
 
     revalidatePath(`/projects/${projectId}`);
-    return { success: true, error: null, data: newVisit as any };
+    return { success: true, error: null, data: { ...newVisit, visit_date: newVisit.scheduled_date, price: newVisit.visit_cost } };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to schedule field visit." };
   }
@@ -807,10 +808,11 @@ export async function completeFieldVisitAction(
     if (!["field", "field_engineer", "engineer", "admin"].includes(profile.role))
       return { success: false, error: "Only Field Engineers, Engineers, or Admins can modify visits." };
 
-    const supabase: any = await createClient();
+    const supabase: any = await createAdminClient();
     const { error: updateError } = await supabase.from('project_visits').update({
       status: "completed",
-      completed_at: new Date().toISOString()
+      completed_date: new Date().toISOString().split('T')[0],
+      updated_at: new Date().toISOString()
     }).eq('id', visitId);
 
     if (updateError) return { success: false, error: "Visit record not found." };
@@ -1056,10 +1058,20 @@ export async function getUnassignedQueueAction(role: string): Promise<OpResponse
 
 export async function getFieldVisitsAction(projectId: string): Promise<OpResponse<any[]>> {
   try {
-    const supabase: any = await createClient();
-    const { data, error } = await supabase.from('project_visits').select('*').eq('project_id', projectId).order('visit_date', { ascending: false });
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized.", data: [] };
+
+    const supabase: any = await createAdminClient();
+    const { data, error } = await supabase.from('project_visits').select('*').eq('project_id', projectId).order('scheduled_date', { ascending: false });
     if (error) return { success: false, error: error.message };
-    return { success: true, error: null, data: data || [] };
+    
+    const mapped = (data || []).map((v: any) => ({
+      ...v,
+      visit_date: v.scheduled_date,
+      price: v.visit_cost
+    }));
+    
+    return { success: true, error: null, data: mapped };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

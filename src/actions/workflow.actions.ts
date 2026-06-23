@@ -70,8 +70,8 @@ async function validateStageTransition(
 
     switch (newStage) {
       case "quotation_sent": {
-        const { data: quote } = await supabase.from("quotations").select("status").eq("project_id", projectId).maybeSingle();
-        if (!quote || (quote.status !== "Sent" && quote.status !== "Approved")) {
+        const { data: quote } = await supabase.from("quotations").select("status").eq("project_id", projectId).in("status", ["Sent", "Viewed", "Approved"]).limit(1);
+        if (!quote || quote.length === 0) {
           return {
             success: false,
             error: "Cannot transition to Quotation Sent: No quotation has been sent or approved for this project."
@@ -80,8 +80,8 @@ async function validateStageTransition(
         break;
       }
       case "payment_pending": {
-        const { data: quote } = await supabase.from("quotations").select("status").eq("project_id", projectId).maybeSingle();
-        if (!quote || quote.status !== "Approved") {
+        const { data: quote } = await supabase.from("quotations").select("status").eq("project_id", projectId).eq("status", "Approved").limit(1);
+        if (!quote || quote.length === 0) {
           return {
             success: false,
             error: "Cannot transition to Payment Pending: No approved quotation exists for this project."

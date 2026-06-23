@@ -283,13 +283,17 @@ function TemplateEditor({ template, onCancel, onSave }: { template: any, onCance
                     <button onClick={() => removeClause(idx)} className="p-1 text-slate-400 hover:text-rose-600"><Trash2 className="w-3 h-3" /></button>
                   </div>
                 </div>
-                <div className="p-4">
+                <div className="p-4 relative">
                   <textarea 
                     value={clause.content} onChange={e => updateClause(idx, "content", e.target.value)}
                     placeholder="Clause content..."
                     rows={3}
-                    className="w-full bg-transparent border border-slate-200 dark:border-white/10 rounded-lg p-3 text-sm text-slate-600 dark:text-slate-300 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 resize-y"
+                    maxLength={500}
+                    className="w-full bg-transparent border border-slate-200 dark:border-white/10 rounded-lg p-3 pb-7 text-sm text-slate-600 dark:text-slate-300 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 resize-y"
                   />
+                  <div className="absolute bottom-6 right-6 text-[10px] text-slate-400 font-medium pointer-events-none">
+                    {clause.content?.length || 0}/500
+                  </div>
                 </div>
               </div>
             ))}

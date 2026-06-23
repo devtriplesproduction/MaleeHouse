@@ -40,7 +40,7 @@ export default async function SalesDashboardPage() {
         {/* Full Width Column: Stats & Tabs */}
         <div className="space-y-10">
           {/* High-Level Stats */}
-          <SalesStatsOverview />
+          <SalesStatsOverview leads={leads} />
 
           {/* Main Interface Tabs */}
           <Tabs defaultValue="pipeline" className="space-y-8">
