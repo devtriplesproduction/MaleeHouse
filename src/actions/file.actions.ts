@@ -1,21 +1,21 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { registerFileSchema, type RegisterFileInput } from '@/validations/file.schema';
 import type { ActionResponse } from './project.actions';
 import { getUserProfileAction } from './auth.actions';
+import { verifyProjectAccess, type Role } from '@/lib/permissions/permissions';
 import { notifySupplementalUploadAction } from './notification.actions';
 
 export async function registerFileAction(payload: RegisterFileInput): Promise<ActionResponse> {
   try {
     const validatedFields = registerFileSchema.safeParse(payload);
-    
+
     if (!validatedFields.success) {
-      return { 
-        success: false, 
-        error: validatedFields.error.errors[0]?.message || 'Validation failed.' 
+      return {
+        success: false,
+        error: validatedFields.error.errors[0]?.message || 'Validation failed.'
       };
     }
     const profile: any = await getUserProfileAction();
@@ -26,17 +26,23 @@ export async function registerFileAction(payload: RegisterFileInput): Promise<Ac
 
     const supabase: any = await createClient();
 
+    const role = profile.role || "";
+    const accessCheck = await verifyProjectAccess(validatedFields.data.project_id, userId, role as Role, true);
+    if (!accessCheck.isAllowed) {
+      return { success: false, error: accessCheck.error || "Permission denied." };
+    }
+
     // 1. Enforce Freeze and Payment Holds
     const { data: project } = await supabase
       .from('projects')
       .select('is_frozen')
       .eq('id', validatedFields.data.project_id)
       .single();
-      
+
     if (project?.is_frozen) {
-      return { 
-        success: false, 
-        error: "Upload Blocked: Project operations are frozen due to outstanding payments." 
+      return {
+        success: false,
+        error: "Upload Blocked: Project operations are frozen due to outstanding payments."
       };
     }
 
@@ -108,7 +114,15 @@ export async function registerFileAction(payload: RegisterFileInput): Promise<Ac
 export async function getProjectFilesAction(projectId: string): Promise<ActionResponse> {
   try {
     const supabase: any = await createClient();
+
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
     
+    const accessCheck = await verifyProjectAccess(projectId, profile.id, profile.role as Role, true);
+    if (!accessCheck.isAllowed) {
+      return { success: false, error: accessCheck.error || "Permission denied." };
+    }
+
     const { data, error } = await supabase
       .from('files')
       .select(`
@@ -134,50 +148,3 @@ export async function getProjectFilesAction(projectId: string): Promise<ActionRe
 }
 
 
-export async function deleteFileAction(fileId: string, projectId: string): Promise<ActionResponse> {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { success: false, error: 'Unauthorized' };
-    }
-
-    const supabaseAdmin = createAdminClient();
-
-    // 1. Get the file URL to delete from storage
-    const { data: fileData, error: fetchError } = await supabaseAdmin
-      .from('files')
-      .select('file_url')
-      .eq('id', fileId)
-      .single();
-
-    if (fetchError || !fileData) {
-      return { success: false, error: 'File not found.' };
-    }
-
-    // Extract storage path from the public URL
-    // URL format: .../storage/v1/object/public/project-assets/projectId/fileName
-    const urlParts = (fileData as any).file_url.split('/project-assets/');
-    if (urlParts.length === 2) {
-      const storagePath = decodeURIComponent(urlParts[1]);
-      await supabaseAdmin.storage.from('project-assets').remove([storagePath]);
-    }
-
-    // 2. Delete from database
-    const { error: deleteError } = await supabaseAdmin
-      .from('files')
-      .delete()
-      .eq('id', fileId);
-
-    if (deleteError) {
-      return { success: false, error: deleteError.message };
-    }
-
-    revalidatePath(`/projects/${projectId}`);
-    return { success: true };
-  } catch (error: any) {
-    console.error('Delete file error:', error);
-    return { success: false, error: error?.message || 'Failed to delete file.' };
-  }
-}
