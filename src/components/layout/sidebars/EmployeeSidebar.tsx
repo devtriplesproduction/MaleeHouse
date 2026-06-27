@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, BookOpen, Clock, Calendar } from "lucide-react";
+import { FileText, BookOpen, Clock, Calendar, Megaphone } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
 const employeeLinks = [
@@ -8,6 +8,7 @@ const employeeLinks = [
   { title: "Procedures (SOP)", href: "/sop", icon: BookOpen },
   { title: "Submit EOD", href: "/eod", icon: Clock },
   { title: "Apply Leave", href: "/leaves", icon: Calendar },
+  { title: "Announcements", href: "/announcements", icon: Megaphone },
 ];
 
 export function EmployeeSidebar() {

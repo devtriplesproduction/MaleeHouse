@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Clock, 
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { InvoicePreviewModal } from './InvoicePreviewModal';
+import { getCompanySettingsAction } from '@/actions/settings.actions';
 
 interface Invoice {
   id: string;
@@ -30,6 +32,7 @@ interface Invoice {
 interface InvoiceTableProps {
   invoices: Invoice[];
   searchQuery?: string;
+  onRefresh?: () => void;
 }
 
 const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
@@ -39,7 +42,14 @@ const statusConfig: Record<string, { label: string; className: string; icon: any
   cancelled: { label: 'Cancelled', className: 'bg-rose-500/10 text-rose-500 border-rose-500/20', icon: XCircle },
 };
 
-export function InvoiceTable({ invoices, searchQuery = "" }: InvoiceTableProps) {
+export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceTableProps) {
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [companySettings, setCompanySettings] = useState<any>(null);
+
+  useEffect(() => {
+    getCompanySettingsAction().then(setCompanySettings).catch(console.error);
+  }, []);
+
   const filtered = invoices.filter((invoice) => {
     if (!searchQuery) return true;
     const projName = invoice.projects?.name || '';
@@ -125,7 +135,10 @@ export function InvoiceTable({ invoices, searchQuery = "" }: InvoiceTableProps) 
 
               {/* Section 3: Action Button (25%) */}
               <div className="w-full md:w-[25%] flex-shrink-0 flex items-center md:justify-end md:border-l border-slate-100 dark:border-white/5 md:pl-4">
-                <button className="h-8 px-4 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap">
+                <button 
+                  onClick={() => setSelectedInvoice(invoice)}
+                  className="h-8 px-4 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap"
+                >
                   <FileText className="w-3.5 h-3.5" />
                   View invoice
                 </button>
@@ -133,6 +146,17 @@ export function InvoiceTable({ invoices, searchQuery = "" }: InvoiceTableProps) 
             </div>
           );
         })
+      )}
+
+      {selectedInvoice && (
+        <InvoicePreviewModal
+          invoice={selectedInvoice}
+          companySettings={companySettings}
+          onClose={() => setSelectedInvoice(null)}
+          onRefresh={() => {
+            if (onRefresh) onRefresh();
+          }}
+        />
       )}
     </div>
   );

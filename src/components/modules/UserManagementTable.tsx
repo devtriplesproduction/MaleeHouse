@@ -65,6 +65,7 @@ interface UserProfile {
 
 interface UserManagementTableProps {
   initialUsers: UserProfile[];
+  mode?: "full" | "payroll-only";
 }
 
 const avatarColors = [
@@ -82,9 +83,9 @@ function getAvatarColor(name: string) {
   return avatarColors[idx];
 }
 
-export function UserManagementTable({ initialUsers }: UserManagementTableProps) {
+export function UserManagementTable({ initialUsers, mode = "full" }: UserManagementTableProps) {
   const [users, setUsers] = useState<UserProfile[]>(initialUsers);
-  const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security">("directory");
+  const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security">(mode === "payroll-only" ? "payroll" : "directory");
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
   
   // Filtering & Search state
@@ -479,121 +480,131 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            Team <span className="text-indigo-500 dark:text-indigo-400">Management</span>
+            {mode === "payroll-only" ? (
+              <>Salary <span className="text-indigo-500 dark:text-indigo-400">Records</span></>
+            ) : (
+              <>Team <span className="text-indigo-500 dark:text-indigo-400">Management</span></>
+            )}
           </h1>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
-            Manage permissions, invite surveyors, and maintain system security.
+            {mode === "payroll-only" ? "Read-only view of historical payroll cycles and live adjustments." : "Manage permissions, invite surveyors, and maintain system security."}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button 
-            onClick={() => setIsNewUserModalOpen(true)}
-            variant="premium"
-            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider h-10 px-4"
-          >
-            <UserPlus className="w-4 h-4" />
-            Onboard Employee
-          </Button>
-        </div>
+        {mode !== "payroll-only" && (
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={() => setIsNewUserModalOpen(true)}
+              variant="premium"
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider h-10 px-4"
+            >
+              <UserPlus className="w-4 h-4" />
+              Onboard Employee
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Minified Quick Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Card 1: Total Staff */}
-        <div className="glass-card px-4 py-3 flex items-center justify-between border-indigo-500/10 hover:border-indigo-500/20 transition-all duration-300">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-500 border border-indigo-500/20 shadow-inner">
-              <Users className="w-4.5 h-4.5" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Total Staff</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">{users.length}</span>
+      {mode !== "payroll-only" && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1: Total Staff */}
+          <div className="glass-card px-4 py-3 flex items-center justify-between border-indigo-500/10 hover:border-indigo-500/20 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-500 border border-indigo-500/20 shadow-inner">
+                <Users className="w-4.5 h-4.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Total Staff</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">{users.length}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Card 2: Active Accounts */}
-        <div className="glass-card px-4 py-3 flex items-center justify-between border-emerald-500/10 hover:border-emerald-500/20 transition-all duration-300">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-inner">
-              <ShieldCheck className="w-4.5 h-4.5" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Active Accounts</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">
-                {users.filter((u: any) => u.is_active).length}
-              </span>
+          {/* Card 2: Active Accounts */}
+          <div className="glass-card px-4 py-3 flex items-center justify-between border-emerald-500/10 hover:border-emerald-500/20 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-inner">
+                <ShieldCheck className="w-4.5 h-4.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Active Accounts</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">
+                  {users.filter((u: any) => u.is_active).length}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Card 3: Admins */}
-        <div className="glass-card px-4 py-3 flex items-center justify-between border-amber-500/10 hover:border-amber-500/20 transition-all duration-300">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-amber-500/10 dark:bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-inner">
-              <Shield className="w-4.5 h-4.5" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Admins</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">
-                {users.filter((u: any) => u.role === 'admin').length}
-              </span>
+          {/* Card 3: Admins */}
+          <div className="glass-card px-4 py-3 flex items-center justify-between border-amber-500/10 hover:border-amber-500/20 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-amber-500/10 dark:bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-inner">
+                <Shield className="w-4.5 h-4.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Admins</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">
+                  {users.filter((u: any) => u.role === 'admin').length}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Global Tab Navigation */}
-      <div className="flex border-b border-slate-200 dark:border-white/5 mb-6 overflow-x-auto gap-8 scrollbar-none">
-        <button
-          onClick={() => setActiveTab("directory")}
-          className={cn(
-            "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
-            activeTab === "directory"
-              ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
-              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-          )}
-        >
-          <Users className="w-4 h-4" />
-          Personnel Directory
-          {activeTab === "directory" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-          )}
-        </button>
-        
-        <button
-          onClick={() => setActiveTab("payroll")}
-          className={cn(
-            "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
-            activeTab === "payroll"
-              ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
-              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-          )}
-        >
-          <CreditCard className="w-4 h-4" />
-          Integrated Payroll
-          {activeTab === "payroll" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-          )}
-        </button>
-        
-        <button
-          onClick={() => setActiveTab("security")}
-          className={cn(
-            "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
-            activeTab === "security"
-              ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
-              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-          )}
-        >
-          <Shield className="w-4 h-4" />
-          Account Security
-          {activeTab === "security" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-          )}
-        </button>
-      </div>
+      {mode !== "payroll-only" && (
+        <div className="flex border-b border-slate-200 dark:border-white/5 mb-6 overflow-x-auto gap-8 scrollbar-none">
+          <button
+            onClick={() => setActiveTab("directory")}
+            className={cn(
+              "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
+              activeTab === "directory"
+                ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
+                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            )}
+          >
+            <Users className="w-4 h-4" />
+            Personnel Directory
+            {activeTab === "directory" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+            )}
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("payroll")}
+            className={cn(
+              "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
+              activeTab === "payroll"
+                ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
+                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            )}
+          >
+            <CreditCard className="w-4 h-4" />
+            Integrated Payroll
+            {activeTab === "payroll" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+            )}
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("security")}
+            className={cn(
+              "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
+              activeTab === "security"
+                ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
+                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            )}
+          >
+            <Shield className="w-4 h-4" />
+            Account Security
+            {activeTab === "security" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+            )}
+          </button>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 1. TAB: PERSONNEL DIRECTORY                                               */}

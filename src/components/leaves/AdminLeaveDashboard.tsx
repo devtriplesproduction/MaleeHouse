@@ -56,9 +56,11 @@ const YEARS = [
 
 interface AdminLeaveDashboardProps {
   initialLeaves: any[];
+  currentUserRole?: string;
+  currentUserId?: string;
 }
 
-export function AdminLeaveDashboard({ initialLeaves }: AdminLeaveDashboardProps) {
+export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', currentUserId }: AdminLeaveDashboardProps) {
   const router = useRouter();
   const currentMonth = (new Date().getMonth() + 1).toString();
   const currentYear = new Date().getFullYear().toString();
@@ -481,6 +483,7 @@ export function AdminLeaveDashboard({ initialLeaves }: AdminLeaveDashboardProps)
                       <div className="w-36 shrink-0 z-20">
                         <Select
                           value={leave.status?.toLowerCase()}
+                          // disabled logic moved to onValueChange
                           onValueChange={(val) => {
                             if (val === 'approved' || val === 'rejected' || val === 'pending') {
                               handleStatusUpdate(leave.id, val as any);

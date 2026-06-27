@@ -10,7 +10,7 @@ export const PERMISSIONS = {
   // Pipeline/Global View Permissions
   VIEW_SALES_PIPELINE: ["admin", "sales"],
   VIEW_ACCOUNTS_PIPELINE: ["admin", "accountant", "sales"],
-  VIEW_ALL_PROJECTS: ["admin", "sales", "accountant", "engineer"], // Roles that can see all projects without assignment
+  VIEW_ALL_PROJECTS: ["admin", "accountant", "engineer"], // Roles that can see all projects without assignment
 
   // Workflow Stages Configuration
   STAGE_UPDATE: {
@@ -26,6 +26,7 @@ export const PERMISSIONS = {
     field_engineer: ["field_work", "field_assigned", "field_in_progress", "field_completed", "data_sync"],
     qc: [],
     employee: [],
+    hr: [],
   } as Record<Role, string[]>,
 
   // File Upload Categories
@@ -39,5 +40,6 @@ export const PERMISSIONS = {
     field_engineer: ["survey_data", "site_photo", "field_report"],
     qc: [],
     employee: [],
+    hr: [],
   } as Record<Role, string[]>
 };

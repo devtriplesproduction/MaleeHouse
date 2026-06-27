@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function PendingProjectListCard({ project, showAccept = false }: { project: any, showAccept?: boolean }) {
+export function PendingProjectListCard({ project, showAccept = false, extraBadge, hideDefaultBadge = false }: { project: any, showAccept?: boolean, extraBadge?: React.ReactNode, hideDefaultBadge?: boolean }) {
   // Determine dot color based on operational status
   let dotColor = "bg-indigo-500";
   const statusText = project.operationalBadge?.text || "";
@@ -23,15 +23,15 @@ export function PendingProjectListCard({ project, showAccept = false }: { projec
   }
 
   // Display status/action label dynamically in the badge
-  const badgeLabel = showAccept 
-    ? "Awaiting Start" 
+  const badgeLabel = showAccept
+    ? "Awaiting Start"
     : (project.operationalBadge?.text || "In Progress");
 
   return (
     <div className="group flex items-center justify-between p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 hover:border-indigo-500/30 hover:shadow-md hover:bg-white dark:hover:bg-slate-900 transition-all duration-300">
       <div className="flex items-center gap-4 min-w-0 flex-1">
         <div className={cn("w-2.5 h-2.5 rounded-full flex-shrink-0", dotColor)} />
-        
+
         <div className="min-w-0 flex-1 space-y-0.5">
           <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight truncate">
             {project.name}
@@ -41,12 +41,15 @@ export function PendingProjectListCard({ project, showAccept = false }: { projec
           </p>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-4 shrink-0 ml-4">
-        <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
-          {badgeLabel}
-        </span>
-        
+        {extraBadge}
+        {!hideDefaultBadge && (
+          <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+            {badgeLabel}
+          </span>
+        )}
+
         {showAccept ? (
           <Link
             href={`/projects/${project.id}`}
@@ -72,7 +75,7 @@ export function PendingProjectListCard({ project, showAccept = false }: { projec
 export function PaginatedProjectList({ projects, showAccept = false, itemsPerPage = 8 }: { projects: any[], showAccept?: boolean, itemsPerPage?: number }) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(projects.length / itemsPerPage);
-  
+
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentProjects = projects.slice(startIndex, startIndex + itemsPerPage);
 
@@ -83,7 +86,7 @@ export function PaginatedProjectList({ projects, showAccept = false, itemsPerPag
           <PendingProjectListCard key={p.id} project={p} showAccept={showAccept} />
         ))}
       </div>
-      
+
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5 mt-2">
           <p className="text-xs text-slate-500 font-bold">

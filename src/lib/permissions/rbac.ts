@@ -29,7 +29,8 @@ const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   field: ["field:report"],
   field_engineer: ["field:report"],
   qc: ["qc:verify"],
-  employee: []
+  employee: [],
+  hr: [],
 };
 
 /**

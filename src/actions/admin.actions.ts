@@ -5,6 +5,7 @@ import { getUserProfileAction } from '@/actions/auth.actions'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OnboardFormData } from '@/lib/validations/onboard'
+import { checkActionRateLimit } from '@/lib/rate-limit'
 
 export async function logAdminAuditAction({
   action,
@@ -79,7 +80,7 @@ export async function generateReadableEmployeeId(deptId: string): Promise<string
 export async function getAllUsersAction() {
   try {
     const profile: any = await getUserProfileAction()
-    if (!profile || !['admin', 'engineer'].includes(profile.role)) {
+    if (!profile || !['admin', 'engineer', 'hr'].includes(profile.role)) {
       return { success: false, error: 'Unauthorized' }
     }
     
@@ -323,6 +324,10 @@ export async function resetUserPasswordAction(userId: string) {
   const adminProfile: any = await getUserProfileAction()
   if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
 
+  if (!checkActionRateLimit(adminProfile.id, 'resetUserPasswordAction', 5, 60 * 1000)) {
+    return { success: false, error: 'Rate limit exceeded. Too many password resets.' }
+  }
+
   try {
     const lowercase = 'abcdefghjkmnpqrstuvwxyz'
     const uppercase = 'ABCDEFGHJKMNPQRSTUVWXYZ'
@@ -400,9 +405,17 @@ export async function updateUserRoleAction(userId: string, role: string) {
   }
 }
 
-export async function adminWipeSystemAction() {
+export async function adminWipeSystemAction(confirmationString?: string) {
   const adminProfile: any = await getUserProfileAction()
   if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+
+  if (!checkActionRateLimit(adminProfile.id, 'adminWipeSystemAction', 1, 60 * 60 * 1000)) {
+    return { success: false, error: 'Rate limit exceeded. System wipe is highly restricted.' }
+  }
+
+  if (confirmationString !== 'I CONFIRM SYSTEM WIPE') {
+    return { success: false, error: 'Invalid confirmation string. You must pass exactly "I CONFIRM SYSTEM WIPE" to execute this destructive action.' }
+  }
 
   try {
     const supabaseAdmin: any = createAdminClient()
@@ -448,8 +461,12 @@ export async function getAdminAuditLogsAction() {
 export async function overrideUserCredentialsAction(userId: string, newPassword: string) {
   const adminProfile: any = await getUserProfileAction()
   if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
-  if (!newPassword || newPassword.trim().length < 4) {
-    return { success: false, error: 'Password must be at least 4 characters long.' }
+
+  if (!checkActionRateLimit(adminProfile.id, 'overrideUserCredentialsAction', 5, 60 * 1000)) {
+    return { success: false, error: 'Rate limit exceeded. Too many credential overrides.' }
+  }
+  if (!newPassword || newPassword.trim().length < 8) {
+    return { success: false, error: 'Password must be at least 8 characters long.' }
   }
 
   try {

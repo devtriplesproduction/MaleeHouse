@@ -21,7 +21,7 @@ export function QuickIntegrityOverview() {
     }
 
     checkHealth();
-    const interval = setInterval(checkHealth, 30000);
+    const interval = setInterval(checkHealth, 3 * 60 * 1000); // Pulse every 3 minutes
     return () => clearInterval(interval);
   }, []);
 

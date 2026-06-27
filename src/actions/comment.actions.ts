@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getUserProfileAction } from '@/actions/auth.actions'
 import { Role, verifyProjectAccess } from '@/lib/permissions/permissions'
 import { createClient } from '@/lib/supabase/server'
+import { checkActionRateLimit } from '@/lib/rate-limit'
 
 export type CommentType = 'general' | 'review' | 'rejection' | 'internal'
 
@@ -29,6 +30,10 @@ export async function addProjectCommentAction(
   try {
     const profile: any = await getUserProfileAction()
     if (!profile) return { success: false, error: 'Unauthorized. Please log in.' }
+
+    if (!checkActionRateLimit(profile.id, 'addProjectCommentAction', 15, 60 * 1000)) {
+      return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
+    }
 
     const role = profile.role as Role
     const accessCheck = await verifyProjectAccess(projectId, profile.id, role, true)
@@ -59,7 +64,6 @@ export async function addProjectCommentAction(
       project_id: projectId,
       user_id: profile.id,
       content: trimmed,
-      parent_comment_id: parentCommentId || null,
       created_at: new Date().toISOString(),
     })
 

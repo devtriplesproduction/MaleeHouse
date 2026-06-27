@@ -25,7 +25,8 @@ import { useToast } from '@/hooks/use-toast';
 import { uploadProjectFile } from '@/lib/supabase/storage';
 import { updateProjectStageAction } from '@/actions/workflow.actions';
 import { submitCADRevisionAction, reviewFieldSurveyAction, reviewLatestCADRevisionAction } from '@/actions/operations.actions';
-import { deleteFileAction, registerFileAction } from '@/actions/file.actions';
+import { registerFileAction } from '@/actions/file.actions';
+import { deleteFileAction } from '@/actions/vault.actions';
 import { notifySupplementalUploadAction } from '@/actions/notification.actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
@@ -902,7 +903,7 @@ export function OperationsFileUploadPanel({
           )}
 
           {/* Submit Prototype Button */}
-          {isCad && projectStatus === "prototype" && (
+          {isCad && ['project_created', 'data_collection', 'prototype', 'review'].includes(projectStatus || '') && (
             <button
               onClick={handleSubmitPrototype}
               disabled={isPending || prototypeDocs.length === 0}
@@ -943,6 +944,14 @@ export function OperationsFileUploadPanel({
         icon={MapPin}
         defaultExpanded={false}
         badgeCount={surveyDocs.length + controlPointDocs.length}
+        rightAction={
+          (isAdmin || isField) && !isProjectClosed && (
+            <label className="px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 cursor-pointer transition flex items-center gap-2 shadow-sm text-xs font-bold border border-indigo-100 dark:border-indigo-500/20">
+              <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Upload</span>
+              <input type="file" className="hidden" onChange={handleUploadSurveyData} disabled={isUploading} />
+            </label>
+          )
+        }
       >
         <div className="space-y-8">
           {/* Part 1: Control Points */}

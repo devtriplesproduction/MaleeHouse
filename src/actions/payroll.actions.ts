@@ -145,8 +145,8 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
  */
 export async function lockPayrollCycleAction(month: number, year: number) {
   const profile: any = await getUserProfileAction();
-  if (profile?.role !== "admin") {
-    return { success: false, error: "Only System Administrators can lock payroll cycles." };
+  if (profile?.role !== "admin" && profile?.role !== "hr") {
+    return { success: false, error: "Only System Administrators or HR can lock payroll cycles." };
   }
 
   try {

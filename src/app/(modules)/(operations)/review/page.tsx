@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { EODFormModal } from "@/components/eod/EODFormModal";
 import { getMyEODReportsAction } from "@/actions/eod.actions";
 import { getSOPsAction } from "@/actions/sop.actions";
 import { SOPList } from "@/components/sop/SOPList";
@@ -58,7 +57,7 @@ export default async function QCReviewPage() {
           </p>
         </div>
         <div className="flex-shrink-0">
-          <EODFormModal reports={eodReports} roleColor="indigo" />
+          {/* EOD button removed */}
         </div>
       </div>
 

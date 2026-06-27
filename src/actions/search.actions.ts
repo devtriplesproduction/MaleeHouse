@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getUserProfileAction } from "@/actions/auth.actions";
+import { checkActionRateLimit } from "@/lib/rate-limit";
 
 /**
  * globalSearchAction
@@ -13,6 +15,13 @@ export async function globalSearchAction(query: string) {
 
   const supabase: any = await createClient();
   const searchTerm = `%${query}%`;
+
+  const profile: any = await getUserProfileAction();
+  if (!profile) return { projects: [], users: [], tasks: [] };
+
+  if (!checkActionRateLimit(profile.id, 'globalSearchAction', 30, 60 * 1000)) {
+    return { projects: [], users: [], tasks: [] };
+  }
 
   try {
     // 1. Search Projects

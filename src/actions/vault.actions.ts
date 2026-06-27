@@ -1,7 +1,9 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { verifyProjectAccess, type Role } from "@/lib/permissions/permissions";
 
 interface FileActionResponse {
   success: boolean;
@@ -21,6 +23,19 @@ export async function renameFileAction(
   // 1. Auth & Profile check
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Unauthorized" };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const role = profile?.role || "";
+
+  const accessCheck = await verifyProjectAccess(projectId, user.id, role as Role, true);
+  if (!accessCheck.isAllowed) {
+    return { success: false, error: accessCheck.error || "Permission denied." };
+  }
 
   // 2. Perform Update
   const { error } = await supabase
@@ -48,9 +63,10 @@ export async function renameFileAction(
 export async function deleteFileAction(
   fileId: string,
   projectId: string,
-  storagePath: string
+  storagePath?: string
 ): Promise<FileActionResponse> {
   const supabase: any = await createClient();
+  let actualStoragePath = storagePath;
 
   try {
     // 1. Freeze checks
@@ -67,12 +83,22 @@ export async function deleteFileAction(
     // 2. Lock check for approved deliverables
     const { data: file, error: fileError } = await supabase
       .from("files")
-      .select("is_finalized")
+      .select("is_finalized, file_url")
       .eq("id", fileId)
       .single();
 
     if (file?.is_finalized) {
       return { success: false, error: "Locked Deliverable: Finalized/approved deliverables cannot be deleted." };
+    }
+
+    if (!actualStoragePath && file?.file_url) {
+      let cleanUrl = file.file_url.split('?')[0];
+      const bucketIdx = cleanUrl.indexOf('/project-assets/');
+      if (bucketIdx !== -1) {
+        actualStoragePath = decodeURIComponent(cleanUrl.substring(bucketIdx + 16));
+      } else if (!cleanUrl.startsWith('http')) {
+        actualStoragePath = decodeURIComponent(cleanUrl);
+      }
     }
   } catch (err) {
     console.error("Database verification error:", err);
@@ -80,37 +106,53 @@ export async function deleteFileAction(
 
   // 3. Role Verification
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", user?.id || "")
+    .eq("id", user.id)
     .single();
 
-  if (!["admin", "sales"].includes(profile?.role || "")) {
-    return { success: false, error: "Permission denied. Only Admins or Sales can delete files." };
+  const role = profile?.role || "";
+
+  const accessCheck = await verifyProjectAccess(projectId, user.id, role as Role, true);
+  if (!accessCheck.isAllowed) {
+    return { success: false, error: accessCheck.error || "Permission denied." };
   }
 
-  // 2. Delete from Storage
-  const { error: storageError } = await supabase.storage
-    .from("project_files")
-    .remove([storagePath]);
+  // Use admin client to bypass RLS since authorization is already validated
+  const supabaseAdmin: any = await createAdminClient();
 
-  if (storageError) return { success: false, error: "Storage deletion failed." };
+  // 4. Delete from Storage (if applicable)
+  if (actualStoragePath) {
+    const { error: storageError } = await supabaseAdmin.storage
+      .from("project-assets")
+      .remove([actualStoragePath]);
 
-  // 3. Delete from DB
-  const { error: dbError } = await supabase
+    if (storageError) {
+      console.error("Storage deletion failed:", storageError);
+      // We log the error but still proceed with DB deletion 
+      // to ensure the user is not stuck with an undeletable record.
+    }
+  } else {
+    console.warn("No storage path found for file, skipping storage deletion.");
+  }
+
+  // 5. Delete from DB
+  const { error: dbError } = await supabaseAdmin
     .from("files")
     .delete()
     .eq("id", fileId);
 
   if (dbError) return { success: false, error: "Database deletion failed." };
 
-  // 4. Audit Log
+  // 6. Audit Log
   await supabase.from("audit_logs").insert({
-    user_id: user?.id,
+    user_id: user.id,
     project_id: projectId,
     action: "file_delete",
-    details: { file_id: fileId, path: storagePath }
+    details: { file_id: fileId, path: actualStoragePath }
   });
 
   revalidatePath(`/projects/${projectId}`);

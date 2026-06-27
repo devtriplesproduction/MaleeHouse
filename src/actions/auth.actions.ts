@@ -56,7 +56,7 @@ export async function signOutAction() {
   return { success: true }
 }
 
-export async function getUserProfileAction() {
+const getCachedSessionProfile = cache(async () => {
   const supabase: any = await createClient()
   const { data: { user }, error: userError } = await supabase.auth.getUser()
 
@@ -74,6 +74,10 @@ export async function getUserProfileAction() {
   }
 
   return profile
+})
+
+export async function getUserProfileAction() {
+  return await getCachedSessionProfile()
 }
 
 export async function getStaffMembersAction() {

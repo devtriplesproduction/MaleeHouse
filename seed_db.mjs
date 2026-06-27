@@ -22,7 +22,8 @@ const users = [
   { email: 'sales@maleehouse.com', password: 'password123', role: 'sales', first: 'Sales', last: 'Director' },
   { email: 'engineer@maleehouse.com', password: 'password123', role: 'engineer', first: 'Lead Field', last: 'Engineer' },
   { email: 'accounts@maleehouse.com', password: 'password123', role: 'accountant', first: 'Head of', last: 'Accounts' },
-  { email: 'qc@maleehouse.com', password: 'password123', role: 'qc', first: 'Quality Control', last: 'Lead' }
+  { email: 'qc@maleehouse.com', password: 'password123', role: 'qc', first: 'Quality Control', last: 'Lead' },
+  { email: 'hr@maleehouse.com', password: 'password123', role: 'hr', first: 'Human', last: 'Resources' }
 ];
 
 async function seed() {
@@ -58,7 +59,8 @@ async function seed() {
             headers: { 'Authorization': `Bearer ${key}`, 'apikey': key }
           });
           const list = await listRes.json();
-          userId = list.find(u => u.email === user.email)?.id;
+          const usersArray = list.users || list; // Handle both wrapper and raw array responses
+          userId = usersArray.find((u) => u.email === user.email)?.id;
         } else {
           console.log(`\n❌ Auth Error:`, userData);
           continue;

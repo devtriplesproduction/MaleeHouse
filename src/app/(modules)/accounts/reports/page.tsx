@@ -1,5 +1,5 @@
 import React from "react";
-import { BarChart3 } from "lucide-react";
+import { ReportsGenerator } from "@/features/accounts/ReportsGenerator";
 
 export default function ReportsPage() {
   return (
@@ -9,15 +9,11 @@ export default function ReportsPage() {
           Financial Reports
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Revenue analytics and financial summaries.
+          Generate, view, and export detailed financial statements.
         </p>
       </div>
-      <div className="py-20 text-center">
-        <BarChart3 className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Reporting engine coming soon.
-        </p>
-      </div>
+      
+      <ReportsGenerator />
     </div>
   );
 }

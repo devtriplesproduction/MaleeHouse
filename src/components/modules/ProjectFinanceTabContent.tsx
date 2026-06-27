@@ -1,28 +1,51 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { 
-  DollarSign, 
-  UserPlus, 
-  Send, 
-  AlertTriangle, 
-  Unlock, 
-  Lock, 
-  Plus, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
-  FileText, 
+import React, { useState, useEffect } from "react";
+import {
+  DollarSign,
+  UserPlus,
+  Send,
+  AlertTriangle,
+  AlertCircle,
+  Unlock,
+  Lock,
+  Plus,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  FileText,
   MessageSquare,
   ArrowRight,
   TrendingUp,
   Award,
-  Loader2
-} from 'lucide-react';
-import { assignAccountantAction, createMilestonesAction, freezeProjectAction, unfreezeProjectAction } from '@/actions/finance.actions';
-import { createInvoiceAction } from '@/actions/finance.actions';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+  Loader2,
+  Target,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { CreateInvoiceModal } from "@/features/accounts/CreateInvoiceModal";
+import { LogPaymentModal } from "@/features/accounts/LogPaymentModal";
+import { AddExpenseModal } from "@/features/accounts/AddExpenseModal";
+import {
+  assignAccountantAction,
+  createMilestonesAction,
+  freezeProjectAction,
+  unfreezeProjectAction,
+  updateProjectBudgetAction,
+} from "@/actions/finance.actions";
+import { getExpensesAction } from "@/actions/expense.actions";
+import { createInvoiceAction } from "@/actions/finance.actions";
+import { updateProjectStageAction } from "@/actions/workflow.actions";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface Milestone {
   id: string;
@@ -32,14 +55,24 @@ interface Milestone {
   due_date?: string;
   linked_stage?: string;
   is_activation_gate: boolean;
-  status: 'pending' | 'invoice_generated' | 'sent' | 'paid' | 'overdue';
+  status:
+    | "pending"
+    | "invoice_generated"
+    | "payment_verification_pending"
+    | "paid"
+    | "overdue";
 }
 
 interface Visit {
   id: string;
   visit_date: string;
   completed_at?: string;
-  status: 'scheduled' | 'completed' | 'invoice_generated' | 'paid' | 'cancelled';
+  status:
+    | "scheduled"
+    | "completed"
+    | "invoice_generated"
+    | "paid"
+    | "cancelled";
   reported_by: string;
   description?: string;
 }
@@ -54,30 +87,44 @@ interface ProjectFinanceTabContentProps {
   theme: any;
   quotation?: any; // The active quotation with client token
   activityLogs?: any[];
+  onRefresh?: () => void;
+  profile?: any;
 }
 
 // Mock Accountant list for assignment in Local JSON DB mode
 const MOCK_ACCOUNTANTS = [
-  { id: 'ba635e03-0a19-4267-b5d8-bfa422aeb250', name: 'Rohan Sharma', email: 'rohan.sharma@maleehouse.in' },
-  { id: 'ac01b2cd-3e4f-5a6b-7c8d-9e0f1a2b3c4d', name: 'Priya Iyer', email: 'priya.iyer@maleehouse.in' },
-  { id: 'ba742e03-0a20-4389-c6e8-bfa533aeb360', name: 'Vikram Malhotra', email: 'vikram.m@maleehouse.in' }
+  {
+    id: "ba635e03-0a19-4267-b5d8-bfa422aeb250",
+    name: "Rohan Sharma",
+    email: "rohan.sharma@maleehouse.in",
+  },
+  {
+    id: "ac01b2cd-3e4f-5a6b-7c8d-9e0f1a2b3c4d",
+    name: "Priya Iyer",
+    email: "priya.iyer@maleehouse.in",
+  },
+  {
+    id: "ba742e03-0a20-4389-c6e8-bfa533aeb360",
+    name: "Vikram Malhotra",
+    email: "vikram.m@maleehouse.in",
+  },
 ];
 
 const STAGE_LABELS: Record<string, string> = {
-  lead_created: 'Lead Created',
-  quotation_requested: 'Quotation Requested',
-  quotation_sent: 'Quotation Sent',
-  payment_pending: 'Payment Pending',
-  payment_done: 'Payment Done',
-  project_created: 'Project Created',
-  data_collection: 'Data Collection',
-  prototype: 'CAD Prototype',
-  review: 'Technical Review',
-  field_work: 'Field Work',
-  data_sync: 'Data Sync',
-  final_review: 'QC Review',
-  completed: 'Completed',
-  archived: 'Archived'
+  lead_created: "Lead Created",
+  quotation_requested: "Quotation Requested",
+  quotation_sent: "Quotation Sent",
+  payment_pending: "Payment Pending",
+  payment_done: "Payment Done",
+  project_created: "Project Created",
+  data_collection: "Data Collection",
+  prototype: "CAD Prototype",
+  review: "Technical Review",
+  field_work: "Field Work",
+  data_sync: "Data Sync",
+  final_review: "QC Review",
+  completed: "Completed",
+  archived: "Archived",
 };
 
 export function ProjectFinanceTabContent({
@@ -89,54 +136,96 @@ export function ProjectFinanceTabContent({
   role,
   theme,
   quotation,
-  activityLogs = []
+  activityLogs = [],
+  onRefresh,
+  profile,
 }: ProjectFinanceTabContentProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Assignment State
-  const [selectedAccountant, setSelectedAccountant] = useState(accountantOwner?.accountant_id || '');
-  
+  const [selectedAccountant, setSelectedAccountant] = useState(
+    accountantOwner?.accountant_id || "",
+  );
+
   // Milestone Form State
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
-  const [milestoneItems, setMilestoneItems] = useState<Array<{
-    title: string;
-    description: string;
-    amount: string;
-    due_date: string;
-    linked_stage: string;
-    is_activation_gate: boolean;
-  }>>([
-    { title: 'Advance Staking Payment', description: '50% initial mobilization fee', amount: '', due_date: '', linked_stage: 'project_created', is_activation_gate: true }
+  const [milestoneItems, setMilestoneItems] = useState([
+    {
+      title: "Advance Staking Payment",
+      description: "50% initial mobilization fee",
+      amount: "",
+      due_date: "",
+      linked_stage: "project_created",
+      is_activation_gate: true,
+    },
   ]);
 
   // Freeze Modal State
   const [showFreezeModal, setShowFreezeModal] = useState(false);
-  const [freezeReason, setFreezeReason] = useState<'payment_pending' | 'financial_hold' | 'client_issue' | 'approval_issue' | 'manual_admin_hold'>('payment_pending');
-  const [freezeComment, setFreezeComment] = useState('');
+  const [freezeReason, setFreezeReason] = useState<"payment_pending" | "financial_hold" | "client_issue" | "approval_issue" | "manual_admin_hold">("payment_pending");
+  const [freezeComment, setFreezeComment] = useState("");
+  const [invoiceModalType, setInvoiceModalType] = useState("milestone");
+  const [invoiceContext, setInvoiceContext] = useState<any>(null);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+  const [expenseCategory, setExpenseCategory] = useState<'labor' | 'material' | 'travel' | 'overhead' | 'other'>('labor');
+  const [isEditingBudget, setIsEditingBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState(project.budget || 0);
+  const [selectedPaymentMilestone, setSelectedPaymentMilestone] =
+    useState<any>(null);
 
-  const isAdmin = role === 'admin';
-  const isAccountant = role === 'accountant' || role === 'admin';
-  
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(true);
+
+  const isAdmin = role === "admin";
+  const isAccountant = role === "accountant" || role === "admin";
+
   // Indian currency formatting helper (en-IN)
   const formatRupee = (value: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
     }).format(value);
   };
+
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      const res = await getExpensesAction({ project_id: projectId });
+      if (res.success) {
+        setExpenses(res.data || []);
+      }
+      setLoadingExpenses(false);
+    };
+    fetchExpenses();
+  }, [projectId]);
+
+  const totalBilled = milestones.reduce((sum, m) => sum + (m.amount || 0), 0);
+  const totalPaid = milestones
+    .filter((m) => m.status === "paid")
+    .reduce((sum, m) => sum + (m.amount || 0), 0);
+  const totalExpenses = expenses.reduce(
+    (sum, exp) => sum + (exp.amount || 0),
+    0,
+  );
+  const currentProfit = totalPaid - totalExpenses;
 
   // 1. Accountant Assignment Submit
   const handleAssignAccountant = async () => {
     if (!selectedAccountant) {
-      toast.error("Selection Required", { description: "Please select an accountant." });
+      toast.error("Selection Required", {
+        description: "Please select an accountant.",
+      });
       return;
     }
     setIsSubmitting(true);
     try {
       const res = await assignAccountantAction(projectId, selectedAccountant);
       if (res?.success) {
-        toast.success("Accountant Assigned", { description: "Ownership successfully updated." });
+        toast.success("Accountant Assigned", {
+          description: "Ownership successfully updated.",
+        });
       } else {
         toast.error("Assignment Failed", { description: res?.error });
       }
@@ -150,29 +239,42 @@ export function ProjectFinanceTabContent({
   // 2. WhatsApp Portal Message Dispatcher
   const handleSendWhatsAppMessage = () => {
     if (!quotation) {
-      toast.error("Quotation Missing", { description: "Quotation must be drafted first." });
+      toast.error("Quotation Missing", {
+        description: "Quotation must be drafted first.",
+      });
       return;
     }
-    
+
     // Construct dynamic client proposal link
     const dynamicPortalLink = `${window.location.origin}/client-portal/${quotation.client_token || quotation.id}`;
-    
+
     // Construct professional Indian Standard pre-filled message text
     const messageText = `Dear ${project.client_name},\n\nHope you are doing well!\n\nWe have prepared our formal Surveying Services Commercial Proposal for "${project.name}" under SACSACSAC SAC 9983 professional consulting. \n\nPlease review the item breakdown, GST (18%) details, and lock your approval securely using this WhatsApp Proposal link:\n👉 ${dynamicPortalLink}\n\nOnce approved, our Finance Team will build your custom payment milestones to activate the field crew.\n\nWarm Regards,\nMalee House Surveying Team`;
 
     // Zero-Cost Dispatch: Launch WhatsApp pre-filled text
-    const clientPhone = project.client_contact ? project.client_contact.replace(/\D/g, '') : '';
+    const clientPhone = project.client_contact
+      ? project.client_contact.replace(/\D/g, "")
+      : "";
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(clientPhone)}&text=${encodeURIComponent(messageText)}`;
-    
-    window.open(whatsappUrl, '_blank');
-    toast.success("WhatsApp Portal Launched", { description: "Message draft successfully prepared in WhatsApp." });
+
+    window.open(whatsappUrl, "_blank");
+    toast.success("WhatsApp Portal Launched", {
+      description: "Message draft successfully prepared in WhatsApp.",
+    });
   };
 
   // 3. Milestone Creation Submit
   const handleAddMilestoneItem = () => {
     setMilestoneItems([
       ...milestoneItems,
-      { title: '', description: '', amount: '', due_date: '', linked_stage: '', is_activation_gate: false }
+      {
+        title: "",
+        description: "",
+        amount: "",
+        due_date: "",
+        linked_stage: "",
+        is_activation_gate: false,
+      },
     ]);
   };
 
@@ -188,19 +290,24 @@ export function ProjectFinanceTabContent({
 
   const handleMilestoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate amount sum maps to quote total if required
     const payload = milestoneItems.map((item: any) => ({
       title: item.title,
       description: item.description,
       amount: parseFloat(item.amount) || 0,
-      due_date: item.due_date ? new Date(item.due_date).toISOString() : undefined,
+      due_date: item.due_date
+        ? new Date(item.due_date).toISOString()
+        : undefined,
       linked_stage: item.linked_stage || undefined,
-      is_activation_gate: item.is_activation_gate
+      is_activation_gate: item.is_activation_gate,
     }));
 
     if (payload.some((item: any) => !item.title || item.amount <= 0)) {
-      toast.error("Validation Failed", { description: "All milestones require a valid title and positive amount." });
+      toast.error("Validation Failed", {
+        description:
+          "All milestones require a valid title and positive amount.",
+      });
       return;
     }
 
@@ -208,8 +315,11 @@ export function ProjectFinanceTabContent({
     try {
       const res = await createMilestonesAction(projectId, payload);
       if (res?.success) {
-        toast.success("Milestones Structured", { description: "Custom payment milestone gates are active." });
+        toast.success("Milestones Structured", {
+          description: "Custom payment milestone gates are active.",
+        });
         setShowMilestoneForm(false);
+        onRefresh?.();
       } else {
         toast.error("Failed to Create", { description: res?.error });
       }
@@ -221,9 +331,19 @@ export function ProjectFinanceTabContent({
   };
 
   // 4. Invoicing triggers for Milestones/Visits
-  const handleGenerateInvoice = async (targetId: string, type: 'milestone' | 'visit', title: string, amount: number) => {
-    if (!confirm(`Generate tax invoice for "${title}" of ${formatRupee(amount)} + GST (18%)?`)) return;
-    
+  const handleGenerateInvoice = async (
+    targetId: string,
+    type: "milestone" | "visit",
+    title: string,
+    amount: number,
+  ) => {
+    if (
+      !confirm(
+        `Generate tax invoice for "${title}" of ${formatRupee(amount)} + GST (18%)?`,
+      )
+    )
+      return;
+
     setIsSubmitting(true);
     try {
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -235,12 +355,15 @@ export function ProjectFinanceTabContent({
         amount: amount,
         gst_rate: 18,
         notes: `Milestone/Visit specific tax invoice.`,
-        milestone_id: type === 'milestone' ? targetId : undefined,
-        visit_id: type === 'visit' ? targetId : undefined
+        milestone_id: type === "milestone" ? targetId : undefined,
+        visit_id: type === "visit" ? targetId : undefined,
       });
 
       if (res?.success) {
-        toast.success("Invoice Dispatched", { description: `Invoice ${invoiceNo} generated successfully.` });
+        toast.success("Invoice Dispatched", {
+          description: `Invoice ${invoiceNo} generated successfully.`,
+        });
+        onRefresh?.();
       } else {
         toast.error("Invoice Generation Failed", { description: res?.error });
       }
@@ -256,10 +379,17 @@ export function ProjectFinanceTabContent({
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await freezeProjectAction(projectId, freezeReason, freezeComment);
+      const res = await freezeProjectAction(
+        projectId,
+        freezeReason,
+        freezeComment,
+      );
       if (res?.success) {
-        toast.success("Project Locked", { description: "All technical departments blockades are active." });
+        toast.success("Project Locked", {
+          description: "All technical departments blockades are active.",
+        });
         setShowFreezeModal(false);
+        onRefresh?.();
       } else {
         toast.error("Action Failed", { description: res?.error });
       }
@@ -271,12 +401,23 @@ export function ProjectFinanceTabContent({
   };
 
   const handleUnfreeze = async () => {
-    if (!confirm("Are you sure you want to lift this financial lock? Operations will resume immediately.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to lift this financial lock? Operations will resume immediately.",
+      )
+    )
+      return;
     setIsSubmitting(true);
     try {
-      const res = await unfreezeProjectAction(projectId, "Outstanding cleared by client. Manual unfreeze.");
+      const res = await unfreezeProjectAction(
+        projectId,
+        "Outstanding cleared by client. Manual unfreeze.",
+      );
       if (res?.success) {
-        toast.success("Project Unlocked", { description: "Full technical operations restored." });
+        toast.success("Project Unlocked", {
+          description: "Full technical operations restored.",
+        });
+        onRefresh?.();
       } else {
         toast.error("Action Failed", { description: res?.error });
       }
@@ -287,40 +428,192 @@ export function ProjectFinanceTabContent({
     }
   };
 
+  const handleUpdateBudget = async () => {
+    if (isNaN(budgetInput) || budgetInput < 0) return;
+    setIsSubmitting(true);
+    try {
+      const res = await updateProjectBudgetAction(projectId, budgetInput);
+      if (res.success) {
+        toast.success("Budget Updated");
+        setIsEditingBudget(false);
+        onRefresh?.();
+      } else {
+        toast.error("Failed to update budget", { description: res.error });
+      }
+    } catch (err: any) {
+      toast.error("Unexpected Error", { description: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      
-      {/* ── Top Finance Actions Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Accountant Ownership Box (Admin Only) */}
-        {isAdmin && (
-          <div className="glass-card p-6 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-2xl flex flex-col justify-between">
-            <div className="space-y-2">
-              <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-indigo-500" />
-                Assign Accountant Owner
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Appoint the dedicated financial accountant responsible for verifying receipts, billing milestones, and setting up GST logs.
-              </p>
+      {/* Overview Cards */}
+      {/* Project P&L & Budget Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* P&L Card */}
+        <div className="bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-900/50 dark:to-slate-900/20 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden group">
+          {/* Decorative glow */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-110"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                <Target className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Project P&L <span className="text-slate-400 font-medium">(Profit & Loss)</span>
+              </h3>
             </div>
             
+            <div className="space-y-4 mb-8 mt-2">
+              <div className="flex justify-between items-center text-sm p-3 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-100 dark:border-white/5 shadow-sm">
+                <span className="text-slate-500 font-medium">Total Billed (Income)</span>
+                <span className="font-bold text-slate-900 dark:text-white text-base">{formatRupee(totalBilled)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm p-3 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-100 dark:border-white/5 shadow-sm">
+                <span className="text-slate-500 font-medium">Total Expenses</span>
+                <span className="font-bold text-slate-900 dark:text-white text-base">{formatRupee(totalExpenses)}</span>
+              </div>
+              
+              <div className="pt-4 mt-4 border-t border-slate-200 dark:border-white/10 flex justify-between items-end">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Net Profit</span>
+                </div>
+                <span className={cn(
+                  "text-3xl font-black tracking-tight", 
+                  currentProfit >= 0 ? "text-emerald-500 drop-shadow-[0_2px_10px_rgba(16,185,129,0.2)]" : "text-rose-500 drop-shadow-[0_2px_10px_rgba(244,63,94,0.2)]"
+                )}>
+                  {formatRupee(currentProfit)}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 mt-auto">
+            <button
+              onClick={() => {
+                setExpenseCategory('labor');
+                setExpenseModalOpen(true);
+              }}
+              className="py-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-300 shadow-sm hover:shadow-md"
+            >
+              <UserPlus className="w-4 h-4 text-indigo-500" />
+              Allocate Labor
+            </button>
+            <button
+              onClick={() => {
+                setExpenseCategory('material');
+                setExpenseModalOpen(true);
+              }}
+              className="py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_14px_0_rgba(99,102,241,0.39)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.23)] hover:-translate-y-0.5"
+            >
+              <FileText className="w-4 h-4" />
+              Allocate Material
+            </button>
+          </div>
+        </div>
+
+        {/* Budget vs Actual Card */}
+        <div className="bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-900/50 dark:to-slate-900/20 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden group">
+          {/* Decorative glow */}
+          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-500/5 dark:bg-amber-500/10 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-110"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl">
+                  <Award className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Budget vs Actual
+                </h3>
+              </div>
+              {isEditingBudget ? (
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={budgetInput}
+                    onChange={(e) => setBudgetInput(Number(e.target.value))}
+                    className="w-24 px-2 py-1 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded outline-none"
+                  />
+                  <button onClick={handleUpdateBudget} disabled={isSubmitting} className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded font-medium">Save</button>
+                  <button onClick={() => setIsEditingBudget(false)} disabled={isSubmitting} className="text-xs bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded font-medium">Cancel</button>
+                </div>
+              ) : (
+                <button onClick={() => setIsEditingBudget(true)} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
+                  Edit Budget
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-4 mt-6">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-xs text-slate-500 mb-1">Actual Spent</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatRupee(totalExpenses)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-500 mb-1">Total Budget</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{formatRupee(project.budget || 0)}</p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="h-3 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className={cn("h-full rounded-full transition-all duration-500", 
+                    (project.budget || 0) === 0 ? "bg-slate-400" :
+                    totalExpenses > (project.budget || 0) ? "bg-rose-500" : "bg-emerald-500"
+                  )}
+                  style={{ width: `${Math.min(100, (project.budget || 0) > 0 ? (totalExpenses / project.budget) * 100 : 0)}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-500 text-center mt-2">
+                {project.budget > 0 ? `${((totalExpenses / project.budget) * 100).toFixed(1)}% of budget utilized` : 'No budget set for this project.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Top Finance Actions Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Accountant Ownership Box (Admin Only) */}
+        {isAdmin && (
+          <div className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/40 dark:to-indigo-900/20 border border-indigo-200/60 dark:border-indigo-500/20 rounded-3xl flex flex-col justify-between shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+              <UserPlus className="w-16 h-16 text-indigo-600" />
+            </div>
+            <div className="space-y-3 relative z-10">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center mb-2">
+                <UserPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h4 className="text-sm font-black text-indigo-950 dark:text-indigo-100">
+                Assign Accountant Owner
+              </h4>
+              <p className="text-xs text-indigo-700/80 dark:text-indigo-300/80 leading-relaxed pr-8">
+                Appoint the dedicated financial accountant responsible for
+                verifying receipts, billing milestones, and setting up GST logs.
+              </p>
+            </div>
+
             <div className="mt-4 flex gap-2">
               <select
                 value={selectedAccountant}
                 onChange={(e) => setSelectedAccountant(e.target.value)}
-                className="flex-1 bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-white/60 dark:bg-slate-950/60 backdrop-blur-md border border-indigo-200 dark:border-indigo-500/30 p-3 rounded-2xl text-xs text-indigo-950 dark:text-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
               >
                 <option value="">Select Accountant...</option>
                 {MOCK_ACCOUNTANTS.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name} ({a.email})</option>
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.email})
+                  </option>
                 ))}
               </select>
               <button
                 onClick={handleAssignAccountant}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition disabled:opacity-50"
+                className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs transition-all disabled:opacity-50 shadow-md shadow-indigo-500/20"
               >
                 Assign
               </button>
@@ -328,72 +621,21 @@ export function ProjectFinanceTabContent({
           </div>
         )}
 
-        {/* WhatsApp Zero-Cost Proposal Sharing Box */}
-        <div className="glass-card p-6 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-2xl flex flex-col justify-between">
-          <div className="space-y-2">
-            <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Send className="w-5 h-5 text-emerald-500" />
-              WhatsApp Proposal Link
-            </h4>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Dispatch a secure, pre-filled WhatsApp proposal link to the customer. Enables 100% free digital client approvals, changes, and jsPDF downloads.
-            </p>
-          </div>
-
-          <div className="mt-4">
-            <button
-              onClick={handleSendWhatsAppMessage}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-500/10 transition"
-            >
-              <Send className="w-4 h-4" />
-              Send Proposal via WhatsApp (Free)
-            </button>
-          </div>
-        </div>
-
-        {/* Manual Freeze & Lockout Levers Box */}
-        <div className="glass-card p-6 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-2xl flex flex-col justify-between">
-          <div className="space-y-2">
-            <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              Financial Lockout Control
-            </h4>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              If client milestone payments are unpaid or on financial hold, Accounts can manually freeze project operations. Blocks all technical CAD/Field progress.
-            </p>
-          </div>
-
-          <div className="mt-4">
-            {project.is_frozen ? (
-              <button
-                onClick={handleUnfreeze}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition"
-              >
-                <Unlock className="w-4 h-4" />
-                Unblock Project Operations
-              </button>
-            ) : (
-              <button
-                onClick={() => setShowFreezeModal(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition"
-              >
-                <Lock className="w-4 h-4" />
-                Freeze Project Operations
-              </button>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* ── Project Milestones Ledger ── */}
       <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Structured Payment Milestones</h3>
-            <p className="text-xs text-slate-500 mt-1">Setup stage gates where technical completion requires verified Indian GST (18%) invoices.</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              Structured Payment Milestones
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Setup stage gates where technical completion requires verified
+              Indian GST (18%) invoices.
+            </p>
           </div>
-          
+
           {isAccountant && milestones.length === 0 && !showMilestoneForm && (
             <button
               onClick={() => setShowMilestoneForm(true)}
@@ -406,55 +648,92 @@ export function ProjectFinanceTabContent({
 
         {/* Milestone Configuration Form Panel */}
         {showMilestoneForm && (
-          <form onSubmit={handleMilestoneSubmit} className="p-6 bg-slate-950/60 rounded-3xl border border-slate-800 space-y-6 animate-in slide-in-from-top duration-300">
+          <form
+            onSubmit={handleMilestoneSubmit}
+            className="p-6 bg-slate-950/60 rounded-3xl border border-slate-800 space-y-6 animate-in slide-in-from-top duration-300"
+          >
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-blue-500" /> Configure Milestone Schedule (INR, 18% GST Compliance)
+              <DollarSign className="w-4 h-4 text-blue-500" /> Configure
+              Milestone Schedule (INR, 18% GST Compliance)
             </h4>
 
             <div className="space-y-4">
               {milestoneItems.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end p-4 bg-slate-900/40 rounded-2xl border border-slate-850">
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end p-4 bg-slate-900/40 rounded-2xl border border-slate-850"
+                >
                   <div className="md:col-span-2 space-y-1">
-                    <label className="text-xs font-bold text-slate-500">Milestone Title</label>
+                    <label className="text-xs font-bold text-slate-500">
+                      Milestone Title
+                    </label>
                     <input
                       type="text"
                       required
                       value={item.title}
-                      onChange={(e) => handleMilestoneFieldChange(idx, 'title', e.target.value)}
+                      onChange={(e) =>
+                        handleMilestoneFieldChange(idx, "title", e.target.value)
+                      }
                       placeholder="e.g., CAD Prototype Approval"
                       className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">Base Cost (INR)</label>
+                    <label className="text-xs font-bold text-slate-500">
+                      Base Cost (INR)
+                    </label>
                     <input
                       type="number"
                       required
                       value={item.amount}
-                      onChange={(e) => handleMilestoneFieldChange(idx, 'amount', e.target.value)}
+                      onChange={(e) =>
+                        handleMilestoneFieldChange(
+                          idx,
+                          "amount",
+                          e.target.value,
+                        )
+                      }
                       placeholder="₹ Base cost"
                       className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">Due Date</label>
+                    <label className="text-xs font-bold text-slate-500">
+                      Due Date
+                    </label>
                     <input
                       type="date"
                       value={item.due_date}
-                      onChange={(e) => handleMilestoneFieldChange(idx, 'due_date', e.target.value)}
+                      onChange={(e) =>
+                        handleMilestoneFieldChange(
+                          idx,
+                          "due_date",
+                          e.target.value,
+                        )
+                      }
                       className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">Linked Stage</label>
+                    <label className="text-xs font-bold text-slate-500">
+                      Linked Stage
+                    </label>
                     <select
                       value={item.linked_stage}
-                      onChange={(e) => handleMilestoneFieldChange(idx, 'linked_stage', e.target.value)}
+                      onChange={(e) =>
+                        handleMilestoneFieldChange(
+                          idx,
+                          "linked_stage",
+                          e.target.value,
+                        )
+                      }
                       className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-300"
                     >
                       <option value="">None (Unrestricted)</option>
                       {Object.keys(STAGE_LABELS).map((stg: any) => (
-                        <option key={stg} value={stg}>{STAGE_LABELS[stg]}</option>
+                        <option key={stg} value={stg}>
+                          {STAGE_LABELS[stg]}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -464,14 +743,25 @@ export function ProjectFinanceTabContent({
                         type="checkbox"
                         id={`act-gate-${idx}`}
                         checked={item.is_activation_gate}
-                        onChange={(e) => handleMilestoneFieldChange(idx, 'is_activation_gate', e.target.checked)}
+                        onChange={(e) =>
+                          handleMilestoneFieldChange(
+                            idx,
+                            "is_activation_gate",
+                            e.target.checked,
+                          )
+                        }
                         className="rounded bg-slate-950 border-slate-800 text-blue-600 w-4 h-4 focus:ring-0"
                       />
-                      <label htmlFor={`act-gate-${idx}`} className="text-xs font-bold text-slate-400 select-none">Activates</label>
+                      <label
+                        htmlFor={`act-gate-${idx}`}
+                        className="text-xs font-bold text-slate-400 select-none"
+                      >
+                        Activates
+                      </label>
                     </div>
                     {idx > 0 && (
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => handleRemoveMilestoneItem(idx)}
                         className="text-xs text-red-500 font-bold hover:text-red-400"
                       >
@@ -493,6 +783,15 @@ export function ProjectFinanceTabContent({
               </button>
 
               <div className="flex gap-3">
+                {isAccountant && (
+                  <button
+                    onClick={() => setExpenseModalOpen(true)}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2"
+                  >
+                    <Award className="w-4 h-4" />
+                    Log Expense
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowMilestoneForm(false)}
@@ -505,7 +804,9 @@ export function ProjectFinanceTabContent({
                   disabled={isSubmitting}
                   className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md shadow-blue-500/10"
                 >
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : null}
                   Structure Payment Gates
                 </button>
               </div>
@@ -514,10 +815,10 @@ export function ProjectFinanceTabContent({
         )}
 
         {/* Milestones List Ledger */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-200/50 dark:border-slate-800 bg-slate-950/20">
+        <div className="overflow-x-auto rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-900/60 text-xs font-bold tracking-wider text-slate-400 border-b border-slate-850">
+              <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-4">Milestone Title</th>
                 <th className="p-4">Base Cost</th>
                 <th className="p-4">GST (18%)</th>
@@ -536,9 +837,12 @@ export function ProjectFinanceTabContent({
                 const totalAmount = m.amount + gstAmount;
 
                 return (
-                  <tr key={m.id} className="border-b border-slate-850 hover:bg-slate-900/10 text-xs transition duration-200">
+                  <tr
+                    key={m.id}
+                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200"
+                  >
                     <td className="p-4">
-                      <div className="font-bold text-slate-200 flex items-center gap-1.5">
+                      <div className="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-1.5">
                         {m.is_activation_gate && (
                           <span title="Project Activation Milestone">
                             <Award className="w-3.5 h-3.5 text-blue-500" />
@@ -546,51 +850,94 @@ export function ProjectFinanceTabContent({
                         )}
                         {m.title}
                       </div>
-                      {m.description && <span className="text-xs text-slate-500">{m.description}</span>}
+                      {m.description && (
+                        <span className="text-xs text-slate-500">
+                          {m.description}
+                        </span>
+                      )}
                     </td>
-                    <td className="p-4 nums font-bold text-slate-300">{formatRupee(m.amount)}</td>
+                    <td className="p-4 nums font-bold text-slate-300">
+                      {formatRupee(m.amount)}
+                    </td>
                     <td className="p-4 nums text-slate-500">
                       <div>{formatRupee(gstAmount)}</div>
-                      <div className="text-[8px] text-slate-600">(9% CGST + 9% SGST)</div>
+                      <div className="text-[8px] text-slate-600">
+                        (9% CGST + 9% SGST)
+                      </div>
                     </td>
-                    <td className="p-4 nums font-bold text-blue-400">{formatRupee(totalAmount)}</td>
+                    <td className="p-4 nums font-bold text-blue-400">
+                      {formatRupee(totalAmount)}
+                    </td>
                     <td className="p-4 nums text-slate-400">
-                      {m.due_date ? new Date(m.due_date).toLocaleDateString() : 'N/A'}
+                      {m.due_date
+                        ? new Date(m.due_date).toLocaleDateString()
+                        : "N/A"}
                     </td>
                     <td className="p-4">
                       {m.linked_stage ? (
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-xs font-semibold text-slate-400">
+                        <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-sm">
                           {STAGE_LABELS[m.linked_stage]}
                         </span>
-                      ) : 'None'}
+                      ) : (
+                        <span className="text-slate-400 font-medium text-xs">None</span>
+                      )}
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${
-                        m.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                        m.status === 'overdue' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                        m.status === 'invoice_generated' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
-                        'bg-slate-800 text-slate-400 border border-slate-700'
-                      }`}>
+                      <span
+                        className={cn(
+                          "px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-widest uppercase shadow-sm border",
+                          m.status === "paid"
+                            ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+                            : m.status === "overdue"
+                              ? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"
+                              : m.status === "invoice_generated"
+                                ? "bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20"
+                                : "bg-slate-800 text-white border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                        )}
+                      >
                         {m.status.replace("_", " ")}
                       </span>
                     </td>
                     {isAccountant && (
                       <td className="p-4 text-right">
-                        {m.status === 'pending' ? (
+                        {m.status === "pending" ? (
                           <button
-                            onClick={() => handleGenerateInvoice(m.id, 'milestone', m.title, m.amount)}
+                            onClick={() =>
+                              handleGenerateInvoice(
+                                m.id,
+                                "milestone",
+                                m.title,
+                                m.amount,
+                              )
+                            }
                             disabled={isSubmitting}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition disabled:opacity-50"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-xs transition-all disabled:opacity-50 shadow-md shadow-blue-500/20 hover:-translate-y-0.5"
                           >
                             Bill Milestone
                           </button>
-                        ) : m.status === 'invoice_generated' ? (
-                          <span className="text-xs text-slate-500 italic">Invoice Sent</span>
-                        ) : m.status === 'paid' ? (
-                          <span className="text-xs text-emerald-500 font-bold">Paid ✓</span>
-                        ) : m.status === 'overdue' ? (
+                        ) : m.status === "invoice_generated" ? (
+                          <button
+                            onClick={() => {
+                              setSelectedPaymentMilestone(m);
+                              setPaymentModalOpen(true);
+                            }}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full text-xs transition-all shadow-md shadow-emerald-500/20 hover:-translate-y-0.5"
+                          >
+                            Log Payment
+                          </button>
+                        ) : m.status === "payment_verification_pending" ? (
+                          <span className="text-xs text-amber-600 dark:text-amber-500 font-bold">
+                            Pending Verification
+                          </span>
+                        ) : m.status === "paid" ? (
+                          <span className="text-sm text-emerald-600 dark:text-emerald-500 font-black tracking-tight">
+                            Paid ✓
+                          </span>
+                        ) : m.status === "overdue" ? (
                           <div className="flex gap-2 justify-end">
-                            <span className="text-xs text-red-500 font-bold self-center">Payment Overdue</span>
+                            <span className="text-xs text-rose-600 dark:text-red-500 font-bold self-center">
+                              Payment Overdue
+                            </span>
                           </div>
                         ) : null}
                       </td>
@@ -600,8 +947,118 @@ export function ProjectFinanceTabContent({
               })}
               {milestones.length === 0 && (
                 <tr>
-                  <td colSpan={isAccountant ? 8 : 7} className="p-8 text-center text-slate-500 italic">
-                    No structure formulated yet. Standard Indian GST invoice schedules are ready to build.
+                  <td
+                    colSpan={isAccountant ? 8 : 7}
+                    className="p-8 text-center text-slate-500 italic"
+                  >
+                    No structure formulated yet. Standard Indian GST invoice
+                    schedules are ready to build.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Project Costs & Expenses Ledger ── */}
+      <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-sans">
+              Project Costs & Expenses
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Log and track labor allocations, material purchases, and field visits.
+            </p>
+          </div>
+          {isAccountant && (
+            <button
+              onClick={() => setExpenseModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Log Expense
+            </button>
+          )}
+        </div>
+
+        {/* Expense Summary Header */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-indigo-50/80 to-slate-50/50 dark:from-indigo-950/30 dark:to-slate-900/20 border border-indigo-100/50 dark:border-indigo-500/10 flex flex-col relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
+            <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-colors"></div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500/80 mb-2 relative z-10">Total Billed Revenue</span>
+            <span className="text-3xl font-black text-indigo-950 dark:text-indigo-100 nums relative z-10">{formatRupee(totalBilled)}</span>
+          </div>
+          
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-rose-50/80 to-slate-50/50 dark:from-rose-950/30 dark:to-slate-900/20 border border-rose-100/50 dark:border-rose-500/10 flex flex-col relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
+            <div className="absolute -right-10 -top-10 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-colors"></div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-500/80 mb-2 relative z-10">Total Expenses</span>
+            <span className="text-3xl font-black text-rose-950 dark:text-rose-100 nums relative z-10">{formatRupee(totalExpenses)}</span>
+          </div>
+          
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/80 to-slate-50/50 dark:from-emerald-950/30 dark:to-slate-900/20 border border-emerald-100/50 dark:border-emerald-500/10 flex flex-col relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
+            <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-colors"></div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80 mb-2 relative z-10">Current Profitability</span>
+            <span className={cn(
+              "text-3xl font-black nums relative z-10 tracking-tight", 
+              currentProfit >= 0 ? "text-emerald-600 dark:text-emerald-400 drop-shadow-[0_2px_8px_rgba(16,185,129,0.2)]" : "text-rose-600 dark:text-rose-500 drop-shadow-[0_2px_8px_rgba(244,63,94,0.2)]"
+            )}>
+              {formatRupee(currentProfit)}
+            </span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <th className="p-4">Date</th>
+                <th className="p-4">Category</th>
+                <th className="p-4">Description</th>
+                <th className="p-4 text-right">Amount</th>
+                <th className="p-4 text-center">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingExpenses ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-500">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                  </td>
+                </tr>
+              ) : expenses.map((exp) => (
+                <tr key={exp.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200">
+                  <td className="p-4 text-slate-700 dark:text-slate-300 nums font-bold">
+                    {new Date(exp.expense_date).toLocaleDateString()}
+                  </td>
+                  <td className="p-4">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-widest bg-slate-100 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase">
+                      {exp.category === 'travel' ? 'Travel / Field Visit' : exp.category}
+                    </span>
+                  </td>
+                  <td className="p-4 text-slate-600 dark:text-slate-300 max-w-[200px] truncate" title={exp.description}>
+                    {exp.description}
+                  </td>
+                  <td className="p-4 text-right font-bold text-rose-400 nums">
+                    {formatRupee(exp.amount)}
+                  </td>
+                  <td className="p-4 text-center">
+                    {exp.receipt_url ? (
+                      <a href={exp.receipt_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors">
+                        <FileText className="w-3.5 h-3.5" />
+                        View
+                      </a>
+                    ) : (
+                      <span className="text-slate-600">-</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {!loadingExpenses && expenses.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-500 italic">
+                    No expenses logged for this project yet.
                   </td>
                 </tr>
               )}
@@ -611,66 +1068,103 @@ export function ProjectFinanceTabContent({
       </div>
 
       {/* ── Visit-Based Ledger Panel ── */}
-      {project.billing_type === 'visit_based' && (
+      {project.billing_type === "visit_based" && (
         <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-sans">Indian SAC 9983 Survey Visit Ledger</h3>
-            <p className="text-xs text-slate-500 mt-1">Rolling visits ledger. Invoiced per-visit at standard rates, guarding technical stage movements.</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-sans">
+              Indian SAC 9983 Survey Visit Ledger
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Rolling visits ledger. Invoiced per-visit at standard rates,
+              guarding technical stage movements.
+            </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/20">
+          <div className="overflow-x-auto rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-900/60 text-xs font-bold tracking-wider text-slate-400 border-b border-slate-850">
+                <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
                   <th className="p-4">Visit Date</th>
                   <th className="p-4">Field Task Log Details</th>
                   <th className="p-4">Completion Status</th>
                   <th className="p-4">Billing Status</th>
-                  {isAccountant && <th className="p-4 text-right">Invoice Generation</th>}
+                  {isAccountant && (
+                    <th className="p-4 text-right">Invoice Generation</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {visits.map((v) => (
-                  <tr key={v.id} className="border-b border-slate-850 hover:bg-slate-900/10 text-xs transition duration-200">
-                    <td className="p-4 nums font-bold text-slate-300">
+                  <tr
+                    key={v.id}
+                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200"
+                  >
+                    <td className="p-4 nums font-bold text-slate-700 dark:text-slate-300">
                       {new Date(v.visit_date).toLocaleDateString()}
                     </td>
                     <td className="p-4">
-                      <div className="font-bold text-slate-200">Logged by: Field Crew</div>
-                      {v.description && <span className="text-xs text-slate-500">{v.description}</span>}
+                      <div className="font-bold text-slate-900 dark:text-slate-200">
+                        Logged by: Field Crew
+                      </div>
+                      {v.description && (
+                        <span className="text-xs text-slate-500">
+                          {v.description}
+                        </span>
+                      )}
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${
-                        v.completed_at ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                      }`}>
-                        {v.completed_at ? 'Completed' : 'Scheduled'}
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${
+                          v.completed_at
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                        }`}
+                      >
+                        {v.completed_at ? "Completed" : "Scheduled"}
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${
-                        v.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                        v.status === 'invoice_generated' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
-                        'bg-slate-855 text-slate-440 border border-slate-800'
-                      }`}>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${
+                          v.status === "paid"
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            : v.status === "invoice_generated"
+                              ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                              : "bg-slate-855 text-slate-440 border border-slate-800"
+                        }`}
+                      >
                         {v.status}
                       </span>
                     </td>
                     {isAccountant && (
                       <td className="p-4 text-right">
-                        {v.status === 'completed' ? (
+                        {v.status === "completed" ? (
                           <button
-                            onClick={() => handleGenerateInvoice(v.id, 'visit', `Field Visit - ${new Date(v.visit_date).toLocaleDateString()}`, 15000)} // Standard visit cost ₹15,000 + GST
+                            onClick={() =>
+                              handleGenerateInvoice(
+                                v.id,
+                                "visit",
+                                `Field Visit - ${new Date(v.visit_date).toLocaleDateString()}`,
+                                15000,
+                              )
+                            } // Standard visit cost ₹15,000 + GST
                             disabled={isSubmitting}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition disabled:opacity-50"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-xs transition-all disabled:opacity-50 shadow-md shadow-blue-500/20 hover:-translate-y-0.5"
                           >
                             Bill Visit
                           </button>
-                        ) : v.status === 'invoice_generated' ? (
-                          <span className="text-xs text-slate-500 italic">Invoice Sent</span>
-                        ) : v.status === 'paid' ? (
-                          <span className="text-xs text-emerald-500 font-bold">Paid ✓</span>
+                        ) : v.status === "invoice_generated" ? (
+                          <span className="text-xs text-slate-500 italic">
+                            Invoice Sent
+                          </span>
+                        ) : v.status === "paid" ? (
+                          <span className="text-sm text-emerald-600 dark:text-emerald-500 font-black tracking-tight">
+                            Paid ✓
+                          </span>
                         ) : (
-                          <span className="text-xs text-slate-550 italic">Scheduled</span>
+                          <span className="text-xs text-slate-550 italic">
+                            Scheduled
+                          </span>
                         )}
                       </td>
                     )}
@@ -678,7 +1172,10 @@ export function ProjectFinanceTabContent({
                 ))}
                 {visits.length === 0 && (
                   <tr>
-                    <td colSpan={isAccountant ? 5 : 4} className="p-8 text-center text-slate-500 italic">
+                    <td
+                      colSpan={isAccountant ? 5 : 4}
+                      className="p-8 text-center text-slate-500 italic"
+                    >
                       No visits recorded under this billing ledger.
                     </td>
                   </tr>
@@ -690,119 +1187,187 @@ export function ProjectFinanceTabContent({
       )}
 
       {/* ── Manual Freeze Modal Panel ── */}
-      {showFreezeModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-red-500" />
-                Manual Operations Freeze
-              </h3>
-              <button 
-                type="button" 
-                onClick={() => setShowFreezeModal(false)}
-                className="text-xs text-slate-500 hover:text-white"
+      <Dialog open={showFreezeModal} onOpenChange={setShowFreezeModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Manual Operations Freeze
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleFreezeSubmit} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500">
+                Lockout Category
+              </label>
+              <select
+                value={freezeReason}
+                onChange={(e: any) => setFreezeReason(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-300 focus:outline-none focus:border-red-500"
               >
-                Cancel
-              </button>
+                <option value="payment_pending">
+                  Payment Pending (Outstanding Milestones)
+                </option>
+                <option value="financial_hold">General Financial Hold</option>
+                <option value="client_issue">
+                  Client Inactivity / Relationship Issue
+                </option>
+                <option value="approval_issue">
+                  Regulatory / Approval Complication
+                </option>
+                <option value="manual_admin_hold">
+                  Manual Administrator Override Hold
+                </option>
+              </select>
             </div>
-            
-            <form onSubmit={handleFreezeSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500">Lockout Category</label>
-                <select
-                  value={freezeReason}
-                  onChange={(e: any) => setFreezeReason(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-red-500"
-                >
-                  <option value="payment_pending">Payment Pending (Outstanding Milestones)</option>
-                  <option value="financial_hold">General Financial Hold</option>
-                  <option value="client_issue">Client Inactivity / Relationship Issue</option>
-                  <option value="approval_issue">Regulatory / Approval Complication</option>
-                  <option value="manual_admin_hold">Manual Administrator Override Hold</option>
-                </select>
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500">Explanatory Comments (Logs in Audit Trail)</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={freezeComment}
-                  onChange={(e) => setFreezeComment(e.target.value)}
-                  placeholder="Specify milestone details, GST payment details, or override logs..."
-                  className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-red-500"
-                />
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500">
+                Explanatory Comments (Logs in Audit Trail)
+              </label>
+              <textarea
+                required
+                rows={3}
+                value={freezeComment}
+                onChange={(e) => setFreezeComment(e.target.value)}
+                placeholder="Specify milestone details, GST payment details, or override logs..."
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-red-500"
+              />
+            </div>
 
+            <DialogFooter>
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-lg shadow-red-500/10"
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : null}
                 Apply Operations Freeze
               </button>
-            </form>
-          </div>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Freeze History Panel ── */}
+      <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-4">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white font-sans">
+            Freeze & Lockout History
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Audit log of all manual and automated project lockouts applied or
+            lifted.
+          </p>
         </div>
-      )}
 
-    {/* ── Freeze History Panel ── */}
-    <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-4">
-      <div>
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white font-sans">Freeze & Lockout History</h3>
-        <p className="text-xs text-slate-500 mt-1">Audit log of all manual and automated project lockouts applied or lifted.</p>
-      </div>
-
-      <div className="overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-slate-950/20">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-900/60 text-xs font-bold tracking-wider text-slate-400 border-b border-slate-850">
-              <th className="p-4">Timestamp</th>
-              <th className="p-4">Action</th>
-              <th className="p-4">Details / Reason</th>
-              <th className="p-4">Comments</th>
-            </tr>
-          </thead>
-          <tbody>
-            {((activityLogs || []).filter((a: any) => ['PROJECT_FROZEN', 'PROJECT_UNFROZEN'].includes(a.action)).length > 0) ? (
-              (activityLogs || [])
-                .filter((a: any) => ['PROJECT_FROZEN', 'PROJECT_UNFROZEN'].includes(a.action))
-                .map((h: any) => (
-                  <tr key={h.id} className="border-b border-slate-850 hover:bg-slate-900/10 text-xs transition duration-200">
-                    <td className="p-4 nums text-slate-400">
-                      {new Date(h.created_at).toLocaleString()}
-                    </td>
-                    <td className="p-4 font-bold">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded text-xs font-bold tracking-widest",
-                        h.action === 'PROJECT_FROZEN' 
-                          ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' 
-                          : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                      )}>
-                        {h.action === 'PROJECT_FROZEN' ? 'Locked / Frozen' : 'Unlocked / Active'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-slate-500 dark:text-slate-350">
-                      {h.details?.reason ? h.details.reason.replace('_', ' ').toUpperCase() : 'Manual Trigger'}
-                    </td>
-                    <td className="p-4 text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                      {h.details?.comment || 'Hold action completed.'}
-                    </td>
-                  </tr>
-                ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="p-8 text-center text-slate-500 italic">
-                  No financial lock history recorded for this project.
-                </td>
+        <div className="overflow-x-auto rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <th className="p-4">Timestamp</th>
+                <th className="p-4">Action</th>
+                <th className="p-4">Details / Reason</th>
+                <th className="p-4">Comments</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(activityLogs || []).filter((a: any) =>
+                ["PROJECT_FROZEN", "PROJECT_UNFROZEN"].includes(a.action),
+              ).length > 0 ? (
+                (activityLogs || [])
+                  .filter((a: any) =>
+                    ["PROJECT_FROZEN", "PROJECT_UNFROZEN"].includes(a.action),
+                  )
+                  .map((h: any) => (
+                    <tr
+                      key={h.id}
+                      className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200"
+                    >
+                      <td className="p-4 nums text-slate-600 dark:text-slate-400">
+                        {new Date(h.created_at).toLocaleString()}
+                      </td>
+                      <td className="p-4 font-bold">
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded text-xs font-bold tracking-widest",
+                            h.action === "PROJECT_FROZEN"
+                              ? "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                              : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20",
+                          )}
+                        >
+                          {h.action === "PROJECT_FROZEN"
+                            ? "Locked / Frozen"
+                            : "Unlocked / Active"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-500 dark:text-slate-350">
+                        {h.details?.reason
+                          ? h.details.reason.replace("_", " ").toUpperCase()
+                          : "Manual Trigger"}
+                      </td>
+                      <td className="p-4 text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                        {h.details?.comment || "Hold action completed."}
+                      </td>
+                    </tr>
+                  ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="p-8 text-center text-slate-500 italic"
+                  >
+                    No financial lock history recorded for this project.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Modals */}
+      <CreateInvoiceModal
+        projectId={project.id}
+        projectName={project.name}
+        clientName={project.client_name}
+        onSuccess={() => {
+          onRefresh?.();
+        }}
+      />
+
+      <LogPaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedPaymentMilestone(null);
+        }}
+        milestoneId={selectedPaymentMilestone?.id || ""}
+        projectId={project.id}
+        milestoneTitle={selectedPaymentMilestone?.title || ""}
+        amount={selectedPaymentMilestone?.amount || 0}
+        onSuccess={() => onRefresh?.()}
+      />
+
+      <AddExpenseModal
+        isOpen={expenseModalOpen}
+        onClose={() => setExpenseModalOpen(false)}
+        projectId={project.id}
+        initialCategory={expenseCategory}
+        onSuccess={() => {
+          const fetchExpenses = async () => {
+            const res = await getExpensesAction({ project_id: project.id });
+            if (res.success) {
+              setExpenses(res.data || []);
+            }
+          };
+          fetchExpenses();
+          onRefresh?.();
+        }}
+      />
     </div>
-  </div>
   );
 }

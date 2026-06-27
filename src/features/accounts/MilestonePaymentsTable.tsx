@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
+import { LogPaymentModal } from './LogPaymentModal';
 import { 
   updateMilestoneStatusAction, 
   rescheduleMilestoneAction, 
@@ -36,7 +37,7 @@ export interface MilestonePayment {
   due_date: string | null;
   linked_stage?: string | null;
   is_activation_gate: boolean;
-  status: 'pending' | 'paid' | 'hold';
+  status: 'pending' | 'paid' | 'hold' | 'payment_verification_pending';
   reschedule_reason?: string | null;
   created_at: string;
   projects?: {
@@ -58,6 +59,7 @@ const statusConfig: Record<string, { label: string; className: string; icon: any
   paid: { label: 'Paid & Clear', className: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 },
   hold: { label: 'Payment Hold', className: 'bg-rose-500/10 text-rose-500 border-rose-500/20', icon: Pause },
   reminder: { label: 'Reminder', className: 'bg-orange-500/10 text-orange-500 border-orange-500/20', icon: Bell },
+  payment_verification_pending: { label: 'Verification Pending', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock },
 };
 
 const formatCurrency = (amount: number) => {
@@ -108,6 +110,9 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
   const [submittingHold, setSubmittingHold] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPaymentMilestone, setSelectedPaymentMilestone] = useState<MilestonePayment | null>(null);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -132,11 +137,11 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
 
       const days = m.due_date ? differenceInDays(new Date(m.due_date), new Date()) : 999;
 
-      if (filterStatus === 'pending') return m.status === 'pending';
+      if (filterStatus === 'pending') return m.status === 'pending' || m.status === 'payment_verification_pending';
       if (filterStatus === 'paid') return m.status === 'paid';
       if (filterStatus === 'hold') return m.status === 'hold';
       if (filterStatus === 'overdue') return m.status === 'pending' && m.due_date && days < 0;
-      if (filterStatus === 'upcoming') return m.status === 'pending';
+      if (filterStatus === 'upcoming') return m.status === 'pending' || m.status === 'payment_verification_pending';
 
       return true;
     })
@@ -165,17 +170,8 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
 
   // Action handlers
   const handleMarkAsPaid = async (m: MilestonePayment) => {
-    try {
-      const res = await updateMilestoneStatusAction(m.id, 'paid', `Milestone marked as complete from Collections Portal.`);
-      if (res?.success) {
-        toast.success(`Milestone "${m.title}" marked as Paid.`);
-        onRefresh();
-      } else {
-        toast.error(res?.error || 'Failed to update milestone status.');
-      }
-    } catch {
-      toast.error('Unexpected error marking milestone as paid.');
-    }
+    setSelectedPaymentMilestone(m);
+    setPaymentModalOpen(true);
   };
 
   const handleHoldPayment = async (m: MilestonePayment) => {
@@ -261,30 +257,6 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
     } finally {
       setSubmittingHold(false);
     }
-  };
-
-  const getDueConfig = (m: MilestonePayment) => {
-    if (m.status === 'paid') {
-      return { text: 'Paid & Clear', className: 'text-emerald-600 dark:text-emerald-400' };
-    }
-    if (m.status === 'hold') {
-      return { text: 'Payment Frozen', className: 'text-rose-600 dark:text-rose-400' };
-    }
-    if (!m.due_date) {
-      return { text: 'Date Not Fixed', className: 'text-slate-400 dark:text-slate-500' };
-    }
-
-    const days = differenceInDays(new Date(m.due_date), new Date());
-    if (days < 0) {
-      return { text: `Overdue by ${Math.abs(days)}d`, className: 'text-rose-600 dark:text-rose-400' };
-    }
-    if (days === 0) {
-      return { text: 'Due Today', className: 'text-amber-600 dark:text-amber-400' };
-    }
-    if (days <= 3) {
-      return { text: `Due in ${days}d`, className: 'text-amber-500 dark:text-amber-400' };
-    }
-    return { text: `Due ${format(new Date(m.due_date), 'MMM d, yyyy')}`, className: 'text-slate-500 dark:text-slate-400' };
   };
 
   return (
@@ -379,8 +351,8 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                   activeMenuId === m.id ? "z-50" : "z-10"
                 )}
               >
-                  {/* Section 1: Icon + Project, Client, & Title (50%) */}
-                  <div className="flex items-start gap-3 w-full md:w-[50%] flex-shrink-0 md:pr-4 py-0.5">
+                  {/* Section 1: Icon + Project, Client, & Title */}
+                  <div className="flex items-start gap-3 flex-1 min-w-0 md:pr-4 py-0.5">
                     {/* Tinted Icon Box */}
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm group-hover:scale-105 transition-transform duration-200 flex-shrink-0 mt-1",
@@ -393,22 +365,22 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
 
                     <div className="min-w-0 flex-1 flex flex-col justify-center">
                       <div className="flex flex-col justify-center">
-                        <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block mb-1.5" title={m.projects?.name || 'Standalone Assignment'}>
+                        <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block mb-1.5 truncate" title={m.projects?.name || 'Standalone Assignment'}>
                           {m.projects?.name || 'Standalone Assignment'}
                         </span>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
                           <span className="flex items-center gap-1.5">
                             <Building className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
-                            <span>{m.projects?.client_name || 'Direct Client'}</span>
+                            <span className="truncate max-w-[120px] sm:max-w-[180px]">{m.projects?.client_name || 'Direct Client'}</span>
                           </span>
                           {m.due_date && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1.5 whitespace-nowrap">
                               <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
                               <span>{getFormattedDateWithDays(m.due_date)}</span>
                             </span>
                           )}
                           {m.is_activation_gate && (
-                            <span className="text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 px-1.5 py-0.5 rounded flex-shrink-0">
+                            <span className="text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap">
                               Activation gate
                             </span>
                           )}
@@ -417,11 +389,11 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                     </div>
                   </div>
 
-                  {/* Section 2: Price & Status (25%) */}
-                  <div className="w-full md:w-[25%] flex-shrink-0 grid grid-cols-2 items-center md:border-l border-slate-100 dark:border-white/5 md:pl-4 md:pr-6 gap-4 md:gap-0">
+                  {/* Section 2: Price & Status */}
+                  <div className="w-full md:w-auto flex-shrink-0 flex items-center gap-6 md:gap-8 md:border-l border-slate-100 dark:border-white/5 md:pl-6 md:pr-6">
 
                     {/* Price / Amount */}
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-[80px]">
                       <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">Amount</span>
                       <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 nums whitespace-nowrap">
                         {formatCurrency(m.amount)}
@@ -429,38 +401,45 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                     </div>
 
                     {/* Status */}
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-[90px]">
                       <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">Status</span>
                       <span className={cn(
                         "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border shadow-sm whitespace-nowrap w-fit",
                         statusConfig[displayStatus]?.className
                       )}>
-                        <StatusIcon className="w-3.5 h-3.5" />
+                        <StatusIcon className="w-3.5 h-3.5 flex-shrink-0" />
                         {statusConfig[displayStatus]?.label}
                       </span>
                     </div>
                   </div>
 
-                  {/* Section 3: Buttons (25%) */}
-                  <div className="w-full md:w-[25%] flex-shrink-0 flex items-center gap-2 md:justify-end md:border-l border-slate-100 dark:border-white/5 md:pl-4">
+                  {/* Section 3: Buttons */}
+                  <div className="w-full md:w-auto flex-shrink-0 flex items-center gap-2 md:justify-end md:border-l border-slate-100 dark:border-white/5 md:pl-6">
                     {m.status !== 'paid' ? (
                       <>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkAsPaid(m);
-                          }}
-                          disabled={isProjectFrozen}
-                          title={isProjectFrozen ? "Project is frozen. Resume project to mark as paid." : "Mark as Paid"}
-                          className={cn(
-                            "h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
-                            isProjectFrozen && "opacity-50 cursor-not-allowed active:scale-100 bg-slate-400 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-700"
-                          )}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Mark paid
-                        </button>
+                        {m.status === 'payment_verification_pending' ? (
+                          <span className="h-8 px-3 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <Clock className="w-3.5 h-3.5" />
+                            Awaiting Verif.
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkAsPaid(m);
+                            }}
+                            disabled={isProjectFrozen}
+                            title={isProjectFrozen ? "Project is frozen. Resume project to log payment." : "Log Payment"}
+                            className={cn(
+                              "h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
+                              isProjectFrozen && "opacity-50 cursor-not-allowed active:scale-100 bg-slate-400 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-700"
+                            )}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Log Payment
+                          </button>
+                        )}
 
                         <button
                           type="button"
@@ -751,6 +730,19 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
         </AnimatePresence>,
         document.body
       )}
+
+      <LogPaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedPaymentMilestone(null);
+        }}
+        milestoneId={selectedPaymentMilestone?.id || ''}
+        projectId={selectedPaymentMilestone?.project_id || ''}
+        milestoneTitle={selectedPaymentMilestone?.title || ''}
+        amount={selectedPaymentMilestone?.amount || 0}
+        onSuccess={() => onRefresh()}
+      />
     </div>
   );
 }

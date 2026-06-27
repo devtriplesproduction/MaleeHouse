@@ -9,7 +9,7 @@ import {
 import { updateProjectStageAction } from "./workflow.actions";
 import { addProjectCommentAction } from "./comment.actions";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 
 export type OpResponse<T = null> = {
   success: boolean;
@@ -71,7 +71,7 @@ async function sendLocalNotification(
   type: string,
   projectId: string
 ) {
-  const supabase: any = createAdminClient();
+  const supabase: any = await createClient();
   await supabase.from('notifications').insert({
     id: generateId("ntf"),
     user_id: userId,
@@ -84,15 +84,15 @@ async function sendLocalNotification(
   });
 }
 
-async function sendLocalNotifications(
+export async function sendLocalNotifications(
   userIds: string[],
   title: string,
   message: string,
   type: string,
-  projectId: string
+  projectId?: string | null
 ) {
   if (!userIds || userIds.length === 0) return;
-  const supabase: any = createAdminClient();
+  const supabase: any = await createClient();
   const notifications = userIds.map((userId: string) => ({
     id: generateId("ntf"),
     user_id: userId,
@@ -100,7 +100,7 @@ async function sendLocalNotifications(
     message,
     type,
     is_read: false,
-    related_project_id: projectId,
+    related_project_id: projectId || null,
     created_at: new Date().toISOString(),
   }));
   await supabase.from('notifications').insert(notifications);
@@ -114,7 +114,7 @@ async function getProjectName(projectId: string): Promise<string> {
 
 export async function getOpsTeamMembersAction() {
   try {
-    const supabaseAdmin: any = createAdminClient();
+    const supabaseAdmin: any = await createClient();
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('id, first_name, last_name, email, role')
@@ -145,7 +145,7 @@ export async function assignTeamMemberAction(
       return { success: false, error: "Only Admins and Engineers can assign team members." };
 
     const supabase: any = await createClient();
-    const supabaseAdmin: any = createAdminClient();
+    const supabaseAdmin: any = await createClient();
     const { data: existing } = await supabase.from('project_assignments').select('id').eq('project_id', projectId).eq('user_id', userId).maybeSingle();
     if (existing)
       return { success: false, error: "User is already assigned to this project." };
@@ -354,6 +354,16 @@ export async function approveCADRevisionAction(
       return { success: false, error: "Only Engineers can approve CAD revisions." };
 
     const supabase: any = await createClient();
+    
+    // Check if at least one CAD engineer and one Field engineer are assigned
+    const { data: assignments } = await supabase.from('project_assignments').select('role').eq('project_id', projectId);
+    const hasCad = assignments?.some((a: any) => a.role === 'cad');
+    const hasField = assignments?.some((a: any) => a.role === 'field' || a.role === 'field_engineer');
+    
+    if (!hasCad || !hasField) {
+      return { success: false, error: "Cannot approve CAD: At least one CAD engineer and one Field engineer must be assigned to the team." };
+    }
+
     const { error: updateError } = await supabase.from('cad_revisions').update({
       status: "approved",
       reviewed_by: profile.id,
@@ -489,8 +499,12 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
     const supabase: any = await createClient();
     const { data: revisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
     
-    const userIds = Array.from(new Set()).filter(Boolean);
-    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+    const userIds = Array.from(new Set((revisions || []).flatMap((r: any) => [r.submitted_by, r.reviewed_by]))).filter(Boolean);
+    let profiles: any[] = [];
+    if (userIds.length > 0) {
+      const { data } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+      profiles = data || [];
+    }
     const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     const data = (revisions || []).map((r: any) => ({
@@ -514,7 +528,16 @@ export async function reviewLatestCADRevisionAction(
   if (!revisionsRes.success) return { success: false, error: revisionsRes.error };
 
   const pendingRevision = revisionsRes.data?.find((r: any) => r.status === "pending_review");
-  if (!pendingRevision) return { success: false, error: "No pending CAD revision found for this project." };
+  if (!pendingRevision) {
+    // FALLBACK: If no pending revision exists (e.g., project was manually advanced),
+    // allow the engineer to still approve/reject to fix the state.
+    if (isApproved) {
+      await updateProjectStageAction(projectId, "field_assigned", "CAD Prototype Approved directly (no revision record found).");
+    } else {
+      await updateProjectStageAction(projectId, "prototype", `CAD Prototype Rejected directly (no revision record found). Reason: ${reason}`);
+    }
+    return { success: true, error: null };
+  }
 
   if (isApproved) {
     return await approveCADRevisionAction(pendingRevision.id, projectId, reason);
@@ -607,8 +630,12 @@ export async function getFieldReportsAction(projectId: string): Promise<OpRespon
     const supabase: any = await createClient();
     const { data: reports } = await supabase.from('field_reports').select('*').eq('project_id', projectId);
     
-    const userIds = Array.from(new Set()).filter(Boolean);
-    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+    const userIds = Array.from(new Set((reports || []).map((r: any) => r.submitted_by))).filter(Boolean);
+    let profiles: any[] = [];
+    if (userIds.length > 0) {
+      const { data } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+      profiles = data || [];
+    }
     const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     const data = (reports || []).map((r: any) => ({
@@ -705,6 +732,24 @@ export async function reviewFieldSurveyAction(
       if (!stRes.success) return stRes;
       await logActivity(projectId, profile.id, "FIELD_SURVEY_REJECTED", { reviewNotes });
       await addProjectCommentAction(projectId, `[Survey Rejection] ${reviewNotes}`, "rejection");
+
+      // Notify field workers
+      const assignRes = await getTeamAssignmentsAction(projectId);
+      if (assignRes.success && assignRes.data) {
+        const fieldUserIds = assignRes.data
+          .filter((a: any) => ["field", "field_engineer"].includes(a.role))
+          .map((a: any) => a.user_id);
+        
+        if (fieldUserIds.length > 0) {
+          await sendLocalNotifications(
+            fieldUserIds,
+            "Field Survey Rejected",
+            `Your survey for this project was rejected. Reason: ${reviewNotes}`,
+            "alert",
+            projectId
+          );
+        }
+      }
     }
 
     revalidatePath(`/projects/${projectId}`);
@@ -778,7 +823,7 @@ export async function logFieldVisitAction(
       updated_at: new Date().toISOString()
     };
 
-    const supabase: any = await createAdminClient();
+    const supabase: any = await createClient();
     const { error: insertErr } = await supabase.from('project_visits').insert(newVisit);
     if (insertErr) return { success: false, error: insertErr.message };
 
@@ -808,7 +853,7 @@ export async function completeFieldVisitAction(
     if (!["field", "field_engineer", "engineer", "admin"].includes(profile.role))
       return { success: false, error: "Only Field Engineers, Engineers, or Admins can modify visits." };
 
-    const supabase: any = await createAdminClient();
+    const supabase: any = await createClient();
     const { error: updateError } = await supabase.from('project_visits').update({
       status: "completed",
       completed_date: new Date().toISOString().split('T')[0],
@@ -1061,7 +1106,7 @@ export async function getFieldVisitsAction(projectId: string): Promise<OpRespons
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: "Unauthorized.", data: [] };
 
-    const supabase: any = await createAdminClient();
+    const supabase: any = await createClient();
     const { data, error } = await supabase.from('project_visits').select('*').eq('project_id', projectId).order('scheduled_date', { ascending: false });
     if (error) return { success: false, error: error.message };
     
@@ -1085,5 +1130,76 @@ export async function getDeliveryChecklistAction(projectId: string): Promise<OpR
     return { success: true, error: null, data: data || null };
   } catch (err: any) {
     return { success: false, error: err.message };
+  }
+}
+
+export async function getCADMetricsAction(): Promise<OpResponse<any>> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized.", data: null };
+    const userId = profile.id;
+
+    const supabase: any = await createClient();
+
+    // 1. Drawing Counts (CAD files grouped by project)
+    const { data: files } = await supabase
+      .from('files')
+      .select('project_id')
+      .in('category', ['cad_drawing', 'prototype', 'cad']);
+      
+    const projectDrawingCounts: Record<string, number> = {};
+    (files || []).forEach((f: any) => {
+      projectDrawingCounts[f.project_id] = (projectDrawingCounts[f.project_id] || 0) + 1;
+    });
+
+    // 2. Revision Requests (Rejected CAD revisions submitted by this user)
+    const { data: revisions } = await supabase
+      .from('cad_revisions')
+      .select('id, project_id, review_notes, status')
+      .eq('status', 'rejected')
+      .eq('submitted_by', userId);
+
+    const activeRevisions = (revisions || []).map((r: any) => ({
+      id: r.id,
+      project_id: r.project_id,
+      title: r.review_notes || 'CAD Revision Rejected',
+      status: r.status
+    }));
+
+    // 3. Productivity Metrics (from EOD Reports)
+    // For this week/month, just sum up hours_spent and tasks_completed from recent eod_reports
+    const { data: eodReports } = await supabase
+      .from('eod_reports')
+      .select('hours_spent, tasks_completed')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(7); // past week
+
+    let totalHours = 0;
+    let totalTasksStr = "";
+    (eodReports || []).forEach((r: any) => {
+      totalHours += (r.hours_spent || 0);
+      totalTasksStr += " " + (r.tasks_completed || "");
+    });
+    
+    // Naive task count (split by commas or newlines in the text field)
+    const tasksArr = totalTasksStr.split(/[\n,]+/).filter(t => t.trim().length > 0);
+    
+    const productivity = {
+      weeklyHours: totalHours,
+      weeklyTasksCompleted: tasksArr.length
+    };
+
+    return { 
+      success: true, 
+      error: null, 
+      data: {
+        projectDrawingCounts,
+        activeRevisions,
+        productivity
+      } 
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: null };
   }
 }

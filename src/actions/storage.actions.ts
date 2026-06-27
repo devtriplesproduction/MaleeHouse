@@ -1,6 +1,10 @@
 'use server';
 
-import { createAdminClient } from '@/lib/supabase/admin';
+import { checkActionRateLimit } from '@/lib/rate-limit';
+
+import { createClient } from '@/lib/supabase/server';
+import { verifyProjectAccess, type Role } from '@/lib/permissions/permissions';
+import { getUserProfileAction } from '@/actions/auth.actions';
 
 export async function uploadFileToServerAction(
   formData: FormData,
@@ -11,14 +15,59 @@ export async function uploadFileToServerAction(
     const file = formData.get('file') as File;
     if (!file) throw new Error('No file provided');
 
-    const supabaseAdmin = createAdminClient();
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    const ALLOWED_EXTENSIONS = [
+      'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg',
+      'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'rtf',
+      'zip', 'rar', '7z', 'tar', 'gz',
+      'dwg', 'dxf', 'rvt', 'skp'
+    ];
 
-    const fileExt = file.name.split('.').pop();
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+
+    if (!ALLOWED_EXTENSIONS.includes(fileExt)) {
+      return { success: false, error: "Invalid file type. Please upload a supported document, image, CAD, or archive format." };
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return { success: false, error: "File exceeds the 50MB maximum size limit." };
+    }
+
+    const supabase = await createClient();
+
+    // 1. Auth & Profile Check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Unauthorized. Please log in to upload files." };
+    
+    if (!checkActionRateLimit(user.id, 'uploadFileToServerAction', 15, 60 * 1000)) {
+      return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single() as { data: { role: string } | null };
+
+    const role = profile?.role || "";
+
+    // 2. Assignment Check
+    if (projectId === 'company-wide') {
+      if (role !== 'admin' && role !== 'accountant') {
+        return { success: false, error: "Permission denied for company-wide uploads." };
+      }
+    } else {
+      const accessCheck = await verifyProjectAccess(projectId, user.id, role as Role, true);
+      if (!accessCheck.isAllowed) {
+        return { success: false, error: accessCheck.error || "Permission denied." };
+      }
+    }
+
     const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
     const filePath = `${projectId}/${fileName}`;
 
-    // Upload using Admin Client to bypass missing Storage RLS
-    const { data, error } = await supabaseAdmin.storage
+    // Upload using standard Client - relies on Storage RLS
+    const { data, error } = await supabase.storage
       .from(bucket)
       .upload(filePath, file);
 
@@ -26,7 +75,7 @@ export async function uploadFileToServerAction(
       throw error;
     }
 
-    const { data: { publicUrl } } = supabaseAdmin.storage
+    const { data: { publicUrl } } = supabase.storage
       .from(bucket)
       .getPublicUrl(filePath);
 
@@ -40,5 +89,81 @@ export async function uploadFileToServerAction(
   } catch (error: any) {
     console.error('File upload error:', error);
     return { success: false, error: error.message };
+  }
+}
+
+export async function uploadHRDocumentAction(
+  formData: FormData,
+  employeeId: string,
+  category: string
+) {
+  try {
+    const file = formData.get('file') as File;
+    if (!file) throw new Error('No file provided');
+
+    const MAX_FILE_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      return { success: false, error: "File exceeds 50MB limit." };
+    }
+
+    const profile: any = await getUserProfileAction();
+    
+    if (profile?.role !== 'admin' && profile?.role !== 'hr') {
+       return { success: false, error: 'Unauthorized to upload HR documents.' };
+    }
+
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `hr-documents/${employeeId}/${timestamp}_${safeName}`;
+
+    const supabaseAdmin: any = await createClient();
+
+    const { error: uploadError } = await supabaseAdmin
+      .storage
+      .from('project-assets') // Reusing same bucket to avoid RLS config overhead, but in 'hr-documents' folder
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabaseAdmin
+      .storage
+      .from('project-assets')
+      .getPublicUrl(filePath);
+
+    // Save to employee_documents table
+    const { error: dbError } = await supabaseAdmin
+      .from('employee_documents')
+      .insert({
+        employee_id: employeeId,
+        category: category,
+        file_url: publicUrl,
+        uploaded_by: profile.id,
+      });
+
+    if (dbError) throw dbError;
+
+    return { success: true, url: publicUrl, path: filePath };
+  } catch (error: any) {
+    console.error('HR Upload error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getEmployeeDocumentsAction(employeeId: string) {
+  try {
+    const supabaseAdmin: any = await createClient();
+    const { data, error } = await supabaseAdmin
+      .from('employee_documents')
+      .select('*, uploaded_by_profile:profiles!uploaded_by(first_name, last_name)')
+      .eq('employee_id', employeeId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
 }

@@ -687,3 +687,136 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
   printWindow.document.write(htmlContent);
   printWindow.document.close();
 };
+
+export const generateInvoicePDF = (invoice: any, project: any, companySettings: any) => {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    return;
+  }
+
+  const issueDate = new Date(invoice.created_at);
+  const dueDate = invoice.due_date ? new Date(invoice.due_date) : new Date(issueDate.getTime() + 15 * 24 * 60 * 60 * 1000);
+  
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Invoice - ${invoice.invoice_number}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+          
+          @page { size: A4 portrait; margin: 0; }
+          body { font-family: 'Inter', sans-serif; color: #1e293b; margin: 0; padding: 0; background-color: #f1f5f9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .page { width: 210mm; height: 297mm; padding: 20mm; margin: 10px auto; background-color: #ffffff; display: flex; flex-direction: column; position: relative; }
+          
+          .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
+          .company-details { font-size: 10px; color: #64748b; line-height: 1.5; margin-top: 10px; }
+          .document-type { text-align: right; }
+          .doc-title { font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: -0.02em; margin: 0 0 5px 0; }
+          .doc-number { font-size: 12px; font-weight: 700; color: #4f46e5; font-family: monospace; }
+          
+          .info-grid { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+          .info-block { flex: 1; }
+          .info-label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
+          .info-value { font-size: 12px; font-weight: 600; color: #0f172a; }
+          
+          table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; }
+          td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+          
+          .totals-box { width: 300px; margin-left: auto; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+          .total-row { display: flex; justify-content: space-between; padding: 10px 15px; font-size: 11px; font-weight: 600; color: #475569; border-bottom: 1px solid #f1f5f9; }
+          .total-row.grand { background: #0f172a; color: #ffffff; font-size: 14px; font-weight: 700; border-bottom: none; }
+          
+          .footer-section { position: absolute; bottom: 20mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 8px; color: #94a3b8; font-weight: 500; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+        </style>
+      </head>
+      <body>
+        <div class="page">
+          <div>
+            <div class="header">
+              <div>
+                <div style="font-family: 'Outfit'; font-weight: 900; font-size: 24px; color: #0f172a; letter-spacing: -1px;">MALEE HOUSE</div>
+                <div class="company-details">
+                  ${companySettings?.address || '123 Business Rd, City'}<br/>
+                  GSTIN: ${companySettings?.gst_number || '27XXXXX1234X1ZX'}<br/>
+                  ${companySettings?.email || 'contact@example.com'} | ${companySettings?.phone || '+91 9876543210'}
+                </div>
+              </div>
+              <div class="document-type">
+                <h1 class="doc-title">TAX INVOICE</h1>
+                <div class="doc-number">INV #${invoice.invoice_number}</div>
+              </div>
+            </div>
+            
+            <div class="info-grid">
+              <div class="info-block">
+                <div class="info-label">Billed To</div>
+                <div class="info-value" style="font-family: Outfit; font-size: 14px;">${project?.client_name || 'Client Name'}</div>
+                <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Project: ${project?.name || 'Project Name'}</div>
+              </div>
+              <div class="info-block" style="text-align: right;">
+                <div class="info-label">Issue Date</div>
+                <div class="info-value" style="margin-bottom: 8px;">${issueDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                <div class="info-label">Due Date</div>
+                <div class="info-value">${dueDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+              </div>
+            </div>
+            
+            <table>
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th style="text-align: right;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div style="font-weight: 700; color: #0f172a;">Professional Services</div>
+                    <div style="color: #64748b; font-size: 10px; margin-top: 3px;">As per project milestone ${invoice.milestone_id ? 'or visit completion.' : 'agreement.'}</div>
+                  </td>
+                  <td style="text-align: right; font-weight: 600; font-family: monospace;">INR ${Number(invoice.amount).toLocaleString('en-IN')}</td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div class="totals-box">
+              <div class="total-row">
+                <span>Subtotal</span>
+                <span style="font-family: monospace;">INR ${Number(invoice.amount).toLocaleString('en-IN')}</span>
+              </div>
+              <div class="total-row">
+                <span>CGST (${Number(invoice.gst_rate)/2}%)</span>
+                <span style="font-family: monospace;">INR ${(Number(invoice.gst_amount)/2).toLocaleString('en-IN')}</span>
+              </div>
+              <div class="total-row">
+                <span>SGST (${Number(invoice.gst_rate)/2}%)</span>
+                <span style="font-family: monospace;">INR ${(Number(invoice.gst_amount)/2).toLocaleString('en-IN')}</span>
+              </div>
+              <div class="total-row grand">
+                <span>Total Due</span>
+                <span style="font-family: monospace;">INR ${Number(invoice.total_amount).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="footer-section">
+            <span>Malee House Surveying OS &middot; Secure invoice record</span>
+            <span>Page 1 of 1</span>
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(() => { window.print(); }, 500);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+  
+  printWindow.document.open();
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+};
+

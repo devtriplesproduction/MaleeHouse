@@ -82,17 +82,23 @@ export default function ClientApprovalsPage() {
   }, []);
 
   const handleSendToEngineering = async (quotation: any) => {
+    console.log("handleSendToEngineering called for quotation:", quotation.id, "Project ID:", quotation.project_id);
+    if (!quotation.project_id) {
+      toast.error("This quotation is not linked to a project.");
+      return;
+    }
     setDispatching(quotation.id);
     try {
       // Compulsion: Check if milestones are configured
       const msRes = await getMilestonesAction(quotation.project_id);
+      console.log("Milestones Check Result:", msRes);
+      
       if (!msRes?.success || !msRes.data || msRes.data.length === 0) {
         toast.warning("Milestones not planned yet. Redirecting to Milestone Configurator...", {
           duration: 3000
         });
-        setTimeout(() => {
-          router.push(`/accounts/milestones?project=${quotation.project_id}&plan=true`);
-        }, 1500);
+        console.log("Executing redirect to:", `/accounts/milestones?project=${quotation.project_id}&plan=true`);
+        window.location.href = `/accounts/milestones?project=${quotation.project_id}&plan=true`;
         return;
       }
 

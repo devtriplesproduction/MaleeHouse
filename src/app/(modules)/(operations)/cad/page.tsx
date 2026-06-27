@@ -34,18 +34,17 @@ export default async function CADDashboardPage() {
   const sops = sopsRes.data || [];
   const eodReports = eodRes.success ? eodRes.data : [];
 
-  const pendingSubmissions = projects.filter((p: any) => 
-    ["prototype", "data_sync"].includes(p.status)
-  );
+  const pendingSubmissions = projects.filter((p: any) => p.status === "prototype");
+  const fieldReviews = projects.filter((p: any) => p.status === "data_sync");
   const awaitingStart = projects.filter((p: any) =>
     ["project_created", "data_collection"].includes(p.status)
   );
 
   const kpis = [
-    { label: "My Queue",   value: projects.length,            color: "text-blue-500",    bg: "bg-blue-500/10",    icon: PenTool },
-    { label: "In Progress", value: pendingSubmissions.length,  color: "text-amber-500",   bg: "bg-amber-500/10",   icon: Clock },
-    { label: "Unassigned",  value: unassignedProjects.length,  color: "text-indigo-500",  bg: "bg-indigo-500/10",  icon: ListPlus },
-    { label: "Done",        value: (assignedRes.data || []).filter((p: any) => p.status === "completed").length, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2 },
+    { label: "My Queue",      value: projects.length,            color: "text-blue-500",    bg: "bg-blue-500/10",    icon: PenTool },
+    { label: "In Progress",   value: pendingSubmissions.length,  color: "text-amber-500",   bg: "bg-amber-500/10",   icon: Clock },
+    { label: "Field Reviews", value: fieldReviews.length,        color: "text-cyan-500",    bg: "bg-cyan-500/10",    icon: FileText },
+    { label: "Done",          value: (assignedRes.data || []).filter((p: any) => p.status === "completed").length, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2 },
   ];
 
   return (
@@ -146,7 +145,7 @@ export default async function CADDashboardPage() {
               <AlertTriangle className="w-4 h-4 text-amber-500" />
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Action Required</h3>
             </div>
-            {pendingSubmissions.length === 0 ? (
+            {pendingSubmissions.length === 0 && fieldReviews.length === 0 ? (
               <div className="flex items-center gap-2 py-8 justify-center">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500/30" />
                 <p className="text-xs text-slate-500 font-bold">All clear</p>
@@ -162,7 +161,20 @@ export default async function CADDashboardPage() {
                     <p className="text-xs font-black text-slate-900 dark:text-white">{p.name}</p>
                     <p className="text-[10px] text-amber-500 mt-0.5 flex items-center gap-1">
                       <Upload className="w-2.5 h-2.5" />
-                      {p.status === "data_sync" ? "Survey validation pending" : "CAD revision pending"}
+                      CAD revision pending
+                    </p>
+                  </Link>
+                ))}
+                {fieldReviews.map((p: any) => (
+                  <Link
+                    key={p.id}
+                    href={`/projects/${p.id}`}
+                    className="block p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 hover:border-cyan-500/30 transition-all"
+                  >
+                    <p className="text-xs font-black text-slate-900 dark:text-white">{p.name}</p>
+                    <p className="text-[10px] text-cyan-600 mt-0.5 flex items-center gap-1">
+                      <FileText className="w-2.5 h-2.5" />
+                      Survey validation pending
                     </p>
                   </Link>
                 ))}

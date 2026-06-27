@@ -7,18 +7,55 @@ import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { applyLeaveAction } from '@/actions/leave.actions';
-import { Calendar, FileText, Send, AlertCircle } from 'lucide-react';
+import { getHolidaysAction } from '@/actions/holiday.actions';
+import { Calendar, FileText, Send, AlertCircle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export function LeaveForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [holidays, setHolidays] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     start_date: '',
     end_date: '',
     reason: '',
     leave_type: 'casual' as 'casual' | 'sick' | 'earned' | 'unpaid' | 'maternity' | 'paternity' | 'other'
+  });
+
+  // Fetch holidays on mount
+  import('react').then(React => {
+    React.useEffect(() => {
+      getHolidaysAction().then(res => {
+        if (res.success && res.data) {
+          setHolidays(res.data);
+        }
+      });
+    }, []);
+  });
+
+  // Check for adjacent or overlapping holidays
+  const conflictingHolidays = holidays.filter(h => {
+    if (!formData.start_date || !formData.end_date) return false;
+    
+    const hDate = new Date(h.date).setHours(0,0,0,0);
+    
+    // Create Date objects for comparison
+    const start = new Date(formData.start_date);
+    start.setHours(0,0,0,0);
+    
+    const end = new Date(formData.end_date);
+    end.setHours(0,0,0,0);
+    
+    // Check if holiday is inside the leave period
+    if (hDate >= start.getTime() && hDate <= end.getTime()) return true;
+    
+    // Check adjacency (1 day before start or 1 day after end)
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (hDate === start.getTime() - oneDay) return true;
+    if (hDate === end.getTime() + oneDay) return true;
+    
+    return false;
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -157,6 +194,22 @@ export function LeaveForm() {
               className="w-full h-32 rounded-xl bg-slate-100 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 p-4 text-sm text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-indigo-500/5 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none font-medium"
             />
           </div>
+
+          {conflictingHolidays.length > 0 && (
+            <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl flex items-start gap-3">
+              <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                <span className="block font-bold mb-1">Holiday Alert</span>
+                Your selected leave dates are adjacent to or overlap with the following holidays:
+                <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                  {conflictingHolidays.map((h, i) => (
+                    <li key={i}>{h.name} ({new Date(h.date).toLocaleDateString()}) - {h.is_optional ? 'Optional' : 'Public'}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs opacity-80">This is just a heads up. You can still submit your application.</p>
+              </div>
+            </div>
+          )}
 
           {/* Action Button */}
           <Button

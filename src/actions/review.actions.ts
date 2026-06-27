@@ -21,6 +21,16 @@ export async function approveProjectAction(projectId: string): Promise<ReviewRes
       return { success: false, error: 'Unauthorized. QC, Engineer, or Admin only.' };
     }
 
+    // Check if at least one CAD engineer and one Field engineer are assigned
+    const supabase: any = await createClient();
+    const { data: assignments } = await supabase.from('project_assignments').select('role').eq('project_id', projectId);
+    const hasCad = assignments?.some((a: any) => a.role === 'cad');
+    const hasField = assignments?.some((a: any) => a.role === 'field' || a.role === 'field_engineer');
+    
+    if (!hasCad || !hasField) {
+      return { success: false, error: "Cannot approve CAD: At least one CAD engineer and one Field engineer must be assigned to the team." };
+    }
+
     // 1. Update Project Status using centralized workflow engine
     const stageResponse = await updateProjectStageAction(projectId, 'field_assigned', "Prototype approved by Engineer, moving to Field Assignment.");
     

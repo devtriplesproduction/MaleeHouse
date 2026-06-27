@@ -4,6 +4,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "@/components/ui/toast";
+import { Toaster as SonnerToaster } from 'sonner';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="light" storageKey="survey-theme">
           {children}
           <Toaster />
+          <SonnerToaster position="top-center" richColors />
         </ThemeProvider>
       </body>
     </html>

@@ -2,30 +2,37 @@ import React, { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 import { RealtimeStatsGrid } from "@/components/modules/RealtimeStatsGrid";
-import { TrendingUp, AlertCircle, FileText, Zap, ChevronDown, IndianRupee } from "lucide-react";
+import { TrendingUp, AlertCircle, FileText, Zap, ChevronDown, IndianRupee, ArrowUpRight, ArrowDownRight, Wallet, Clock, CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { getQuotationIntakeQueueAction } from "@/actions/quotation.actions";
 import { createClient } from "@/lib/supabase/server";
 import DashboardNotificationCenter from "@/components/modules/DashboardNotificationCenter";
 import { QuotationIntakeQueue } from "@/features/accounts/QuotationIntakeQueue";
 import { UpcomingMilestonesWidget } from "@/features/accounts/UpcomingMilestonesWidget";
-import { getAllMilestonesAction } from "@/actions/finance.actions";
+import { getAllMilestonesAction, getFinancialOverviewAction, getProjectProfitabilityAction } from "@/actions/finance.actions";
+import { ExpenseEntryTrigger } from "@/features/accounts/ExpenseEntryTrigger";
+import { FinanceChart } from "@/features/accounts/FinanceChart";
 
 export default async function AccountantDashboardPage() {
   const supabase: any = await createClient();
   // Fetch real database queue & quotations
-  const [intakeRes, quotationsRes, projectsRes, milestonesRes] = await Promise.all([
+  const [intakeRes, quotationsRes, projectsRes, milestonesRes, overviewRes, profitRes] = await Promise.all([
     getQuotationIntakeQueueAction(),
     supabase.from('quotations').select('*'),
     supabase.from('projects').select('*'),
     getAllMilestonesAction(),
+    getFinancialOverviewAction(),
+    getProjectProfitabilityAction(),
   ]);
 
   const quotations = quotationsRes.data || [];
   const projects = projectsRes.data || [];
   const milestones = milestonesRes.success ? milestonesRes.data : [];
-
-
+  
+  const overview = overviewRes.success ? overviewRes.data : {
+    totalIncome: 0, totalExpenses: 0, monthlyProfit: 0, accountsReceivable: 0, accountsPayable: 0, monthlyCashFlow: [], expenseByCategory: []
+  };
+  const profitData = profitRes.success ? profitRes.data : [];
 
   // Calculate the 4 requested metrics
   const now = new Date();
@@ -50,17 +57,20 @@ export default async function AccountantDashboardPage() {
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="border-b border-slate-200/60 dark:border-white/5 pb-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Accounts Overview
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Financial KPIs and pipeline at a glance.
-        </p>
+      <div className="border-b border-slate-200/60 dark:border-white/5 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Accounts Overview
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Financial KPIs and pipeline at a glance.
+          </p>
+        </div>
+        <ExpenseEntryTrigger projects={projects} />
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
         <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
           <div className="w-12 h-12 shrink-0 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
             <Zap className="w-5 h-5" />
@@ -85,6 +95,90 @@ export default async function AccountantDashboardPage() {
             </p>
             <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
               ₹{(monthlyRevenue / 100000).toFixed(1)}L
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <ArrowUpRight className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Total Income
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              ₹{(overview.totalIncome / 100000).toFixed(1)}L
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <ArrowDownRight className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Total Expenses
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              ₹{(overview.totalExpenses / 100000).toFixed(1)}L
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400 border border-sky-500/20">
+            <Wallet className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Monthly Profit
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              ₹{(overview.monthlyProfit / 100000).toFixed(1)}L
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Accounts Receivable
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              ₹{(overview.accountsReceivable / 100000).toFixed(1)}L
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <CheckSquare className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Accounts Payable
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              ₹{(overview.accountsPayable / 100000).toFixed(1)}L
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-400 border border-orange-500/20">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Outstanding Payments
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              ₹{(overview.outstandingPayments / 100000).toFixed(1)}L
             </p>
           </div>
         </div>
@@ -116,6 +210,16 @@ export default async function AccountantDashboardPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Financial Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FinanceChart type="income-vs-expense" title="Income vs Expense" subtitle="Monthly comparative overview" data={overview.monthlyCashFlow} />
+        <FinanceChart type="cash-flow" title="Net Cash Flow" subtitle="Monthly net positive/negative cash flow" data={overview.monthlyCashFlow} />
+        <FinanceChart type="revenue-trend" title="Revenue Trend" subtitle="Monthly gross revenue tracking" data={overview.monthlyCashFlow} />
+        <FinanceChart type="profit-trend" title="Profit Trend" subtitle="Monthly net profit tracking" data={overview.monthlyCashFlow} />
+        <FinanceChart type="expense-categories" title="Expense Categories" subtitle="Distribution of expenses by category" data={overview.expenseByCategory} />
+        <FinanceChart type="project-profitability" title="Project Profitability" subtitle="Top 10 projects by margin" data={profitData} />
       </div>
 
       {/* Main Grid */}

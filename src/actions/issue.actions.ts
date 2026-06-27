@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { createClient } from "@/lib/supabase/server";
+import { checkActionRateLimit } from "@/lib/rate-limit";
 
 export type Issue = {
   id: string;
@@ -31,8 +32,13 @@ export async function createIssueAction(
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: "Unauthorized" };
 
+    if (!checkActionRateLimit(profile.id, 'createIssueAction', 15, 60 * 1000)) {
+      return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
+    }
+
+
     const supabase: any = await createClient();
-    
+
     const newIssuePayload = {
       project_id: projectId,
       stage: stage,
@@ -66,7 +72,7 @@ export async function resolveIssueAction(issueId: string, projectId: string) {
     if (!profile) return { success: false, error: "Unauthorized" };
 
     const supabase: any = await createClient();
-    
+
     const { error } = await supabase
       .from("issues")
       .update({
@@ -87,7 +93,7 @@ export async function resolveIssueAction(issueId: string, projectId: string) {
 export async function getProjectIssuesAction(projectId: string) {
   try {
     const supabase: any = await createClient();
-    
+
     const { data: projectIssues, error } = await supabase
       .from("issues")
       .select("*")

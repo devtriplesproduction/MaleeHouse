@@ -6,6 +6,7 @@ import { notifyPaymentAction } from '@/actions/notification.actions';
 import { updateProjectStageAction } from '@/actions/workflow.actions';
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
 import { getUserProfileAction } from '@/actions/auth.actions';
+import { logAdminAuditAction } from '@/actions/admin.actions';
 import { requireAuthContext, getAssignedProjectIds } from '@/lib/permissions/permissions';
 import {
   createInvoiceSchema,
@@ -63,6 +64,7 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
     const { data, error } = await supabase
       .from('invoices')
       .insert({
+        id: `inv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         ...validated.data,
         gst_amount,
         total_amount,
@@ -97,11 +99,47 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
       return { success: false, error: lockCheck.error || "Project is locked." };
     }
 
+    const { milestone_id, ...paymentData } = validated.data;
     const supabase: any = await createClient();
+    
+    let finalInvoiceId = paymentData.invoice_id;
+    if (milestone_id && !finalInvoiceId) {
+      // Find existing invoice for milestone
+      const { data: existing } = await supabase.from('invoices').select('id').eq('milestone_id', milestone_id).single();
+      if (existing) {
+        finalInvoiceId = existing.id;
+      } else {
+        // Create dummy invoice to link payment to milestone
+        const today = new Date().toISOString().split('T')[0];
+        const invoiceNum = `INV-${Date.now().toString().slice(-6)}`;
+        const { data: newInv, error: invError } = await supabase.from('invoices').insert({
+          id: invoiceNum,
+          invoice_number: invoiceNum,
+          project_id: payload.project_id,
+          milestone_id: milestone_id,
+          amount: payload.amount,
+          gst_rate: 0,
+          gst_amount: 0,
+          total_amount: payload.amount,
+          status: 'sent',
+          due_date: today,
+          created_by: profile.id
+        }).select('id').single();
+        
+        if (invError) {
+          console.error("Auto Invoice Error:", invError);
+          return { success: false, error: `Failed to create invoice link: ${invError.message}` };
+        }
+        if (newInv) finalInvoiceId = newInv.id;
+      }
+    }
+
     const { data, error } = await supabase
       .from('payments')
       .insert({
-        ...validated.data,
+        id: `pay-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        ...paymentData,
+        invoice_id: finalInvoiceId,
         status: 'pending'
       })
       .select()
@@ -109,11 +147,44 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
 
     if (error) return { success: false, error: error.message };
 
+    // Milestone status is implicitly derived from invoices(payments) instead
+
     await updateProjectStageAction(payload.project_id, 'payment_pending', 'Payment manually logged.');
 
-    await revalidateAccountsPaths(payload.project_id);
+    // revalidateAccountsPaths removed to prevent Next.js server action hanging bugs
 
     return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateProjectBudgetAction(projectId: string, budget: number): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+    const { error } = await supabase
+      .from('projects')
+      .update({ budget })
+      .eq('id', projectId);
+
+    if (error) return { success: false, error: error.message };
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: projectId,
+      action: 'PROJECT_UPDATED',
+      details: { comment: `Project budget updated to ${budget}.` },
+      created_by: profile.id
+    });
+
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -532,11 +603,31 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen)')
+      .select('*, projects(name, client_name, status, is_frozen), invoices(payments(status))')
       .order('due_date', { ascending: true });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+
+    // Compute UI status based on pending payments linked through invoices
+    const processedData = data.map((m: any) => {
+      let isVerificationPending = false;
+      if (m.invoices && Array.isArray(m.invoices)) {
+        for (const inv of m.invoices) {
+          if (inv.payments && Array.isArray(inv.payments)) {
+            if (inv.payments.some((p: any) => p.status === 'pending')) {
+              isVerificationPending = true;
+              break;
+            }
+          }
+        }
+      }
+      return {
+        ...m,
+        status: isVerificationPending ? 'payment_verification_pending' : m.status
+      };
+    });
+
+    return { success: true, data: processedData };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -855,6 +946,295 @@ export async function getProjectsFinancialSummaryAction(projectIds: string[]): P
     }
 
     return { success: true, data: summary };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getFinancialOverviewAction(): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+
+    // Fetch all relevant data
+    const [paymentsRes, expensesRes, invoicesRes, visitsRes] = await Promise.all([
+      supabase.from('payments').select('*'),
+      supabase.from('expenses').select('*'),
+      supabase.from('invoices').select('*'),
+      supabase.from('project_visits').select('*')
+    ]);
+
+    const payments = paymentsRes.data || [];
+    const expenses = expensesRes.data || [];
+    const invoices = invoicesRes.data || [];
+    const visits = visitsRes.data || [];
+
+    let totalIncome = 0;
+    payments.forEach((p: any) => {
+      if (p.status === 'verified' || p.status === 'approved' || p.status === 'paid' || p.status === 'pending') {
+        // Treating all recorded payments as income (unless specifically rejected)
+        if (p.status !== 'rejected') totalIncome += Number(p.amount || 0);
+      }
+    });
+
+    let totalExpenses = 0;
+    expenses.forEach((e: any) => {
+      totalExpenses += Number(e.amount || 0);
+    });
+    visits.forEach((v: any) => {
+      const amt = Number(v.visit_cost || 0);
+      if (amt > 0) totalExpenses += amt;
+    });
+
+    // Monthly profit for current month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let currentMonthIncome = 0;
+    payments.forEach((p: any) => {
+      if (p.status !== 'rejected') {
+        const d = new Date(p.payment_date || p.created_at);
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+          currentMonthIncome += Number(p.amount || 0);
+        }
+      }
+    });
+
+    let currentMonthExpense = 0;
+    expenses.forEach((e: any) => {
+      const d = new Date(e.expense_date || e.created_at);
+      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        currentMonthExpense += Number(e.amount || 0);
+      }
+    });
+    visits.forEach((v: any) => {
+      const amt = Number(v.visit_cost || 0);
+      if (amt > 0) {
+        const d = new Date(v.scheduled_date || v.created_at);
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+          currentMonthExpense += amt;
+        }
+      }
+    });
+
+    const monthlyProfit = currentMonthIncome - currentMonthExpense;
+
+    // Accounts Receivable (Invoiced minus Paid)
+    let totalInvoiced = 0;
+    invoices.forEach((i: any) => {
+      if (i.status !== 'cancelled') totalInvoiced += Number(i.total_amount || 0);
+    });
+    const accountsReceivable = Math.max(0, totalInvoiced - totalIncome);
+    
+    // Outstanding Payments (same as Accounts Receivable for now, or just pending invoices)
+    let outstandingPayments = 0;
+    invoices.forEach((i: any) => {
+      if (i.status === 'pending' || i.status === 'issued') outstandingPayments += Number(i.total_amount || 0);
+    });
+
+    // Accounts Payable (Pending Expenses)
+    let accountsPayable = 0;
+    expenses.forEach((e: any) => {
+      if (e.status === 'pending') {
+        accountsPayable += Number(e.amount || 0);
+      }
+    });
+
+    // Cash flow grouped by month (Jan-Dec for current year)
+    const monthlyCashFlowMap: Record<number, { income: number, expense: number }> = {};
+    for (let i = 0; i < 12; i++) monthlyCashFlowMap[i] = { income: 0, expense: 0 };
+
+    payments.forEach((p: any) => {
+      if (p.status !== 'rejected') {
+        const d = new Date(p.payment_date || p.created_at);
+        if (d.getFullYear() === currentYear) {
+          monthlyCashFlowMap[d.getMonth()].income += Number(p.amount || 0);
+        }
+      }
+    });
+
+    expenses.forEach((e: any) => {
+      const d = new Date(e.expense_date || e.created_at);
+      if (d.getFullYear() === currentYear) {
+        monthlyCashFlowMap[d.getMonth()].expense += Number(e.amount || 0);
+      }
+    });
+
+    visits.forEach((v: any) => {
+      const amt = Number(v.visit_cost || 0);
+      if (amt > 0) {
+        const d = new Date(v.scheduled_date || v.created_at);
+        if (d.getFullYear() === currentYear) {
+          monthlyCashFlowMap[d.getMonth()].expense += amt;
+        }
+      }
+    });
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyCashFlow = Object.keys(monthlyCashFlowMap).map(m => ({
+      month: monthNames[Number(m)],
+      income: monthlyCashFlowMap[Number(m)].income,
+      expense: monthlyCashFlowMap[Number(m)].expense
+    }));
+
+    // Expense by category
+    const categoryMap: Record<string, number> = {};
+    expenses.forEach((e: any) => {
+      const cat = e.category || 'Other';
+      categoryMap[cat] = (categoryMap[cat] || 0) + Number(e.amount || 0);
+    });
+    const expenseByCategory: { category: string, amount: number }[] = [];
+    Object.keys(categoryMap).forEach(key => {
+      expenseByCategory.push({ category: key, amount: categoryMap[key] });
+    });
+    
+    let fieldVisitSum = 0;
+    visits.forEach((v: any) => {
+      const amt = Number(v.visit_cost || 0);
+      if (amt > 0) fieldVisitSum += amt;
+    });
+    if (fieldVisitSum > 0) {
+      expenseByCategory.push({ category: 'Field Visit', amount: fieldVisitSum });
+    }
+
+    return {
+      success: true,
+      data: {
+        totalIncome,
+        totalExpenses,
+        monthlyProfit,
+        accountsReceivable,
+        accountsPayable,
+        outstandingPayments,
+        monthlyCashFlow,
+        expenseByCategory
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getProjectProfitabilityAction(): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+
+    const [projectsRes, invoicesRes, expensesRes] = await Promise.all([
+      supabase.from('projects').select('id, name'),
+      supabase.from('invoices').select('project_id, total_amount, status'),
+      supabase.from('expenses').select('project_id, amount')
+    ]);
+
+    const projects = projectsRes.data || [];
+    const invoices = invoicesRes.data || [];
+    const expenses = expensesRes.data || [];
+
+    const profitMap: Record<string, { id: string, name: string, invoiced: number, expenses: number, margin: number }> = {};
+
+    projects.forEach((p: any) => {
+      profitMap[p.id] = { id: p.id, name: p.name, invoiced: 0, expenses: 0, margin: 0 };
+    });
+
+    invoices.forEach((i: any) => {
+      if (i.status !== 'cancelled' && profitMap[i.project_id]) {
+        profitMap[i.project_id].invoiced += Number(i.total_amount || 0);
+      }
+    });
+
+    expenses.forEach((e: any) => {
+      if (e.project_id && profitMap[e.project_id]) {
+        profitMap[e.project_id].expenses += Number(e.amount || 0);
+      }
+    });
+
+    const result = Object.values(profitMap).map(p => ({
+      ...p,
+      margin: p.invoiced - p.expenses
+    }));
+
+    result.sort((a, b) => b.margin - a.margin);
+
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function addProjectIncomeAction(projectId: string, payload: any): Promise<ActionResponse> {
+  const { verifyProjectAccess } = await import('@/lib/permissions/permissions');
+  const auth: any = await getUserProfileAction();
+  if (!auth) return { success: false, error: 'Unauthorized' };
+
+  const access = await verifyProjectAccess(projectId, auth.id, auth.role as any, true);
+  if (!access.isAllowed) return { success: false, error: 'Access denied' };
+
+  return logPaymentAction({ ...payload, project_id: projectId });
+}
+
+export async function addProjectExpenseAction(projectId: string, payload: any): Promise<ActionResponse> {
+  const { verifyProjectAccess } = await import('@/lib/permissions/permissions');
+  const { createExpenseAction } = await import('@/actions/expense.actions');
+  const auth: any = await getUserProfileAction();
+  if (!auth) return { success: false, error: 'Unauthorized' };
+
+  const access = await verifyProjectAccess(projectId, auth.id, auth.role as any, true);
+  if (!access.isAllowed) return { success: false, error: 'Access denied' };
+
+  return createExpenseAction({ ...payload, project_id: projectId });
+}
+
+export async function getProjectFinancesAction(projectId: string): Promise<ActionResponse> {
+  try {
+    const auth: any = await getUserProfileAction();
+    if (!auth) return { success: false, error: 'Unauthorized' };
+
+    const { verifyProjectAccess } = await import('@/lib/permissions/permissions');
+    const access = await verifyProjectAccess(projectId, auth.id, auth.role as any);
+    if (!access.isAllowed) return { success: false, error: 'Access denied' };
+
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('project_finances').select('*').eq('project_id', projectId).maybeSingle();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function markInvoiceAsSentAction(invoiceId: string) {
+  try {
+    const auth = await getUserProfileAction();
+    if (!auth || !['accountant', 'executive'].includes(auth.role)) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const supabase = await createClient();
+    const { error } = await (supabase.from('invoices') as any)
+      .update({ status: 'sent' })
+      .eq('id', invoiceId)
+      .eq('status', 'draft'); // Only update if it's currently a draft
+
+    if (error) return { success: false, error: error.message };
+    
+    // Log the action
+    await logAdminAuditAction({
+      action: 'update_invoice',
+      details: { entity: 'invoices', id: invoiceId, status: 'sent' },
+      severity: 'info',
+    });
+
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

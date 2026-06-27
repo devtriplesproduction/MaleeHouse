@@ -21,6 +21,7 @@ import ProjectWorkflowTab from './ProjectWorkflowTab';
 import ProjectCommunicationTab from './ProjectCommunicationTab';
 import ProjectActivityLogTab from './ProjectActivityLogTab';
 import { ProjectFinanceTabContent } from './ProjectFinanceTabContent';
+import { ProjectFinanceDashboardTab } from './ProjectFinanceDashboardTab';
 
 interface ProjectDetailTabsProps {
   project: any;
@@ -100,6 +101,11 @@ export function ProjectDetailTabs({
       label: 'Billing',
       icon: DollarSign,
       description: 'Commercial invoice ledger, milestone gates, lockout history, and details.'
+    }, {
+      id: 'finance',
+      label: 'Finance',
+      icon: Activity,
+      description: 'Project financial performance, budget tracking, and detailed P&L.'
     }] : [])
   ];
 
@@ -232,6 +238,12 @@ export function ProjectDetailTabs({
                   quotation={activeQuotation}
                   activityLogs={activityLogs}
                 />
+              </div>
+            )}
+            
+            {activeTab === 'finance' && showFinanceTab && (
+              <div className="animate-in fade-in duration-300">
+                <ProjectFinanceDashboardTab projectId={project.id} />
               </div>
             )}
           </motion.div>

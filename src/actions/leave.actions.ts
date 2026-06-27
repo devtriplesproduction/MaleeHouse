@@ -62,7 +62,7 @@ export async function getMyLeavesAction(): Promise<ActionResponse> {
 export async function getAllLeavesAction(): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction()
-    if (profile?.role !== 'admin') return { success: false, error: 'Access denied. Admins only.' }
+    if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins and HR only.' }
 
     const supabase: any = await createClient()
     const { data, error } = await supabase
@@ -80,9 +80,23 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
 export async function updateLeaveStatusAction(id: string, status: 'approved' | 'rejected' | 'pending'): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction()
-    if (profile?.role !== 'admin') return { success: false, error: 'Access denied. Admins only.' }
+    if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins and HR only.' }
 
     const supabase: any = await createClient()
+
+    // Get the leave owner's role before updating
+    const { data: leaveData } = await supabase
+      .from('leaves')
+      .select('*, profiles!user_id(role)')
+      .eq('id', id)
+      .single()
+
+    if (!leaveData) return { success: false, error: 'Leave request not found' }
+
+    if (leaveData.user_id === profile.id && profile.role !== 'admin') {
+      return { success: false, error: 'You cannot approve or reject your own leave request.' }
+    }
+
     const { data, error } = await supabase
       .from('leaves')
       .update({ status, updated_at: new Date().toISOString(), approved_by: profile.id, approved_at: status === 'approved' ? new Date().toISOString() : null })

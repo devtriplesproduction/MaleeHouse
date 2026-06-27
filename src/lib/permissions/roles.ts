@@ -1,4 +1,4 @@
-export type Role = "admin" | "sales" | "accountant" | "engineer" | "cad" | "field" | "field_engineer" | "qc" | "employee";
+export type Role = "admin" | "sales" | "accountant" | "engineer" | "cad" | "field" | "field_engineer" | "qc" | "employee" | "hr";
 
 export const ROLES = {
   ADMIN: "admin" as Role,
@@ -10,6 +10,7 @@ export const ROLES = {
   FIELD_ENGINEER: "field_engineer" as Role,
   QC: "qc" as Role,
   EMPLOYEE: "employee" as Role,
+  HR: "hr" as Role,
 };
 
 // Determines base redirection rules (legacy and new module-based)
@@ -23,6 +24,7 @@ export const ROLE_REDIRECTS: Record<Role, string> = {
   field_engineer: "/field",
   qc: "/review",
   employee: "/eod", // Base employee landing
+  hr: "/hr",
 };
 
 // Strict route protection map (Prefix -> Allowed Roles)
@@ -36,9 +38,10 @@ export const PATH_PERMISSIONS: Record<string, Role[]> = {
   "/engineer": ["admin", "engineer"],
   "/cad": ["admin", "cad"],
   "/field": ["admin", "field", "field_engineer"],
-  "/eod": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee"],
-  "/sop": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee"],
-  "/leaves": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee"],
-  "/projects": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee"],
+  "/eod": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee", "hr"],
+  "/sop": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee", "hr"],
+  "/leaves": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee", "hr"],
+  "/projects": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee", "hr"],
+  "/hr": ["admin", "hr"],
 };
 

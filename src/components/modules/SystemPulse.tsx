@@ -19,7 +19,7 @@ export function SystemPulse() {
     }
 
     checkHealth();
-    const interval = setInterval(checkHealth, 30000); // Pulse every 30s
+    const interval = setInterval(checkHealth, 3 * 60 * 1000); // Pulse every 3 minutes
     return () => clearInterval(interval);
   }, []);
 

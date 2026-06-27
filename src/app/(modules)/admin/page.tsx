@@ -10,6 +10,8 @@ import { ClientSatisfactionMetric } from '@/components/modules/ClientSatisfactio
 import { QuickIntegrityOverview } from '@/components/modules/QuickIntegrityOverview';
 import { TrendingUp } from 'lucide-react';
 import DashboardNotificationCenter from '@/components/modules/DashboardNotificationCenter';
+import { MaterialApprovalWidget } from '@/components/modules/MaterialApprovalWidget';
+import { getAllMaterialRequestsAction } from '@/actions/field.actions';
 
 import { requireRole } from '@/lib/auth-guard';
 
@@ -44,6 +46,11 @@ async function TeamPerformanceLeaderboardWrapper() {
 async function ClientSatisfactionMetricWrapper() {
   const satisfactionResult = await getClientSatisfactionMetricsAction();
   return <ClientSatisfactionMetric data={satisfactionResult.data || { average: 0, total: 0, distribution: [0, 0, 0, 0, 0] }} />;
+}
+
+async function MaterialApprovalWidgetWrapper() {
+  const result = await getAllMaterialRequestsAction();
+  return <MaterialApprovalWidget requests={result.data || []} />;
 }
 
 export default async function AdminDashboardPage() {
@@ -104,6 +111,10 @@ export default async function AdminDashboardPage() {
 
         {/* Side Panel */}
         <div className="space-y-8">
+          <Suspense fallback={<div className="h-[200px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
+            <MaterialApprovalWidgetWrapper />
+          </Suspense>
+
           <DashboardNotificationCenter />
 
           <Suspense fallback={<div className="h-[300px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>

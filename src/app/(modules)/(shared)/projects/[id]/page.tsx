@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -58,6 +58,7 @@ import { getUserProfileAction } from "@/actions/auth.actions";
 import { ProjectDetailTabs } from "@/components/modules/ProjectDetailTabs";
 import { ProjectFinanceTabContent } from "@/components/modules/ProjectFinanceTabContent";
 import { SalesProjectPortal } from "@/features/sales/components/SalesProjectPortal";
+import { verifyProjectAccess } from "@/lib/permissions/permissions";
 
 const ROLE_THEME: Record<string, { primary: string; hover: string; text: string; bg: string; border: string; glow: string }> = {
   admin:      { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
@@ -333,6 +334,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const role = profile?.role || "admin";
   const theme = ROLE_THEME[role] || ROLE_THEME.admin;
   const backLink = ROLE_REDIRECTS[role] || "/projects";
+
+  // Layer 1 Security: Application-level check
+  const accessCheck = await verifyProjectAccess(params.id, user.id, role as any, true);
+  if (!accessCheck.isAllowed) {
+    redirect('/unauthorized');
+  }
 
   if (role === 'sales') {
     const isLead = ['lead_created', 'requirement_gathering', 'follow_up_pending'].includes(project.status);

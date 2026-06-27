@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 import { getUserProfileAction } from '@/actions/auth.actions'
 import { notifyAssignmentAction } from '@/actions/notification.actions'
@@ -14,9 +13,9 @@ function generateId(prefix: string) {
 export async function assignUserToProjectAction(projectId: string, userId: string, role: string) {
   try {
     const profile: any = await getUserProfileAction()
-    const supabaseAdmin: any = createAdminClient()
+    const supabase: any = await createClient()
 
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await supabase
       .from('project_assignments')
       .select('id')
       .eq('project_id', projectId)
@@ -24,7 +23,7 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
       .maybeSingle()
 
     if (!existing) {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('project_assignments')
         .insert({
           id: generateId("asg"),
@@ -36,7 +35,7 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
         })
       if (error) return { success: false, error: error.message || 'Insert error' }
     } else {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('project_assignments')
         .update({ role, assigned_by: profile?.id ?? null, assigned_at: new Date().toISOString() })
         .eq('id', existing.id)
@@ -44,14 +43,14 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
     }
 
     if (profile) {
-      await supabaseAdmin.from('workflow_history').insert({
+      await supabase.from('workflow_history').insert({
         project_id: projectId,
         changed_by: profile.id,
         comment: `Assigned ${role} (user: ${userId}) to project`,
         created_at: new Date().toISOString()
       })
 
-      await supabaseAdmin.from('activity_logs').insert({
+      await supabase.from('activity_logs').insert({
         project_id: projectId,
         user_id: profile.id,
         action: 'USER_ASSIGNED',
@@ -68,7 +67,7 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
 
     // Auto-advance workflow if assigning field team during field_assigned stage
     if (role === 'field' || role === 'field_engineer') {
-      const { data: projectData } = await supabaseAdmin
+      const { data: projectData } = await supabase
         .from('projects')
         .select('status')
         .eq('id', projectId)

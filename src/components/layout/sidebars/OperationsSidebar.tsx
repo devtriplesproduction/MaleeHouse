@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, LayoutDashboard, PenTool, MapPin, ClipboardCheck, FileText, BookOpen, Clock, Calendar } from "lucide-react";
+import { Activity, LayoutDashboard, PenTool, MapPin, ClipboardCheck, FileText, BookOpen, Clock, Calendar, Megaphone } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 import { useUser } from "@/hooks/useUser";
 
@@ -21,7 +21,8 @@ export function OperationsSidebar() {
     { title: "Assigned Projects", href: "/projects", icon: FileText },
     { title: "Procedures (SOP)", href: "/sop", icon: BookOpen },
     { title: "Submit EOD", href: "/eod", icon: Clock },
-    { title: "Apply Leave", href: "/leaves", icon: Calendar }
+    { title: "Apply Leave", href: "/leaves", icon: Calendar },
+    { title: "Announcements", href: "/announcements", icon: Megaphone }
   );
 
   return <BaseSidebar links={operationsLinks} />;

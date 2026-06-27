@@ -12,7 +12,7 @@ import {
   canUpdateProjectStage,
   canUploadFileCategory
 } from "@/lib/permissions/permissions";
-import { notifySupplementalUploadAction } from "@/actions/notification.actions";
+import { notifySupplementalUploadAction, notifyStageUpdateAction } from "@/actions/notification.actions";
 import { getTasksForStage } from "@/lib/workflow-engine";
 
 export type WorkflowResponse = {
@@ -123,6 +123,18 @@ async function validateStageTransition(
           return {
             success: false,
             error: "Cannot transition to CAD Prototype: Core requirement briefs/coordinates must be uploaded first."
+          };
+        }
+
+        // Check for CAD and Field engineer assignment before sending to CAD
+        const { data: assignments } = await supabase.from("project_assignments").select("role").eq("project_id", projectId);
+        const hasCad = assignments?.some((a: any) => a.role === "cad");
+        const hasField = assignments?.some((a: any) => a.role === "field" || a.role === "field_engineer");
+        
+        if (!hasCad || !hasField) {
+          return {
+            success: false,
+            error: "Cannot send client documents to CAD: At least one CAD engineer and one Field engineer must be assigned to the team."
           };
         }
         break;
@@ -286,7 +298,7 @@ export async function transitionWorkflowAction(
       }
     }
 
-    // 4. Update Project Status (Use Admin Client to bypass RLS for system state transitions)
+    // 4. Update Project Status
     const adminClient: any = createAdminClient();
     const { error: updateError, data: updatedProject } = await adminClient.from("projects").update({
       status: newStage,
@@ -318,7 +330,6 @@ export async function transitionWorkflowAction(
     });
 
     // 7. Trigger notifications for assigned team members
-    const { notifyStageUpdateAction } = await import("@/actions/notification.actions");
     await notifyStageUpdateAction(projectId, fromStage || "lead", newStage).catch(console.error);
 
     // 8. Generate Default Tasks for new stage

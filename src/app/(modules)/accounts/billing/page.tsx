@@ -140,6 +140,7 @@ export default function BillingPage() {
             <InvoiceTable 
               invoices={invoices} 
               searchQuery={searchQuery}
+              onRefresh={fetchData}
             />
           )}
           {activeTab === "receipts" && (

@@ -112,6 +112,10 @@ export default function DashboardNotificationCenter() {
               const t = title.toLowerCase();
               const m = message.toLowerCase();
 
+              // 0. Material Requests
+              if (t.includes('material request') || m.includes('material request')) {
+                return 0;
+              }
               // 1. CAD Prototype Submitted
               if (t.includes('cad prototype submitted') || m.includes('cad prototype submitted') || t.includes('cad prototype uploaded') || m.includes('cad prototype uploaded')) {
                 return 1;

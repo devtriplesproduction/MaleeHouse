@@ -134,7 +134,7 @@ export async function overrideAttendanceAction(
   reason: string
 ) {
   const profile: any = await getUserProfileAction();
-  if (profile?.role !== "admin") {
+  if (profile?.role !== "admin" && profile?.role !== "hr") {
     return { success: false, error: "Elevated administrative privileges required." };
   }
 

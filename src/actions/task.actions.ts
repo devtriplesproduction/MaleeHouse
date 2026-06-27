@@ -4,21 +4,27 @@ import { revalidatePath } from "next/cache";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { notifyAssignmentAction } from "@/actions/notification.actions";
 import { createClient } from "@/lib/supabase/server";
+import { checkActionRateLimit } from "@/lib/rate-limit";
 
 /**
  * createTaskAction
  * Admin only: Creates a new task assigned to a specific user for a project stage
  */
 export async function createTaskAction(
-  projectId: string, 
-  assignedToId: string, 
-  stage: string, 
-  title: string, 
+  projectId: string,
+  assignedToId: string,
+  stage: string,
+  title: string,
   dueDate: string
 ) {
   try {
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: "Unauthorized" };
+
+    if (!checkActionRateLimit(profile.id, 'createTaskAction', 15, 60 * 1000)) {
+      return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
+    }
+
 
     if (profile.role !== 'admin') {
       return { success: false, error: "Access denied. Admins only." };

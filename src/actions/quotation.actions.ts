@@ -1,5 +1,7 @@
 'use server';
 
+import { checkActionRateLimit } from '@/lib/rate-limit';
+
 import { revalidatePath } from 'next/cache';
 import {
   createQuotationSchema,
@@ -162,6 +164,11 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
 
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (!checkActionRateLimit(profile.id, 'createQuotationAction', 15, 60 * 1000)) {
+      return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
+    }
+
 
     const supabase: any = await createClient();
     const { data: quotation } = await supabase.from('quotations').select('*').eq('id', payload.id).single();

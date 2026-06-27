@@ -1,5 +1,7 @@
 'use server';
 
+import { checkActionRateLimit } from '@/lib/rate-limit';
+
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { registerFileSchema, type RegisterFileInput } from '@/validations/file.schema';
@@ -117,6 +119,11 @@ export async function getProjectFilesAction(projectId: string): Promise<ActionRe
 
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
+    
+    if (!checkActionRateLimit(profile.id, 'registerFileAction', 15, 60 * 1000)) {
+      return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
+    }
+
     
     const accessCheck = await verifyProjectAccess(projectId, profile.id, profile.role as Role, true);
     if (!accessCheck.isAllowed) {

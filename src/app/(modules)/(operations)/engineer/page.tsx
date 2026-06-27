@@ -1,6 +1,9 @@
 import React, { Suspense } from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { getMyAssignedProjectsAction, getIncomingOperationsProjectsAction } from "@/actions/operations.actions";
+import { getAllMaterialRequestsAction } from "@/actions/field.actions";
+import { getEngineerTasksAction } from "@/actions/task.actions";
+import { getNotificationsAction } from "@/actions/notification.actions";
 import {
   Shield, ChevronRight, AlertTriangle, FileText,
   CheckCircle2, Clock, PenTool, Zap, Eye, MapPin,
@@ -8,23 +11,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { EODFormModal } from "@/components/eod/EODFormModal";
 import { getMyEODReportsAction } from "@/actions/eod.actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, differenceInDays, format, isPast } from "date-fns";
 import { ActivityFeedTab } from "@/components/modules/ActivityFeedTab";
 import { PaginatedProjectList } from "@/components/modules/PaginatedProjectList";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MaterialApprovalWidget } from "@/components/modules/MaterialApprovalWidget";
 
-function EmptyState({ message, icon: Icon = CheckCircle2 }: { message: string; icon?: any }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 border border-dashed border-slate-200 dark:border-white/5 rounded-2xl bg-slate-55/40 dark:bg-slate-950/20 text-center gap-2">
-      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-        <Icon className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-      </div>
-      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{message}</p>
-    </div>
-  );
-}
+
 
 export default async function EngineerDashboardPage() {
   const profile = await getUserProfileAction();
@@ -33,14 +28,18 @@ export default async function EngineerDashboardPage() {
   const { createClient } = await import("@/lib/supabase/server");
   const supabase: any = await createClient();
 
-  const [assignedRes, incomingRes, eodRes, activityLogsRes, commentsRes, filesRes, usersRes] = await Promise.all([
+  const [assignedRes, incomingRes, eodRes, activityLogsRes, commentsRes, filesRes, usersRes, tasksRes, notifRes, visitsRes, matReqRes] = await Promise.all([
     getMyAssignedProjectsAction(),
     getIncomingOperationsProjectsAction(),
     getMyEODReportsAction(),
     supabase.from('activity_logs').select('*'),
     supabase.from('comments').select('*'),
     supabase.from('files').select('*'),
-    supabase.from('profiles').select('*')
+    supabase.from('profiles').select('*'),
+    getEngineerTasksAction(profile?.id || ""),
+    getNotificationsAction(),
+    supabase.from('project_visits').select('*, projects(name, client_name)').order('scheduled_date', { ascending: true }),
+    getAllMaterialRequestsAction()
   ]);
 
   const activityLogs: any[] = (activityLogsRes.data as any) || [];
@@ -51,6 +50,10 @@ export default async function EngineerDashboardPage() {
   const projects = assignedRes.data || [];
   const incomingProjects = incomingRes.data || [];
   const eodReports = eodRes.success ? eodRes.data : [];
+  
+  const tasks = tasksRes.success ? tasksRes.data : [];
+  const notifications = notifRes.success ? notifRes.data : [];
+  const allMaterialRequests: any[] = (matReqRes?.success ? matReqRes.data : []) || [];
 
   // Filter project IDs that have had a QC rejection event
   const qcRejectedProjectIds = new Set(
@@ -82,6 +85,12 @@ export default async function EngineerDashboardPage() {
   const assignedAtMap = new Map(
     allProjects.map((p: any) => [p.id, p.assigned_at])
   );
+
+  const upcomingDeadlines = allProjects
+    .filter((p: any) => p.target_completion_date && p.status !== "completed" && p.status !== "archived")
+    .sort((a: any, b: any) => new Date(a.target_completion_date).getTime() - new Date(b.target_completion_date).getTime());
+
+  const siteVisits = visitsRes.data || [];
 
   const getProjectName = (projId: string) => {
     return allProjects.find((p: any) => p.id === projId)?.name || projId;
@@ -286,7 +295,7 @@ export default async function EngineerDashboardPage() {
           </p>
         </div>
         <div className="flex-shrink-0">
-          <EODFormModal reports={eodReports} roleColor="indigo" />
+          {/* EOD button removed */}
         </div>
       </div>
 
@@ -319,7 +328,7 @@ export default async function EngineerDashboardPage() {
         {/* Left Column (70%) - Queue Tabs & Lists */}
         <div className="lg:col-span-7 space-y-6">
           <Tabs defaultValue="pending" className="space-y-6">
-            <div className="border-b border-slate-200 dark:border-white/10 w-full overflow-x-auto scrollbar-none pb-1">
+            <div className="border-b border-slate-200 dark:border-white/10 w-full overflow-x-auto custom-scrollbar pb-3">
               <TabsList className="bg-transparent border-none p-0 flex h-auto gap-8 w-full justify-start">
                 
                 <TabsTrigger 
@@ -369,6 +378,54 @@ export default async function EngineerDashboardPage() {
                     </span>
                   )}
                 </TabsTrigger>
+
+                <TabsTrigger 
+                  value="tasks" 
+                  className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-indigo-600 data-[state=active]:!text-indigo-600 dark:data-[state=active]:!text-indigo-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
+                >
+                  Pending Tasks
+                  {tasks.length > 0 && (
+                    <span className="px-1.5 py-0.2 text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded">
+                      {tasks.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+
+                <TabsTrigger 
+                  value="deadlines" 
+                  className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-rose-600 data-[state=active]:!text-rose-600 dark:data-[state=active]:!text-rose-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
+                >
+                  Deadlines
+                  {upcomingDeadlines.length > 0 && (
+                    <span className="px-1.5 py-0.2 text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded">
+                      {upcomingDeadlines.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+
+                <TabsTrigger 
+                  value="visits" 
+                  className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-sky-600 data-[state=active]:!text-sky-600 dark:data-[state=active]:!text-sky-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
+                >
+                  Site Visits
+                  {siteVisits.length > 0 && (
+                    <span className="px-1.5 py-0.2 text-[10px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded">
+                      {siteVisits.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+
+                <TabsTrigger 
+                  value="notifications" 
+                  className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-indigo-600 data-[state=active]:!text-indigo-600 dark:data-[state=active]:!text-indigo-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
+                >
+                  Notifications
+                  {notifications.filter((n: any) => !n.is_read).length > 0 && (
+                    <span className="px-1.5 py-0.2 text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded">
+                      {notifications.filter((n: any) => !n.is_read).length}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -403,12 +460,268 @@ export default async function EngineerDashboardPage() {
                   <ActivityFeedTab activities={allTimeline} />
                 </div>
               </TabsContent>
+
+              <TabsContent value="tasks" className="mt-0 focus-visible:outline-none">
+                {tasks.length === 0 ? (
+                  <EmptyState message="No pending tasks." icon={ClipboardCheck} />
+                ) : (
+                  <div className="space-y-3">
+                    {tasks.map((task: any) => {
+                      let badgeColor = "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400";
+                      let dueText = "No Due Date";
+                      
+                      if (task.due_date) {
+                        const dueDate = new Date(task.due_date);
+                        const daysLeft = differenceInDays(dueDate, new Date());
+                        const isOverdue = isPast(dueDate) && daysLeft < 0;
+
+                        if (isOverdue) {
+                          badgeColor = "bg-rose-500/10 text-rose-600 dark:text-rose-400";
+                          dueText = "Overdue";
+                        } else if (daysLeft <= 2) {
+                          badgeColor = "bg-rose-500/10 text-rose-600 dark:text-rose-400";
+                          dueText = daysLeft === 0 ? "Due Today" : `Due in ${daysLeft}d`;
+                        } else if (daysLeft <= 5) {
+                          badgeColor = "bg-amber-500/10 text-amber-600 dark:text-amber-400";
+                          dueText = `Due in ${daysLeft}d`;
+                        } else {
+                          dueText = `Due in ${daysLeft}d`;
+                        }
+                      }
+
+                      return (
+                        <div key={task.id} className="relative overflow-hidden p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-900/40 flex justify-between items-center hover:bg-white dark:hover:bg-slate-900 hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300 group">
+                          
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
+                              <ClipboardCheck className="w-4.5 h-4.5 text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {task.title}
+                              </h4>
+                              <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                                Project: <span className="text-slate-700 dark:text-slate-300">{task.projects?.name}</span>
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-1.5 shrink-0 z-10">
+                            <div className={cn("text-[11px] px-2.5 py-1 rounded-lg font-extrabold flex items-center gap-1.5", badgeColor)}>
+                              {dueText === "Overdue" && <AlertCircle className="w-3.5 h-3.5" />}
+                              {dueText}
+                            </div>
+                            {task.due_date && (
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                {format(new Date(task.due_date), "MMM d, yyyy")}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-white/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 dark:via-white/[0.02] dark:to-white/[0.05]" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="deadlines" className="mt-0 focus-visible:outline-none">
+                {upcomingDeadlines.length === 0 ? (
+                  <EmptyState message="No upcoming deadlines." icon={Calendar} />
+                ) : (
+                  <div className="space-y-3">
+                    {upcomingDeadlines.map((p: any) => {
+                      const dueDate = new Date(p.target_completion_date);
+                      const daysLeft = differenceInDays(dueDate, new Date());
+                      const isOverdue = isPast(dueDate) && daysLeft < 0;
+                      
+                      let badgeColor = "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400";
+                      let iconColor = "text-emerald-600 dark:text-emerald-400";
+                      let statusText = `${daysLeft} days left`;
+
+                      if (isOverdue) {
+                        badgeColor = "bg-rose-500/10 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400";
+                        iconColor = "text-rose-600 dark:text-rose-400";
+                        statusText = "Overdue";
+                      } else if (daysLeft <= 3) {
+                        badgeColor = "bg-rose-500/10 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400";
+                        iconColor = "text-rose-600 dark:text-rose-400";
+                        statusText = daysLeft === 0 ? "Due Today" : `${daysLeft} days left`;
+                      } else if (daysLeft <= 7) {
+                        badgeColor = "bg-amber-500/10 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400";
+                        iconColor = "text-amber-600 dark:text-amber-400";
+                      }
+
+                      return (
+                        <Link href={`/projects/${p.id}`} key={p.id} className="relative overflow-hidden p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-900/40 flex items-center justify-between hover:bg-white dark:hover:bg-slate-900 hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300 group">
+                          
+                          <div className="flex items-center gap-4">
+                            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300", badgeColor.split(' ')[0], badgeColor.split(' ')[2])}>
+                              <Calendar className={cn("w-4.5 h-4.5", iconColor)} />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {p.name}
+                              </h4>
+                              <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                <span className="truncate max-w-[120px] sm:max-w-[200px] inline-block">{p.client_name}</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                                <span className="uppercase tracking-wider font-bold">{p.status?.replace(/_/g, ' ')}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1.5 shrink-0 z-10">
+                            <div className={cn("text-[11px] px-2.5 py-1 rounded-lg font-extrabold flex items-center gap-1.5", badgeColor)}>
+                              {isOverdue && <AlertCircle className="w-3.5 h-3.5" />}
+                              {statusText}
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                              {format(dueDate, "MMM d, yyyy")}
+                            </span>
+                          </div>
+                          
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-white/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 dark:via-white/[0.02] dark:to-white/[0.05]" />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="visits" className="mt-0 focus-visible:outline-none">
+                {siteVisits.length === 0 ? (
+                  <EmptyState message="No scheduled site visits." icon={MapPin} />
+                ) : (
+                  <div className="space-y-3">
+                    {siteVisits.map((visit: any) => (
+                      <div key={visit.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 flex justify-between items-center">
+                        <div>
+                          <h4 className="font-semibold text-sm text-slate-900 dark:text-white">
+                            {visit.purpose || "Site Visit"}
+                          </h4>
+                          <p className="text-xs text-slate-500">Project: {visit.projects?.name || visit.projects?.client_name || "Unknown"}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="text-xs bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 px-2 py-1 rounded font-medium">
+                            {visit.scheduled_date ? new Date(visit.scheduled_date).toLocaleDateString() : 'N/A'}
+                          </div>
+                          <span className={cn("text-[10px] uppercase font-bold", 
+                            visit.status === 'completed' ? "text-emerald-500" : 
+                            visit.status === 'in_progress' ? "text-blue-500" : "text-amber-500"
+                          )}>
+                            {visit.status?.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="notifications" className="mt-0 focus-visible:outline-none">
+                {notifications.length === 0 ? (
+                  <EmptyState message="No notifications." icon={Bell} />
+                ) : (
+                  <div className="space-y-3">
+                    {notifications.map((n: any) => {
+                      let iconColor = "text-slate-500";
+                      let iconBg = "bg-slate-100 dark:bg-white/5";
+                      let IconComponent = Bell;
+
+                      if (n.type === 'assignment') {
+                        iconColor = "text-indigo-600 dark:text-indigo-400";
+                        iconBg = "bg-indigo-500/10 dark:bg-indigo-500/10";
+                        IconComponent = Clock;
+                      } else if (n.type === 'stage_update') {
+                        iconColor = "text-sky-600 dark:text-sky-400";
+                        iconBg = "bg-sky-500/10 dark:bg-sky-500/10";
+                        IconComponent = Layers;
+                      } else if (n.type === 'approval') {
+                        iconColor = "text-emerald-600 dark:text-emerald-400";
+                        iconBg = "bg-emerald-500/10 dark:bg-emerald-500/10";
+                        IconComponent = CheckCircle2;
+                      } else if (n.type === 'rejection') {
+                        iconColor = "text-rose-600 dark:text-rose-400";
+                        iconBg = "bg-rose-500/10 dark:bg-rose-500/10";
+                        IconComponent = AlertCircle;
+                      } else if (n.type === 'deadline_warning') {
+                        iconColor = "text-amber-600 dark:text-amber-400";
+                        iconBg = "bg-amber-500/10 dark:bg-amber-500/10";
+                        IconComponent = AlertTriangle;
+                      } else if (n.type === 'system') {
+                        iconColor = "text-violet-600 dark:text-violet-400";
+                        iconBg = "bg-violet-500/10 dark:bg-violet-500/10";
+                        IconComponent = Zap;
+                      }
+
+                      return (
+                        <div 
+                          key={n.id} 
+                          className={cn(
+                            "relative overflow-hidden p-4 rounded-2xl border transition-all duration-300 group flex items-start gap-4",
+                            !n.is_read 
+                              ? "bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-500/30 shadow-sm" 
+                              : "bg-white/50 dark:bg-slate-900/40 border-slate-200/60 dark:border-white/10 hover:bg-white dark:hover:bg-slate-900 hover:border-indigo-500/20"
+                          )}
+                        >
+                          {/* Unread Indicator Bar */}
+                          {!n.is_read && (
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />
+                          )}
+                          
+                          <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300", iconBg)}>
+                            <IconComponent className={cn("w-4.5 h-4.5", iconColor)} />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start gap-2">
+                              <h4 className={cn(
+                                "text-sm truncate",
+                                !n.is_read ? "font-bold text-slate-900 dark:text-white" : "font-semibold text-slate-800 dark:text-slate-200"
+                              )}>
+                                {n.title}
+                              </h4>
+                              <span className={cn(
+                                "text-[10px] whitespace-nowrap shrink-0 pt-0.5",
+                                !n.is_read ? "font-bold text-indigo-600 dark:text-indigo-400" : "font-medium text-slate-400"
+                              )}>
+                                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                            
+                            <p className={cn(
+                              "text-xs mt-1 leading-relaxed line-clamp-2",
+                              !n.is_read ? "text-slate-700 dark:text-slate-300 font-medium" : "text-slate-500 dark:text-slate-400"
+                            )}>
+                              {n.message}
+                            </p>
+                            
+                            {n.project_name && (
+                              <div className="mt-2.5 inline-flex">
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400">
+                                  {n.project_name}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-white/10 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 dark:via-white/[0.02]" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
             </div>
           </Tabs>
         </div>
 
-        {/* Right Column (30%) - Recent Activity Widget */}
+        {/* Right Column (30%) - Action widgets and Recent Activity */}
         <div className="lg:col-span-3 space-y-6 animate-in fade-in duration-300">
+          <MaterialApprovalWidget requests={allMaterialRequests} />
+          
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
               <Activity className="w-4 h-4 text-indigo-500" />

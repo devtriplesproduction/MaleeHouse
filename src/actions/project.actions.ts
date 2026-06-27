@@ -1,5 +1,7 @@
 'use server';
 
+import { checkActionRateLimit } from '@/lib/rate-limit';
+
 import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { createProjectSchema, type CreateProjectInput } from '@/validations/project.schema';
@@ -19,22 +21,22 @@ export type ActionResponse<T = any> = {
 export async function createProjectAction(payload: CreateProjectInput): Promise<ActionResponse> {
   try {
     const validatedFields = createProjectSchema.safeParse(payload);
-    
+
     if (!validatedFields.success) {
-      return { 
-        success: false, 
-        error: validatedFields.error.errors[0]?.message || 'Validation failed.' 
+      return {
+        success: false,
+        error: validatedFields.error.errors[0]?.message || 'Validation failed.'
       };
     }
 
     const { name, client_name, target_completion_date, phone, email } = validatedFields.data;
-    
-    const contactInfo = validatedFields.data.client_contact || 
+
+    const contactInfo = validatedFields.data.client_contact ||
       `Phone: ${phone}${email ? `, Email: ${email}` : ''}`;
 
     const profile: any = await getUserProfileAction();
     if (!profile) {
-        return { success: false, error: 'Unauthorized. Please log in.' };
+      return { success: false, error: 'Unauthorized. Please log in.' };
     }
 
     if (profile.role !== 'admin' && profile.role !== 'sales') {
@@ -42,7 +44,7 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
     }
 
     const supabase: any = await createClient();
-    
+
     const date = new Date();
     const yy = date.getFullYear().toString().slice(-2);
     const mm = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -113,17 +115,22 @@ export async function updateProjectAction(
   try {
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
+    
+    if (!checkActionRateLimit(profile.id, 'createProjectAction', 15, 60 * 1000)) {
+      return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
+    }
+
 
     const role = profile.role as Role;
 
     if (role !== 'admin' && role !== 'sales' && role !== 'engineer' && role !== 'accountant') {
-       return { success: false, error: 'Access denied.' };
+      return { success: false, error: 'Access denied.' };
     }
 
     const requireAssignment = role === 'engineer';
     const accessCheck = await verifyProjectAccess(projectId, profile.id, role, requireAssignment);
     if (!accessCheck.isAllowed) {
-        return { success: false, error: accessCheck.error || "Access denied." };
+      return { success: false, error: accessCheck.error || "Access denied." };
     }
 
     const supabase: any = await createClient();
@@ -153,7 +160,7 @@ export async function deleteProjectAction(projectId: string): Promise<ActionResp
     if (!profile) return { success: false, error: 'Unauthorized' };
 
     if (profile.role !== 'admin') {
-       return { success: false, error: 'Only administrators can delete projects.' };
+      return { success: false, error: 'Only administrators can delete projects.' };
     }
 
     const supabase: any = await createClient();
@@ -183,23 +190,23 @@ export async function getSalesPipelineAction(): Promise<ActionResponse> {
     if (!profile || (profile.role !== 'admin' && profile.role !== 'sales')) {
       return { success: false, error: 'Unauthorized access to Sales Pipeline.' };
     }
-    
+
     const supabase: any = await createClient();
-    
+
     const { data: projects, error: pError } = await supabase
       .from('projects')
       .select('*')
       .in('status', ['lead_created', 'requirement_gathering', 'quotation_requested', 'quotation_sent', 'payment_pending'])
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
-      
+
     if (pError) throw pError;
 
     const { data: tasks, error: tError } = await supabase
       .from('tasks')
       .select('*')
       .eq('status', 'pending');
-      
+
     const followUpTasks = (tasks || []).filter((t: any) => t.title?.startsWith('Follow-up'));
 
     const pipeline = (projects || []).map((p: any) => {
@@ -223,7 +230,7 @@ export async function getPaymentProjectsAction(): Promise<ActionResponse> {
     if (!profile || (profile.role !== 'admin' && profile.role !== 'accountant' && profile.role !== 'sales')) {
       return { success: false, error: 'Unauthorized access to Payment center.' };
     }
-    
+
     const supabase: any = await createClient();
     const { data: paymentProjects, error } = await supabase
       .from('projects')
@@ -329,7 +336,7 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
     if (!profile) return { success: false, error: 'Unauthorized' };
 
     const role = profile.role as Role;
-    const isGlobalRole = ['admin', 'sales', 'accountant'].includes(role);
+    const isGlobalRole = ['admin', 'sales', 'accountant', 'hr'].includes(role);
 
     const supabase: any = await createClient();
 
@@ -340,7 +347,7 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
         .neq('status', 'archived')
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
-        
+
       if (error) throw error;
       return { success: true, data: activeProjects };
     } else {
@@ -348,9 +355,9 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
         .from('project_assignments')
         .select('project_id')
         .eq('user_id', profile.id);
-        
+
       if (aError) throw aError;
-      
+
       const userProjectIds = (assignments || []).map((a: any) => a.project_id);
 
       if (userProjectIds.length === 0) {
