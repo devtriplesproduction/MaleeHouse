@@ -194,7 +194,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
     switch (status) {
       case "active":
         return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
-      case "onboarding":
+      case "onboarding_pending":
         return "bg-amber-500/10 text-amber-500 border border-amber-500/20";
       case "invited":
         return "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20";
@@ -659,7 +659,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="invited">Invited</SelectItem>
-                  <SelectItem value="onboarding">Onboarding</SelectItem>
+                  <SelectItem value="onboarding_pending">Onboarding Pending</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
                 </Select>

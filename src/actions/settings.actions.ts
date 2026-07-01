@@ -150,8 +150,11 @@ export async function getCompanySettingsAction(): Promise<CompanySettings> {
       return data[0] as CompanySettings;
     }
     
-    // Create it with default if it doesn't exist
-    await supabase.from('company_settings').insert([DEFAULT_COMPANY_SETTINGS]);
+    // Create it with default if it doesn't exist (Only if Admin or Accountant)
+    const profile: any = await getUserProfileAction();
+    if (profile && (profile.role === "admin" || profile.role === "accountant")) {
+      await supabase.from('company_settings').insert([DEFAULT_COMPANY_SETTINGS]);
+    }
     return DEFAULT_COMPANY_SETTINGS;
   } catch (err) {
     console.error("Error reading company settings:", err);

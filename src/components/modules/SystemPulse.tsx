@@ -39,8 +39,8 @@ export function SystemPulse() {
       <div className={cn(
         "flex items-center gap-3 px-5 py-2.5 rounded-2xl border transition-all duration-500",
         isDegraded 
-          ? "bg-rose-500/10 border-rose-500/20 text-rose-500 shadow-lg shadow-rose-500/10" 
-          : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-lg shadow-emerald-500/10"
+          ? "bg-rose-500/10 border-rose-500/20 text-rose-500 shadow-lg shadow-indigo-500/10" 
+          : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-lg shadow-indigo-500/10"
       )}>
         <div className="relative">
           <Activity className={cn("w-4 h-4", !isDegraded && "animate-pulse")} />

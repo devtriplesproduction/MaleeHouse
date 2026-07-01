@@ -111,7 +111,7 @@ export async function onboardEmployeeAction(
   documents: any[] = []
 ) {
   const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') {
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') {
     return { success: false, error: 'Unauthorized. Elevated privileges required.' }
   }
 
@@ -261,9 +261,10 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
       .update({ ...updates, is_active: statusActive, updated_at: new Date().toISOString() } as any)
       .eq('id', userId)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) return { success: false, error: error.message }
+    if (!data) return { success: false, error: "Profile not found or could not be updated." }
 
     await logAdminAuditAction({
       action: 'EMPLOYEE_PROFILE_UPDATED',
@@ -292,7 +293,7 @@ export async function toggleUserActiveAction(userId: string, isActive: boolean) 
 
   try {
     const supabaseAdmin: any = createAdminClient()
-    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).single()
+    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
 
     await supabaseAdmin
       .from('profiles')
@@ -347,7 +348,7 @@ export async function resetUserPasswordAction(userId: string) {
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: tempPassword })
     if (authError) return { success: false, error: authError.message }
 
-    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).single()
+    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
     await supabaseAdmin
       .from('profiles')
       .update({ temp_password_expires_at: tempPasswordExpiresAt, force_password_reset: true, updated_at: new Date().toISOString() } as any)
@@ -380,7 +381,7 @@ export async function updateUserRoleAction(userId: string, role: string) {
 
   try {
     const supabaseAdmin: any = createAdminClient()
-    const { data: existing } = await (supabaseAdmin as any).from('profiles').select('role, email').eq('id', userId).single()
+    const { data: existing } = await (supabaseAdmin as any).from('profiles').select('role, email').eq('id', userId).maybeSingle()
 
     await (supabaseAdmin as any).from('profiles').update({ role, updated_at: new Date().toISOString() } as any).eq('id', userId)
 
@@ -472,9 +473,17 @@ export async function overrideUserCredentialsAction(userId: string, newPassword:
   try {
     const supabaseAdmin: any = createAdminClient()
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: newPassword.trim() })
-    if (authError) return { success: false, error: authError.message }
+    if (authError) {
+      if (authError.message.includes('User not found')) {
+        return { 
+          success: false, 
+          error: 'User account is missing from the authentication system (sync error). Please delete and re-invite the user.' 
+        }
+      }
+      return { success: false, error: authError.message }
+    }
 
-    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).single()
+    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
     await supabaseAdmin
       .from('profiles')
       .update({ force_password_reset: false, temp_password_expires_at: null, updated_at: new Date().toISOString() } as any)
@@ -507,7 +516,7 @@ export async function offboardEmployeeAction(userId: string) {
 
   try {
     const supabaseAdmin: any = createAdminClient()
-    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).single()
+    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
 
     await supabaseAdmin
       .from('profiles')
@@ -536,9 +545,15 @@ export async function deleteEmployeeAction(userId: string) {
 
   try {
     const supabaseAdmin: any = createAdminClient()
-    const { data: deletedUser } = await (supabaseAdmin as any).from('profiles').select('email, first_name, last_name').eq('id', userId).single()
+    const { data: deletedUser } = await (supabaseAdmin as any).from('profiles').select('email, first_name, last_name').eq('id', userId).maybeSingle()
 
-    await supabaseAdmin.auth.admin.deleteUser(userId)
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+    if (authError && !authError.message.includes('User not found')) {
+      return { success: false, error: authError.message }
+    }
+
+    // Now delete from profiles explicitly since cascade might not trigger if auth user was missing
+    await (supabaseAdmin as any).from('profiles').delete().eq('id', userId)
 
     await logAdminAuditAction({
       action: 'USER_DELETED_PERMANENTLY',

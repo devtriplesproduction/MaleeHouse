@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getUserProfileAction } from './auth.actions';
 import { revalidatePath } from 'next/cache';
 import { ActionResponse } from './project.actions';
+import { notifyNewHolidayAction } from './notification.actions';
 
 export async function getHolidaysAction(): Promise<ActionResponse> {
   try {
@@ -43,6 +44,8 @@ export async function createHolidayAction(payload: {
       .single();
 
     if (error) throw error;
+    
+    await notifyNewHolidayAction(payload.name, payload.date, payload.is_optional);
     
     revalidatePath('/hr/holidays');
     return { success: true, data };

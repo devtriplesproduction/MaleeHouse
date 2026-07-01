@@ -82,7 +82,7 @@ export function WorkflowStepper({ projectId, currentStatus, userRole }: Workflow
             <div key={stage.id} className="relative z-10 flex flex-col items-center gap-3">
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 border-2",
-                isCompleted && "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20",
+                isCompleted && "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-indigo-500/20",
                 isCurrent && "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-4 ring-indigo-500/20",
                 isFuture && "bg-white dark:bg-slate-900 border-gray-200 dark:border-white/10 text-gray-400"
               )}>

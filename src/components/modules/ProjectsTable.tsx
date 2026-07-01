@@ -95,20 +95,43 @@ export function ProjectsTable({ initialProjects, userRole = 'admin' }: ProjectsT
     });
   }, [initialProjects, searchTerm, statusFilter, clientFilter]);
 
-  const exportToCSV = () => {
-    const headers = ['ID', 'Name', 'Client', 'Status', 'Target Completion', 'Created At'];
-    const rows = filteredProjects.map((p: any) => [
-      p.id, p.name, p.client_name, p.status,
-      p.target_completion_date || '', p.created_at,
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' +
-      [headers, ...rows].map((e: any) => e.join(',')).join('\n');
-    const link = document.createElement('a');
-    link.setAttribute('href', encodeURI(csvContent));
-    link.setAttribute('download', `projects_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const exportToExcel = async () => {
+    try {
+      const exportData = filteredProjects.map((p: any) => ({
+        'Project ID': p.id,
+        'Project Name': p.name,
+        'Client Name': p.client_name,
+        'Client Contact': p.client_contact || '',
+        'Client Address': p.client_address || '',
+        'Status': p.status,
+        'Priority': p.priority || '',
+        'Target Completion': p.target_completion_date ? new Date(p.target_completion_date).toLocaleString() : '',
+        'Site Type': p.site_type || '',
+        'Site Coordinates': p.site_coordinates || '',
+        'Services': Array.isArray(p.services) ? p.services.join(', ') : p.services || '',
+        'Survey Requirements': p.survey_requirements || '',
+        'Description': p.description || '',
+        'Is Frozen': p.is_frozen ? 'Yes' : 'No',
+        'Freeze Reason': p.freeze_reason || '',
+        'Created By': p.created_by || '',
+        'Created At': p.created_at ? new Date(p.created_at).toLocaleString() : '',
+        'Updated At': p.updated_at ? new Date(p.updated_at).toLocaleString() : '',
+        'Follow Up Date': p.follow_up_date ? new Date(p.follow_up_date).toLocaleString() : '',
+        'Satisfaction Score': p.satisfaction_score || '',
+        'Archival Note': p.archival_note || '',
+        'Requirement Checklist': p.requirement_checklist ? JSON.stringify(p.requirement_checklist) : '',
+        'Bypass Active': p.bypass_active ? 'Yes' : 'No'
+      }));
+
+      const XLSX = await import('xlsx');
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Projects");
+      XLSX.writeFile(workbook, `Projects_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Failed to export Excel file.");
+    }
   };
 
   const formatDate = (dateString: string | null | undefined) => {
@@ -183,11 +206,11 @@ export function ProjectsTable({ initialProjects, userRole = 'admin' }: ProjectsT
           </Select>
 
           <button
-            onClick={exportToCSV}
+            onClick={exportToExcel}
             className="flex items-center gap-2 px-3.5 py-2 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95"
           >
             <Download className="w-3.5 h-3.5" />
-            Export CSV
+            Export Excel
           </button>
         </div>
       </div>

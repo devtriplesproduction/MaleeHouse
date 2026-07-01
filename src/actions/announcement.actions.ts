@@ -16,7 +16,26 @@ export async function getAnnouncementsAction(): Promise<ActionResponse> {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return { success: true, data };
+
+    // Extract category from title
+    const mappedData = data.map((ann: any) => {
+      let category = 'ANNOUNCEMENT';
+      let title = ann.title;
+      
+      const match = title.match(/^\[(.*?)\]\s*(.*)$/);
+      if (match) {
+        category = match[1];
+        title = match[2];
+      }
+      
+      return {
+        ...ann,
+        title,
+        category
+      };
+    });
+
+    return { success: true, data: mappedData };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -26,6 +45,7 @@ export async function createAnnouncementAction(payload: {
   title: string;
   content: string;
   target_roles: string[];
+  category: string;
 }): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction();
@@ -37,7 +57,7 @@ export async function createAnnouncementAction(payload: {
     const { data, error } = await supabase
       .from('announcements')
       .insert({
-        title: payload.title,
+        title: payload.category && payload.category !== 'ANNOUNCEMENT' ? `[${payload.category}] ${payload.title}` : payload.title,
         content: payload.content,
         target_roles: payload.target_roles,
         posted_by: profile.id
@@ -80,6 +100,7 @@ export async function updateAnnouncementAction(id: string, payload: {
   title: string;
   content: string;
   target_roles: string[];
+  category: string;
 }): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction();
@@ -91,7 +112,7 @@ export async function updateAnnouncementAction(id: string, payload: {
     const { data, error } = await supabase
       .from('announcements')
       .update({
-        title: payload.title,
+        title: payload.category && payload.category !== 'ANNOUNCEMENT' ? `[${payload.category}] ${payload.title}` : payload.title,
         content: payload.content,
         target_roles: payload.target_roles
       })

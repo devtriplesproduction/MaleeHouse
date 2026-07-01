@@ -379,3 +379,30 @@ export async function notifySupplementalUploadAction(projectId: string) {
     return { success: false, error: err.message }
   }
 }
+
+export async function notifyNewHolidayAction(holidayName: string, date: string, isOptional: boolean) {
+  try {
+    const supabase: any = createAdminClient()
+    const { data: users } = await supabase.from('profiles').select('id').eq('is_active', true)
+    
+    if (!users || users.length === 0) return { success: true }
+    
+    const formattedDate = new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    const typeLabel = isOptional ? 'Optional Holiday' : 'Public Holiday'
+    
+    await Promise.all(
+      users.map((u: any) =>
+        insertNotification({
+          userId: u.id,
+          title: 'New Holiday Added',
+          message: `${holidayName} (${typeLabel}) is scheduled for ${formattedDate}.`,
+          type: 'system',
+        })
+      )
+    )
+    return { success: true }
+  } catch (error: any) {
+    console.error('[notification] notifyNewHoliday error:', error.message)
+    return { success: false, error: error.message }
+  }
+}

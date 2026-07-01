@@ -5,6 +5,7 @@ import { Download, FileText, Printer, Mail, Link2, CreditCard } from 'lucide-rea
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
+import { toast } from 'sonner';
 
 interface ClientInvoiceViewerProps {
   invoice: any;
@@ -18,29 +19,68 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
 
   const invoiceLink = typeof window !== 'undefined' ? window.location.href : '';
 
+  const verifiedPayments = (invoice.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid');
+  const amountPaid = verifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const totalAmount = Number(invoice.total_amount);
+  const remainingAmount = Math.max(0, totalAmount - amountPaid);
+
+  let projectBudget = Number(invoice.projects?.budget) || 0;
+  if (projectBudget === 0 && invoice.projects?.quotations && invoice.projects.quotations.length > 0) {
+    const approvedQuotation = invoice.projects.quotations.find((q: any) => q.status === 'approved');
+    if (approvedQuotation) {
+      projectBudget = Number(approvedQuotation.total_amount);
+    } else {
+      projectBudget = Math.max(...invoice.projects.quotations.map((q: any) => Number(q.total_amount)));
+    }
+  }
+  const projectPayments = invoice.projects?.payments || [];
+  const projectVerifiedPayments = projectPayments.filter((p: any) => p.status === 'verified' || p.status === 'paid');
+  const projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const projectAmountRemaining = Math.max(0, projectBudget - projectAmountPaid);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
       {/* ── Outer Container ── */}
       <div className="max-w-5xl mx-auto w-full space-y-8 animate-in fade-in duration-500">
         
-        {/* ── Top Header Brand ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">Malee House Surveying OS</span>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Invoice Portal</h1>
-          </div>
-          
+        {/* ── Top Control Bar (Dark Sticky Header) ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-4 sm:py-3 rounded-xl border border-white/10 shadow-xl text-white gap-4 sm:gap-0 sticky top-4 z-50">
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 font-semibold">Status:</span>
-            <span className={cn(
-              "px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border shadow-sm",
-              invoice.status === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-              invoice.status === 'overdue' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-              invoice.status === 'cancelled' ? 'bg-slate-100 text-slate-600 border-slate-300' :
-              'bg-blue-50 text-blue-700 border-blue-200'
-            )}>
-              {invoice.status}
-            </span>
+             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0">
+                <FileText className="w-4 h-4" />
+             </div>
+             <div>
+                <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                  Invoice Portal
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border shadow-sm ml-2",
+                    invoice.status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/20' :
+                    invoice.status === 'overdue' ? 'bg-rose-500/20 text-rose-300 border-rose-500/20' :
+                    invoice.status === 'cancelled' ? 'bg-white/10 text-slate-300 border-white/10' :
+                    'bg-blue-500/20 text-blue-300 border-blue-500/20'
+                  )}>
+                    {invoice.status}
+                  </span>
+                </h3>
+                <p className="text-[10px] text-slate-400 font-medium mt-0.5">Reviewing {invoice.invoice_number} • Malee House Surveying OS</p>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => window.print()}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-semibold transition-all"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              Print
+            </button>
+            <button 
+              onClick={handleDownload}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg text-xs font-semibold transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download PDF
+            </button>
           </div>
         </div>
 
@@ -51,7 +91,7 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
             
             {/* PAGE 1: Services Table and Totals */}
             <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative">
-               <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of 1</div>
+               <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of {projectBudget > 0 && invoice.milestone_id ? '2' : '1'}</div>
 
                <div className="space-y-6 flex-1 mt-4">
                   {/* Document Header with Full Malee House Details */}
@@ -159,9 +199,78 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                         <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>
                         <p className="text-xl font-bold text-slate-900 tracking-tight nums">INR {Number(invoice.total_amount).toLocaleString('en-IN')}</p>
                      </div>
+
+                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums pt-2 border-t border-slate-100">
+                        <span>Amount Paid</span>
+                        <span>INR {amountPaid.toLocaleString('en-IN')}</span>
+                     </div>
+
+                     <div className={`flex justify-between items-end p-2 rounded-lg ${remainingAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                        <p className="text-[11px] font-bold uppercase tracking-wider">Invoice Balance</p>
+                        <p className="text-lg font-bold tracking-tight nums">INR {remainingAmount.toLocaleString('en-IN')}</p>
+                     </div>
+
+                     {/* End of Totals */}
                   </div>
                </div>
             </div>
+
+            {/* PAGE 2: Project Financial Summary */}
+            {projectBudget > 0 && invoice.milestone_id && (
+               <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative mt-6 min-h-[500px]">
+                  <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 2 of 2</div>
+                  <div className="space-y-6 flex-1 mt-4">
+                     <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6">Project Financial Summary</h2>
+                     
+                     <div className="space-y-4">
+                        <table className="w-full border-collapse">
+                           <thead>
+                              <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                                 <th className="py-2.5 text-left w-12">#</th>
+                                 <th className="py-2.5 text-left">Description</th>
+                                 <th className="py-2.5 text-right w-36">Amount</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-slate-100 text-slate-700">
+                              <tr className="align-top">
+                                 <td className="py-4 text-xs font-semibold text-slate-400">1</td>
+                                 <td className="py-4">
+                                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">Total Cost of Project</p>
+                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">Total approved budget for this project.</p>
+                                 </td>
+                                 <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">INR {projectBudget.toLocaleString('en-IN')}</td>
+                              </tr>
+                              <tr className="align-top">
+                                 <td className="py-4 text-xs font-semibold text-slate-400">2</td>
+                                 <td className="py-4">
+                                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">Previously Paid</p>
+                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">Sum of all payments cleared before this invoice.</p>
+                                 </td>
+                                 <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">INR {Math.max(0, projectAmountPaid - amountPaid).toLocaleString('en-IN')}</td>
+                              </tr>
+                              <tr className="align-top bg-indigo-50/30">
+                                 <td className="py-4 text-xs font-semibold text-indigo-400 px-2 rounded-l-lg">3</td>
+                                 <td className="py-4">
+                                    <p className="text-xs font-bold text-indigo-700 uppercase tracking-tight">Current Invoice Due</p>
+                                    <p className="text-[11px] text-indigo-600/70 mt-1 leading-relaxed max-w-lg">Amount requested in this current milestone invoice.</p>
+                                 </td>
+                                 <td className="py-4 text-right text-xs font-bold text-indigo-700 nums px-2 rounded-r-lg">INR {totalAmount.toLocaleString('en-IN')}</td>
+                              </tr>
+                           </tbody>
+                        </table>
+                     </div>
+
+                     <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-end">
+                        <div className="w-full md:w-[350px] space-y-2.5">
+                           <div className="flex justify-between items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
+                              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Project Balance Remaining</p>
+                              <p className="text-xl font-bold text-slate-900 tracking-tight nums">INR {Math.max(0, projectBudget - (projectAmountPaid - amountPaid) - totalAmount).toLocaleString('en-IN')}</p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            )}
           </div>
 
           {/* ── Sticky Action Panel (Right Col) ── */}
@@ -185,6 +294,8 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                 </button>
               </div>
             </div>
+
+
 
             <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl shadow-sm">
               <div className="flex items-start gap-3 mb-3">

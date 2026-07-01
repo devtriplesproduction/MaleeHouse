@@ -10,9 +10,11 @@ export const metadata = {
 export default async function SettingsPage() {
   const profile = await getUserProfileAction();
   
-  if (!profile || (profile.role !== "admin" && profile.role !== "accountant")) {
-    redirect("/unauthorized");
+  if (!profile) {
+    redirect("/login");
   }
+
+  const canEdit = profile.role === "admin" || profile.role === "accountant";
 
   const initialSettings = await getCompanySettingsAction();
 
@@ -25,7 +27,7 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <CompanySettingsForm initialSettings={initialSettings} />
+      <CompanySettingsForm initialSettings={initialSettings} canEdit={canEdit} />
     </div>
   );
 }

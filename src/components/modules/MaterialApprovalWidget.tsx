@@ -60,22 +60,24 @@ export function MaterialApprovalWidget({ requests }: { requests: any[] }) {
                     <button
                       onClick={() => handleUpdate(mat.id, "approved")}
                       disabled={loadingId === mat.id}
-                      className="px-2 py-1 text-[10px] font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded  tracking-wider disabled:opacity-50 transition-colors"
+                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm disabled:opacity-50"
                     >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
                       Approve
                     </button>
                     <button
                       onClick={() => handleUpdate(mat.id, "rejected")}
                       disabled={loadingId === mat.id}
-                      className="px-2 py-1 text-[10px] font-bold bg-rose-500 hover:bg-rose-600 text-white rounded  tracking-wider disabled:opacity-50 transition-colors"
+                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm disabled:opacity-50"
                     >
+                      <XCircle className="w-3.5 h-3.5" />
                       Reject
                     </button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1">
                     {mat.status === 'approved' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                    {mat.status === 'rejected' && <XCircle className="w-4 h-4 text-rose-500" />}
+                    {mat.status === 'rejected' && <XCircle className="w-4 h-4 text-red-500" />}
                     {mat.status === 'delivered' && <Package className="w-4 h-4 text-indigo-500" />}
                     <span className="text-[10px] uppercase font-bold text-slate-400">{mat.status}</span>
                   </div>
@@ -84,8 +86,9 @@ export function MaterialApprovalWidget({ requests }: { requests: any[] }) {
                   <button
                     onClick={() => handleUpdate(mat.id, "delivered")}
                     disabled={loadingId === mat.id}
-                    className="mt-2 px-2 py-1 text-[10px] font-bold bg-indigo-500 hover:bg-indigo-600 text-white rounded uppercase tracking-wider disabled:opacity-50 transition-colors"
+                    className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-xl text-xs uppercase tracking-wide transition-colors shadow-sm disabled:opacity-50"
                   >
+                    <Package className="w-3.5 h-3.5" />
                     Mark Delivered
                   </button>
                 )}

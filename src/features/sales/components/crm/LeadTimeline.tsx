@@ -51,8 +51,8 @@ export function LeadTimeline({ events }: LeadTimelineProps) {
                 "relative z-10 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 border-2",
                 event.type === 'stage_update' && "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30",
                 event.type === 'comment' && "bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-500 group-hover:border-indigo-500/50",
-                event.type === 'file_upload' && "bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/30",
-                event.type === 'follow_up' && "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30"
+                event.type === 'file_upload' && "bg-amber-500 border-amber-500 text-white shadow-lg shadow-indigo-500/30",
+                event.type === 'follow_up' && "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-indigo-500/30"
               )}>
                 {event.type === 'stage_update' && <Activity className="w-5 h-5" />}
                 {event.type === 'comment' && <MessageSquare className="w-5 h-5" />}

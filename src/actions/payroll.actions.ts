@@ -111,7 +111,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       const totalEarnedDays = Math.min(workingDaysLimit, (days_present + days_field + days_paid_leave));
       const penaltyDays = days_unpaid_leave + days_absent;
       
-      const prorationFactor = workingDaysLimit > 0 ? (workingDaysLimit - penaltyDays) / workingDaysLimit : 1;
+      const prorationFactor = workingDaysLimit > 0 ? totalEarnedDays / workingDaysLimit : 1;
       const net_payable = Math.max(0, Math.round(base_salary * Math.max(0, prorationFactor)));
 
       return {

@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  X, User, Mail, ShieldCheck, Loader2, Lock, 
-  Phone, Contact, Building2, Briefcase, MapPin, 
-  CheckCircle2, Copy, Calendar, Upload, FileText, 
-  Trash2, Award, ShieldAlert, BadgeInfo, IndianRupee, 
+import {
+  X, User, Mail, ShieldCheck, Loader2, Lock,
+  Phone, Contact, Building2, Briefcase, MapPin,
+  CheckCircle2, Copy, Calendar, Upload, FileText,
+  Trash2, Award, ShieldAlert, BadgeInfo, IndianRupee,
   Clock, Check, UserCheck, Eye, EyeOff, Download, Shield, Edit2, Save, Camera
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  updateEmployeeProfileAction, 
+import {
+  updateEmployeeProfileAction,
   resetUserPasswordAction,
   offboardEmployeeAction,
   deleteEmployeeAction
@@ -40,18 +42,18 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetCreds, setResetCreds] = useState<string | null>(null);
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isOffboarding, setIsOffboarding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // Edited values state
   const [formData, setFormData] = useState<any>({});
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
   const [documentsList, setDocumentsList] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-  
+
   const { toast } = useToast();
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,7 +88,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         personal_email: employee.personal_email || "",
         address: employee.address || "",
         emergency_contact: employee.emergency_contact || "",
-        
+
         department: employee.department || "",
         designation: employee.designation || "",
         employment_type: employee.employment_type || "full-time",
@@ -101,7 +103,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         operational_zone: employee.operational_zone || "Central Business District",
         approval_authority: !!employee.approval_authority,
         escalation_chain: employee.escalation_chain || [],
-        
+
         email: employee.email || "",
         role: employee.role || "employee",
         status: employee.status || "active",
@@ -135,7 +137,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
     const designations = getDesignationsForDepartment(deptId);
     const defaultDesignation = designations.length > 0 ? designations[0].id : "";
     const defaultSystemRole = designations.length > 0 ? designations[0].systemRole : "employee";
-    
+
     setFormData((prev: any) => ({
       ...prev,
       department: deptId,
@@ -167,8 +169,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
     setIsSubmitting(true);
     try {
+      const { confirm_password, password, ...restFormData } = formData;
       const payload = {
-        ...formData,
+        ...restFormData,
         profile_photo: selectedAvatar,
         documents: documentsList
       };
@@ -321,7 +324,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
             description: `${file.name} successfully encrypted and staged in repository.`,
             variant: "success"
           });
-          
+
           // Auto save immediately when document is uploaded to avoid loss
           updateEmployeeProfileAction(employee.id, {
             documents: [...documentsList, newFileObj]
@@ -349,24 +352,24 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ 
-      title: "Credential Copied", 
+    toast({
+      title: "Credential Copied",
       description: "Copied credential to buffer successfully.",
-      variant: "success" 
+      variant: "success"
     });
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
-      
+
       <div className="relative w-full max-w-2xl bg-white dark:bg-[#080b14] rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8 flex flex-col h-[750px] max-h-[90vh]">
-        
+
         {/* Header Block */}
         <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-[#0a0d16] shrink-0">
           <div className="flex items-center gap-4">
             <div className="relative group">
-              <input 
+              <input
                 type="file"
                 id="profile-avatar-edit-uploader"
                 accept="image/*"
@@ -374,7 +377,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 disabled={!isEditing}
                 onChange={handlePhotoUpload}
               />
-              <div 
+              <div
                 onClick={() => {
                   if (isEditing) {
                     document.getElementById("profile-avatar-edit-uploader")?.click();
@@ -386,9 +389,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 )}
               >
                 {selectedAvatar ? (
-                  <img 
-                    src={selectedAvatar} 
-                    alt="Profile Avatar" 
+                  <img
+                    src={selectedAvatar}
+                    alt="Profile Avatar"
                     className="w-14 h-14 object-cover"
                   />
                 ) : (
@@ -397,7 +400,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     {formData.last_name ? formData.last_name[0] : ""}
                   </div>
                 )}
-                
+
                 {isEditing && (
                   <div className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[8px] font-black">
                     <Camera className="w-3.5 h-3.5 mb-0.5" />
@@ -406,7 +409,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 )}
               </div>
             </div>
-            
+
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
@@ -415,10 +418,10 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 <span className={cn(
                   "px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider",
                   formData.status === "active" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" :
-                  formData.status === "probation" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
-                  formData.status === "invited" ? "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20" :
-                  formData.status === "suspended" ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" :
-                  "bg-slate-500/10 text-slate-500 border border-slate-500/20"
+                    formData.status === "probation" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
+                      formData.status === "invited" ? "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20" :
+                        formData.status === "suspended" ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" :
+                          "bg-slate-500/10 text-slate-500 border border-slate-500/20"
                 )}>
                   {formData.status?.replace("_", " ")}
                 </span>
@@ -433,15 +436,15 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
           <div className="flex items-center gap-2">
             {!isEditing ? (
-              <button 
-                onClick={() => setIsEditing(true)} 
+              <button
+                onClick={() => setIsEditing(true)}
                 className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
               >
                 <Edit2 className="w-3.5 h-3.5" /> Edit Profile
               </button>
             ) : (
-              <button 
-                onClick={handleSave} 
+              <button
+                onClick={handleSave}
                 disabled={isSubmitting}
                 className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
               >
@@ -449,9 +452,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 Save Changes
               </button>
             )}
-            <button 
-              type="button" 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
               className="p-2.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl transition-colors"
             >
               <X className="w-5 h-5" />
@@ -472,8 +475,8 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
                 "py-3 border-b-2 text-xs font-black uppercase tracking-wider outline-none transition-all",
-                activeTab === tab.id 
-                  ? "border-indigo-500 text-indigo-500" 
+                activeTab === tab.id
+                  ? "border-indigo-500 text-indigo-500"
                   : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400"
               )}
             >
@@ -484,7 +487,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
         {/* Tab Content Box */}
         <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-          
+
           {/* TAB 1: PERSONAL DETAILS */}
           {activeTab === "personal" && (
             <div className="space-y-6 animate-in fade-in duration-300">
@@ -496,22 +499,22 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               {isEditing && (
                 <div className="space-y-2 bg-slate-50 dark:bg-white/2 p-4 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col items-center">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Upload Profile Photo</label>
-                  <input 
+                  <input
                     type="file"
                     id="profile-photo-edit-upload"
                     accept="image/*"
                     className="hidden"
                     onChange={handlePhotoUpload}
                   />
-                  <div 
+                  <div
                     onClick={() => document.getElementById("profile-photo-edit-upload")?.click()}
                     className="relative w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 dark:border-white/15 flex flex-col items-center justify-center bg-slate-500/[0.03] dark:bg-white/[0.01] hover:border-indigo-600 dark:hover:border-[#a78bfa] transition-all group overflow-hidden cursor-pointer shadow-sm"
                   >
                     {selectedAvatar ? (
-                      <img 
-                        src={selectedAvatar} 
-                        alt="Avatar Preview" 
-                        className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform" 
+                      <img
+                        src={selectedAvatar}
+                        alt="Avatar Preview"
+                        className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform"
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-[#a78bfa] transition-colors p-2 text-center">
@@ -530,20 +533,20 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">First Name</label>
-                  <input 
+                  <input
                     value={formData.first_name}
-                    onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Last Name</label>
-                  <input 
+                  <input
                     value={formData.last_name}
-                    onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
               </div>
@@ -551,19 +554,18 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Date of Birth</label>
-                  <input 
-                    type="date"
+                  <DatePicker
                     value={formData.dob}
-                    onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                    onChange={(e: any) => setFormData({ ...formData, dob: e.target.value })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Gender</label>
-                  <select 
+                  <select
                     value={formData.gender}
-                    onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
                   >
@@ -577,43 +579,43 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Phone Number</label>
-                  <input 
+                  <input
                     value={formData.phone_number}
-                    onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Personal Email</label>
-                  <input 
+                  <input
                     type="email"
                     value={formData.personal_email}
-                    onChange={(e) => setFormData({...formData, personal_email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, personal_email: e.target.value })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">residential Address</label>
-                <textarea 
+                <textarea
                   value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   disabled={!isEditing}
                   rows={2}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white resize-none" 
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white resize-none"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Emergency Contact Details</label>
-                <input 
+                <input
                   value={formData.emergency_contact}
-                  onChange={(e) => setFormData({...formData, emergency_contact: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
                   disabled={!isEditing}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                 />
               </div>
             </div>
@@ -630,7 +632,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Department</label>
-                  <select 
+                  <select
                     value={formData.department}
                     onChange={(e) => handleDepartmentChange(e.target.value)}
                     disabled={!isEditing}
@@ -643,7 +645,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Designation / Role</label>
-                  <select 
+                  <select
                     value={formData.designation}
                     onChange={(e) => handleDesignationChange(e.target.value)}
                     disabled={!isEditing || !formData.department}
@@ -659,9 +661,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Employment Type</label>
-                  <select 
+                  <select
                     value={formData.employment_type}
-                    onChange={(e) => setFormData({...formData, employment_type: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
                   >
@@ -675,12 +677,12 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Base Monthly Salary (INR)</label>
                   <div className="relative">
                     <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
+                    <input
                       type="number"
                       value={formData.salary}
-                      onChange={(e) => setFormData({...formData, salary: parseFloat(e.target.value) || 0})}
+                      onChange={(e) => setFormData({ ...formData, salary: parseFloat(e.target.value) || 0 })}
                       disabled={!isEditing}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                      className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                     />
                   </div>
                 </div>
@@ -689,22 +691,22 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Total Experience (Years)</label>
-                  <input 
+                  <input
                     type="number"
                     value={formData.experience}
-                    onChange={(e) => setFormData({...formData, experience: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setFormData({ ...formData, experience: parseFloat(e.target.value) || 0 })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Joining Date</label>
-                  <input 
+                  <input
                     type="date"
                     value={formData.joining_date}
-                    onChange={(e) => setFormData({...formData, joining_date: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
               </div>
@@ -712,9 +714,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Work Location Mode</label>
-                  <select 
+                  <select
                     value={formData.location}
-                    onChange={(e) => setFormData({...formData, location: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
                   >
@@ -725,9 +727,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Reporting Manager</label>
-                  <select 
+                  <select
                     value={formData.reporting_manager_id || ""}
-                    onChange={(e) => setFormData({...formData, reporting_manager_id: e.target.value || null})}
+                    onChange={(e) => setFormData({ ...formData, reporting_manager_id: e.target.value || null })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none capitalize"
                   >
@@ -743,9 +745,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-100 dark:border-white/5 pt-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Branch Office</label>
-                  <select 
+                  <select
                     value={formData.branch || "Malee House HQ"}
-                    onChange={(e) => setFormData({...formData, branch: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
                   >
@@ -757,9 +759,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Office Location</label>
-                  <select 
+                  <select
                     value={formData.office_location || "Singapore"}
-                    onChange={(e) => setFormData({...formData, office_location: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, office_location: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
                   >
@@ -771,9 +773,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Operational Zone</label>
-                  <select 
+                  <select
                     value={formData.operational_zone || "Central Business District"}
-                    onChange={(e) => setFormData({...formData, operational_zone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, operational_zone: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
                   >
@@ -790,11 +792,11 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                   <p className="text-xs text-slate-500">Enable this if employee is leading this department.</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={!!formData.department_head_id}
                     onChange={(e) => setFormData({
-                      ...formData, 
+                      ...formData,
                       department_head_id: e.target.checked ? formData.reporting_manager_id || employee.id : null
                     })}
                     disabled={!isEditing}
@@ -821,7 +823,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 >
                   <Upload className="w-3.5 h-3.5" /> Stage Document
                 </button>
-                <input 
+                <input
                   id="profile-file-input"
                   type="file"
                   multiple
@@ -833,7 +835,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               {documentsList.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
                   {documentsList.map((doc) => (
-                    <div 
+                    <div
                       key={doc.id}
                       className="p-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl flex items-center justify-between gap-4 shadow-sm"
                     >
@@ -879,7 +881,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                         >
                           <Download className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                         </button>
-                        
+
                         <button
                           onClick={() => removeFile(doc.id)}
                           className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl transition-all"
@@ -942,17 +944,17 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Work Email (System Access)</label>
-                  <input 
+                  <input
                     value={formData.email}
                     disabled
-                    className="w-full px-4 py-3 bg-slate-100/50 dark:bg-white/2 text-slate-400 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                    className="w-full px-4 py-3 bg-slate-100/50 dark:bg-white/2 text-slate-400 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">ERP Access Level</label>
-                  <select 
+                  <select
                     value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   >
@@ -970,14 +972,14 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
               <div className="space-y-1.5">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Account Status Override</label>
-                <select 
+                <select
                   value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   disabled={!isEditing}
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                 >
-                  <option value="invited">Invited (Onboarding Pending)</option>
-                  <option value="onboarding">Onboarding</option>
+                  <option value="invited">Invited</option>
+                  <option value="onboarding_pending">Onboarding Pending</option>
                   <option value="active">Active (Full ERP System Access)</option>
                   <option value="probation">Probationary Period</option>
                   <option value="suspended">Suspended (Access Temporarily Revoked)</option>
@@ -993,12 +995,12 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Password</label>
                   <div className="relative">
-                    <input 
+                    <input
                       type={showPassword ? "text" : "password"}
                       value={formData.password || ""}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       disabled={!isEditing}
-                      className="w-full pl-4 pr-11 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                      className="w-full pl-4 pr-11 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                     />
                     <button
                       type="button"
@@ -1014,11 +1016,11 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                   <div className="space-y-1">
                     <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Confirm Password</label>
                     <div className="relative">
-                      <input 
+                      <input
                         type={showConfirmPassword ? "text" : "password"}
                         value={formData.confirm_password || ""}
-                        onChange={(e) => setFormData({...formData, confirm_password: e.target.value})}
-                        className="w-full pl-4 pr-11 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white" 
+                        onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
+                        className="w-full pl-4 pr-11 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                       />
                       <button
                         type="button"
@@ -1040,10 +1042,10 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     </h5>
                     <p className="text-xs text-slate-500">Generates a fresh temporary password for the employee.</p>
                   </div>
-                  
+
                   <button
                     onClick={handleResetPassword}
-                    className="px-4 py-2.5 bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5"
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-black tracking-wider transition-all flex items-center gap-1.5"
                   >
                     Reset Password
                   </button>
@@ -1057,29 +1059,29 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         <div className="px-8 py-5 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-[#0a0d16] flex items-center justify-between shrink-0 flex-wrap gap-3">
           <div className="flex items-center gap-3">
             {formData.status !== "resigned" && formData.status !== "terminated" && (
-              <button 
+              <button
                 onClick={handleOffboard}
                 disabled={isOffboarding}
-                className="px-5 py-3.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2"
+                className="px-5 py-3.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-00 dark:text-amber-400 rounded-2xl font-black text-xs tracking-widest transition-all flex items-center gap-2"
               >
                 {isOffboarding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
                 Offboard Employee
               </button>
             )}
 
-            <button 
+            <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="px-5 py-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2"
+              className="px-5 py-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl font-black text-xs tracking-widest transition-all flex items-center gap-2"
             >
               {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
               Delete Account
             </button>
           </div>
 
-          <button 
-            onClick={onClose} 
-            className="px-6 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:opacity-95 transition-all shadow-md"
+          <button
+            onClick={onClose}
+            className="px-6 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs tracking-widest hover:opacity-95 transition-all shadow-md"
           >
             Close Details
           </button>

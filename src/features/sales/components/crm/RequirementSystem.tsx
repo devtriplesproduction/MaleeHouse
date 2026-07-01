@@ -117,7 +117,7 @@ export function RequirementSystem({ projectId, projectStatus }: RequirementSyste
         <div className="glass-card p-8 border-indigo-500/10 bg-indigo-500/5 flex flex-col items-center text-center space-y-6">
           <div className={cn(
             "w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all duration-700",
-            isAllChecked ? "bg-emerald-500 text-white shadow-2xl shadow-emerald-500/30 scale-110" : "bg-white/50 dark:bg-black/20 text-slate-300 border-2 border-dashed border-slate-200 dark:border-white/10"
+            isAllChecked ? "bg-emerald-500 text-white shadow-2xl shadow-indigo-500/30 scale-110" : "bg-white/50 dark:bg-black/20 text-slate-300 border-2 border-dashed border-slate-200 dark:border-white/10"
           )}>
             <ShieldCheck className={cn("w-10 h-10", isAllChecked && "animate-pulse")} />
           </div>

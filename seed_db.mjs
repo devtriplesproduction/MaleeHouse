@@ -23,7 +23,8 @@ const users = [
   { email: 'engineer@maleehouse.com', password: 'password123', role: 'engineer', first: 'Lead Field', last: 'Engineer' },
   { email: 'accounts@maleehouse.com', password: 'password123', role: 'accountant', first: 'Head of', last: 'Accounts' },
   { email: 'qc@maleehouse.com', password: 'password123', role: 'qc', first: 'Quality Control', last: 'Lead' },
-  { email: 'hr@maleehouse.com', password: 'password123', role: 'hr', first: 'Human', last: 'Resources' }
+  { email: 'hr@maleehouse.com', password: 'password123', role: 'hr', first: 'Human', last: 'Resources' },
+  { email: 'yash.nikam@maleehouse.com', password: 'password123', role: 'sales', first: 'Yash', last: 'Nikam' }
 ];
 
 async function seed() {

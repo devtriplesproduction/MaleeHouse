@@ -334,7 +334,7 @@ export function SalesActionsPanel({ projectId, currentStatus, project, files = [
           <button 
             disabled={isPending}
             onClick={() => handleAdvance('payment_pending', 'Payment Pending')}
-            className="w-full flex items-center justify-center gap-3 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all"
+            className="w-full flex items-center justify-center gap-3 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all"
           >
              {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>

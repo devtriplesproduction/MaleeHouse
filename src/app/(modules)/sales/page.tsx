@@ -48,21 +48,21 @@ export default async function SalesDashboardPage() {
               <TabsList className="bg-transparent border-none p-0 flex h-auto gap-1">
                 <TabsTrigger 
                   value="pipeline" 
-                  className="px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 data-[state=active]:!bg-blue-600 data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 data-[state=active]:!bg-indigo-600 data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 flex items-center gap-2"
                 >
                   <LayoutGrid className="w-4 h-4" strokeWidth={2} />
                   Active Pipeline
                 </TabsTrigger>
                 <TabsTrigger 
                   value="followups" 
-                  className="px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 data-[state=active]:!bg-blue-600 data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 data-[state=active]:!bg-indigo-600 data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 flex items-center gap-2"
                 >
                   <Calendar className="w-4 h-4" strokeWidth={2} />
                   Follow Ups
                 </TabsTrigger>
                 <TabsTrigger 
                   value="alerts" 
-                  className="px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 data-[state=active]:!bg-blue-600 data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-2xl text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 data-[state=active]:!bg-indigo-600 data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-600/20 flex items-center gap-2"
                 >
                   <Bell className="w-4 h-4" strokeWidth={2} />
                   Alert Center

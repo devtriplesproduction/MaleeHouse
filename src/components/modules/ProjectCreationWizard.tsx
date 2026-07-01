@@ -228,7 +228,7 @@ export function ProjectCreationWizard() {
                       <div className={cn(
                         "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300 border shrink-0",
                         isActive ? c.stepActive :
-                        isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20" : 
+                        isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-indigo-500/20" : 
                         "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500"
                       )}>
                         {isCompleted ? <CheckCircle2 className="w-5 h-5 text-white" /> : <span>0{s.id}</span>}

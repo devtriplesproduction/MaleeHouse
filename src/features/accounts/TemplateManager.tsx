@@ -457,7 +457,7 @@ export function TemplateManager() {
                   </button>
                   <button 
                     onClick={handleSave}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
                   >
                     <Save className="w-3.5 h-3.5" /> Save Template
                   </button>

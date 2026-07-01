@@ -105,7 +105,7 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
           <button onClick={() => setAction('send')}
             className={cn('inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all border',
               action === 'send'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
+                ? 'bg-indigo-600 text-white border-blue-600 shadow-md shadow-indigo-500/20'
                 : 'bg-white dark:bg-white/5 text-blue-600 border-blue-400/30 hover:bg-blue-50 dark:hover:bg-blue-500/10')}>
             <Send className="w-3.5 h-3.5" /> Send to Client
           </button>
@@ -116,7 +116,7 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
           <button onClick={() => setAction('approve_on_behalf')}
             className={cn('inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all border',
               action === 'approve_on_behalf'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20'
+                ? 'bg-indigo-600 text-white border-emerald-600 shadow-md shadow-indigo-500/20'
                 : 'bg-white dark:bg-white/5 text-emerald-600 border-emerald-400/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/10')}>
             <UserCheck className="w-3.5 h-3.5" /> Approved by Client
           </button>
@@ -127,7 +127,7 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
           <button onClick={() => setAction('revision')}
             className={cn('inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all border',
               action === 'revision'
-                ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20'
+                ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-indigo-500/20'
                 : 'bg-white dark:bg-white/5 text-amber-600 border-amber-400/30 hover:bg-amber-50 dark:hover:bg-amber-500/10')}>
             <MessageSquare className="w-3.5 h-3.5" /> Request Revision
           </button>
@@ -138,7 +138,7 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
           <button onClick={() => setAction('reject')}
             className={cn('inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all border',
               action === 'reject'
-                ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-500/20'
+                ? 'bg-indigo-600 text-white border-rose-600 shadow-md shadow-indigo-500/20'
                 : 'bg-white dark:bg-white/5 text-rose-600 border-rose-400/30 hover:bg-rose-50 dark:hover:bg-rose-500/10')}>
             <XCircle className="w-3.5 h-3.5" /> Reject
           </button>
@@ -200,10 +200,10 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
             </button>
             <button onClick={handleSubmit} disabled={loading}
               className={cn('flex-1 py-2.5 rounded-xl text-xs font-semibold text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-50',
-                action === 'approve_on_behalf' ? 'bg-emerald-600 hover:bg-emerald-700' :
-                  action === 'reject' ? 'bg-rose-600 hover:bg-rose-700' :
-                    action === 'revision' ? 'bg-amber-500 hover:bg-amber-600' :
-                      'bg-blue-600 hover:bg-blue-700')}>
+                action === 'approve_on_behalf' ? 'bg-indigo-600 hover:bg-indigo-700' :
+                  action === 'reject' ? 'bg-indigo-600 hover:bg-indigo-700' :
+                    action === 'revision' ? 'bg-amber-500 hover:bg-indigo-600' :
+                      'bg-indigo-600 hover:bg-indigo-700')}>
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
               Confirm
             </button>

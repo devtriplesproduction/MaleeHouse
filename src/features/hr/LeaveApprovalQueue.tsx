@@ -67,7 +67,7 @@ export function LeaveApprovalQueue({ leaves }: { leaves: any[] }) {
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      className="h-8 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-500/10 dark:hover:border-emerald-500/30"
+                      className="h-8 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-emerald-50 hover:border-emerald-200 dark:hover:bg-emerald-500/10 dark:hover:border-emerald-500/30"
                       disabled={isUpdating === leave.id}
                       onClick={() => handleUpdate(leave.id, "approved")}
                     >
@@ -76,7 +76,7 @@ export function LeaveApprovalQueue({ leaves }: { leaves: any[] }) {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      className="h-8 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 hover:border-rose-200 dark:hover:bg-rose-500/10 dark:hover:border-rose-500/30"
+                      className="h-8 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-rose-50 hover:border-rose-200 dark:hover:bg-rose-500/10 dark:hover:border-rose-500/30"
                       disabled={isUpdating === leave.id}
                       onClick={() => handleUpdate(leave.id, "rejected")}
                     >

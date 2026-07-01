@@ -1,27 +1,31 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getInvoicesAction, getAllMilestonesAction } from "@/actions/finance.actions";
+import { getInvoicesAction, getAllMilestonesAction, getProjectBillingSummaryAction } from "@/actions/finance.actions";
 import { InvoiceTable } from "@/features/accounts/InvoiceTable";
 import { MilestonePaymentsTable } from "@/features/accounts/MilestonePaymentsTable";
 import { PaymentReceiptsTable } from "@/features/accounts/PaymentReceiptsTable";
-import { AlertCircle, Target, FileText, Wallet, RefreshCw, Search, Receipt } from "lucide-react";
+import { ProjectBillingTable, ProjectBillingSummary } from "@/features/accounts/ProjectBillingTable";
+import { ExpenseEntryTrigger } from "@/features/accounts/ExpenseEntryTrigger";
+import { AlertCircle, Target, FileText, Wallet, RefreshCw, Search, Receipt, Briefcase } from "lucide-react";
 import DashboardLoading from "@/app/(modules)/loading";
 import { cn } from "@/lib/utils";
 
 export default function BillingPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [milestones, setMilestones] = useState<any[]>([]);
+  const [projectsData, setProjectsData] = useState<ProjectBillingSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"milestones" | "invoices" | "receipts">("milestones");
+  const [activeTab, setActiveTab] = useState<"projects" | "milestones" | "invoices" | "receipts">("projects");
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [invoiceRes, milestoneRes] = await Promise.all([
+      const [invoiceRes, milestoneRes, projectRes] = await Promise.all([
         getInvoicesAction(),
-        getAllMilestonesAction()
+        getAllMilestonesAction(),
+        getProjectBillingSummaryAction()
       ]);
       
       if (invoiceRes?.success && invoiceRes.data) {
@@ -29,6 +33,9 @@ export default function BillingPage() {
       }
       if (milestoneRes?.success && milestoneRes.data) {
         setMilestones(milestoneRes.data);
+      }
+      if (projectRes?.success && projectRes.data) {
+        setProjectsData(projectRes.data);
       }
     } catch (err) {
       console.error("Failed to load billing data", err);
@@ -83,11 +90,25 @@ export default function BillingPage() {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
+
+          <ExpenseEntryTrigger projects={projectsData} />
         </div>
       </div>
 
       {/* Tabs list selector */}
       <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/80 dark:bg-white/5 rounded-xl border border-slate-200/20 dark:border-white/5 self-start w-fit">
+        <button
+          onClick={() => setActiveTab("projects")}
+          className={cn(
+            "px-4 py-2 text-[11px] font-bold rounded-lg transition-all uppercase tracking-wider flex items-center gap-2",
+            activeTab === "projects"
+              ? "bg-white dark:bg-white/10 text-indigo-600 dark:text-white shadow-sm"
+              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          )}
+        >
+          <Briefcase className="w-3.5 h-3.5" />
+          Projects View ({projectsData.length})
+        </button>
         <button
           onClick={() => setActiveTab("milestones")}
           className={cn(
@@ -128,7 +149,14 @@ export default function BillingPage() {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className={cn(overdueCount > 0 ? "lg:col-span-8" : "lg:col-span-12", "space-y-6")}>
+        <div className="lg:col-span-12 space-y-6">
+          {activeTab === "projects" && (
+            <ProjectBillingTable 
+              projects={projectsData} 
+              onRefresh={fetchData} 
+              searchQuery={searchQuery}
+            />
+          )}
           {activeTab === "milestones" && (
             <MilestonePaymentsTable 
               milestones={milestones} 
@@ -152,22 +180,7 @@ export default function BillingPage() {
           )}
         </div>
 
-        {/* Sidebar widgets */}
-        {overdueCount > 0 && (
-          <div className="lg:col-span-4 space-y-6">
-            <div className="rounded-2xl border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/5 p-5 shadow-sm">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-xs font-bold text-rose-700 dark:text-rose-400 mb-1">Collections Alert</p>
-                  <p className="text-xs text-rose-600/80 dark:text-rose-400/70 leading-relaxed">
-                    {overdueCount} client invoice{overdueCount > 1 ? "s are" : " is"} currently overdue. Follow up with the respective project accountants or freeze project operations if payments are outstanding.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

@@ -36,8 +36,8 @@ export function DeliveryReadinessPanel({
   const isCADApproved = (cadRevisions || []).some((r: any) => r.status === 'approved');
   const isFieldSurveyComplete = (fieldReports || []).some((r: any) => r.report_type === 'completion');
   const isEngineerApproved = ['completed', 'archived'].includes(projectStatus || '');
-  const isFilesFinalized = (files || []).some((f: any) => f.category === 'final_deliverables' || f.category === 'survey_data');
-  const isDeliverablesUploaded = (files || []).some((f: any) => f.category === 'final_deliverables');
+  const isFilesFinalized = (files || []).some((f: any) => f.category === 'final_file' || f.category === 'survey_data');
+  const isDeliverablesUploaded = (files || []).some((f: any) => f.category === 'final_file');
   
   // Payment check: Linked milestone status
   const isPaymentsCleared = (milestones || []).length > 0 

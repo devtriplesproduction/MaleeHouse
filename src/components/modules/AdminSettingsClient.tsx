@@ -326,7 +326,7 @@ export default function AdminSettingsClient({
                   </p>
                   <button
                     onClick={() => { setIsWipeDialogOpen(true); setWipeStep(1); }}
-                    className="w-full flex items-center justify-center gap-3 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-bold text-sm uppercase tracking-widest transition-all shadow-lg shadow-rose-500/20"
+                    className="w-full flex items-center justify-center gap-3 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-sm uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20"
                   >
                     <Trash2 className="w-5 h-5" /> Execute Production Purge
                   </button>
@@ -338,7 +338,7 @@ export default function AdminSettingsClient({
           {/* Persistent Save Bar */}
           <div className="p-6 lg:p-8 bg-slate-50/50 dark:bg-white/[0.03] border-t border-slate-100 dark:border-white/5 backdrop-blur-xl flex items-center justify-between">
             <div className="flex items-center gap-2.5 text-slate-400 dark:text-slate-500 text-sm font-bold uppercase tracking-widest">
-              <div className={cn("w-2.5 h-2.5 rounded-full", isPending ? "bg-amber-500 animate-pulse" : "bg-emerald-500 shadow-sm shadow-emerald-500/20")} />
+              <div className={cn("w-2.5 h-2.5 rounded-full", isPending ? "bg-amber-500 animate-pulse" : "bg-emerald-500 shadow-sm shadow-indigo-500/20")} />
               {isPending ? "Syncing Config..." : "System Synchronized"}
             </div>
             <button
@@ -389,7 +389,7 @@ export default function AdminSettingsClient({
             {wipeStep < 3 ? (
               <button
                 onClick={() => setWipeStep(wipeStep + 1)}
-                className="w-full py-4 bg-rose-600 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/20"
+                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20"
               >
                 I Understand, Continue
               </button>
@@ -397,7 +397,7 @@ export default function AdminSettingsClient({
               <button
                 onClick={handleSystemWipe}
                 disabled={isPending || confirmText !== "ERASE_ALL_DATA"}
-                className="w-full py-4 bg-rose-600 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50"
+                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
               >
                 {isPending ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "EXECUTE SYSTEM WIPE"}
               </button>

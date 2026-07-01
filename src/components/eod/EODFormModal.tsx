@@ -21,15 +21,15 @@ interface EODFormModalProps {
 
 const COLOR_MAP = {
   blue: {
-    btn: "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20 dark:shadow-blue-900/30",
+    btn: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-blue-600/20 dark:shadow-blue-900/30",
     submitted: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
   },
   amber: {
-    btn: "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20 dark:shadow-amber-900/30",
+    btn: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-amber-600/20 dark:shadow-amber-900/30",
     submitted: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
   },
   emerald: {
-    btn: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 dark:shadow-emerald-900/30",
+    btn: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-emerald-600/20 dark:shadow-emerald-900/30",
     submitted: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
   },
   purple: {

@@ -486,7 +486,7 @@ export function ProjectActivityFeed({
           comment.deleted_at 
             ? "bg-slate-300 dark:bg-slate-700" 
             : comment.comment_type === "internal" 
-              ? "bg-amber-600 dark:bg-amber-500" 
+              ? "bg-indigo-600 dark:bg-amber-500" 
               : "bg-indigo-600 dark:bg-indigo-500"
         )}>
           {comment.deleted_at ? "∅" : initials}
@@ -715,7 +715,7 @@ export function ProjectActivityFeed({
                     className={cn(
                       "px-2.5 py-1 text-xs font-black uppercase tracking-widest rounded-md transition-all flex items-center gap-1",
                       commentType === "internal"
-                        ? "bg-amber-600 text-white shadow-md shadow-amber-600/10"
+                        ? "bg-indigo-600 text-white shadow-md shadow-amber-600/10"
                         : "text-slate-400 hover:text-amber-400"
                     )}
                   >

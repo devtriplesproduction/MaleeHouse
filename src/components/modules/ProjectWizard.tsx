@@ -63,7 +63,7 @@ export function ProjectWizard() {
   return (
     <div className="w-full max-w-2xl mx-auto">
       {/* Liquid Glass Container */}
-      <div className="backdrop-blur-xl bg-white/30 dark:bg-black/40 border border-white/40 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden relative transition-all duration-500 hover:shadow-blue-500/10">
+      <div className="backdrop-blur-xl bg-white/30 dark:bg-black/40 border border-white/40 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden relative transition-all duration-500 hover:shadow-indigo-500/10">
         {/* Subtle Gradient Glow Overlay */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 opacity-80" />
         <div className="absolute -inset-0.5 bg-gradient-to-br from-white/30 to-transparent opacity-50 pointer-events-none rounded-3xl" />
@@ -145,8 +145,8 @@ export function ProjectWizard() {
             <div className="flex justify-between items-center pt-8 mt-8 border-t border-gray-200/50 dark:border-gray-700/50">
               {/* Progress Indicators */}
               <div className="flex space-x-2">
-                <div className={`h-1.5 w-10 rounded-full transition-all duration-500 ${step === 1 ? 'bg-blue-600 shadow-sm shadow-blue-500/50' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                <div className={`h-1.5 w-10 rounded-full transition-all duration-500 ${step === 2 ? 'bg-blue-600 shadow-sm shadow-blue-500/50' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                <div className={`h-1.5 w-10 rounded-full transition-all duration-500 ${step === 1 ? 'bg-indigo-600 shadow-sm shadow-indigo-500/50' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                <div className={`h-1.5 w-10 rounded-full transition-all duration-500 ${step === 2 ? 'bg-indigo-600 shadow-sm shadow-indigo-500/50' : 'bg-gray-200 dark:bg-gray-700'}`} />
               </div>
 
               <div className="flex gap-4">
@@ -165,7 +165,7 @@ export function ProjectWizard() {
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg shadow-blue-500/30 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 hover:-translate-y-0.5"
+                    className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg shadow-indigo-500/30 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 hover:-translate-y-0.5"
                   >
                     Continue
                   </button>
@@ -173,7 +173,7 @@ export function ProjectWizard() {
                   <button
                     type="submit"
                     disabled={isPending}
-                    className="relative px-8 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg shadow-blue-500/30 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-0.5 flex items-center justify-center min-w-[140px]"
+                    className="relative px-8 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg shadow-indigo-500/30 transition-all duration-300 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-0.5 flex items-center justify-center min-w-[140px]"
                   >
                     {isPending ? (
                       <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

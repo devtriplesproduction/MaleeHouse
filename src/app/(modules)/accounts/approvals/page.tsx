@@ -484,7 +484,7 @@ export default function ClientApprovalsPage() {
                             <button
                               onClick={() => handleSendToEngineering(q)}
                               disabled={isDispatching}
-                              className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all disabled:opacity-60 active:scale-95"
+                              className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-emerald-500 text-white transition-all disabled:opacity-60 active:scale-95"
                             >
                               {isDispatching ? (
                                 <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -711,7 +711,7 @@ export default function ClientApprovalsPage() {
                           setSelectedQuote(null);
                         }}
                         disabled={dispatching === selectedQuote.id}
-                        className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 transition-all active:scale-95"
+                        className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-emerald-500 text-white font-semibold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 transition-all active:scale-95"
                       >
                         <Hammer className="w-4 h-4" />
                         Dispatch to Survey Ops

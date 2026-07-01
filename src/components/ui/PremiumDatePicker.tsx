@@ -142,7 +142,7 @@ export function PremiumDatePicker({ value, onChange, className, align = 'left', 
             left: coords.left,
             width: '300px',
           }}
-          className="z-[999] glass-card p-4 border-slate-200/60 dark:border-white/10 shadow-2xl bg-white dark:bg-[#0f172a] backdrop-blur-2xl"
+          className="z-[999] glass-card p-4 border-slate-200/60 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white/80 dark:bg-slate-900/80 backdrop-blur-3xl rounded-2xl"
         >
           <div className="flex items-center justify-between mb-4 px-1 gap-2">
             <div className="flex items-center gap-1.5">

@@ -22,7 +22,7 @@ function filterByDate(data: any[], dateField: string, start: string, end: string
   });
 }
 
-export async function getProfitLossReportAction(start: string, end: string): Promise<ReportResponse> {
+export async function getProfitLossReportAction(start: string, end: string, projectId?: string): Promise<ReportResponse> {
   try {
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
@@ -32,14 +32,20 @@ export async function getProfitLossReportAction(start: string, end: string): Pro
 
     const supabase: any = await createClient();
     const [paymentsRes, expensesRes, visitsRes] = await Promise.all([
-      supabase.from('payments').select('amount, created_at, status, projects(name)'),
-      supabase.from('expenses').select('amount, created_at, category, status'),
-      supabase.from('project_visits').select('visit_cost, created_at, status')
+      supabase.from('payments').select('amount, created_at, status, project_id, projects(name)'),
+      supabase.from('expenses').select('amount, created_at, category, status, project_id'),
+      supabase.from('project_visits').select('visit_cost, created_at, status, project_id')
     ]);
 
-    const payments = filterByDate(paymentsRes.data || [], 'created_at', start, end);
-    const expenses = filterByDate(expensesRes.data || [], 'created_at', start, end);
-    const visits = filterByDate(visitsRes.data || [], 'created_at', start, end);
+    let payments = filterByDate(paymentsRes.data || [], 'created_at', start, end);
+    let expenses = filterByDate(expensesRes.data || [], 'created_at', start, end);
+    let visits = filterByDate(visitsRes.data || [], 'created_at', start, end);
+
+    if (projectId) {
+      payments = payments.filter((p: any) => p.project_id === projectId);
+      expenses = expenses.filter((e: any) => e.project_id === projectId);
+      visits = visits.filter((v: any) => v.project_id === projectId);
+    }
 
     let totalRevenue = 0;
     const revenueByProject: Record<string, number> = {};
@@ -86,7 +92,7 @@ export async function getProfitLossReportAction(start: string, end: string): Pro
   }
 }
 
-export async function getIncomeStatementAction(start: string, end: string): Promise<ReportResponse> {
+export async function getIncomeStatementAction(start: string, end: string, projectId?: string): Promise<ReportResponse> {
   try {
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
@@ -96,10 +102,13 @@ export async function getIncomeStatementAction(start: string, end: string): Prom
 
     const supabase: any = await createClient();
     const [paymentsRes] = await Promise.all([
-      supabase.from('payments').select('amount, created_at, status, projects(name)')
+      supabase.from('payments').select('amount, created_at, status, project_id, projects(name)')
     ]);
 
-    const payments = filterByDate(paymentsRes.data || [], 'created_at', start, end);
+    let payments = filterByDate(paymentsRes.data || [], 'created_at', start, end);
+    if (projectId) {
+      payments = payments.filter((p: any) => p.project_id === projectId);
+    }
 
     let totalIncome = 0;
     const incomeByProject: Record<string, number> = {};
@@ -125,7 +134,7 @@ export async function getIncomeStatementAction(start: string, end: string): Prom
   }
 }
 
-export async function getExpenseStatementAction(start: string, end: string): Promise<ReportResponse> {
+export async function getExpenseStatementAction(start: string, end: string, projectId?: string): Promise<ReportResponse> {
   try {
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
@@ -135,12 +144,16 @@ export async function getExpenseStatementAction(start: string, end: string): Pro
 
     const supabase: any = await createClient();
     const [expensesRes, visitsRes] = await Promise.all([
-      supabase.from('expenses').select('amount, created_at, category, status'),
-      supabase.from('project_visits').select('visit_cost, created_at, status')
+      supabase.from('expenses').select('amount, created_at, category, status, project_id'),
+      supabase.from('project_visits').select('visit_cost, created_at, status, project_id')
     ]);
 
-    const expenses = filterByDate(expensesRes.data || [], 'created_at', start, end);
-    const visits = filterByDate(visitsRes.data || [], 'created_at', start, end);
+    let expenses = filterByDate(expensesRes.data || [], 'created_at', start, end);
+    let visits = filterByDate(visitsRes.data || [], 'created_at', start, end);
+    if (projectId) {
+      expenses = expenses.filter((e: any) => e.project_id === projectId);
+      visits = visits.filter((v: any) => v.project_id === projectId);
+    }
 
     let totalExpenses = 0;
     const expensesByCategory: Record<string, number> = {};
@@ -172,12 +185,12 @@ export async function getExpenseStatementAction(start: string, end: string): Pro
   }
 }
 
-export async function getCashFlowStatementAction(start: string, end: string): Promise<ReportResponse> {
+export async function getCashFlowStatementAction(start: string, end: string, projectId?: string): Promise<ReportResponse> {
   // Simple operational cash flow
-  return getProfitLossReportAction(start, end);
+  return getProfitLossReportAction(start, end, projectId);
 }
 
-export async function getBalanceSheetAction(asOfDate: string): Promise<ReportResponse> {
+export async function getBalanceSheetAction(asOfDate: string, projectId?: string): Promise<ReportResponse> {
   try {
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
@@ -193,16 +206,23 @@ export async function getBalanceSheetAction(asOfDate: string): Promise<ReportRes
     const timeLimit = e.getTime();
 
     const [paymentsRes, expensesRes, invoicesRes, visitsRes] = await Promise.all([
-      supabase.from('payments').select('amount, created_at, status'),
-      supabase.from('expenses').select('amount, created_at, status'),
-      supabase.from('invoices').select('total_amount, created_at, status'),
-      supabase.from('project_visits').select('visit_cost, created_at, status')
+      supabase.from('payments').select('amount, created_at, status, project_id'),
+      supabase.from('expenses').select('amount, created_at, status, project_id'),
+      supabase.from('invoices').select('total_amount, created_at, status, project_id'),
+      supabase.from('project_visits').select('visit_cost, created_at, status, project_id')
     ]);
 
-    const payments = (paymentsRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
-    const expenses = (expensesRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
-    const invoices = (invoicesRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
-    const visits = (visitsRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
+    let payments = (paymentsRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
+    let expenses = (expensesRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
+    let invoices = (invoicesRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
+    let visits = (visitsRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
+
+    if (projectId) {
+      payments = payments.filter((p: any) => p.project_id === projectId);
+      expenses = expenses.filter((e: any) => e.project_id === projectId);
+      invoices = invoices.filter((i: any) => i.project_id === projectId);
+      visits = visits.filter((v: any) => v.project_id === projectId);
+    }
 
     let totalIncome = 0;
     payments.forEach((p: any) => {

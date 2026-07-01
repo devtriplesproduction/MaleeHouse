@@ -14,7 +14,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
 
   const { data: invoice, error } = await supabase
     .from('invoices')
-    .select('*, projects(name, client_name)')
+    .select('*, projects(name, client_name, budget, payments(amount, status), quotations(total_amount, status)), payments(amount, status)')
     .eq('id', params.id)
     .single();
 

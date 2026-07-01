@@ -1,11 +1,11 @@
 import React from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
-import { getMyAssignedProjectsAction, getUnassignedQueueAction } from "@/actions/operations.actions";
+import { getMyAssignedProjectsAction } from "@/actions/operations.actions";
 import { getSOPsAction } from "@/actions/sop.actions";
 import { getMyEODReportsAction } from "@/actions/eod.actions";
 import {
   PenTool, ChevronRight, AlertTriangle, CheckCircle2,
-  Clock, FileText, Zap, Upload, Eye, ListPlus
+  Clock, FileText, Zap, Upload, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -18,9 +18,8 @@ export default async function CADDashboardPage() {
   const profile = await getUserProfileAction();
   const firstName = profile?.first_name || "CAD Specialist";
 
-  const [assignedRes, unassignedRes, sopsRes, eodRes] = await Promise.all([
+  const [assignedRes, sopsRes, eodRes] = await Promise.all([
     getMyAssignedProjectsAction(),
-    getUnassignedQueueAction("cad"),
     getSOPsAction(),
     getMyEODReportsAction(),
   ]);
@@ -29,7 +28,7 @@ export default async function CADDashboardPage() {
     (p: any) => !["completed", "archived"].includes(p.status)
   );
   
-  const unassignedProjects = unassignedRes.data || [];
+
 
   const sops = sopsRes.data || [];
   const eodReports = eodRes.success ? eodRes.data : [];
@@ -92,23 +91,7 @@ export default async function CADDashboardPage() {
         {/* Active CAD Deliverables */}
         <div className="xl:col-span-2 space-y-8">
           
-          {/* Unassigned Pool */}
-          {unassignedProjects.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <ListPlus className="w-4 h-4 text-indigo-500" />
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Unassigned Projects Pool</h2>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                  {unassignedProjects.length} Available
-                </span>
-              </div>
-              <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                {unassignedProjects.map((p: any) => (
-                  <PendingProjectListCard key={p.id} project={p} showAccept={true} />
-                ))}
-              </div>
-            </div>
-          )}
+
 
           {/* My Assigned Queue */}
           <div className="space-y-4">
@@ -123,7 +106,7 @@ export default async function CADDashboardPage() {
                     <PenTool className="w-6 h-6 text-blue-500/30" />
                   </div>
                   <p className="text-sm font-bold text-slate-500">No active CAD tasks</p>
-                  <p className="text-xs text-slate-600">Pick up a project from the unassigned pool to begin.</p>
+                  <p className="text-xs text-slate-600">You currently have no active CAD tasks.</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">

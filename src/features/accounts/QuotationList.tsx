@@ -214,7 +214,7 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
                   <button
                     onClick={() => handleStatusUpdate(q.id, 'Draft')}
                     disabled={loading === q.id}
-                    className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-all disabled:opacity-50"
+                    className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-amber-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50"
                   >
                     <MessageSquare className="w-3 h-3" /> Re-draft
                   </button>

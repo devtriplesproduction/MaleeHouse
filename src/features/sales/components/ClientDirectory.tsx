@@ -106,7 +106,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
     prototype: "text-purple-500 bg-purple-500/10 border-purple-500/20",
     review: "text-orange-500 bg-orange-500/10 border-orange-500/20",
     field_work: "text-sky-500 bg-sky-500/10 border-sky-500/20",
-    completed: "text-emerald-600 bg-emerald-600/10 border-emerald-600/20",
+    completed: "text-emerald-600 bg-indigo-600/10 border-emerald-600/20",
     archived: "text-slate-500 bg-slate-500/10 border-slate-500/20",
   };
 
@@ -489,7 +489,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                     </button>
                     <button 
                       onClick={handleSaveClick}
-                      className="px-4 h-9 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                      className="px-4 h-9 rounded-xl bg-emerald-500 hover:bg-indigo-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
                       disabled={isSaving}
                     >
                       {isSaving ? <span className="animate-pulse">Saving...</span> : (

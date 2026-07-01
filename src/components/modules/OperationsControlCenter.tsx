@@ -732,7 +732,7 @@ export function OperationsControlCenter({
               onClick={handleRejectDataSync}
               disabled={isRejecting || !rejectionNote.trim()}
               className={cn(
-                "px-8 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 bg-rose-600 hover:bg-rose-700",
+                "px-8 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700",
                 (isRejecting || !rejectionNote.trim()) && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -779,7 +779,7 @@ export function OperationsControlCenter({
               onClick={handleReopenProject}
               disabled={isReopening || !reopenReason.trim()}
               className={cn(
-                "px-8 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 bg-amber-600 hover:bg-amber-700",
+                "px-8 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700",
                 (isReopening || !reopenReason.trim()) && "opacity-50 cursor-not-allowed"
               )}
             >

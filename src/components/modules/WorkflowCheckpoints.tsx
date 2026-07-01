@@ -114,7 +114,7 @@ export function WorkflowCheckpoints({ projectStatus, teamMembers, files }: Workf
       role: 'Engineer',
       icon: CheckCircle2,
       description: 'Final blueprint quality check and review clearance.',
-      statusKey: ['review']
+      statusKey: ['cad_finalization']
     },
     {
       id: 9,
@@ -137,12 +137,14 @@ export function WorkflowCheckpoints({ projectStatus, teamMembers, files }: Workf
         // If prototype revision is uploaded/submitted, we are at Step 4, else Step 3
         const hasPrototype = files.some((f: any) => f.category === 'prototype');
         return hasPrototype ? 4 : 3; 
+      case 'review':
+        return 4;
       case 'field_work':
         // If team allocated but data pending, Step 6, else Step 5
         return fieldEngineers.length > 0 ? 6 : 5;
       case 'data_sync':
         return 7;
-      case 'review':
+      case 'cad_finalization':
         return 8;
       case 'completed':
       case 'archived':
@@ -212,7 +214,7 @@ export function WorkflowCheckpoints({ projectStatus, teamMembers, files }: Workf
               {/* Node Icon Indicator */}
               <div className={cn(
                 "absolute left-0 top-0.5 w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 z-10",
-                isCompleted && "bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-500/10",
+                isCompleted && "bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-indigo-500/10",
                 isActive && "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20 scale-105",
                 isLocked && "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-white/5 text-slate-400 dark:text-slate-600"
               )}>

@@ -1,44 +1,109 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
-  DialogFooter
-} from '@/components/ui/dialog';
+  X,
+  FileText,
+  Loader2,
+  FilePlus,
+  Printer,
+  Download
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { createInvoiceAction } from '@/actions/finance.actions';
+import { format } from 'date-fns';
+import { createPortal } from 'react-dom';
+import { createInvoiceAction, markInvoiceAsSentAction } from '@/actions/finance.actions';
+import { createClient } from '@/lib/supabase/client';
+import { getCompanySettingsAction } from '@/actions/settings.actions';
 import { toast } from 'sonner';
-import { FilePlus, Calculator, Info } from 'lucide-react';
+import { Mail, Link2, CheckCircle2 } from 'lucide-react';
+import { generateInvoicePDF } from '@/lib/pdf-generator';
+import { cn } from '@/lib/utils';
+import { CreditCard } from 'lucide-react';
 
 interface CreateInvoiceModalProps {
   projectId: string;
   projectName: string;
   clientName: string;
+  milestoneId?: string;
+  milestoneTitle?: string;
+  expenseId?: string;
+  expenseTitle?: string;
+  initialAmount?: number;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
-export function CreateInvoiceModal({ projectId, projectName, clientName, onSuccess }: CreateInvoiceModalProps) {
-  const [open, setOpen] = useState(false);
+export function CreateInvoiceModal({ projectId, projectName, clientName, milestoneId, milestoneTitle, expenseId, expenseTitle, initialAmount, isOpen, onOpenChange, onSuccess }: CreateInvoiceModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [createdInvoice, setCreatedInvoice] = useState<any>(null);
+  
+  const isControlled = isOpen !== undefined && onOpenChange !== undefined;
+  const open = isControlled ? isOpen : internalOpen;
+  const setOpen = isControlled ? onOpenChange : setInternalOpen;
+
   const [loading, setLoading] = useState(false);
+  const [companySettings, setCompanySettings] = useState<any>(null);
+  const [projectData, setProjectData] = useState<any>(null);
+  
   const [formData, setFormData] = useState({
     invoice_number: `INV-${Date.now().toString().slice(-6)}`,
-    amount: 0,
+    amount: initialAmount || 0,
     gst_rate: 18,
     notes: '',
     due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Default 7 days
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      if (!companySettings) getCompanySettingsAction().then(setCompanySettings);
+      
+      const fetchProject = async () => {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('projects')
+          .select('budget, payments(amount, status), quotations(total_amount, status)')
+          .eq('id', projectId)
+          .single();
+        if (data) {
+          const project = data as any;
+          // If project budget is 0, try to get it from an approved quotation (or any quotation as fallback)
+          let activeBudget = Number(project.budget) || 0;
+          if (activeBudget === 0 && project.quotations && project.quotations.length > 0) {
+            const approvedQuotation = project.quotations.find((q: any) => q.status === 'approved');
+            if (approvedQuotation) {
+              activeBudget = Number(approvedQuotation.total_amount);
+            } else {
+              // Fallback to highest quotation
+              activeBudget = Math.max(...project.quotations.map((q: any) => Number(q.total_amount)));
+            }
+          }
+          project.calculated_budget = activeBudget;
+          setProjectData(project);
+        }
+      };
+      if (!projectData) fetchProject();
+    }
+  }, [open, companySettings, projectId, projectData]);
+
+  useEffect(() => {
+    if (initialAmount !== undefined) {
+      setFormData(prev => ({ ...prev, amount: initialAmount }));
+    }
+  }, [initialAmount]);
+
+  const handleSubmit = async () => {
     setLoading(true);
     try {
       const result = await createInvoiceAction({
         project_id: projectId,
+        milestone_id: milestoneId,
         invoice_number: formData.invoice_number,
         amount: Number(formData.amount),
         gst_rate: Number(formData.gst_rate),
@@ -48,7 +113,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, onSucce
 
       if (result.success) {
         toast.success('Invoice created successfully');
-        setOpen(false);
+        setCreatedInvoice(result.data);
         onSuccess?.();
       } else {
         toast.error(result.error || 'Failed to create invoice');
@@ -60,109 +125,464 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, onSucce
     }
   };
 
+  const [isMarkingShared, setIsMarkingShared] = useState(false);
+
+  const handleMarkAsShared = async () => {
+    if (!createdInvoice || createdInvoice.status !== 'draft') return;
+    setIsMarkingShared(true);
+    const result = await markInvoiceAsSentAction(createdInvoice.id);
+    if (result.success) {
+      toast.success('Invoice marked as shared');
+      setCreatedInvoice({ ...createdInvoice, status: 'sent' });
+    } else {
+      toast.error('Failed to mark as shared');
+    }
+    setIsMarkingShared(false);
+  };
+
   const gstAmount = (formData.amount * formData.gst_rate) / 100;
   const totalAmount = Number(formData.amount) + gstAmount;
+  const issueDate = new Date();
+  
+  // Safe parsing of due date
+  let dueDateObj = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  if (formData.due_date) {
+    const parsed = new Date(formData.due_date);
+    if (!isNaN(parsed.getTime())) {
+      dueDateObj = parsed;
+    }
+  }
+
+  if (!mounted) return null;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-2">
+    <>
+      {!isControlled && (
+        <Button onClick={() => setOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2">
           <FilePlus className="w-4 h-4" />
           Create Invoice
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] glass-card border-white/20">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-black flex items-center gap-2">
-            <Calculator className="w-6 h-6 text-amber-500" />
-            Generate Invoice
-          </DialogTitle>
-          <div className="text-sm text-slate-400 mt-2">
-            Creating invoice for <span className="text-white font-bold">{projectName}</span>
-          </div>
-        </DialogHeader>
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Invoice Number</label>
-              <Input 
-                value={formData.invoice_number}
-                onChange={(e) => setFormData({...formData, invoice_number: e.target.value})}
-                className="bg-white/5 border-white/10"
-                required
-              />
+      {open && createPortal(
+        <div className="fixed inset-0 z-[100] overflow-y-auto p-6 md:p-12 flex justify-center items-start animate-in fade-in duration-300">
+          <div 
+            className="fixed inset-0 bg-slate-950/60 dark:bg-black/85 backdrop-blur-md z-0" 
+            onClick={() => setOpen(false)}
+          />
+          
+          <div className="relative w-full max-w-5xl flex flex-col gap-6 z-10 my-4">
+            {/* Sticky Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-4 sm:py-3 rounded-xl border border-white/10 shadow-xl text-white sticky top-4 z-50">
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0">
+                    <FileText className="w-4 h-4" />
+                 </div>
+                 <div>
+                    <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                      Invoice Portal
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border shadow-sm ml-2",
+                        createdInvoice ? (
+                          createdInvoice.status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/20' :
+                          createdInvoice.status === 'overdue' ? 'bg-rose-500/20 text-rose-300 border-rose-500/20' :
+                          createdInvoice.status === 'cancelled' ? 'bg-white/10 text-slate-300 border-white/10' :
+                          'bg-blue-500/20 text-blue-300 border-blue-500/20'
+                        ) : 'bg-slate-500/20 text-slate-300 border-slate-500/20'
+                      )}>
+                        {createdInvoice ? createdInvoice.status : 'DRAFT'}
+                      </span>
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                      Reviewing {formData.invoice_number} • Malee House Surveying OS
+                    </p>
+                 </div>
+              </div>
+
+              <div className="flex items-center gap-2 mt-4 sm:mt-0">
+                {createdInvoice && (
+                  <>
+                    <Button 
+                      onClick={() => window.print()}
+                      variant="ghost" 
+                      className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      Print
+                    </Button>
+                    <Button 
+                      onClick={() => generateInvoicePDF(createdInvoice, projectData, companySettings)}
+                      variant="ghost" 
+                      className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download PDF
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                         const link = `${window.location.origin}/invoices/${createdInvoice.id}`;
+                         window.location.href = `mailto:?subject=Malee House - Invoice ${formData.invoice_number}&body=Dear Client,%0D%0A%0D%0APlease find your invoice ${formData.invoice_number} ready for your review and payment here:%0D%0A${link}%0D%0A%0D%0ABest regards,%0D%0AMalee House Finance`;
+                      }}
+                      variant="ghost" 
+                      className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      Email
+                    </Button>
+                    <div className="w-px h-5 bg-white/10 mx-1" />
+                  </>
+                )}
+                <Button 
+                  onClick={() => setOpen(false)}
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white flex items-center justify-center p-0 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Due Date</label>
-              <Input 
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({...formData, due_date: e.target.value})}
-                className="bg-white/5 border-white/10"
-                required
-              />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+              <div className="lg:col-span-2 space-y-6">
+                {/* WYSIWYG Invoice Body */}
+                <div className={`bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-10 md:p-12 relative min-h-[900px] justify-between transition-all ${createdInvoice ? 'opacity-80 scale-[0.99] pointer-events-none' : ''}`}>
+               <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of {projectData && Number(projectData.calculated_budget) > 0 && milestoneId ? '2' : '1'}</div>
+
+               <div className="space-y-8 flex-1">
+                  {/* Document Header */}
+                  <div className="flex justify-between items-start border-b border-slate-100 pb-6">
+                     <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
+                           <div className="space-y-0.5">
+                              <h1 className="text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h1>
+                              <p className="text-[9px] text-indigo-600 font-semibold uppercase tracking-wider">Engineering & Survey Services</p>
+                           </div>
+                        </div>
+                        
+                        <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                           <p className="font-semibold text-slate-800">{companySettings?.name || 'Malee House Head Office'}</p>
+                           <p>{companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
+                           <p>{companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
+                           <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
+                        </div>
+                     </div>
+
+                     <div className="text-right space-y-4">
+                        <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">Invoice</h1>
+                        
+                        <div className="space-y-2 text-xs">
+                           <div className="flex flex-col items-end">
+                              <label className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Invoice Number</label>
+                              <div className="flex items-center">
+                                <span className="font-semibold text-slate-800">#</span>
+                                <input 
+                                  value={formData.invoice_number}
+                                  onChange={(e) => setFormData({...formData, invoice_number: e.target.value})}
+                                  className="font-semibold text-slate-800 nums bg-amber-50 focus:bg-amber-100 px-1 py-0.5 rounded border border-transparent focus:border-amber-300 outline-none w-28 text-right transition-colors"
+                                />
+                              </div>
+                           </div>
+                           <div className="flex flex-col items-end">
+                              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Date Issued</p>
+                              <p className="font-semibold text-slate-800 py-0.5">{format(issueDate, 'MMMM dd, yyyy')}</p>
+                           </div>
+                           <div className="flex flex-col items-end mt-1">
+                              <label className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Due Date</label>
+                              <input 
+                                type="date"
+                                value={formData.due_date}
+                                onChange={(e) => setFormData({...formData, due_date: e.target.value})}
+                                className="font-semibold text-slate-800 bg-amber-50 focus:bg-amber-100 px-1 py-0.5 rounded border border-transparent focus:border-amber-300 outline-none text-right transition-colors text-xs"
+                              />
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Client Bill To & Project info */}
+                  <div className="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
+                     <div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
+                        <h2 className="text-sm font-semibold text-slate-800 leading-tight">{clientName || 'Client Name'}</h2>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">Authorized project engagement</p>
+                     </div>
+                     <div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>
+                        <h2 className="text-sm font-semibold text-slate-800 leading-tight">{projectName || 'Project Name'}</h2>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">Location: Site Technical Survey</p>
+                     </div>
+                  </div>
+
+                  {/* Services Table */}
+                  <div className="space-y-4">
+                     <table className="w-full border-collapse">
+                        <thead>
+                           <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                              <th className="py-2.5 text-left w-12">#</th>
+                              <th className="py-2.5 text-left">Service Description</th>
+                              <th className="py-2.5 text-center w-20">Qty</th>
+                              <th className="py-2.5 text-right w-36">Unit Price</th>
+                              <th className="py-2.5 text-right w-36">Total</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                           <tr className="align-top">
+                              <td className="py-4 text-xs font-semibold text-slate-400">1</td>
+                              <td className="py-4">
+                                 <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">
+                                   {expenseId ? 'Project Expense Reimbursement' : 'Professional Services'}
+                                 </p>
+                                 <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">
+                                   {expenseId ? (expenseTitle || 'Approved project expense reimbursement.') : milestoneTitle ? `As per milestone: ${milestoneTitle}` : 'As per project milestone agreement.'}
+                                 </p>
+                              </td>
+                              <td className="py-4 text-center text-xs font-semibold text-slate-800">1</td>
+                              <td className="py-4 text-right">
+                                <div className="flex items-center justify-end">
+                                  <span className="text-xs font-medium text-slate-800 nums mr-1">INR</span>
+                                  <input 
+                                    type="number"
+                                    value={formData.amount}
+                                    onChange={(e) => setFormData({...formData, amount: Number(e.target.value)})}
+                                    className="text-xs font-medium text-slate-800 nums bg-amber-50 focus:bg-amber-100 px-1 py-0.5 rounded border border-transparent focus:border-amber-300 outline-none w-24 text-right transition-colors"
+                                  />
+                                </div>
+                              </td>
+                              <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">INR {Number(formData.amount).toLocaleString('en-IN')}</td>
+                           </tr>
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+
+               {/* Totals panel */}
+               <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-end">
+                  <div className="w-full md:w-72 space-y-2.5">
+                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                        <span>Subtotal</span>
+                        <span>INR {Number(formData.amount).toLocaleString('en-IN')}</span>
+                     </div>
+
+                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                        <span>CGST ({formData.gst_rate / 2}%)</span>
+                        <span>INR {(gstAmount / 2).toLocaleString('en-IN')}</span>
+                     </div>
+
+                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                        <span>SGST ({formData.gst_rate / 2}%)</span>
+                        <span>INR {(gstAmount / 2).toLocaleString('en-IN')}</span>
+                     </div>
+
+                     <div className="pt-3 border-t border-slate-200 flex justify-between items-end">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>
+                        <p className="text-xl font-bold text-slate-900 tracking-tight nums">INR {totalAmount.toLocaleString('en-IN')}</p>
+                     </div>
+
+                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums pt-2 border-t border-slate-100">
+                        <span>Amount Paid</span>
+                        <span>INR 0</span>
+                     </div>
+
+                     <div className={`flex justify-between items-end p-2 rounded-lg ${totalAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                        <p className="text-[11px] font-bold uppercase tracking-wider">Invoice Balance</p>
+                        <p className="text-lg font-bold tracking-tight nums">INR {totalAmount.toLocaleString('en-IN')}</p>
+                     </div>
+
+                     {/* End of Totals */}
+                  </div>
+               </div>
+            </div>
+
+            {/* PAGE 2: Project Financial Summary */}
+            {projectData && Number(projectData.calculated_budget) > 0 && milestoneId && (
+               <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-10 md:p-12 relative min-h-[500px] mt-6">
+                  <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 2 of 2</div>
+                  <div className="space-y-6 flex-1 mt-4">
+                     <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6">Project Financial Summary</h2>
+                     
+                     <div className="space-y-4">
+                        <table className="w-full border-collapse">
+                           <thead>
+                              <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                                 <th className="py-2.5 text-left w-12">#</th>
+                                 <th className="py-2.5 text-left">Description</th>
+                                 <th className="py-2.5 text-right w-36">Amount</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-slate-100 text-slate-700">
+                              <tr className="align-top">
+                                 <td className="py-4 text-xs font-semibold text-slate-400">1</td>
+                                 <td className="py-4">
+                                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">Total Cost of Project</p>
+                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">Total approved budget for this project.</p>
+                                 </td>
+                                 <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">INR {Number(projectData.calculated_budget).toLocaleString('en-IN')}</td>
+                              </tr>
+                              <tr className="align-top">
+                                 <td className="py-4 text-xs font-semibold text-slate-400">2</td>
+                                 <td className="py-4">
+                                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">Previously Paid</p>
+                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">Sum of all payments cleared before this invoice.</p>
+                                 </td>
+                                 <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">
+                                   INR {((projectData.payments || [])
+                                     .filter((p: any) => p.status === 'verified' || p.status === 'paid')
+                                     .reduce((sum: number, p: any) => sum + Number(p.amount), 0)).toLocaleString('en-IN')}
+                                 </td>
+                              </tr>
+                              <tr className="align-top bg-indigo-50/30">
+                                 <td className="py-4 text-xs font-semibold text-indigo-400 px-2 rounded-l-lg">3</td>
+                                 <td className="py-4">
+                                    <p className="text-xs font-bold text-indigo-700 uppercase tracking-tight">Current Invoice Due</p>
+                                    <p className="text-[11px] text-indigo-600/70 mt-1 leading-relaxed max-w-lg">Amount requested in this current milestone invoice.</p>
+                                 </td>
+                                 <td className="py-4 text-right text-xs font-bold text-indigo-700 nums px-2 rounded-r-lg">INR {totalAmount.toLocaleString('en-IN')}</td>
+                              </tr>
+                           </tbody>
+                        </table>
+                     </div>
+
+                     <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-end">
+                        <div className="w-full md:w-[350px] space-y-2.5">
+                           <div className="flex justify-between items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
+                              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Project Balance Remaining</p>
+                              <p className="text-xl font-bold text-slate-900 tracking-tight nums">
+                                INR {Math.max(0, Number(projectData.calculated_budget) - ((projectData.payments || [])
+                                  .filter((p: any) => p.status === 'verified' || p.status === 'paid')
+                                  .reduce((sum: number, p: any) => sum + Number(p.amount), 0)) - totalAmount).toLocaleString('en-IN')}
+                              </p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            )}             {/* Bottom Actions Area */}
+             {!createdInvoice && (
+                <div className="mt-8 flex justify-end pb-8">
+                   <Button 
+                      onClick={handleSubmit}
+                      disabled={loading || formData.amount <= 0}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-6 h-12 text-sm font-bold gap-2 rounded-xl transition-all shadow-xl shadow-indigo-600/20"
+                   >
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <FilePlus className="w-5 h-5" />}
+                      Create Official Invoice
+                   </Button>
+                </div>
+             )}
+          </div>
+          
+          {/* ── Sticky Action Panel (Right Col) ── */}
+          <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-24">
+            {createdInvoice && (
+              <>
+                <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xl shadow-slate-200/40">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Invoice Actions</h3>
+                  
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => generateInvoicePDF(createdInvoice, projectData, companySettings)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
+                    >
+                      <Download className="w-4 h-4" /> Download PDF
+                    </button>
+                    
+                    <button 
+                      onClick={() => window.print()}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                    >
+                      <Printer className="w-4 h-4" /> Print Document
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xl shadow-slate-200/40">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Share Invoice</h3>
+                    {createdInvoice.status === 'draft' ? (
+                      <button
+                        onClick={handleMarkAsShared}
+                        disabled={isMarkingShared}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-sm shadow-emerald-600/20"
+                      >
+                        {isMarkingShared ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                        {isMarkingShared ? 'Marking...' : 'Share Successfully'}
+                      </button>
+                    ) : (
+                      <div className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Shared
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => {
+                        const link = `${window.location.origin}/invoices/${createdInvoice.id}`;
+                        navigator.clipboard.writeText(link);
+                        toast.success('Invoice link copied to clipboard!');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                    >
+                      <Link2 className="w-4 h-4" /> Copy Link
+                    </button>
+                    <a
+                      href={`mailto:?subject=Malee House - Invoice ${formData.invoice_number}&body=Dear Client,%0D%0A%0D%0APlease find your invoice ${formData.invoice_number} ready for your review and payment here:%0D%0A${window.location.origin}/invoices/${createdInvoice.id}%0D%0A%0D%0ABest regards,%0D%0AMalee House Finance`}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-700 hover:text-indigo-700 rounded-xl text-xs font-bold transition-all"
+                    >
+                      <Mail className="w-4 h-4" /> Email Invoice
+                    </a>
+                    <a
+                      href={`https://wa.me/?text=Hi, please find the invoice ${formData.invoice_number} from Malee House for your payment here: ${window.location.origin}/invoices/${createdInvoice.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-bold transition-all"
+                    >
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.451 5.403.002 9.803-4.394 9.805-9.805.001-2.621-1.013-5.085-2.86-6.933-1.847-1.847-4.308-2.859-6.924-2.86-5.412 0-9.815 4.398-9.818 9.807-.001 1.536.417 3.033 1.21 4.385l-.995 3.636 3.733-.979zm11.105-6.857c-.247-.124-1.464-.722-1.692-.806-.228-.083-.393-.124-.559.124-.166.247-.641.806-.784.969-.143.163-.286.183-.534.059-.247-.124-1.043-.385-1.986-1.227-.733-.654-1.229-1.462-1.373-1.71-.143-.248-.015-.381.109-.504.111-.11.247-.286.371-.429.124-.143.165-.247.247-.412.082-.166.041-.309-.021-.433-.062-.124-.559-1.345-.765-1.838-.2-.486-.398-.419-.559-.427-.144-.008-.309-.009-.473-.009a.913.913 0 0 0-.66.309c-.228.247-.867.846-.867 2.062 0 1.216.883 2.39 1.007 2.556.124.165 1.737 2.654 4.209 3.717.588.253 1.047.404 1.405.518.59.187 1.127.161 1.551.098.473-.069 1.464-.598 1.67-.175.206.423.206.784.103.969-.103.186-.247.309-.494.186z" />
+                      </svg>
+                      WhatsApp
+                    </a>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl shadow-sm">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Payment Details</h4>
+                  <p className="text-[10px] text-indigo-700 mt-1 font-medium">Please include invoice number in payment reference.</p>
+                </div>
+              </div>
+              <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium">
+                 <div className="flex justify-between">
+                    <span className="text-indigo-600">Bank</span>
+                    <span>State Bank of India</span>
+                 </div>
+                 <div className="flex justify-between">
+                    <span className="text-indigo-600">A/C Name</span>
+                    <span>Malee House Services</span>
+                 </div>
+                 <div className="flex justify-between">
+                    <span className="text-indigo-600">A/C No</span>
+                    <span className="font-mono">09876543212345</span>
+                 </div>
+                 <div className="flex justify-between">
+                    <span className="text-indigo-600">IFSC</span>
+                    <span className="font-mono">SBIN0001234</span>
+                 </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Base Amount (INR)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">₹</span>
-              <Input 
-                type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: Number(e.target.value)})}
-                className="bg-white/5 border-white/10 pl-10"
-                required
-              />
-            </div>
           </div>
-
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
-            <div className="flex justify-between text-xs font-medium text-slate-400">
-              <span>Subtotal</span>
-              <span>INR {formData.amount.toLocaleString('en-IN')}</span>
-            </div>
-            <div className="flex justify-between text-xs font-medium text-slate-400">
-              <span>GST ({formData.gst_rate}%)</span>
-              <span>INR {gstAmount.toLocaleString('en-IN')}</span>
-            </div>
-            <div className="pt-2 border-t border-white/10 flex justify-between text-sm font-black text-white">
-              <span>Total Amount</span>
-              <span className="text-amber-500">INR {totalAmount.toLocaleString('en-IN')}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Notes (Optional)</label>
-            <textarea 
-              value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})}
-              className="w-full h-24 bg-white/5 border border-white/10 rounded-xl p-3 text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-              placeholder="Payment terms, bank details, etc."
-            />
-          </div>
-
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="ghost" 
-              onClick={() => setOpen(false)}
-              className="text-slate-400 hover:text-white"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={loading || formData.amount <= 0}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-8"
-            >
-              {loading ? 'Generating...' : 'Confirm & Send'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

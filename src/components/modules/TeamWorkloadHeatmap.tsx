@@ -37,7 +37,7 @@ export function TeamWorkloadHeatmap({ data }: TeamWorkloadHeatmapProps) {
       </CardHeader>
 
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-3">
           {data?.filter((m: any) => m && m.name).map((member) => {
             const safeCount = member.count || 0;
             const safeCapacity = member.capacity || 5;
@@ -47,34 +47,34 @@ export function TeamWorkloadHeatmap({ data }: TeamWorkloadHeatmapProps) {
             return (
               <div 
                 key={member.id} 
-                className={`p-4 rounded-[1.5rem] border ${status.bg} ${status.border} transition-all hover:shadow-md group`}
+                className={`p-3 sm:p-4 rounded-[1rem] border ${status.bg} ${status.border} transition-all hover:shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4`}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar fallback={member.name.split(' ').map((n: any) => n[0]).join('')} className="h-10 w-10 border-2 border-white shadow-sm" />
-                    <div>
-                      <p className="font-bold text-slate-900">{member.name}</p>
-                      <p className={`text-xs font-bold uppercase tracking-widest ${status.color}`}>
-                        {status.label}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-black text-slate-900 leading-none">{member.count}</p>
-                    <p className="text-xs font-bold text-slate-400 uppercase mt-1">Projects</p>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar fallback={member.name.split(' ').map((n: any) => n[0]).join('')} className="h-10 w-10 border-2 border-white shadow-sm shrink-0" />
+                  <div className="min-w-0 truncate">
+                    <p className="font-bold text-slate-900 truncate">{member.name}</p>
+                    <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${status.color} truncate`}>
+                      {status.label}
+                    </p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm font-bold text-slate-500 uppercase tracking-tighter">
-                    <span>Utilization</span>
-                    <span>{Math.round((member.count / member.capacity) * 100)}%</span>
+                <div className="flex items-center gap-6 shrink-0 w-full sm:w-auto">
+                  <div className="flex-1 sm:w-32">
+                    <div className="flex justify-between text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-tight mb-1.5">
+                      <span>Utilization</span>
+                      <span>{Math.round((member.count / member.capacity) * 100)}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-white/60 rounded-full overflow-hidden border border-white">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ${status.bar}`}
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 w-full bg-white/60 rounded-full overflow-hidden border border-white">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-1000 ${status.bar}`}
-                      style={{ width: `${percentage}%` }}
-                    />
+                  <div className="text-right shrink-0">
+                    <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none">{member.count}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Projects</p>
                   </div>
                 </div>
               </div>

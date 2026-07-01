@@ -343,69 +343,28 @@ export default function ProjectOverviewTab({
 
       {/* RIGHT COLUMN: Operations & CAD (60%) */}
       <div className="lg:col-span-3 space-y-8">
-        {(!isAdmin && isEngineer && !teamMembers.some((m: any) => m.userId === currentUserId)) ? (
+        {hasAccessToOps && (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="relative overflow-hidden p-8 rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 space-y-8 group">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-50" />
-              
-              <div className="flex items-start gap-5">
-                <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-xl shadow-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/10 group-hover:scale-105 transition-transform duration-500">
-                  <Shield className="w-7 h-7 text-indigo-500" />
-                </div>
-                <div className="space-y-2 pt-1">
-                  <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tight">
-                    Action Required: Claim Project
-                  </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg">
-                    You are viewing a restricted workspace. To unlock active operational tools including File Uploads, CAD Transfers, and Team Management, you must officially accept this assignment.
-                  </p>
-                </div>
-              </div>
+            
+            {/* OperationsControlCenter removed as per user request */}
 
-              <button
-                onClick={() => {
-                  startTransition(async () => {
-                    const res = await assignUserToProjectAction(project.id, currentUserId, 'engineer');
-                    if (res?.success) {
-                      toast({ title: 'Project Accepted', description: 'You have claimed this assignment.', variant: 'success' });
-                      window.location.reload();
-                    } else {
-                      toast({ title: 'Acceptance Failed', description: res?.error || 'An error occurred.', variant: 'error' });
-                    }
-                  });
-                }}
-                disabled={isPending}
-                className="relative w-full overflow-hidden py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 text-base"
-              >
-                {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                Accept Assignment & Unlock Workspace
-              </button>
-            </div>
-          </div>
-        ) : (
-          hasAccessToOps && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-              
-              {/* OperationsControlCenter removed as per user request */}
-
-              <OperationsFileUploadPanel
+            <OperationsFileUploadPanel
+              projectId={project.id}
+              files={files || []}
+              userRole={userRole}
+              projectStatus={project.status}
+            />
+            
+            {(isAdmin || isCad || isEngineer) && (
+              <CADRevisionPanel
                 projectId={project.id}
-                files={files || []}
+                revisions={cadRevisions}
                 userRole={userRole}
-                projectStatus={project.status}
+                currentUserId={currentUserId}
               />
-              
-              {(isAdmin || isCad || isEngineer) && (
-                <CADRevisionPanel
-                  projectId={project.id}
-                  revisions={cadRevisions}
-                  userRole={userRole}
-                  currentUserId={currentUserId}
-                />
-              )}
+            )}
 
-            </div>
-          )
+          </div>
         )}
       </div>
 

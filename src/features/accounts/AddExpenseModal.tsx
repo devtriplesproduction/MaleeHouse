@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IndianRupee, FileText, Calendar, Loader2, X, Tag } from 'lucide-react';
-import { createExpenseAction } from '@/actions/expense.actions';
+import { createExpenseAction, updateExpenseAction } from '@/actions/expense.actions';
 import { toast } from 'sonner';
 
 interface AddExpenseModalProps {
@@ -13,6 +13,7 @@ interface AddExpenseModalProps {
   projectId: string;
   onSuccess: () => void;
   initialCategory?: 'labor' | 'material' | 'travel' | 'overhead' | 'other';
+  expenseToEdit?: any;
 }
 
 export function AddExpenseModal({
@@ -20,13 +21,28 @@ export function AddExpenseModal({
   onClose,
   projectId,
   onSuccess,
-  initialCategory = 'labor'
+  initialCategory = 'labor',
+  expenseToEdit
 }: AddExpenseModalProps) {
   const [category, setCategory] = useState<'labor' | 'material' | 'travel' | 'overhead' | 'other'>(initialCategory);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState<string>('');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (expenseToEdit && isOpen) {
+      setCategory(expenseToEdit.category || 'other');
+      setDescription(expenseToEdit.description || '');
+      setAmount(expenseToEdit.amount?.toString() || '');
+      setExpenseDate(expenseToEdit.expense_date ? new Date(expenseToEdit.expense_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+    } else if (!expenseToEdit && isOpen) {
+      setCategory(initialCategory);
+      setDescription('');
+      setAmount('');
+      setExpenseDate(new Date().toISOString().split('T')[0]);
+    }
+  }, [expenseToEdit, isOpen, initialCategory]);
 
   if (!isOpen) return null;
 
@@ -39,16 +55,28 @@ export function AddExpenseModal({
 
     setIsSubmitting(true);
     try {
-      const res = await createExpenseAction({
-        project_id: projectId,
-        category,
-        description,
-        amount: Number(amount),
-        expense_date: expenseDate,
-      });
+      let res;
+      if (expenseToEdit) {
+        res = await updateExpenseAction({
+          id: expenseToEdit.id,
+          project_id: projectId,
+          category,
+          description,
+          amount: Number(amount),
+          expense_date: expenseDate,
+        });
+      } else {
+        res = await createExpenseAction({
+          project_id: projectId,
+          category,
+          description,
+          amount: Number(amount),
+          expense_date: expenseDate,
+        });
+      }
 
       if (res?.success) {
-        toast.success(`Expense logged successfully.`);
+        toast.success(expenseToEdit ? 'Expense updated successfully.' : 'Expense logged successfully.');
         onSuccess();
         onClose();
         // Reset state
@@ -56,10 +84,10 @@ export function AddExpenseModal({
         setAmount('');
         setCategory('labor');
       } else {
-        toast.error(res?.error || 'Failed to log expense.');
+        toast.error(res?.error || (expenseToEdit ? 'Failed to update expense.' : 'Failed to log expense.'));
       }
     } catch (error) {
-      toast.error('Unexpected error logging expense.');
+      toast.error('Unexpected error saving expense.');
     } finally {
       setIsSubmitting(false);
     }
@@ -110,9 +138,9 @@ export function AddExpenseModal({
                     required
                     className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   >
-                    <option value="labor">Labor Allocation</option>
+
                     <option value="material">Material Cost</option>
-                    <option value="travel">Travel & Field Visit</option>
+                    <option value="travel">Travel</option>
                     <option value="overhead">Overhead</option>
                     <option value="other">Other</option>
                   </select>

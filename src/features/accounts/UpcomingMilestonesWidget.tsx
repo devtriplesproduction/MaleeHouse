@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Calendar,
   Building2,
@@ -15,6 +15,7 @@ import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { CreateInvoiceModal } from './CreateInvoiceModal';
 
 export interface Milestone {
   id: string;
@@ -32,6 +33,11 @@ export interface Milestone {
     status: string;
     is_frozen: boolean;
   } | null;
+  invoices?: {
+    id: string;
+    status: string;
+    payments?: { status: string }[];
+  }[];
 }
 
 interface UpcomingMilestonesWidgetProps {
@@ -47,6 +53,9 @@ const formatCurrency = (amount: number) => {
 };
 
 export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidgetProps) {
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+
   // Filter for unpaid milestones and sort by due date ascending
   const upcomingMilestones = useMemo(() => {
     return milestones
@@ -116,23 +125,23 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
         </div>
       ) : (
         <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
-          {upcomingMilestones.slice(0, 6).map((m) => {
+          {upcomingMilestones.map((m) => {
             const dueStatus = getDueStatus(m.due_date);
             const isProjectFrozen = m.projects?.is_frozen || m.projects?.status === 'on_hold';
             const isOverdue = m.due_date && differenceInDays(new Date(m.due_date), new Date()) < 0;
+            const hasInvoice = m.invoices && m.invoices.length > 0;
 
-            return (
-              <div
-                key={m.id}
-                className={cn(
-                  'bg-white dark:bg-[#0f121b] border rounded-2xl p-4 transition-all duration-300 flex items-center justify-between group hover:shadow-md hover:border-slate-300 dark:hover:border-white/10',
-                  isProjectFrozen 
-                    ? 'border-rose-200 dark:border-rose-500/20 bg-rose-500/[0.01]' 
-                    : isOverdue
-                    ? 'border-rose-100 dark:border-rose-500/10'
-                    : 'border-slate-200/60 dark:border-white/5'
-                )}
-              >
+            const cardClasses = cn(
+              'bg-white dark:bg-[#0f121b] border rounded-2xl p-4 transition-all duration-300 flex items-center justify-between group hover:shadow-md hover:border-slate-300 dark:hover:border-white/10 cursor-pointer',
+              isProjectFrozen 
+                ? 'border-rose-200 dark:border-rose-500/20 bg-rose-500/[0.01]' 
+                : isOverdue
+                ? 'border-rose-100 dark:border-rose-500/10'
+                : 'border-slate-200/60 dark:border-white/5'
+            );
+
+            const cardContent = (
+              <>
                 {/* Left: Icon + Info */}
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className={cn(
@@ -152,7 +161,7 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
                   
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                       <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                         {m.projects?.name || 'Standalone Assignment'}
                       </span>
                       {m.is_activation_gate && (
@@ -183,26 +192,70 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
                 {/* Right: Amount + Due Date Status + Actions */}
                 <div className="flex items-center gap-4 flex-shrink-0 pl-4">
                   <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white nums">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white nums flex items-center justify-end gap-1.5">
                       {formatCurrency(m.amount)}
+                      {m.invoices && m.invoices.length > 0 ? (
+                        <span className="text-[8px] leading-none py-0.5 px-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-sm uppercase tracking-widest font-extrabold" title="Invoice generated and ready to send">READY</span>
+                      ) : (
+                        <span className="text-[8px] leading-none py-0.5 px-1 bg-slate-100 dark:bg-white/5 text-slate-400 rounded-sm uppercase tracking-widest font-bold" title="Invoice pending generation">PENDING</span>
+                      )}
                     </p>
                     <p className={cn('text-[10px] mt-0.5', dueStatus.className)}>
                       {dueStatus.text}
                     </p>
                   </div>
                   
-                  <Link
-                    href={`/accounts/milestones?project=${m.project_id}`}
-                    className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all active:scale-95"
-                    title="Manage Milestone"
+                  <div
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:bg-slate-50 dark:group-hover:bg-white/5 transition-all"
                   >
                     <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  </div>
                 </div>
+              </>
+            );
+
+            if (hasInvoice) {
+              return (
+                <Link
+                  key={m.id}
+                  href={`/invoices/${m.invoices![0].id}`}
+                  target="_blank"
+                  className={cardClasses}
+                >
+                  {cardContent}
+                </Link>
+              );
+            }
+
+            return (
+              <div
+                key={m.id}
+                onClick={() => {
+                  setSelectedMilestone(m);
+                  setInvoiceModalOpen(true);
+                }}
+                className={cardClasses}
+              >
+                {cardContent}
               </div>
             );
           })}
         </div>
+      )}
+      {selectedMilestone && (
+        <CreateInvoiceModal
+          isOpen={invoiceModalOpen}
+          onOpenChange={setInvoiceModalOpen}
+          projectId={selectedMilestone.project_id}
+          projectName={selectedMilestone.projects?.name || 'Unknown Project'}
+          clientName={selectedMilestone.projects?.client_name || 'Unknown Client'}
+          milestoneId={selectedMilestone.id}
+          milestoneTitle={selectedMilestone.title}
+          initialAmount={selectedMilestone.amount}
+          onSuccess={() => {
+            // Ideally we'd trigger a refresh here, but the user can click the refresh button manually
+          }}
+        />
       )}
     </div>
   );

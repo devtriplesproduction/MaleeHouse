@@ -107,7 +107,7 @@ export function ProjectBillingSummary({ project, userRole }: ProjectBillingSumma
                 </p>
                 <button
                   onClick={() => window.location.href = '/accounts'}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-xs shadow-lg shadow-amber-500/20 hover:bg-amber-600 transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 transition-all"
                 >
                   Go to Verification Center
                   <ArrowRight className="w-3 h-3" />

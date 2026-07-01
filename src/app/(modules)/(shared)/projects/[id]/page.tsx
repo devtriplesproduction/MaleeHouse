@@ -33,7 +33,7 @@ import { ProjectTeamStack } from "@/components/modules/ProjectTeamStack";
 import { ProjectTaskProgress } from "@/components/modules/ProjectTaskProgress";
 import { ProjectActivityFeed } from "@/components/modules/ProjectActivityFeed";
 import { ProjectBillingSummary } from "@/components/modules/ProjectBillingSummary";
-import { ProjectArchiveButton } from "@/components/modules/ProjectArchiveButton";
+
 import { OperationsControlCenter } from "@/components/modules/OperationsControlCenter";
 import { SalesActionsPanel } from "@/features/sales/components/SalesActionsPanel";
 import { LeadCRMView } from "@/features/sales/components/LeadCRMView";
@@ -64,10 +64,10 @@ const ROLE_THEME: Record<string, { primary: string; hover: string; text: string;
   admin:      { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
   sales:      { primary: "indigo-600",  hover: "hover:text-indigo-600 dark:hover:text-indigo-400",  text: "text-indigo-500",  bg: "bg-indigo-500/10",  border: "border-indigo-500/20",  glow: "bg-indigo-600/10" },
   accountant: { primary: "violet-600",  hover: "hover:text-violet-600 dark:hover:text-violet-400",  text: "text-violet-500",  bg: "bg-violet-500/10",  border: "border-violet-500/20",  glow: "bg-violet-600/10" },
-  engineer:   { primary: "amber-600",   hover: "hover:text-amber-600 dark:hover:text-amber-400",   text: "text-amber-500",   bg: "bg-amber-500/10",   border: "border-amber-500/20",   glow: "bg-amber-600/10" },
-  cad:        { primary: "blue-600",    hover: "hover:text-blue-600 dark:hover:text-blue-400",    text: "text-blue-500",    bg: "bg-blue-500/10",    border: "border-blue-500/20",    glow: "bg-blue-600/10" },
-  field:      { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-emerald-600/10" },
-  field_engineer: { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-emerald-600/10" },
+  engineer:   { primary: "amber-600",   hover: "hover:text-amber-600 dark:hover:text-amber-400",   text: "text-amber-500",   bg: "bg-amber-500/10",   border: "border-amber-500/20",   glow: "bg-indigo-600/10" },
+  cad:        { primary: "blue-600",    hover: "hover:text-blue-600 dark:hover:text-blue-400",    text: "text-blue-500",    bg: "bg-blue-500/10",    border: "border-blue-500/20",    glow: "bg-indigo-600/10" },
+  field:      { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-indigo-600/10" },
+  field_engineer: { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-indigo-600/10" },
   qc:         { primary: "purple-600",  hover: "hover:text-purple-600 dark:hover:text-purple-400",  text: "text-purple-500",  bg: "bg-purple-500/10",  border: "border-purple-500/20",  glow: "bg-purple-600/10" },
 };
 
@@ -375,7 +375,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     prototype: "text-purple-500 bg-purple-500/10 border-purple-500/20",
     review: "text-orange-500 bg-orange-500/10 border-orange-500/20",
     field_work: "text-sky-500 bg-sky-500/10 border-sky-500/20",
-    completed: "text-emerald-600 bg-emerald-600/10 border-emerald-600/20",
+    completed: "text-emerald-600 bg-indigo-600/10 border-emerald-600/20",
     archived: "text-slate-500 bg-slate-500/10 border-slate-500/20",
   };
 
@@ -454,9 +454,6 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2.5">
-                {canArchive && project.status !== 'archived' && (
-                  <ProjectArchiveButton projectId={project.id} />
-                )}
               </div>
             </div>
           </div>

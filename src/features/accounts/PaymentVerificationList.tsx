@@ -148,7 +148,7 @@ export function PaymentVerificationList({ payments }: PaymentVerificationListPro
                     <button 
                       onClick={() => handleVerify(payment, 'verified')}
                       disabled={loadingId !== null}
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-emerald-500/20 disabled:opacity-50"
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-indigo-500/20 disabled:opacity-50"
                     >
                       {loadingId === payment.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

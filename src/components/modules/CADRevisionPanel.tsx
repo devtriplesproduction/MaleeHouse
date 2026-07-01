@@ -173,7 +173,7 @@ export function CADRevisionPanel({
             <button
               onClick={handleBypassEscalation}
               disabled={isBypassing}
-              className="px-4 py-2 text-xs font-black text-white bg-rose-600 hover:bg-rose-700 disabled:bg-slate-700 rounded-xl transition-all uppercase tracking-widest shrink-0"
+              className="px-4 py-2 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 rounded-xl transition-all uppercase tracking-widest shrink-0"
             >
               {isBypassing ? "Authorizing..." : "Authorize Bypass"}
             </button>
@@ -341,8 +341,8 @@ export function CADRevisionPanel({
                                 className={cn(
                                   "flex items-center gap-2 px-5 py-2 text-sm font-black text-white rounded-xl transition-all disabled:opacity-50",
                                   activeAction.type === "approve"
-                                    ? "bg-emerald-600 hover:bg-emerald-700"
-                                    : "bg-rose-600 hover:bg-rose-700"
+                                    ? "bg-indigo-600 hover:bg-indigo-700"
+                                    : "bg-indigo-600 hover:bg-indigo-700"
                                 )}
                               >
                                 {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -359,7 +359,7 @@ export function CADRevisionPanel({
                                 "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-black text-white rounded-xl transition-all shadow-lg",
                                 isFrozen 
                                   ? "bg-slate-400 dark:bg-white/10 opacity-50 cursor-not-allowed shadow-none" 
-                                  : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                                  : "bg-indigo-600 hover:bg-indigo-700 shadow-emerald-600/20"
                               )}
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -372,7 +372,7 @@ export function CADRevisionPanel({
                                 "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-black text-white rounded-xl transition-all shadow-lg",
                                 isFrozen 
                                   ? "bg-slate-400 dark:bg-white/10 opacity-50 cursor-not-allowed shadow-none" 
-                                  : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
+                                  : "bg-indigo-600 hover:bg-indigo-700 shadow-rose-600/20"
                               )}
                             >
                               <XCircle className="w-3.5 h-3.5" />

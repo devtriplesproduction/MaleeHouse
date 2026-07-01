@@ -434,8 +434,8 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
                               leave.leave_type?.toLowerCase() === 'casual'
                                 ? 'text-indigo-800 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20 shadow-sm shadow-indigo-500/[0.02]'
                                 : leave.leave_type?.toLowerCase() === 'sick'
-                                ? 'text-amber-800 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20 shadow-sm shadow-amber-500/[0.02]'
-                                : 'text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/[0.02]'
+                                ? 'text-amber-800 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20 shadow-sm shadow-indigo-500/[0.02]'
+                                : 'text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 shadow-sm shadow-indigo-500/[0.02]'
                             )}
                           >
                             {leave.leave_type} Leave

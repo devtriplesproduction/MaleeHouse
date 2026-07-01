@@ -20,6 +20,8 @@ import {
   Award,
   Loader2,
   Target,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CreateInvoiceModal } from "@/features/accounts/CreateInvoiceModal";
@@ -32,7 +34,7 @@ import {
   unfreezeProjectAction,
   updateProjectBudgetAction,
 } from "@/actions/finance.actions";
-import { getExpensesAction } from "@/actions/expense.actions";
+import { getExpensesAction, deleteExpenseAction } from "@/actions/expense.actions";
 import { createInvoiceAction } from "@/actions/finance.actions";
 import { updateProjectStageAction } from "@/actions/workflow.actions";
 import { toast } from "sonner";
@@ -56,11 +58,11 @@ interface Milestone {
   linked_stage?: string;
   is_activation_gate: boolean;
   status:
-    | "pending"
-    | "invoice_generated"
-    | "payment_verification_pending"
-    | "paid"
-    | "overdue";
+  | "pending"
+  | "invoice_generated"
+  | "payment_verification_pending"
+  | "paid"
+  | "overdue";
 }
 
 interface Visit {
@@ -68,13 +70,15 @@ interface Visit {
   visit_date: string;
   completed_at?: string;
   status:
-    | "scheduled"
-    | "completed"
-    | "invoice_generated"
-    | "paid"
-    | "cancelled";
+  | "scheduled"
+  | "completed"
+  | "invoice_generated"
+  | "paid"
+  | "cancelled";
   reported_by: string;
   description?: string;
+  is_billable?: boolean;
+  visit_cost?: number;
 }
 
 interface ProjectFinanceTabContentProps {
@@ -170,10 +174,13 @@ export function ProjectFinanceTabContent({
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [expenseCategory, setExpenseCategory] = useState<'labor' | 'material' | 'travel' | 'overhead' | 'other'>('labor');
+  const [editingExpense, setEditingExpense] = useState<any>(null);
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState(project.budget || 0);
-  const [selectedPaymentMilestone, setSelectedPaymentMilestone] =
-    useState<any>(null);
+  const [selectedPaymentMilestone, setSelectedPaymentMilestone] = useState<any>(null);
+  const [expenseInvoiceModalOpen, setExpenseInvoiceModalOpen] = useState(false);
+  const [selectedExpenseForInvoice, setSelectedExpenseForInvoice] = useState<any>(null);
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<Set<string>>(new Set());
 
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
@@ -201,7 +208,11 @@ export function ProjectFinanceTabContent({
     fetchExpenses();
   }, [projectId]);
 
-  const totalBilled = milestones.reduce((sum, m) => sum + (m.amount || 0), 0);
+  // Calculate Total Billed using Approved Quotation and Billable Field Visits
+  const quotationTotal = quotation && quotation.status === 'Approved' ? Number(quotation.total_amount || 0) : 0;
+  const visitsTotal = visits.filter(v => v.is_billable).reduce((sum, v) => sum + Number(v.visit_cost || 0), 0);
+  const totalBilled = quotationTotal + visitsTotal;
+
   const totalPaid = milestones
     .filter((m) => m.status === "paid")
     .reduce((sum, m) => sum + (m.amount || 0), 0);
@@ -209,7 +220,7 @@ export function ProjectFinanceTabContent({
     (sum, exp) => sum + (exp.amount || 0),
     0,
   );
-  const currentProfit = totalPaid - totalExpenses;
+  const currentProfit = totalBilled - totalExpenses;
 
   // 1. Accountant Assignment Submit
   const handleAssignAccountant = async () => {
@@ -447,134 +458,34 @@ export function ProjectFinanceTabContent({
     }
   };
 
+  const handleDeleteExpense = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this expense? This action cannot be undone.")) return;
+    setIsSubmitting(true);
+    try {
+      const res = await deleteExpenseAction(id);
+      if (res.success) {
+        toast.success("Expense Deleted");
+        const fetchExpenses = async () => {
+          const res = await getExpensesAction({ project_id: projectId });
+          if (res.success) {
+            setExpenses(res.data || []);
+          }
+        };
+        fetchExpenses();
+        onRefresh?.();
+      } else {
+        toast.error("Failed to delete expense", { description: res.error });
+      }
+    } catch (err: any) {
+      toast.error("Unexpected Error", { description: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Overview Cards */}
-      {/* Project P&L & Budget Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* P&L Card */}
-        <div className="bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-900/50 dark:to-slate-900/20 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden group">
-          {/* Decorative glow */}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-110"></div>
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                <Target className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Project P&L <span className="text-slate-400 font-medium">(Profit & Loss)</span>
-              </h3>
-            </div>
-            
-            <div className="space-y-4 mb-8 mt-2">
-              <div className="flex justify-between items-center text-sm p-3 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-100 dark:border-white/5 shadow-sm">
-                <span className="text-slate-500 font-medium">Total Billed (Income)</span>
-                <span className="font-bold text-slate-900 dark:text-white text-base">{formatRupee(totalBilled)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm p-3 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-100 dark:border-white/5 shadow-sm">
-                <span className="text-slate-500 font-medium">Total Expenses</span>
-                <span className="font-bold text-slate-900 dark:text-white text-base">{formatRupee(totalExpenses)}</span>
-              </div>
-              
-              <div className="pt-4 mt-4 border-t border-slate-200 dark:border-white/10 flex justify-between items-end">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Net Profit</span>
-                </div>
-                <span className={cn(
-                  "text-3xl font-black tracking-tight", 
-                  currentProfit >= 0 ? "text-emerald-500 drop-shadow-[0_2px_10px_rgba(16,185,129,0.2)]" : "text-rose-500 drop-shadow-[0_2px_10px_rgba(244,63,94,0.2)]"
-                )}>
-                  {formatRupee(currentProfit)}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3 mt-auto">
-            <button
-              onClick={() => {
-                setExpenseCategory('labor');
-                setExpenseModalOpen(true);
-              }}
-              className="py-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-300 shadow-sm hover:shadow-md"
-            >
-              <UserPlus className="w-4 h-4 text-indigo-500" />
-              Allocate Labor
-            </button>
-            <button
-              onClick={() => {
-                setExpenseCategory('material');
-                setExpenseModalOpen(true);
-              }}
-              className="py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_14px_0_rgba(99,102,241,0.39)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.23)] hover:-translate-y-0.5"
-            >
-              <FileText className="w-4 h-4" />
-              Allocate Material
-            </button>
-          </div>
-        </div>
 
-        {/* Budget vs Actual Card */}
-        <div className="bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-900/50 dark:to-slate-900/20 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-sm relative overflow-hidden group">
-          {/* Decorative glow */}
-          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-500/5 dark:bg-amber-500/10 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-110"></div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl">
-                  <Award className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Budget vs Actual
-                </h3>
-              </div>
-              {isEditingBudget ? (
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={budgetInput}
-                    onChange={(e) => setBudgetInput(Number(e.target.value))}
-                    className="w-24 px-2 py-1 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded outline-none"
-                  />
-                  <button onClick={handleUpdateBudget} disabled={isSubmitting} className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded font-medium">Save</button>
-                  <button onClick={() => setIsEditingBudget(false)} disabled={isSubmitting} className="text-xs bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded font-medium">Cancel</button>
-                </div>
-              ) : (
-                <button onClick={() => setIsEditingBudget(true)} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
-                  Edit Budget
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-4 mt-6">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Actual Spent</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatRupee(totalExpenses)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-slate-500 mb-1">Total Budget</p>
-                  <p className="text-lg font-bold text-slate-900 dark:text-white">{formatRupee(project.budget || 0)}</p>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="h-3 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className={cn("h-full rounded-full transition-all duration-500", 
-                    (project.budget || 0) === 0 ? "bg-slate-400" :
-                    totalExpenses > (project.budget || 0) ? "bg-rose-500" : "bg-emerald-500"
-                  )}
-                  style={{ width: `${Math.min(100, (project.budget || 0) > 0 ? (totalExpenses / project.budget) * 100 : 0)}%` }}
-                />
-              </div>
-              <p className="text-xs text-slate-500 text-center mt-2">
-                {project.budget > 0 ? `${((totalExpenses / project.budget) * 100).toFixed(1)}% of budget utilized` : 'No budget set for this project.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* ── Top Finance Actions Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -639,7 +550,7 @@ export function ProjectFinanceTabContent({
           {isAccountant && milestones.length === 0 && !showMilestoneForm && (
             <button
               onClick={() => setShowMilestoneForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition"
             >
               <Plus className="w-4 h-4" /> Structure Milestones
             </button>
@@ -653,7 +564,7 @@ export function ProjectFinanceTabContent({
             className="p-6 bg-slate-950/60 rounded-3xl border border-slate-800 space-y-6 animate-in slide-in-from-top duration-300"
           >
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-blue-500" /> Configure
+              <DollarSign className="w-4 h-4 text-indigo-500" /> Configure
               Milestone Schedule (INR, 18% GST Compliance)
             </h4>
 
@@ -750,7 +661,7 @@ export function ProjectFinanceTabContent({
                             e.target.checked,
                           )
                         }
-                        className="rounded bg-slate-950 border-slate-800 text-blue-600 w-4 h-4 focus:ring-0"
+                        className="rounded bg-slate-950 border-slate-800 text-indigo-600 w-4 h-4 focus:ring-0"
                       />
                       <label
                         htmlFor={`act-gate-${idx}`}
@@ -777,7 +688,7 @@ export function ProjectFinanceTabContent({
               <button
                 type="button"
                 onClick={handleAddMilestoneItem}
-                className="flex items-center gap-1 text-xs font-bold text-blue-500 hover:text-blue-400"
+                className="flex items-center gap-1 text-xs font-bold text-indigo-500 hover:text-indigo-400"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Milestone Item
               </button>
@@ -786,10 +697,10 @@ export function ProjectFinanceTabContent({
                 {isAccountant && (
                   <button
                     onClick={() => setExpenseModalOpen(true)}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2"
                   >
                     <Award className="w-4 h-4" />
-                    Log Expense
+                    record Expense
                   </button>
                 )}
                 <button
@@ -802,7 +713,7 @@ export function ProjectFinanceTabContent({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md shadow-blue-500/10"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-md shadow-indigo-500/10"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -839,43 +750,43 @@ export function ProjectFinanceTabContent({
                 return (
                   <tr
                     key={m.id}
-                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200"
+                    className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50/80 dark:hover:bg-white/[0.02] text-sm transition duration-200"
                   >
                     <td className="p-4">
-                      <div className="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-1.5">
+                      <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                         {m.is_activation_gate && (
                           <span title="Project Activation Milestone">
-                            <Award className="w-3.5 h-3.5 text-blue-500" />
+                            <Award className="w-4 h-4 text-indigo-500" />
                           </span>
                         )}
-                        {m.title}
+                        <span className="max-w-[140px] leading-tight block">{m.title}</span>
                       </div>
                       {m.description && (
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-slate-500 mt-1 block">
                           {m.description}
                         </span>
                       )}
                     </td>
-                    <td className="p-4 nums font-bold text-slate-300">
+                    <td className="p-4 nums font-bold text-slate-400 dark:text-slate-500">
                       {formatRupee(m.amount)}
                     </td>
-                    <td className="p-4 nums text-slate-500">
-                      <div>{formatRupee(gstAmount)}</div>
-                      <div className="text-[8px] text-slate-600">
+                    <td className="p-4 nums text-slate-500 dark:text-slate-400">
+                      <div className="font-semibold text-slate-500 dark:text-slate-400">{formatRupee(gstAmount)}</div>
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-medium">
                         (9% CGST + 9% SGST)
                       </div>
                     </td>
-                    <td className="p-4 nums font-bold text-blue-400">
+                    <td className="p-4 nums font-bold text-indigo-600 dark:text-indigo-400">
                       {formatRupee(totalAmount)}
                     </td>
-                    <td className="p-4 nums text-slate-400">
+                    <td className="p-4 nums font-medium text-slate-400 dark:text-slate-500">
                       {m.due_date
                         ? new Date(m.due_date).toLocaleDateString()
                         : "N/A"}
                     </td>
                     <td className="p-4">
                       {m.linked_stage ? (
-                        <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <span className="inline-flex px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 text-[11px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/50 shadow-sm whitespace-nowrap">
                           {STAGE_LABELS[m.linked_stage]}
                         </span>
                       ) : (
@@ -892,7 +803,7 @@ export function ProjectFinanceTabContent({
                               ? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"
                               : m.status === "invoice_generated"
                                 ? "bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20"
-                                : "bg-slate-800 text-white border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                : "bg-slate-900 text-white border-slate-800 dark:bg-slate-800 dark:text-slate-200"
                         )}
                       >
                         {m.status.replace("_", " ")}
@@ -911,7 +822,7 @@ export function ProjectFinanceTabContent({
                               )
                             }
                             disabled={isSubmitting}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-xs transition-all disabled:opacity-50 shadow-md shadow-blue-500/20 hover:-translate-y-0.5"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-xs transition-all disabled:opacity-50 shadow-md shadow-indigo-500/20 hover:-translate-y-0.5"
                           >
                             Bill Milestone
                           </button>
@@ -921,7 +832,7 @@ export function ProjectFinanceTabContent({
                               setSelectedPaymentMilestone(m);
                               setPaymentModalOpen(true);
                             }}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full text-xs transition-all shadow-md shadow-emerald-500/20 hover:-translate-y-0.5"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-xs transition-all shadow-md shadow-indigo-500/20 hover:-translate-y-0.5"
                           >
                             Log Payment
                           </button>
@@ -973,13 +884,33 @@ export function ProjectFinanceTabContent({
             </p>
           </div>
           {isAccountant && (
-            <button
-              onClick={() => setExpenseModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Log Expense
-            </button>
+            <div className="flex gap-3 items-center">
+              {selectedExpenseIds.size > 0 && (
+                <button
+                  onClick={() => {
+                    const selected = expenses.filter(e => selectedExpenseIds.has(e.id));
+                    const totalAmount = selected.reduce((sum, e) => sum + Number(e.amount), 0);
+                    const title = `Reimbursement for ${selected.length} items: ` + selected.map(e => e.description).join(', ');
+                    setSelectedExpenseForInvoice({
+                      id: 'multiple',
+                      amount: totalAmount,
+                      description: title.substring(0, 150) + (title.length > 150 ? '...' : '')
+                    });
+                    setExpenseInvoiceModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
+                >
+                  Bill Selected ({selectedExpenseIds.size})
+                </button>
+              )}
+              <button
+                onClick={() => setExpenseModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Record Expense
+              </button>
+            </div>
           )}
         </div>
 
@@ -990,18 +921,18 @@ export function ProjectFinanceTabContent({
             <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500/80 mb-2 relative z-10">Total Billed Revenue</span>
             <span className="text-3xl font-black text-indigo-950 dark:text-indigo-100 nums relative z-10">{formatRupee(totalBilled)}</span>
           </div>
-          
+
           <div className="p-5 rounded-3xl bg-gradient-to-br from-rose-50/80 to-slate-50/50 dark:from-rose-950/30 dark:to-slate-900/20 border border-rose-100/50 dark:border-rose-500/10 flex flex-col relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
             <div className="absolute -right-10 -top-10 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-colors"></div>
             <span className="text-[10px] font-black uppercase tracking-widest text-rose-500/80 mb-2 relative z-10">Total Expenses</span>
             <span className="text-3xl font-black text-rose-950 dark:text-rose-100 nums relative z-10">{formatRupee(totalExpenses)}</span>
           </div>
-          
+
           <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/80 to-slate-50/50 dark:from-emerald-950/30 dark:to-slate-900/20 border border-emerald-100/50 dark:border-emerald-500/10 flex flex-col relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
             <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-colors"></div>
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80 mb-2 relative z-10">Current Profitability</span>
             <span className={cn(
-              "text-3xl font-black nums relative z-10 tracking-tight", 
+              "text-3xl font-black nums relative z-10 tracking-tight",
               currentProfit >= 0 ? "text-emerald-600 dark:text-emerald-400 drop-shadow-[0_2px_8px_rgba(16,185,129,0.2)]" : "text-rose-600 dark:text-rose-500 drop-shadow-[0_2px_8px_rgba(244,63,94,0.2)]"
             )}>
               {formatRupee(currentProfit)}
@@ -1013,11 +944,25 @@ export function ProjectFinanceTabContent({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                {isAccountant && (
+                  <th className="p-4 w-12 text-center">
+                    <input 
+                      type="checkbox" 
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedExpenseIds(new Set(expenses.map(exp => exp.id)));
+                        else setSelectedExpenseIds(new Set());
+                      }}
+                      checked={selectedExpenseIds.size === expenses.length && expenses.length > 0}
+                      className="rounded bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-indigo-600 focus:ring-0"
+                    />
+                  </th>
+                )}
                 <th className="p-4">Date</th>
                 <th className="p-4">Category</th>
                 <th className="p-4">Description</th>
                 <th className="p-4 text-right">Amount</th>
                 <th className="p-4 text-center">Receipt</th>
+                <th className="p-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1029,6 +974,21 @@ export function ProjectFinanceTabContent({
                 </tr>
               ) : expenses.map((exp) => (
                 <tr key={exp.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200">
+                  {isAccountant && (
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox"
+                        checked={selectedExpenseIds.has(exp.id)}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedExpenseIds);
+                          if (e.target.checked) newSet.add(exp.id);
+                          else newSet.delete(exp.id);
+                          setSelectedExpenseIds(newSet);
+                        }}
+                        className="rounded bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-indigo-600 focus:ring-0"
+                      />
+                    </td>
+                  )}
                   <td className="p-4 text-slate-700 dark:text-slate-300 nums font-bold">
                     {new Date(exp.expense_date).toLocaleDateString()}
                   </td>
@@ -1052,6 +1012,40 @@ export function ProjectFinanceTabContent({
                     ) : (
                       <span className="text-slate-600">-</span>
                     )}
+                  </td>
+                  <td className="p-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingExpense(exp);
+                          setExpenseModalOpen(true);
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-indigo-400/10 rounded-lg transition-colors"
+                        title="Edit Expense"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteExpense(exp.id)}
+                        disabled={isSubmitting}
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors"
+                        title="Delete Expense"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      {isAccountant && (
+                        <button
+                          onClick={() => {
+                            setSelectedExpenseForInvoice(exp);
+                            setExpenseInvoiceModalOpen(true);
+                          }}
+                          className="px-3 py-1 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-indigo-400 font-semibold rounded-lg text-xs transition-all shadow-sm"
+                          title="Generate Invoice for this Expense"
+                        >
+                          Bill
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1114,24 +1108,22 @@ export function ProjectFinanceTabContent({
                     </td>
                     <td className="p-4">
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${
-                          v.completed_at
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        }`}
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${v.completed_at
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          }`}
                       >
                         {v.completed_at ? "Completed" : "Scheduled"}
                       </span>
                     </td>
                     <td className="p-4">
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${
-                          v.status === "paid"
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            : v.status === "invoice_generated"
-                              ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                              : "bg-slate-855 text-slate-440 border border-slate-800"
-                        }`}
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-bold tracking-widest ${v.status === "paid"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : v.status === "invoice_generated"
+                            ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                            : "bg-slate-855 text-slate-440 border border-slate-800"
+                          }`}
                       >
                         {v.status}
                       </span>
@@ -1149,7 +1141,7 @@ export function ProjectFinanceTabContent({
                               )
                             } // Standard visit cost ₹15,000 + GST
                             disabled={isSubmitting}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-xs transition-all disabled:opacity-50 shadow-md shadow-blue-500/20 hover:-translate-y-0.5"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-xs transition-all disabled:opacity-50 shadow-md shadow-indigo-500/20 hover:-translate-y-0.5"
                           >
                             Bill Visit
                           </button>
@@ -1354,17 +1346,39 @@ export function ProjectFinanceTabContent({
 
       <AddExpenseModal
         isOpen={expenseModalOpen}
-        onClose={() => setExpenseModalOpen(false)}
-        projectId={project.id}
+        onClose={() => {
+          setExpenseModalOpen(false);
+          setEditingExpense(null);
+        }}
+        projectId={projectId}
         initialCategory={expenseCategory}
+        expenseToEdit={editingExpense}
         onSuccess={() => {
           const fetchExpenses = async () => {
-            const res = await getExpensesAction({ project_id: project.id });
+            const res = await getExpensesAction({ project_id: projectId });
             if (res.success) {
               setExpenses(res.data || []);
             }
           };
           fetchExpenses();
+          onRefresh?.();
+        }}
+      />
+
+      <CreateInvoiceModal
+        isOpen={expenseInvoiceModalOpen}
+        onOpenChange={(open) => {
+          setExpenseInvoiceModalOpen(open);
+          if (!open) setSelectedExpenseForInvoice(null);
+        }}
+        projectId={project.id}
+        projectName={project.name}
+        clientName={project.client_name}
+        expenseId={selectedExpenseForInvoice?.id}
+        expenseTitle={selectedExpenseForInvoice?.description}
+        initialAmount={selectedExpenseForInvoice?.amount}
+        onSuccess={() => {
+          setSelectedExpenseIds(new Set());
           onRefresh?.();
         }}
       />

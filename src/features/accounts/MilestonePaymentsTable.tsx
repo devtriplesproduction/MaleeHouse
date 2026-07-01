@@ -2,18 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  Target, 
-  Calendar, 
-  Pause, 
-  CheckCircle2, 
-  Clock, 
-  Lock, 
-  Unlock, 
+import {
+  Target,
+  Calendar,
+  Pause,
+  CheckCircle2,
+  Clock,
+  Lock,
+  Unlock,
   Building,
   Bell,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FilePlus
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -21,11 +22,12 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 import { LogPaymentModal } from './LogPaymentModal';
-import { 
-  updateMilestoneStatusAction, 
-  rescheduleMilestoneAction, 
-  freezeProjectAction, 
-  unfreezeProjectAction 
+import { CreateInvoiceModal } from './CreateInvoiceModal';
+import {
+  updateMilestoneStatusAction,
+  rescheduleMilestoneAction,
+  freezeProjectAction,
+  unfreezeProjectAction
 } from '@/actions/finance.actions';
 
 export interface MilestonePayment {
@@ -113,6 +115,9 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentMilestone, setSelectedPaymentMilestone] = useState<MilestonePayment | null>(null);
 
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [selectedInvoiceMilestone, setSelectedInvoiceMilestone] = useState<MilestonePayment | null>(null);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -127,8 +132,8 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
       const projName = m.projects?.name || '';
       const clientName = m.projects?.client_name || '';
       const title = m.title || '';
-      
-      const matchesSearch = 
+
+      const matchesSearch =
         projName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -334,30 +339,30 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
         </div>
       ) : (
         <>
-          <div className="space-y-3.5">
-          {paginatedItems.map((m) => {
-            const displayStatus = getDisplayStatus(m);
-            const StatusIcon = statusConfig[displayStatus]?.icon || Clock;
-            const isProjectFrozen = m.projects?.is_frozen || m.projects?.status === 'on_hold';
-            
-            return (
-              <div
-                key={m.id}
-                className={cn(
-                  "relative rounded-2xl border bg-white dark:bg-[#0f121b] pt-[18px] pb-[18px] pl-3 pr-4 md:py-[15px] md:pl-4 md:pr-6 hover:shadow-md hover:border-slate-300 dark:hover:border-white/10 transition-all duration-300 flex flex-col md:flex-row md:items-center gap-4 md:gap-0 group",
-                  isProjectFrozen 
-                    ? "border-rose-200 dark:border-rose-500/20 shadow-rose-500/5" 
-                    : "border-slate-200/60 dark:border-white/5 shadow-sm",
-                  activeMenuId === m.id ? "z-50" : "z-10"
-                )}
-              >
+          <div className="space-y-2">
+            {paginatedItems.map((m) => {
+              const displayStatus = getDisplayStatus(m);
+              const StatusIcon = statusConfig[displayStatus]?.icon || Clock;
+              const isProjectFrozen = m.projects?.is_frozen || m.projects?.status === 'on_hold';
+
+              return (
+                <div
+                  key={m.id}
+                  className={cn(
+                    "relative rounded-2xl border bg-white dark:bg-[#0f121b] pt-[18px] pb-[18px] pl-3 pr-4 md:py-[15px] md:pl-4 md:pr-6 hover:shadow-md hover:border-slate-300 dark:hover:border-white/10 transition-all duration-300 flex flex-col md:flex-row md:items-center gap-4 md:gap-0 group",
+                    isProjectFrozen
+                      ? "border-rose-200 dark:border-rose-500/20 shadow-indigo-500/5"
+                      : "border-slate-200/60 dark:border-white/5 shadow-sm",
+                    activeMenuId === m.id ? "z-50" : "z-10"
+                  )}
+                >
                   {/* Section 1: Icon + Project, Client, & Title */}
                   <div className="flex items-start gap-3 flex-1 min-w-0 md:pr-4 py-0.5">
                     {/* Tinted Icon Box */}
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm group-hover:scale-105 transition-transform duration-200 flex-shrink-0 mt-1",
-                      isProjectFrozen 
-                        ? "bg-rose-500/10 border-rose-500/20 text-rose-500" 
+                      isProjectFrozen
+                        ? "bg-rose-500/10 border-rose-500/20 text-rose-500"
                         : "bg-indigo-500/10 border-indigo-500/20 text-indigo-500 dark:text-indigo-400"
                     )}>
                       {isProjectFrozen ? <Lock className="w-4 h-4" /> : <Target className="w-4 h-4" />}
@@ -445,6 +450,24 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setSelectedInvoiceMilestone(m);
+                            setInvoiceModalOpen(true);
+                          }}
+                          disabled={isProjectFrozen}
+                          title={isProjectFrozen ? "Project is frozen. Resume project to create invoice." : "Create Invoice"}
+                          className={cn(
+                            "h-8 px-3 rounded-lg text-xs font-semibold border border-amber-600 text-amber-600 dark:border-amber-500/50 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
+                            isProjectFrozen && "opacity-50 cursor-not-allowed active:scale-100"
+                          )}
+                        >
+                          <FilePlus className="w-3.5 h-3.5" />
+                          Create Invoice
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setRescheduleMilestone(m);
                             setRescheduleDate(m.due_date ? m.due_date.split('T')[0] : '');
                           }}
@@ -458,17 +481,17 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setHoldProjectTarget({ 
-                              id: m.project_id, 
-                              name: m.projects?.name || 'Project', 
-                              isFrozen: !!isProjectFrozen 
+                            setHoldProjectTarget({
+                              id: m.project_id,
+                              name: m.projects?.name || 'Project',
+                              isFrozen: !!isProjectFrozen
                             });
                           }}
                           title={isProjectFrozen ? "Resume Project Operations" : "Hold Project Operations"}
                           className={cn(
                             "h-8 w-8 rounded-lg border shadow-sm transition-all active:scale-95 flex items-center justify-center flex-shrink-0",
-                            isProjectFrozen 
-                              ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20" 
+                            isProjectFrozen
+                              ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
                               : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10"
                           )}
                         >
@@ -486,17 +509,17 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setHoldProjectTarget({ 
-                              id: m.project_id, 
-                              name: m.projects?.name || 'Project', 
-                              isFrozen: !!isProjectFrozen 
+                            setHoldProjectTarget({
+                              id: m.project_id,
+                              name: m.projects?.name || 'Project',
+                              isFrozen: !!isProjectFrozen
                             });
                           }}
                           title={isProjectFrozen ? "Resume Project Operations" : "Hold Project Operations"}
                           className={cn(
                             "absolute right-0 h-8 w-8 rounded-lg border shadow-sm transition-all active:scale-95 flex items-center justify-center flex-shrink-0",
-                            isProjectFrozen 
-                              ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20" 
+                            isProjectFrozen
+                              ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
                               : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10"
                           )}
                         >
@@ -554,7 +577,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                       </button>
                     );
                   }
-                  
+
                   if (
                     (page === 2 && currentPage > 3) ||
                     (page === totalPages - 1 && currentPage < totalPages - 2)
@@ -696,8 +719,8 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                     value={holdReason}
                     onChange={(e) => setHoldReason(e.target.value)}
                     placeholder={
-                      holdProjectTarget.isFrozen 
-                        ? "Describe reason for resuming project operations" 
+                      holdProjectTarget.isFrozen
+                        ? "Describe reason for resuming project operations"
                         : "Describe reason for putting the project on hold"
                     }
                     className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none"
@@ -716,7 +739,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                     disabled={submittingHold}
                     className={cn(
                       "px-5 py-2 rounded-xl text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1.5",
-                      holdProjectTarget.isFrozen ? "bg-indigo-600 hover:bg-indigo-500" : "bg-rose-600 hover:bg-rose-500"
+                      holdProjectTarget.isFrozen ? "bg-indigo-600 hover:bg-indigo-500" : "bg-indigo-600 hover:bg-rose-500"
                     )}
                   >
                     {submittingHold ? (
@@ -742,6 +765,25 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
         milestoneTitle={selectedPaymentMilestone?.title || ''}
         amount={selectedPaymentMilestone?.amount || 0}
         onSuccess={() => onRefresh()}
+      />
+
+      <CreateInvoiceModal
+        isOpen={invoiceModalOpen}
+        onOpenChange={(open) => {
+          setInvoiceModalOpen(open);
+          if (!open) setSelectedInvoiceMilestone(null);
+        }}
+        projectId={selectedInvoiceMilestone?.project_id || ''}
+        projectName={selectedInvoiceMilestone?.projects?.name || ''}
+        clientName={selectedInvoiceMilestone?.projects?.client_name || ''}
+        milestoneId={selectedInvoiceMilestone?.id || ''}
+        milestoneTitle={selectedInvoiceMilestone?.title || ''}
+        initialAmount={selectedInvoiceMilestone?.amount || 0}
+        onSuccess={() => {
+          setInvoiceModalOpen(false);
+          setSelectedInvoiceMilestone(null);
+          onRefresh();
+        }}
       />
     </div>
   );

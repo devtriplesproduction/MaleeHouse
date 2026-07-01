@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Download, FileText, FileSpreadsheet, Calendar, ChevronDown, CheckCircle2, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { FileText, FileSpreadsheet, Calendar, ChevronDown, CheckCircle2, Loader2, Download } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, subDays, subMonths, subWeeks } from 'date-fns';
 import { 
   getProfitLossReportAction, 
   getIncomeStatementAction, 
@@ -12,10 +13,12 @@ import {
   getCashFlowStatementAction, 
   getBalanceSheetAction 
 } from '@/actions/reports.actions';
+import { getProjectsListAction } from '@/actions/project.actions';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
 
 type ReportType = 'profit_loss' | 'income' | 'expense' | 'cash_flow' | 'balance_sheet';
+type DateRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
@@ -23,45 +26,92 @@ const formatCurrency = (value: number) => {
 
 export function ReportsGenerator() {
   const [reportType, setReportType] = useState<ReportType>('profit_loss');
-  const [dateFrom, setDateFrom] = useState(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
-  const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [datePreset, setDatePreset] = useState<DateRangePreset>('this_month');
+  const [dateFrom, setDateFrom] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [dateTo, setDateTo] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
-  const [generatedConfig, setGeneratedConfig] = useState<{type: ReportType, from: string, to: string} | null>(null);
+  const [generatedConfig, setGeneratedConfig] = useState<{type: ReportType, from: string, to: string, projectId?: string} | null>(null);
+
+  useEffect(() => {
+    async function loadProjects() {
+      const res = await getProjectsListAction();
+      if (res.success && res.data) {
+        setProjects(res.data);
+      }
+    }
+    loadProjects();
+  }, []);
+
+  const handleDatePresetChange = (preset: DateRangePreset) => {
+    setDatePreset(preset);
+    const now = new Date();
+    switch (preset) {
+      case 'today':
+        setDateFrom(format(startOfDay(now), 'yyyy-MM-dd'));
+        setDateTo(format(endOfDay(now), 'yyyy-MM-dd'));
+        break;
+      case 'yesterday':
+        const yesterday = subDays(now, 1);
+        setDateFrom(format(startOfDay(yesterday), 'yyyy-MM-dd'));
+        setDateTo(format(endOfDay(yesterday), 'yyyy-MM-dd'));
+        break;
+      case 'this_week':
+        setDateFrom(format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        setDateTo(format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        break;
+      case 'last_week':
+        const lastWeek = subWeeks(now, 1);
+        setDateFrom(format(startOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        setDateTo(format(endOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        break;
+      case 'this_month':
+        setDateFrom(format(startOfMonth(now), 'yyyy-MM-dd'));
+        setDateTo(format(endOfMonth(now), 'yyyy-MM-dd'));
+        break;
+      case 'last_month':
+        const lastMonth = subMonths(now, 1);
+        setDateFrom(format(startOfMonth(lastMonth), 'yyyy-MM-dd'));
+        setDateTo(format(endOfMonth(lastMonth), 'yyyy-MM-dd'));
+        break;
+    }
+  };
 
   const handleGenerate = async () => {
     setIsLoading(true);
     setReportData(null);
     try {
       let res;
+      const pid = selectedProjectId || undefined;
       switch (reportType) {
         case 'profit_loss':
-          res = await getProfitLossReportAction(dateFrom, dateTo);
+          res = await getProfitLossReportAction(dateFrom, dateTo, pid);
           break;
         case 'income':
-          res = await getIncomeStatementAction(dateFrom, dateTo);
+          res = await getIncomeStatementAction(dateFrom, dateTo, pid);
           break;
         case 'expense':
-          res = await getExpenseStatementAction(dateFrom, dateTo);
+          res = await getExpenseStatementAction(dateFrom, dateTo, pid);
           break;
         case 'cash_flow':
-          res = await getCashFlowStatementAction(dateFrom, dateTo);
+          res = await getCashFlowStatementAction(dateFrom, dateTo, pid);
           break;
         case 'balance_sheet':
-          res = await getBalanceSheetAction(dateTo); // 'To' date acts as 'As Of'
+          res = await getBalanceSheetAction(dateTo, pid);
           break;
       }
       
       if (res?.success) {
         setReportData(res.data);
-        setGeneratedConfig({ type: reportType, from: dateFrom, to: dateTo });
+        setGeneratedConfig({ type: reportType, from: dateFrom, to: dateTo, projectId: pid });
       } else {
-        console.error('Failed to generate report:', res?.error);
         toast.error('Failed to generate report', { description: res?.error || 'Unknown error' });
       }
     } catch (e: any) {
-      console.error(e);
       toast.error('Exception occurred', { description: e?.message || 'Unknown exception' });
     } finally {
       setIsLoading(false);
@@ -94,8 +144,13 @@ export function ReportsGenerator() {
     } else {
       doc.text(`Period: ${format(new Date(generatedConfig.from), 'MMM d, yyyy')} to ${format(new Date(generatedConfig.to), 'MMM d, yyyy')}`, 14, 30);
     }
+    
+    if (generatedConfig.projectId) {
+      const p = projects.find(p => p.id === generatedConfig.projectId);
+      if (p) doc.text(`Project: ${p.name}`, 14, 36);
+    }
 
-    let yPos = 40;
+    let yPos = generatedConfig.projectId ? 45 : 40;
 
     const createTable = (head: string[][], body: any[][], theme: 'striped' | 'grid' | 'plain' = 'striped') => {
       autoTable(doc, {
@@ -168,67 +223,55 @@ export function ReportsGenerator() {
     doc.save(`${generatedConfig.type}_report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
 
-  const exportCSV = () => {
+  const exportExcel = () => {
     if (!reportData || !generatedConfig) return;
+
+    const wb = XLSX.utils.book_new();
     
-    let csvContent = `Report: ${getReportTitle(generatedConfig.type)}\n`;
-    if (generatedConfig.type === 'balance_sheet') {
-      csvContent += `As of: ${generatedConfig.to}\n\n`;
-    } else {
-      csvContent += `Period: ${generatedConfig.from} to ${generatedConfig.to}\n\n`;
-    }
-
     if (generatedConfig.type === 'profit_loss' || generatedConfig.type === 'cash_flow') {
-      csvContent += `Revenue by Project\nProject,Amount\n`;
-      Object.entries(reportData.revenueByProject || {}).forEach(([k, v]) => {
-        csvContent += `"${k}",${v}\n`;
-      });
-      csvContent += `"Total Revenue",${reportData.totalRevenue}\n\n`;
-      
-      csvContent += `Costs by Category\nCategory,Amount\n`;
-      Object.entries(reportData.costsByCategory || {}).forEach(([k, v]) => {
-        csvContent += `"${k}",${v}\n`;
-      });
-      csvContent += `"Total Costs",${reportData.totalCosts}\n\n`;
-      csvContent += `"Net Profit",${reportData.netProfit}\n`;
-      
+      const revData = Object.entries(reportData.revenueByProject || {}).map(([k, v]) => ({ 'Project': k, 'Amount': v }));
+      revData.push({ 'Project': 'Total Revenue', 'Amount': reportData.totalRevenue });
+      const wsRev = XLSX.utils.json_to_sheet(revData);
+      XLSX.utils.book_append_sheet(wb, wsRev, "Revenue");
+
+      const costData = Object.entries(reportData.costsByCategory || {}).map(([k, v]) => ({ 'Category': k, 'Amount': v }));
+      costData.push({ 'Category': 'Total Costs', 'Amount': reportData.totalCosts });
+      const wsCost = XLSX.utils.json_to_sheet(costData);
+      XLSX.utils.book_append_sheet(wb, wsCost, "Costs");
+
+      const summaryData = [{ 'Metric': 'Net Profit', 'Value': reportData.netProfit }];
+      const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+
     } else if (generatedConfig.type === 'income') {
-      csvContent += `Project,Amount\n`;
-      Object.entries(reportData.incomeByProject || {}).forEach(([k, v]) => {
-        csvContent += `"${k}",${v}\n`;
-      });
-      csvContent += `"Total Income",${reportData.totalIncome}\n`;
-      
+      const data = Object.entries(reportData.incomeByProject || {}).map(([k, v]) => ({ 'Project': k, 'Amount': v }));
+      data.push({ 'Project': 'Total Income', 'Amount': reportData.totalIncome });
+      const ws = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, "Income");
+
     } else if (generatedConfig.type === 'expense') {
-      csvContent += `Category,Amount\n`;
-      Object.entries(reportData.expensesByCategory || {}).forEach(([k, v]) => {
-        csvContent += `"${k}",${v}\n`;
-      });
-      csvContent += `"Total Expenses",${reportData.totalExpenses}\n`;
-      
+      const data = Object.entries(reportData.expensesByCategory || {}).map(([k, v]) => ({ 'Category': k, 'Amount': v }));
+      data.push({ 'Category': 'Total Expenses', 'Amount': reportData.totalExpenses });
+      const ws = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, "Expenses");
+
     } else if (generatedConfig.type === 'balance_sheet') {
-      csvContent += `Assets\nAsset,Amount\n`;
-      Object.entries(reportData.assets || {}).forEach(([k, v]) => {
-        csvContent += `"${k}",${v}\n`;
-      });
-      csvContent += `"Total Assets",${reportData.totalAssets}\n\n`;
-      
-      csvContent += `Liabilities\nLiability,Amount\n`;
-      Object.entries(reportData.liabilities || {}).forEach(([k, v]) => {
-        csvContent += `"${k}",${v}\n`;
-      });
-      csvContent += `"Total Liabilities",${reportData.totalLiabilities}\n\n`;
-      csvContent += `"Total Equity",${reportData.equity}\n`;
+      const assetData = Object.entries(reportData.assets || {}).map(([k, v]) => ({ 'Asset': k, 'Amount': v }));
+      assetData.push({ 'Asset': 'Total Assets', 'Amount': reportData.totalAssets });
+      const wsAssets = XLSX.utils.json_to_sheet(assetData);
+      XLSX.utils.book_append_sheet(wb, wsAssets, "Assets");
+
+      const liabData = Object.entries(reportData.liabilities || {}).map(([k, v]) => ({ 'Liability': k, 'Amount': v }));
+      liabData.push({ 'Liability': 'Total Liabilities', 'Amount': reportData.totalLiabilities });
+      const wsLiab = XLSX.utils.json_to_sheet(liabData);
+      XLSX.utils.book_append_sheet(wb, wsLiab, "Liabilities");
+
+      const summaryData = [{ 'Metric': 'Total Equity', 'Value': reportData.equity }];
+      const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
     }
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${generatedConfig.type}_report_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    XLSX.writeFile(wb, `${generatedConfig.type}_report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   const renderTableData = () => {
@@ -333,7 +376,6 @@ export function ReportsGenerator() {
       );
     }
 
-    // fallback for income or expense pure tables
     const items = type === 'income' ? reportData.incomeByProject : reportData.expensesByCategory;
     const total = type === 'income' ? reportData.totalIncome : reportData.totalExpenses;
     
@@ -366,9 +408,9 @@ export function ReportsGenerator() {
   return (
     <div className="space-y-6">
       {/* Controls Header */}
-      <div className="bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 shadow-sm flex flex-col xl:flex-row xl:items-center gap-4 sticky top-4 z-10 backdrop-blur-md">
+      <div className="bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 shadow-sm flex flex-col gap-4 sticky top-4 z-10 backdrop-blur-md">
         
-        <div className="flex-1 flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <select
             value={reportType}
             onChange={(e) => setReportType(e.target.value as ReportType)}
@@ -381,13 +423,40 @@ export function ReportsGenerator() {
             <option value="balance_sheet">Balance Sheet</option>
           </select>
 
+          <select
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white appearance-none cursor-pointer"
+          >
+            <option value="">All Projects (Company-wide)</option>
+            {projects.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+
+          {reportType !== 'balance_sheet' && (
+            <select
+              value={datePreset}
+              onChange={(e) => handleDatePresetChange(e.target.value as DateRangePreset)}
+              className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white appearance-none cursor-pointer"
+            >
+              <option value="today">Daily (Today)</option>
+              <option value="yesterday">Daily (Yesterday)</option>
+              <option value="this_week">Weekly (This Week)</option>
+              <option value="last_week">Weekly (Last Week)</option>
+              <option value="this_month">Monthly (This Month)</option>
+              <option value="last_month">Monthly (Last Month)</option>
+              <option value="custom">Custom Date Range</option>
+            </select>
+          )}
+
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {reportType !== 'balance_sheet' && (
               <>
                 <input
                   type="date"
                   value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                  onChange={(e) => { setDateFrom(e.target.value); setDatePreset('custom'); }}
                   className="w-full sm:w-36 h-11 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white"
                 />
                 <span className="text-slate-400 text-sm font-medium">to</span>
@@ -396,7 +465,7 @@ export function ReportsGenerator() {
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => { setDateTo(e.target.value); if (reportType !== 'balance_sheet') setDatePreset('custom'); }}
               className="w-full sm:w-36 h-11 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white"
             />
           </div>
@@ -404,29 +473,29 @@ export function ReportsGenerator() {
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            className="w-full sm:w-auto h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ml-auto"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-            Generate Report
+            Generate
           </button>
         </div>
 
         {/* Exports only visible if report generated */}
         {reportData && generatedConfig && (
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center justify-end gap-3 shrink-0 pt-3 border-t border-slate-100 dark:border-white/5">
             <button
-              onClick={exportCSV}
-              className="flex-1 sm:flex-none h-11 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2"
+              onClick={exportExcel}
+              className="h-10 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              CSV
+              Export Excel
             </button>
             <button
               onClick={exportPDF}
-              className="flex-1 sm:flex-none h-11 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2"
+              className="h-10 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
             >
               <FileText className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-              PDF
+              Export PDF
             </button>
           </div>
         )}
@@ -446,6 +515,11 @@ export function ReportsGenerator() {
                 : `For the period ${format(new Date(generatedConfig.from), 'MMM d, yyyy')} to ${format(new Date(generatedConfig.to), 'MMM d, yyyy')}`
               }
             </p>
+            {generatedConfig.projectId && (
+              <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-2">
+                Project: {projects.find(p => p.id === generatedConfig.projectId)?.name}
+              </p>
+            )}
           </div>
 
           <div className="pt-4">
@@ -459,9 +533,10 @@ export function ReportsGenerator() {
       {!reportData && !isLoading && (
         <EmptyState 
           icon={FileText} 
-          message="Select a report type and date range to generate." 
+          message="Select a report type, project, and date range to generate." 
         />
       )}
     </div>
   );
 }
+

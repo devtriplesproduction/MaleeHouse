@@ -65,7 +65,7 @@ export function QuotationActionWidget({ queue, onCreateQuote, onViewAll }: Quota
   const getUrgencyConfig = (date: string | null) => {
     if (!date) return { color: 'bg-indigo-500', text: 'text-indigo-600', bg: 'bg-indigo-50', label: 'Normal' };
     const days = differenceInDays(new Date(date), new Date());
-    if (days < 0) return { color: 'bg-rose-600', text: 'text-rose-600', bg: 'bg-rose-50', label: 'Overdue' };
+    if (days < 0) return { color: 'bg-indigo-600', text: 'text-rose-600', bg: 'bg-rose-50', label: 'Overdue' };
     if (days <= 3) return { color: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50', label: 'Critical' };
     if (days <= 7) return { color: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50', label: 'Urgent' };
     return { color: 'bg-indigo-500', text: 'text-indigo-600', bg: 'bg-indigo-50', label: 'Normal' };

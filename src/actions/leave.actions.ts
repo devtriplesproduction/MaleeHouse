@@ -16,6 +16,26 @@ export async function applyLeaveAction(payload: {
     if (!profile) return { success: false, error: 'Unauthorized' }
 
     const supabase: any = await createClient()
+
+    // Check if the selected date range overlaps with any holidays
+    const { data: holidaysData, error: holidaysError } = await supabase
+      .from('holidays')
+      .select('date, name')
+      .gte('date', payload.start_date)
+      .lte('date', payload.end_date)
+
+    if (holidaysError) {
+      return { success: false, error: holidaysError.message }
+    }
+
+    if (holidaysData && holidaysData.length > 0) {
+      const holidayNames = holidaysData.map((h: any) => h.name).join(', ')
+      return { 
+        success: false, 
+        error: `Cannot apply for leave on holidays: ${holidayNames}. Please adjust your dates.` 
+      }
+    }
+
     const { data, error } = await supabase
       .from('leaves')
       .insert({

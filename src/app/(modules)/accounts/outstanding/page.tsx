@@ -8,12 +8,14 @@ export const dynamic = "force-dynamic";
 export default async function OutstandingPaymentsPage() {
   const supabase: any = await createClient();
 
-  const [projectsRes, invoicesRes, expensesRes, milestonesRes, profitRes] = await Promise.all([
+  const [projectsRes, invoicesRes, expensesRes, milestonesRes, profitRes, quotationsRes, visitsRes] = await Promise.all([
     supabase.from("projects").select("*"),
     supabase.from("invoices").select("*"),
     supabase.from("expenses").select("*"),
     getAllMilestonesAction(),
     getProjectProfitabilityAction(),
+    supabase.from("quotations").select("*"),
+    supabase.from("project_visits").select("*")
   ]);
 
   const projects = projectsRes.data || [];
@@ -21,14 +23,22 @@ export default async function OutstandingPaymentsPage() {
   const expenses = expensesRes.data || [];
   const milestones = milestonesRes.success ? milestonesRes.data : [];
   const profitData = profitRes.success ? profitRes.data : [];
+  const quotations = quotationsRes.data || [];
+  const visits = visitsRes.data || [];
 
   // Calculate outstanding amounts per project
   const projectSummaries = projects.map((p: any) => {
-    // Total Billed (Income)
-    const projectInvoices = invoices.filter((i: any) => i.project_id === p.id && i.status !== 'cancelled');
-    const totalBilled = projectInvoices.reduce((sum: number, i: any) => sum + Number(i.total_amount || 0), 0);
+    // Total Billed (Income) = Approved Quotation Total + Billable Field Visits
+    const projectQuotations = quotations.filter((q: any) => q.project_id === p.id && q.status === 'Approved');
+    const quotationTotal = projectQuotations.reduce((sum: number, q: any) => sum + Number(q.total_amount || 0), 0);
+    
+    const projectVisits = visits.filter((v: any) => v.project_id === p.id && v.is_billable);
+    const visitsTotal = projectVisits.reduce((sum: number, v: any) => sum + Number(v.visit_cost || 0), 0);
+    
+    const totalBilled = quotationTotal + visitsTotal;
 
-    // Total Paid
+    // Total Paid (from Invoices or Milestones depending on context, keeping invoice logic for consistency here)
+    const projectInvoices = invoices.filter((i: any) => i.project_id === p.id && i.status !== 'cancelled');
     const paidInvoices = projectInvoices.filter((i: any) => i.status === 'paid');
     const totalPaid = paidInvoices.reduce((sum: number, i: any) => sum + Number(i.total_amount || 0), 0);
 

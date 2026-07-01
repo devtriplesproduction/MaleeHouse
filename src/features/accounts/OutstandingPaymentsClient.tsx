@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { 
-  AlertCircle, ChevronDown, ChevronRight, FileText, 
+  AlertCircle, ChevronDown, ChevronRight, ChevronLeft, FileText, 
   Target, UserPlus, Award, CheckCircle2 
 } from "lucide-react";
 import { AddExpenseModal } from "@/features/accounts/AddExpenseModal";
@@ -35,6 +35,10 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
   const [expenseCategory, setExpenseCategory] = useState<'labor' | 'material' | 'other'>('labor');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
   const totalOutstanding = initialProjects.reduce((sum, p) => sum + p.outstanding, 0);
   const totalReceivable = initialProjects.reduce((sum, p) => sum + p.totalBilled, 0);
 
@@ -46,6 +50,19 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
     setSelectedProjectId(projectId);
     setExpenseCategory(category);
     setExpenseModalOpen(true);
+  };
+
+  // Filter and Pagination Logic
+  const filteredProjects = initialProjects.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedProjects = filteredProjects.slice(startIndex, startIndex + pageSize);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // reset to first page on search
   };
 
   return (
@@ -93,6 +110,24 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
         </div>
       </div>
 
+      {/* Filter and Search */}
+      <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+        <div className="relative w-full max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl leading-5 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 sm:text-sm transition-all"
+          />
+        </div>
+      </div>
+
       {/* Master List */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
         <table className="w-full text-left border-collapse">
@@ -107,7 +142,7 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
             </tr>
           </thead>
           <tbody>
-            {initialProjects.map((project) => (
+            {paginatedProjects.map((project) => (
               <React.Fragment key={project.id}>
                 <tr 
                   className={cn(
@@ -134,9 +169,10 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
                   <td className="p-4 text-right">
                     <Link 
                       href={`/projects/${project.id}?tab=finance`}
-                      className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-semibold rounded-lg text-xs transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
+                      <FileText className="w-3.5 h-3.5" />
                       Open Finance Tab
                     </Link>
                   </td>
@@ -171,21 +207,7 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
                             </div>
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-3">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleAllocate(project.id, 'labor'); }}
-                              className="py-2 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold rounded-lg text-xs flex items-center justify-center gap-2 transition"
-                            >
-                              <UserPlus className="w-4 h-4" />
-                              Allocate Labor
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleAllocate(project.id, 'material'); }}
-                              className="py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-2 transition"
-                            >
-                              <FileText className="w-4 h-4" />
-                              Allocate Material
-                            </button>
+                          <div className="hidden">
                           </div>
                         </div>
 
@@ -213,7 +235,7 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
                                   (project.budget || 0) === 0 ? "bg-slate-400" :
                                   project.totalExpenses > (project.budget || 0) ? "bg-rose-500" : "bg-emerald-500"
                                 )}
-                                style={{ width: `${Math.min(100, (project.budget || 0) > 0 ? (project.totalExpenses / project.budget) * 100 : 0)}%` }}
+                                style={{ width: `${Math.min(100, (project.budget || 0) > 0 ? (project.totalExpenses / project.budget) * 100 : (project.totalExpenses > 0 ? 100 : 0))}%` }}
                               />
                             </div>
                             <p className="text-xs text-slate-500 text-center mt-2">
@@ -228,15 +250,40 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
                 )}
               </React.Fragment>
             ))}
-            {initialProjects.length === 0 && (
+            {paginatedProjects.length === 0 && (
               <tr>
                 <td colSpan={6} className="p-8 text-center text-slate-500">
-                  No projects with outstanding balances found.
+                  No projects found.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+            <span className="text-sm text-slate-500">
+              Showing {startIndex + 1} to {Math.min(startIndex + pageSize, filteredProjects.length)} of {filteredProjects.length} entries
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Expense Modal */}

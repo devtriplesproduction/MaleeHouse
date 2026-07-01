@@ -303,7 +303,7 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
                         <button
                           onClick={() => handleDelete(q.id)}
                           disabled={deletingId === q.id}
-                          className="px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-[11px] font-medium hover:bg-rose-700 transition-all disabled:opacity-50 flex items-center gap-1">
+                          className="px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-medium hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1">
                           {deletingId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Yes
                         </button>
                         <button onClick={() => setConfirmDelete(null)}

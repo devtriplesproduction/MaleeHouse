@@ -93,7 +93,7 @@ export function FieldReportPanel({ projectId, reports, userRole, isFrozen = fals
               "flex items-center gap-2 px-4 py-2 text-sm font-black text-white rounded-xl transition-all shadow-lg",
               isFrozen 
                 ? "bg-slate-400 dark:bg-white/10 opacity-50 cursor-not-allowed shadow-none" 
-                : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                : "bg-indigo-600 hover:bg-indigo-700 shadow-emerald-600/20"
             )}
           >
             <Plus className="w-3.5 h-3.5" />
@@ -171,7 +171,7 @@ export function FieldReportPanel({ projectId, reports, userRole, isFrozen = fals
             <button
               onClick={handleSubmit}
               disabled={isPending || !description.trim()}
-              className="flex items-center gap-2 px-5 py-2 text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 text-sm font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all disabled:opacity-50"
             >
               {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               Submit Report

@@ -7,9 +7,10 @@ import { Building2, MapPin, Phone, Hash, Save } from "lucide-react";
 
 interface Props {
   initialSettings: CompanySettings;
+  canEdit?: boolean;
 }
 
-export function CompanySettingsForm({ initialSettings }: Props) {
+export function CompanySettingsForm({ initialSettings, canEdit = true }: Props) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<CompanySettings>(initialSettings);
@@ -61,8 +62,9 @@ export function CompanySettingsForm({ initialSettings }: Props) {
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             required
+            disabled={!canEdit}
           />
         </div>
         
@@ -75,8 +77,9 @@ export function CompanySettingsForm({ initialSettings }: Props) {
             name="gstin"
             value={formData.gstin}
             onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             required
+            disabled={!canEdit}
           />
         </div>
 
@@ -89,8 +92,9 @@ export function CompanySettingsForm({ initialSettings }: Props) {
             name="address"
             value={formData.address}
             onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             required
+            disabled={!canEdit}
           />
         </div>
 
@@ -103,8 +107,9 @@ export function CompanySettingsForm({ initialSettings }: Props) {
             name="cityStateZip"
             value={formData.cityStateZip}
             onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             required
+            disabled={!canEdit}
           />
         </div>
 
@@ -117,8 +122,9 @@ export function CompanySettingsForm({ initialSettings }: Props) {
             name="telephone"
             value={formData.telephone}
             onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             required
+            disabled={!canEdit}
           />
         </div>
 
@@ -131,26 +137,29 @@ export function CompanySettingsForm({ initialSettings }: Props) {
             name="mobile"
             value={formData.mobile}
             onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             required
+            disabled={!canEdit}
           />
         </div>
       </div>
 
-      <div className="pt-4 border-t border-slate-100 flex justify-end">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm shadow-indigo-600/20 disabled:opacity-70"
-        >
-          {isPending ? (
-            <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {isPending ? "Saving..." : "Save Changes"}
-        </button>
-      </div>
+      {canEdit && (
+        <div className="pt-4 border-t border-slate-100 flex justify-end">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm shadow-indigo-600/20 disabled:opacity-70"
+          >
+            {isPending ? (
+              <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {isPending ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

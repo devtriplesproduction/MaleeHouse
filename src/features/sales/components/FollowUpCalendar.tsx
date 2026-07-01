@@ -306,12 +306,12 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                 type="button"
                 onClick={() => setSelectedDate(date)}
                 className={cn(
-                  "aspect-square rounded-2xl border flex flex-col justify-between p-2 md:p-3 transition-all duration-200 relative group outline-none overflow-hidden",
+                  "aspect-square rounded-2xl border flex flex-col justify-between p-2 md:p-3 transition-all duration-300 relative group outline-none overflow-hidden",
                   isSel 
-                    ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/30 z-10" 
+                    ? "bg-indigo-600 border-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] z-10 scale-[1.02]" 
                     : isTod
-                      ? "bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-400"
-                      : "bg-white/50 dark:bg-white/[0.01] border-slate-200 dark:border-white/5 hover:border-indigo-400 text-slate-700 dark:text-slate-300"
+                      ? "bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-400 ring-2 ring-indigo-400/50 ring-offset-2 dark:ring-offset-slate-900 animate-pulse-slow"
+                      : "bg-white/50 dark:bg-white/[0.01] border-slate-200 dark:border-white/5 hover:border-indigo-400 hover:shadow-lg text-slate-700 dark:text-slate-300 hover:-translate-y-0.5"
                 )}
               >
                 {/* Day Number */}
@@ -328,10 +328,10 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                     <div 
                       key={lead.id}
                       className={cn(
-                        "hidden md:flex items-center gap-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded truncate w-full border",
+                        "hidden md:flex items-center gap-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded truncate w-full border transition-colors",
                         isSel 
-                          ? "bg-white/20 text-white border-white/20" 
-                          : "bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300 border-slate-200 dark:border-white/10"
+                          ? "bg-white/20 text-white border-white/20 shadow-sm" 
+                          : "bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300 border-slate-200 dark:border-white/10 group-hover:border-indigo-200 dark:group-hover:border-indigo-500/30"
                       )}
                     >
                       <Clock className="w-2 h-2 shrink-0 stroke-[2.5]" />
@@ -343,7 +343,7 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                   {dayFollowUps.length > 2 && (
                     <div className={cn(
                       "hidden md:block text-[10px] font-medium text-right w-full pr-1",
-                      isSel ? "text-white/85" : "text-slate-500"
+                      isSel ? "text-white/85" : "text-slate-500 group-hover:text-indigo-400 transition-colors"
                     )}>
                       +{dayFollowUps.length - 2} more
                     </div>
@@ -353,8 +353,8 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                   {dayFollowUps.length > 0 && (
                     <div className="md:hidden flex justify-end w-full">
                       <span className={cn(
-                        "w-2 h-2 rounded-full",
-                        isSel ? "bg-white" : "bg-blue-600"
+                        "w-2 h-2 rounded-full shadow-sm",
+                        isSel ? "bg-white" : "bg-indigo-600"
                       )} />
                     </div>
                   )}
@@ -362,7 +362,7 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
 
                 {/* Selection Ambient Glow */}
                 {isSel && (
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 blur-xl rounded-full pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 blur-2xl rounded-full pointer-events-none" />
                 )}
               </button>
             );

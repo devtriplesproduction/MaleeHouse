@@ -146,6 +146,11 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
     });
 
     if (payload.project_id) {
+      // Sync quotation total_amount to project budget
+      await supabase.from('projects').update({ budget: newQuotation.total_amount }).eq('id', payload.project_id);
+    }
+
+    if (payload.project_id) {
       await revalidateAccountsPaths(payload.project_id);
     }
 
@@ -219,6 +224,9 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
           payload.comment || 'Quotation approved. Awaiting advance payment.'
         );
         if (!stageResponse.success) return { success: false, error: stageResponse.error || "Failed to transition to payment_pending." };
+
+        // Automatically update the project budget to the accepted quotation total amount
+        await supabase.from('projects').update({ budget: quotation.total_amount }).eq('id', quotation.project_id);
       } else if (payload.status === 'Rejected' || payload.status === 'Revision Requested') {
         const stageResponse = await updateProjectStageAction(
           quotation.project_id,
@@ -473,6 +481,11 @@ export async function createQuotationRevisionAction(
       details: { quotation_id: quotationId, version: newVersion, reason: revisionReason },
       created_at: new Date().toISOString()
     });
+
+    if (payload.project_id) {
+      // Sync revised quotation total_amount to project budget
+      await supabase.from('projects').update({ budget: validated.data.total_amount }).eq('id', payload.project_id);
+    }
 
     if (payload.project_id) {
       await revalidateAccountsPaths(payload.project_id);

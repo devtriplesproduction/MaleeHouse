@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Trash2, Megaphone, BellRing } from "lucide-react";
+import { Plus, Edit2, Trash2, Megaphone, BellRing, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,10 +25,13 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const CATEGORIES = ['ALL UPDATES', 'ANNOUNCEMENT', 'URGENT', 'SYSTEM'];
+  const [activeCategory, setActiveCategory] = useState('SYSTEM');
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
+  const [category, setCategory] = useState('ANNOUNCEMENT');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canManage = currentUserRole === 'admin' || currentUserRole === 'hr';
@@ -37,6 +40,7 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
     setTitle('');
     setContent('');
     setTargetRoles([]);
+    setCategory('ANNOUNCEMENT');
     setEditingId(null);
   };
 
@@ -49,13 +53,14 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
     setTitle(ann.title);
     setContent(ann.content);
     setTargetRoles(ann.target_roles);
+    setCategory(ann.category || 'ANNOUNCEMENT');
     setEditingId(ann.id);
     setIsOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !content || targetRoles.length === 0) {
+    if (!title || !content || targetRoles.length === 0 || !category) {
       toast.error('Please fill all fields and select at least one role');
       return;
     }
@@ -63,7 +68,7 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
     setIsSubmitting(true);
     try {
       if (editingId) {
-        const res = await updateAnnouncementAction(editingId, { title, content, target_roles: targetRoles });
+        const res = await updateAnnouncementAction(editingId, { title, content, target_roles: targetRoles, category });
         if (res.success) {
           toast.success('Announcement updated');
           setIsOpen(false);
@@ -72,7 +77,7 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
           toast.error(res.error || 'Failed to update');
         }
       } else {
-        const res = await createAnnouncementAction({ title, content, target_roles: targetRoles });
+        const res = await createAnnouncementAction({ title, content, target_roles: targetRoles, category });
         if (res.success) {
           toast.success('Announcement created');
           setIsOpen(false);
@@ -138,7 +143,7 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
               Company <span className="text-primary font-sans">Announcements</span>
             </h1>
           </div>
-          <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">Important news and updates from the company.</p>
+          <p className="text-[15px] text-gray-500 dark:text-gray-400">Latest agency updates, urgent alerts, and system news.</p>
         </div>
         {canManage && (
           <Dialog open={isOpen} onOpenChange={(open) => {
@@ -177,6 +182,18 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
                     placeholder="E.g., Office Holiday Party" 
                     className="bg-background border-input focus-visible:ring-primary text-sm shadow-sm transition-all"
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold text-foreground ml-1">Category</Label>
+                  <select
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {CATEGORIES.filter(c => c !== 'ALL UPDATES').map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-semibold text-foreground ml-1">Message Content</Label>
@@ -234,9 +251,26 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
         )}
       </div>
 
-      <div className="grid gap-6">
-        {announcements && announcements.length > 0 ? (
-          announcements.map((ann: any) => (
+      <div className="flex items-center gap-2 mt-6">
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={cn(
+              "px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider border transition-all",
+              activeCategory === cat 
+                ? "border-primary bg-primary/10 text-primary" 
+                : "border-transparent text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80"
+            )}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-6 mt-6">
+        {announcements && announcements.filter(a => activeCategory === 'ALL UPDATES' || (a as any).category === activeCategory).length > 0 ? (
+          announcements.filter(a => activeCategory === 'ALL UPDATES' || (a as any).category === activeCategory).map((ann: any) => (
             <Card key={ann.id} className="relative overflow-hidden group border-0 rounded-[24px] bg-card shadow-xl shadow-foreground/5 ring-1 ring-border hover:ring-primary/50 transition-all duration-300">
               <div className="absolute top-0 left-0 w-[6px] h-full bg-primary opacity-90" />
               <CardHeader className="pl-8 pt-7 pb-4">
@@ -292,12 +326,9 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
             </Card>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center text-center py-24 bg-card/50 rounded-[32px] border border-dashed border-border backdrop-blur-sm">
-            <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Megaphone className="w-10 h-10 text-primary opacity-80" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground">No Announcements Yet</h3>
-            <p className="text-muted-foreground mt-2 max-w-sm">When there's important news to share, it will appear right here for you.</p>
+          <div className="flex flex-col items-center justify-center text-center py-32 bg-card rounded-xl border border-border shadow-sm">
+            <MessageSquare className="w-8 h-8 text-muted-foreground mb-4" strokeWidth={1.5} />
+            <p className="text-muted-foreground font-medium text-[15px]">No announcements found in this category.</p>
           </div>
         )}
       </div>

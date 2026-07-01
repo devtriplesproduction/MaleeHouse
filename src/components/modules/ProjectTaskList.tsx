@@ -144,7 +144,7 @@ export function ProjectTaskList({
                         </Button>
                       )}
                       {task.status === "in_progress" && (
-                        <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handleUpdateStatus(task.id, "completed")} disabled={isPending}>
+                        <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-emerald-50" onClick={() => handleUpdateStatus(task.id, "completed")} disabled={isPending}>
                           Complete
                         </Button>
                       )}

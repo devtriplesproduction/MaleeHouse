@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
   X, UserPlus, Mail, User, ShieldCheck, Loader2, Lock, 
@@ -73,11 +73,21 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
     setValue,
     watch,
     trigger,
+    control,
     formState: { errors, isSubmitted },
     reset
   } = useForm<OnboardFormData>({
     resolver: zodResolver(onboardSchema),
     defaultValues: {
+      first_name: "",
+      last_name: "",
+      dob: "",
+      phone_number: "",
+      personal_email: "",
+      address: "",
+      emergency_contact: "",
+      department: "",
+      designation: "",
       gender: "male",
       employment_type: "full-time",
       salary: 0,
@@ -106,6 +116,13 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
       setValue("employee_id", `MH-EMP-${Math.floor(10000 + Math.random() * 90000)}`);
     }
   }, [isOpen, setValue]);
+
+  // Manually register fields that don't have native inputs
+  useEffect(() => {
+    register("department");
+    register("designation");
+    register("joining_date");
+  }, [register]);
 
   // Handle department designation mapping to ERP role
   useEffect(() => {
@@ -227,14 +244,20 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
         });
         if (onSuccess) onSuccess();
       } else {
+        if (typeof window !== 'undefined') {
+          window.alert(`Provisioning Action Denied:\n\n${result?.error}`);
+        }
         toast({ 
           title: "Provisioning Action Denied", 
           description: result?.error, 
           variant: "error" 
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      if (typeof window !== 'undefined') {
+        window.alert(`Transaction Failure:\n\nAn unexpected network or file engine error occurred. ${err?.message || ''}`);
+      }
       toast({ 
         title: "Transaction Failure", 
         description: "An unexpected network or file engine error occurred.", 
@@ -243,6 +266,34 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const onError = (errors: any) => {
+    console.error("Form validation errors:", errors);
+    
+    // Auto-navigate to the step with the error
+    if (errors.first_name || errors.last_name || errors.dob || errors.gender || errors.phone_number || errors.personal_email || errors.address || errors.emergency_contact) {
+      setStep(1);
+    } else if (errors.department || errors.designation || errors.employment_type || errors.salary || errors.experience || errors.joining_date) {
+      setStep(2);
+    } else if (errors.email || errors.role || errors.employee_id || errors.status || errors.password || errors.confirm_password) {
+      setStep(4);
+    }
+
+    const errorMessages = Object.entries(errors)
+      .map(([key, err]: [string, any]) => `${key}: ${err.message}`)
+      .join('\n');
+      
+    // Loud alert to guarantee visibility of errors
+    if (typeof window !== 'undefined') {
+      window.alert(`Validation Check Failed:\n\n${errorMessages || "Please fill all required fields."}`);
+    }
+
+    toast({
+      title: "Validation Check Failed",
+      description: errorMessages || "Please fill all required fields.",
+      variant: "error"
+    });
   };
 
   const copyToClipboard = (text: string) => {
@@ -266,7 +317,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
   if (!mounted || !isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[50] flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-slate-900/40 dark:bg-[#020408]/80 backdrop-blur-2xl animate-in fade-in duration-300" onClick={handleClose} />
       
       <div className="relative w-full max-w-2xl bg-white dark:bg-[#080b14] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8">
@@ -331,7 +382,16 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-[750px] max-h-[90vh]">
+          <form onSubmit={handleSubmit(onSubmit, onError)} className="flex flex-col h-[750px] max-h-[90vh]">
+            {Object.keys(errors).length > 0 && (
+              <div className="bg-red-500/10 text-red-500 p-4 text-xs overflow-auto font-mono">
+                DEBUG ERRORS: {JSON.stringify(
+                  Object.fromEntries(
+                    Object.entries(errors).map(([key, val]: any) => [key, val?.message || 'Error'])
+                  )
+                )}
+              </div>
+            )}
             {/* Header */}
             <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/40 dark:bg-[#0a0d16]">
               <div>
@@ -554,18 +614,26 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Department *</label>
                       <div className="relative">
-                        <select 
-                          {...register("department")} 
-                          className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white appearance-none cursor-pointer capitalize"
-                        >
-                          <option value="" className="dark:bg-[#0d1222]">Select Department</option>
-                          {DEPARTMENTS.map((dept: any) => (
-                            <option key={dept.id} value={dept.id} className="dark:bg-[#0d1222]">{dept.name}</option>
-                          ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                          <ChevronDown className="w-4 h-4" />
-                        </div>
+                        <Controller
+                          control={control}
+                          name="department"
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={(val) => {
+                                field.onChange(val);
+                                // Reset designation when department changes
+                                setValue("designation", "");
+                              }}
+                              placeholder="Select Department"
+                              buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                            >
+                              {DEPARTMENTS.map((dept: any) => (
+                                <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                              ))}
+                            </Select>
+                          )}
+                        />
                       </div>
                       {errors.department && <p className="text-xs text-rose-500 font-bold mt-1">{errors.department.message}</p>}
                     </div>
@@ -573,19 +641,22 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Designation / Role *</label>
                       <div className="relative">
-                        <select 
-                          {...register("designation")} 
-                          disabled={!selectedDept}
-                          className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white appearance-none cursor-pointer disabled:opacity-50 capitalize"
-                        >
-                          <option value="" className="dark:bg-[#0d1222]">— Select Role —</option>
-                          {getDesignationsForDepartment(selectedDept).map((orgRole: any) => (
-                            <option key={orgRole.id} value={orgRole.id} className="dark:bg-[#0d1222]">{orgRole.name}</option>
-                          ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                          <ChevronDown className="w-4 h-4" />
-                        </div>
+                        <Controller
+                          control={control}
+                          name="designation"
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="— Select Role —"
+                              buttonClassName={cn("w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white", !watch("department") && "opacity-50 cursor-not-allowed pointer-events-none")}
+                            >
+                              {getDesignationsForDepartment(watch("department") || "").map((orgRole: any) => (
+                                <SelectItem key={orgRole.id} value={orgRole.id}>{orgRole.name}</SelectItem>
+                              ))}
+                            </Select>
+                          )}
+                        />
                       </div>
                       {errors.designation && <p className="text-xs text-rose-500 font-bold mt-1">{errors.designation.message}</p>}
                     </div>
@@ -608,6 +679,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                           <ChevronDown className="w-4 h-4" />
                         </div>
                       </div>
+                      {errors.employment_type && <p className="text-xs text-rose-500 font-bold mt-1">{errors.employment_type.message}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -621,6 +693,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                           className="w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
                         />
                       </div>
+                      {errors.salary && <p className="text-xs text-rose-500 font-bold mt-1">{errors.salary.message}</p>}
                     </div>
                   </div>
 
@@ -634,14 +707,24 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                         placeholder="0"
                         className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
                       />
+                      {errors.experience && <p className="text-xs text-rose-500 font-bold mt-1">{errors.experience.message}</p>}
                     </div>
 
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Joining Date *</label>
-                      <PremiumDatePicker
-                        value={watch("joining_date")}
-                        onChange={(date) => setValue("joining_date", date, { shouldValidate: true })}
+                      <Controller
+                        control={control}
+                        name="joining_date"
+                        render={({ field }) => (
+                          <PremiumDatePicker
+                            value={field.value}
+                            onChange={(date) => {
+                              field.onChange(date);
+                            }}
+                          />
+                        )}
                       />
+                      {errors.joining_date && <p className="text-xs text-rose-500 font-bold mt-1">{errors.joining_date.message}</p>}
                     </div>
                   </div>
 
@@ -878,18 +961,21 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                 {step < 4 ? (
                   <Button 
                     type="button" 
-                    onClick={nextStep} 
-                    variant="primary"
-                    className="h-10 text-xs font-bold uppercase tracking-wider"
+                    onClick={nextStep}
+                    className="h-10 bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-500/10 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
                   >
                     Next
+                    <ChevronRight className="w-4 h-4" />
                   </Button>
                 ) : (
                   <Button 
                     disabled={isSubmitting} 
-                    type="submit" 
-                    onClick={() => setShowStep4Errors(true)}
-                    className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-md shadow-emerald-500/10 text-xs font-bold uppercase tracking-wider flex items-center gap-2 disabled:opacity-50"
+                    type="button" 
+                    onClick={() => {
+                      setShowStep4Errors(true);
+                      handleSubmit(onSubmit, onError)();
+                    }}
+                    className="h-10 bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-500/10 text-xs font-bold uppercase tracking-wider flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                     {isSubmitting ? "Provisioning..." : "Provision Account"}

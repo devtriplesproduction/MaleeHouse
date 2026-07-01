@@ -69,7 +69,7 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
         gst_amount,
         total_amount,
         created_by: profile.id,
-        status: 'sent'
+        status: 'draft'
       })
       .select()
       .single();
@@ -150,6 +150,14 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
     // Milestone status is implicitly derived from invoices(payments) instead
 
     await updateProjectStageAction(payload.project_id, 'payment_pending', 'Payment manually logged.');
+
+    // Auto-verify if logged by accountant or admin
+    if (profile.role === 'admin' || profile.role === 'accountant') {
+      const verifyRes = await verifyPaymentAction(data.id, 'verified', 'Auto-verified because payment was logged by accountant or admin.');
+      if (!verifyRes.success) {
+        console.error("Auto-verification failed:", verifyRes.error);
+      }
+    }
 
     // revalidateAccountsPaths removed to prevent Next.js server action hanging bugs
 
@@ -300,7 +308,7 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    let query = supabase.from('invoices').select('*, projects(name, client_name)');
+    let query = supabase.from('invoices').select('*, projects(name, client_name, budget, payments(amount, status)), payments(amount, status)');
 
     if (projectId) {
       query = query.eq('project_id', projectId);
@@ -603,7 +611,7 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen), invoices(payments(status))')
+      .select('*, projects(name, client_name, status, is_frozen), invoices(id, status, payments(status))')
       .order('due_date', { ascending: true });
 
     if (error) return { success: false, error: error.message };
@@ -1239,3 +1247,127 @@ export async function markInvoiceAsSentAction(invoiceId: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getProjectBillingSummaryAction(): Promise<ActionResponse> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+
+    let query = supabase.from('projects').select('id, name, client_name, budget, status');
+    
+    // Apply role-based filtering if needed (like in getInvoicesAction)
+    if (auth.role !== 'admin' && auth.role !== 'accountant') {
+      const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
+      if (assignedIds !== null) {
+        if (assignedIds.length === 0) return { success: true, data: [] };
+        query = query.in('id', assignedIds);
+      }
+    }
+
+    const { data: projectsData, error: projError } = await query;
+    if (projError) return { success: false, error: projError.message };
+
+    const projectIds = projectsData?.map((p: any) => p.id) || [];
+    if (projectIds.length === 0) return { success: true, data: [] };
+
+    // Fetch invoices to know what has been billed
+    const { data: invoicesData, error: invError } = await supabase
+      .from('invoices')
+      .select('project_id, total_amount, status')
+      .in('project_id', projectIds)
+      .neq('status', 'cancelled');
+
+    if (invError) return { success: false, error: invError.message };
+
+    // Fetch milestones to calculate dynamic budget
+    const { data: milestonesData } = await supabase
+      .from('project_milestones')
+      .select('project_id, amount')
+      .in('project_id', projectIds);
+
+    // Fetch approved quotations to calculate dynamic budget
+    const { data: quotationsData } = await supabase
+      .from('quotations')
+      .select('project_id, total_amount, status')
+      .in('project_id', projectIds)
+      .eq('status', 'Approved');
+
+    // Fetch payments to know what has been collected
+    const { data: paymentsData, error: payError } = await supabase
+      .from('payments')
+      .select('project_id, amount, status')
+      .in('project_id', projectIds)
+      .eq('status', 'verified');
+
+    if (payError) return { success: false, error: payError.message };
+
+    const billingMap: Record<string, any> = {};
+    projectsData.forEach((p: any) => {
+      billingMap[p.id] = {
+        id: p.id,
+        name: p.name,
+        client_name: p.client_name,
+        status: p.status,
+        base_budget: p.budget || 0,
+        budget: p.budget || 0,
+        total_invoiced: 0,
+        total_paid: 0,
+        pending_balance: 0,
+        milestone_sum: 0,
+        quotation_sum: 0
+      };
+    });
+
+    invoicesData?.forEach((i: any) => {
+      if (billingMap[i.project_id]) {
+        billingMap[i.project_id].total_invoiced += Number(i.total_amount || 0);
+      }
+    });
+
+    paymentsData?.forEach((p: any) => {
+      if (billingMap[p.project_id]) {
+        billingMap[p.project_id].total_paid += Number(p.amount || 0);
+      }
+    });
+
+    milestonesData?.forEach((m: any) => {
+      if (billingMap[m.project_id]) {
+        billingMap[m.project_id].milestone_sum += Number(m.amount || 0);
+      }
+    });
+
+    quotationsData?.forEach((q: any) => {
+      if (billingMap[q.project_id]) {
+        billingMap[q.project_id].quotation_sum += Number(q.total_amount || 0);
+      }
+    });
+
+    const result = Object.values(billingMap).map((b: any) => {
+      let dynamicBudget = b.base_budget;
+      if (dynamicBudget === 0) {
+        if (b.quotation_sum > 0) dynamicBudget = b.quotation_sum;
+        else if (b.milestone_sum > 0) dynamicBudget = b.milestone_sum;
+        else if (b.total_invoiced > 0) dynamicBudget = b.total_invoiced;
+      }
+      
+      return {
+        ...b,
+        budget: dynamicBudget,
+        pending_balance: b.total_invoiced - b.total_paid
+      };
+    });
+
+    // Sort by pending balance descending, then by name
+    result.sort((a, b) => b.pending_balance - a.pending_balance || a.name.localeCompare(b.name));
+
+    return { success: true, data: result };
+
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+

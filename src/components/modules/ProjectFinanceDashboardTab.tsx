@@ -108,7 +108,7 @@ export function ProjectFinanceDashboardTab({ projectId }: { projectId: string })
   const netProfit = totalIncome - totalExpense;
 
   const budget = finances?.total_quoted_amount || 0;
-  const progressPercent = budget > 0 ? Math.min((totalExpense / budget) * 100, 100) : 0;
+  const progressPercent = budget > 0 ? Math.min((totalExpense / budget) * 100, 100) : (totalExpense > 0 ? 100 : 0);
   
   let progressColor = 'bg-emerald-500';
   if (progressPercent > 75) progressColor = 'bg-amber-500';

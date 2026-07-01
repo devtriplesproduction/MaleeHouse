@@ -247,10 +247,8 @@ export default async function AccountantDashboardPage() {
         </div>
 
         {/* Right column for Notifications */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden h-full">
-            <DashboardNotificationCenter />
-          </div>
+        <div className="space-y-6 h-full">
+          <DashboardNotificationCenter />
         </div>
       </div>
     </div>

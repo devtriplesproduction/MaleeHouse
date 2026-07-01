@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
-import { getMyAssignedProjectsAction, getIncomingOperationsProjectsAction } from "@/actions/operations.actions";
+import { getMyAssignedProjectsAction } from "@/actions/operations.actions";
 import { getAllMaterialRequestsAction } from "@/actions/field.actions";
 import { getEngineerTasksAction } from "@/actions/task.actions";
 import { getNotificationsAction } from "@/actions/notification.actions";
@@ -28,9 +28,8 @@ export default async function EngineerDashboardPage() {
   const { createClient } = await import("@/lib/supabase/server");
   const supabase: any = await createClient();
 
-  const [assignedRes, incomingRes, eodRes, activityLogsRes, commentsRes, filesRes, usersRes, tasksRes, notifRes, visitsRes, matReqRes] = await Promise.all([
+  const [assignedRes, eodRes, activityLogsRes, commentsRes, filesRes, usersRes, tasksRes, notifRes, visitsRes, matReqRes] = await Promise.all([
     getMyAssignedProjectsAction(),
-    getIncomingOperationsProjectsAction(),
     getMyEODReportsAction(),
     supabase.from('activity_logs').select('*'),
     supabase.from('comments').select('*'),
@@ -48,7 +47,6 @@ export default async function EngineerDashboardPage() {
   const allUsers: any[] = (usersRes.data as any) || [];
 
   const projects = assignedRes.data || [];
-  const incomingProjects = incomingRes.data || [];
   const eodReports = eodRes.success ? eodRes.data : [];
   
   const tasks = tasksRes.success ? tasksRes.data : [];
@@ -66,7 +64,7 @@ export default async function EngineerDashboardPage() {
     (p: any) => p.status === "project_created" || p.status === "data_collection"
   );
 
-  const pendingAcceptance = [...incomingProjects, ...newlyAssigned];
+  const pendingAcceptance = [...newlyAssigned];
   const cadReview = projects.filter((p: any) => p.status === "review");
   const qcReturns = projects.filter(
     (p: any) => qcRejectedProjectIds.has(p.id) && p.status !== "completed" && p.status !== "archived"
@@ -77,11 +75,10 @@ export default async function EngineerDashboardPage() {
 
   // Construct recent activities timeline
   const myProjectIds = new Set([
-    ...projects.map((p: any) => p.id),
-    ...incomingProjects.map((p: any) => p.id)
+    ...projects.map((p: any) => p.id)
   ]);
 
-  const allProjects = [...projects, ...incomingProjects];
+  const allProjects = [...projects];
   const assignedAtMap = new Map(
     allProjects.map((p: any) => [p.id, p.assigned_at])
   );

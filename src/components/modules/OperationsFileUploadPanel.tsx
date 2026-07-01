@@ -734,7 +734,7 @@ export function OperationsFileUploadPanel({
             <button
               disabled={isPending || !rejectionReason.trim()}
               onClick={submitRejection}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
               Reject Document
@@ -920,7 +920,7 @@ export function OperationsFileUploadPanel({
               <button
                 onClick={() => handleReviewPrototypeInline(true)}
                 disabled={isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-indigo-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
               >
                 {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 Approve
@@ -1067,7 +1067,7 @@ export function OperationsFileUploadPanel({
               <button
                 onClick={() => handleReviewSurveyInline(true)}
                 disabled={isPending}
-                className="flex-[2] py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 text-sm font-black rounded-xl transition flex justify-center items-center gap-2 shadow-lg shadow-emerald-600/20"
+                className="flex-[2] py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-sm font-black rounded-xl transition flex justify-center items-center gap-2 shadow-lg shadow-emerald-600/20"
               >
                 {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Accept
@@ -1080,7 +1080,7 @@ export function OperationsFileUploadPanel({
             <button
               onClick={handleSubmitSurveyData}
               disabled={isPending || surveyDocs.length === 0 || controlPointDocs.length === 0 || projectStatus === "data_sync"}
-              className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (projectStatus === "data_sync" ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />)}
               {projectStatus === "data_sync" ? "Survey Submitted for CAD Review" : "Send to CAD"}
@@ -1157,7 +1157,7 @@ export function OperationsFileUploadPanel({
               <button
                 onClick={() => handleReviewFinalDeliverableInline(true)}
                 disabled={isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-indigo-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
               >
                 {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 Approve

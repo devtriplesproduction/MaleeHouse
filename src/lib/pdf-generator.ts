@@ -618,7 +618,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
             <div style="border-top: 1px solid #f1f5f9; padding-top: 15px;">
               <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Quotation Notes</h3>
               <div style="font-size: 9.5px; color: #475569; font-weight: 500; line-height: 1.5; padding-left: 8px; border-left: 2.5px solid #4f46e5; background-color: #fafafa; padding-top: 6px; padding-bottom: 6px;">
-                ${quotation.terms || 'Prices are valid for 30 days. 50% advance required for mobilization.'}
+                ${(quotation.notes || 'Prices are valid for 30 days. 50% advance required for mobilization.').split('\n').map((p: string) => p.trim() ? `<p style="margin: 0 0 6px 0;">${p}</p>` : '').join('')}
               </div>
             </div>
             
@@ -696,7 +696,11 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
 
   const issueDate = new Date(invoice.created_at);
   const dueDate = invoice.due_date ? new Date(invoice.due_date) : new Date(issueDate.getTime() + 15 * 24 * 60 * 60 * 1000);
-  
+  const verifiedPayments = (invoice.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid');
+  const amountPaid = verifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const totalAmount = Number(invoice.total_amount);
+  const remainingAmount = Math.max(0, totalAmount - amountPaid);
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -727,6 +731,7 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
           .totals-box { width: 300px; margin-left: auto; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
           .total-row { display: flex; justify-content: space-between; padding: 10px 15px; font-size: 11px; font-weight: 600; color: #475569; border-bottom: 1px solid #f1f5f9; }
           .total-row.grand { background: #0f172a; color: #ffffff; font-size: 14px; font-weight: 700; border-bottom: none; }
+          .total-row.paid { background: #f8fafc; color: #64748b; font-size: 12px; }
           
           .footer-section { position: absolute; bottom: 20mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 8px; color: #94a3b8; font-weight: 500; border-top: 1px solid #e2e8f0; padding-top: 15px; }
         </style>
@@ -796,9 +801,44 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
               </div>
               <div class="total-row grand">
                 <span>Total Due</span>
-                <span style="font-family: monospace;">INR ${Number(invoice.total_amount).toLocaleString('en-IN')}</span>
+                <span style="font-family: monospace;">INR ${totalAmount.toLocaleString('en-IN')}</span>
+              </div>
+              <div class="total-row paid">
+                <span>Amount Paid</span>
+                <span style="font-family: monospace;">INR ${amountPaid.toLocaleString('en-IN')}</span>
+              </div>
+              <div class="total-row grand" style="background: ${remainingAmount > 0 ? '#ef4444' : '#22c55e'}; margin-top: 1px;">
+                <span>Balance Remaining</span>
+                <span style="font-family: monospace;">INR ${remainingAmount.toLocaleString('en-IN')}</span>
               </div>
             </div>
+
+            ${(project?.budget > 0) ? `
+            <div style="margin-left: auto; width: 300px; margin-top: 20px;">
+              <div style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Project Financial Summary</div>
+              <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #f8fafc;">
+                <div style="display: flex; justify-content: space-between; padding: 8px 15px; font-size: 10px; font-weight: 600; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                  <span>Total Cost of Project</span>
+                  <span style="font-family: monospace;">INR ${(Number(project.budget) || 0).toLocaleString('en-IN')}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 15px; font-size: 10px; font-weight: 600; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                  <span>Total Project Paid</span>
+                  <span style="font-family: monospace;">
+                    INR ${(
+                      (project.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid')
+                        .reduce((sum: number, p: any) => sum + Number(p.amount), 0)
+                    ).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 15px; font-size: 11px; font-weight: 700; color: #0f172a; background: #e2e8f0;">
+                  <span>Project Balance Remaining</span>
+                  <span style="font-family: monospace;">
+                    INR ${Math.max(0, (Number(project.budget) || 0) - (project.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid').reduce((sum: number, p: any) => sum + Number(p.amount), 0)).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+            </div>
+            ` : ''}
           </div>
           
           <div class="footer-section">

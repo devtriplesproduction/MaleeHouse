@@ -72,7 +72,7 @@ export const getTeamWorkloadAction = unstable_cache(
         .from("project_assignments")
         .select(`
           user_id,
-          profiles (first_name, last_name, role),
+          profiles!project_assignments_user_id_fkey (first_name, last_name, role),
           projects (status)
         `)
         .eq("role", "engineer");
@@ -102,6 +102,7 @@ export const getTeamWorkloadAction = unstable_cache(
 
       return { success: true, data: Object.values(workloadMap) };
     } catch (err) {
+      console.error("getTeamWorkloadAction Error:", err);
       return { success: false, error: "Failed to fetch workload data" };
     }
   },

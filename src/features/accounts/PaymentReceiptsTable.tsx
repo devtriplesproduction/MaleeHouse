@@ -271,7 +271,7 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
               {/* Top Control Bar */}
               <div className="flex items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-3 rounded-xl border border-white/10 shadow-xl text-white print:hidden">
                 <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white">
+                   <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
                       <FileText className="w-4 h-4" />
                    </div>
                    <div>
@@ -305,7 +305,7 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
                     <div className="flex justify-between items-start border-b border-slate-100 pb-6">
                        <div className="space-y-4">
                           <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
+                             <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
                              <div className="space-y-0.5">
                                 <h1 className="text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h1>
                                 <p className="text-[9px] text-emerald-600 font-semibold uppercase tracking-wider">Engineering & Survey Services</p>
