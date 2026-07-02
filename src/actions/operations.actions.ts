@@ -196,6 +196,64 @@ export async function assignTeamMemberAction(
   }
 }
 
+export async function claimProjectAction(projectId: string): Promise<OpResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized." };
+
+    const lockCheck = await verifyProjectNotLocked(projectId);
+    if (!lockCheck.success) return lockCheck;
+
+    const allowedRoles = ["engineer", "cad", "field", "field_engineer", "qc", "admin"];
+    if (!allowedRoles.includes(profile.role)) {
+       return { success: false, error: "Role not authorized to claim projects." };
+    }
+
+    const supabase: any = await createClient();
+
+    // Check if user is already assigned
+    const { data: existing } = await supabase
+      .from('project_assignments')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('user_id', profile.id)
+      .single();
+
+    if (existing) {
+      return { success: false, error: "You are already assigned to this project." };
+    }
+
+    const { error: assignError } = await supabase.from('project_assignments').insert({
+      id: generateId('asn'),
+      project_id: projectId,
+      user_id: profile.id,
+      assigned_role: profile.role,
+      assigned_by: profile.id
+    });
+
+    if (assignError) throw assignError;
+
+    await supabase.from('activity_logs').insert({
+      id: generateId('act'),
+      project_id: projectId,
+      user_id: profile.id,
+      action: 'TEAM_MEMBER_ASSIGNED',
+      details: { 
+        assigned_user: profile.id, 
+        role: profile.role,
+        note: 'Project claimed by user'
+      }
+    });
+
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/operations");
+    return { success: true, error: null };
+  } catch (err: any) {
+    console.error("claimProjectAction error:", err);
+    return { success: false, error: err.message || "Failed to claim project." };
+  }
+}
+
 export async function removeTeamMemberAction(
   assignmentId: string,
   projectId: string
