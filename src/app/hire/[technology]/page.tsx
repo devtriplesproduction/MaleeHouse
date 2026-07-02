@@ -1,5 +1,6 @@
 import React from "react";
 import { notFound } from "next/navigation";
+import { marked } from "marked";
 import { getHireTechnologyConfig, hireTechnologies } from "@/config/hire";
 import { HeroSection } from "@/components/modules/hire/HeroSection";
 import { BenefitsSection } from "@/components/modules/hire/BenefitsSection";
@@ -39,7 +40,7 @@ export default function HireTechnologyPage({ params }: { params: { technology: s
       
       <section className="py-20 bg-white">
         <div className="container mx-auto px-6 max-w-4xl">
-          <div className="prose prose-lg prose-indigo mx-auto" dangerouslySetInnerHTML={{ __html: require('marked').parse(config.aboutContent) as string }} />
+          <div className="prose prose-lg prose-indigo mx-auto" dangerouslySetInnerHTML={{ __html: marked.parse(config.aboutContent) as string }} />
         </div>
       </section>
 
