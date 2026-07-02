@@ -281,6 +281,7 @@ export async function transitionWorkflowAction(
       "data_collection",
       "prototype",
       "review",
+      "field_assigned",
       "field_work",
       "data_sync",
       "cad_finalization",

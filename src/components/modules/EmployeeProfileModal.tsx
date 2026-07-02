@@ -6,7 +6,7 @@ import {
   Phone, Contact, Building2, Briefcase, MapPin,
   CheckCircle2, Copy, Calendar, Upload, FileText,
   Trash2, Award, ShieldAlert, BadgeInfo, IndianRupee,
-  Clock, Check, UserCheck, Eye, EyeOff, Download, Shield, Edit2, Save, Camera
+  Clock, Check, UserCheck, Eye, EyeOff, Download, Shield, Edit2, Save, Camera, ChevronDown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -16,7 +16,8 @@ import {
   updateEmployeeProfileAction,
   resetUserPasswordAction,
   offboardEmployeeAction,
-  deleteEmployeeAction
+  deleteEmployeeAction,
+  overrideUserCredentialsAction
 } from "@/actions/admin.actions";
 import { DEPARTMENTS, getDesignationsForDepartment, getSystemRoleForDesignation } from "@/config/departments";
 
@@ -177,6 +178,20 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
       };
 
       const result = await updateEmployeeProfileAction(employee.id, payload);
+
+      if (result?.success && password) {
+        const pwResult = await overrideUserCredentialsAction(employee.id, password);
+        if (!pwResult?.success) {
+          toast({
+            title: "Password Update Failed",
+            description: pwResult?.error || "Could not update credentials",
+            variant: "error"
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       if (result?.success) {
         toast({
           title: "Profile Synchronized",
@@ -563,16 +578,19 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Gender</label>
-                  <select
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none pr-10"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
@@ -661,17 +679,20 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Employment Type</label>
-                  <select
-                    value={formData.employment_type}
-                    onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
-                    disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
-                  >
-                    <option value="full-time">Full Time</option>
-                    <option value="part-time">Part Time</option>
-                    <option value="contract">Contract</option>
-                    <option value="intern">Intern</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={formData.employment_type}
+                      onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none pr-10"
+                    >
+                      <option value="full-time">Full Time</option>
+                      <option value="part-time">Part Time</option>
+                      <option value="contract">Contract</option>
+                      <option value="intern">Intern</option>
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Base Monthly Salary (INR)</label>

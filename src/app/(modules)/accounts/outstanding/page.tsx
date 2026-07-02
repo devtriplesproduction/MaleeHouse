@@ -63,7 +63,13 @@ export default async function OutstandingPaymentsPage() {
   });
 
   // Filter projects that actually have outstanding balances or we can show all active
-  const outstandingProjects = projectSummaries.filter((p: any) => p.outstanding > 0 || p.status !== 'completed');
+  let outstandingProjects = projectSummaries.filter((p: any) => p.outstanding > 0 || p.status !== 'completed');
+
+  // Filter only those projects whose milestone is hit
+  const today = new Date().toISOString().split('T')[0];
+  outstandingProjects = outstandingProjects.filter((p: any) => 
+    milestones.some((m: any) => m.project_id === p.id && m.due_date && m.due_date <= today)
+  );
 
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">

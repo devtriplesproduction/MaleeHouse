@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { notifyPaymentAction } from '@/actions/notification.actions';
 import { updateProjectStageAction } from '@/actions/workflow.actions';
@@ -525,7 +526,7 @@ export async function freezeProjectAction(
       return { success: false, error: lockCheck.error || "Project is locked." };
     }
 
-    const supabase: any = await createClient();
+    const supabase: any = await createAdminClient();
 
     const { data: currentProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
 
@@ -552,6 +553,15 @@ export async function freezeProjectAction(
       comment: comment || `Project frozen due to ${reason}.`
     });
 
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: projectId,
+      user_id: profile.id,
+      action: 'PROJECT_FROZEN',
+      details: { reason, comment },
+      created_at: new Date().toISOString()
+    });
+
     await revalidateAccountsPaths(projectId);
     revalidatePath('/operations');
 
@@ -570,7 +580,7 @@ export async function unfreezeProjectAction(projectId: string, comment?: string)
       return { success: false, error: 'Access denied. Accountant or Admin only.' };
     }
 
-    const supabase: any = await createClient();
+    const supabase: any = await createAdminClient();
 
     const { data: currentProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
 
@@ -595,6 +605,15 @@ export async function unfreezeProjectAction(projectId: string, comment?: string)
       to_stage: currentProject?.status,
       changed_by: profile.id,
       comment: comment || 'Project unfrozen.'
+    });
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: projectId,
+      user_id: profile.id,
+      action: 'PROJECT_UNFROZEN',
+      details: { comment },
+      created_at: new Date().toISOString()
     });
 
     await revalidateAccountsPaths(projectId);

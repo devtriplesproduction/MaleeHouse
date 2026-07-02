@@ -392,7 +392,7 @@ export async function approveCADRevisionAction(
 
     const { data: project } = await supabase.from('projects').select('status').eq('id', projectId).single();
 
-    if (project?.status === "data_sync") {
+    if (project?.status === "data_sync" || project?.status === "cad_finalization") {
       await updateProjectStageAction(projectId, "completed", "Final CAD Deliverable Approved. Delivered to Client.");
     } else {
       await updateProjectStageAction(projectId, "field_assigned", "CAD Revision Approved. Ready for Field Assignment.");

@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
   FileText, Plus, Trash2, Copy, Star, CheckCircle, Search, 
-  ArrowUp, ArrowDown, LayoutGrid, Edit3, X, Save, HelpCircle, AlertCircle
+  ArrowUp, ArrowDown, LayoutGrid, Edit3, X, Save, HelpCircle, AlertCircle, Eye
 } from 'lucide-react';
 import { 
   getQuotationTemplatesAction, 
@@ -61,6 +60,7 @@ export function TemplateManager() {
 
   const handleDuplicate = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!confirm('Are you sure you want to duplicate this template?')) return;
     const res = await duplicateQuotationTemplateAction(id);
     if (res.success) {
       toast.success('Template duplicated successfully');
@@ -288,6 +288,16 @@ export function TemplateManager() {
                         )}
                       >
                         <Star className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTemplate(JSON.parse(JSON.stringify(t)));
+                        }}
+                        title="View / Edit"
+                        className="p-2 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400 hover:text-blue-500 hover:border-blue-500/30 transition-all"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={(e) => handleDuplicate(t.id, e)}

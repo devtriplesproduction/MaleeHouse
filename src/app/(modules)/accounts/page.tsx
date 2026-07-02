@@ -212,16 +212,6 @@ export default async function AccountantDashboardPage() {
         </div>
       </div>
 
-      {/* Financial Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FinanceChart type="income-vs-expense" title="Income vs Expense" subtitle="Monthly comparative overview" data={overview.monthlyCashFlow} />
-        <FinanceChart type="cash-flow" title="Net Cash Flow" subtitle="Monthly net positive/negative cash flow" data={overview.monthlyCashFlow} />
-        <FinanceChart type="revenue-trend" title="Revenue Trend" subtitle="Monthly gross revenue tracking" data={overview.monthlyCashFlow} />
-        <FinanceChart type="profit-trend" title="Profit Trend" subtitle="Monthly net profit tracking" data={overview.monthlyCashFlow} />
-        <FinanceChart type="expense-categories" title="Expense Categories" subtitle="Distribution of expenses by category" data={overview.expenseByCategory} />
-        <FinanceChart type="project-profitability" title="Project Profitability" subtitle="Top 10 projects by margin" data={profitData} />
-      </div>
-
       {/* Main Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Left column for summary grids */}
@@ -250,6 +240,16 @@ export default async function AccountantDashboardPage() {
         <div className="space-y-6 h-full">
           <DashboardNotificationCenter />
         </div>
+      </div>
+
+      {/* Financial Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FinanceChart type="income-vs-expense" title="Income vs Expense" subtitle="Monthly comparative overview" data={overview.monthlyCashFlow} />
+        <FinanceChart type="cash-flow" title="Net Cash Flow" subtitle="Monthly net positive/negative cash flow" data={overview.monthlyCashFlow} />
+        <FinanceChart type="revenue-trend" title="Revenue Trend" subtitle="Monthly gross revenue tracking" data={overview.monthlyCashFlow} />
+        <FinanceChart type="profit-trend" title="Profit Trend" subtitle="Monthly net profit tracking" data={overview.monthlyCashFlow} />
+        <FinanceChart type="expense-categories" title="Expense Categories" subtitle="Distribution of expenses by category" data={overview.expenseByCategory} />
+        <FinanceChart type="project-profitability" title="Project Profitability" subtitle="Top 10 projects by margin" data={profitData} />
       </div>
     </div>
   );

@@ -299,19 +299,26 @@ function ProjectMilestonesContent() {
     try {
       if (isCurrentlyHeld) {
         if (projectToHold.is_frozen) {
-          await unfreezeProjectAction(projectToHold.id, "Resumed from Accountant Portal");
+          const res = await unfreezeProjectAction(projectToHold.id, "Resumed from Accountant Portal");
+          if (!res?.success) { toast.error(res?.error || "Failed to unfreeze."); return; }
         }
         if (projectToHold.status === "on_hold") {
-          await transitionWorkflowAction(projectToHold.id, "project_created", "Resumed from Accountant Portal");
+          const res = await transitionWorkflowAction(projectToHold.id, "project_created", "Resumed from Accountant Portal");
+          if (!res?.success) { toast.error(res?.error || "Failed to transition workflow."); return; }
         }
         toast.success("Project resumed successfully.");
       } else {
-        await freezeProjectAction(projectToHold.id, "financial_hold", "Put on hold from Accountant Portal");
-        toast.success("Project put on hold.");
+        const res = await freezeProjectAction(projectToHold.id, "financial_hold", "Put on hold from Accountant Portal");
+        if (res?.success) {
+          toast.success("Project put on hold.");
+        } else {
+          toast.error(res?.error || "Failed to put project on hold.");
+          return;
+        }
       }
       fetchProjects();
-    } catch (err) {
-      toast.error("Unexpected error.");
+    } catch (err: any) {
+      toast.error(err.message || "Unexpected error.");
     } finally {
       setProjectToHold(null);
     }

@@ -8,6 +8,8 @@ import {
 import { format, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import * as XLSX from 'xlsx';
 
 export type LedgerType = 'income' | 'expense';
 
@@ -100,7 +102,7 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleExportCSV = () => {
+  const handleExportExcel = () => {
     setIsExporting(true);
     try {
       const headers = type === 'income' 
@@ -113,35 +115,31 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
           const dateStr = isNaN(d.getTime()) ? '-' : format(d, 'yyyy-MM-dd');
           return [
             dateStr,
-            `"${item.project_name.replace(/"/g, '""')}"`,
-            `"${item.description.replace(/"/g, '""')}"`,
-            `"${item.category}"`,
-            item.amount.toString(),
-            `"${item.status}"`
+            item.project_name,
+            item.description,
+            item.category,
+            item.amount,
+            item.status
           ];
         } else {
           const d = new Date(item.date);
           const dateStr = isNaN(d.getTime()) ? '-' : format(d, 'yyyy-MM-dd');
           return [
             dateStr,
-            `"${item.project_name.replace(/"/g, '""')}"`,
-            `"${item.category}"`,
-            `"${item.description.replace(/"/g, '""')}"`,
-            item.amount.toString(),
-            `"${(item.added_by || '').replace(/"/g, '""')}"`
+            item.project_name,
+            item.category,
+            item.description,
+            item.amount,
+            item.added_by || ''
           ];
         }
       });
       
-      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${type}_ledger_export_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Ledger');
+      
+      XLSX.writeFile(workbook, `${type}_ledger_export_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
     } catch (e) {
       console.error('Export failed', e);
     } finally {
@@ -163,6 +161,12 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   };
+
+  const projectOptions = useMemo(() => [
+    { label: "All Projects", value: "" },
+    { label: "Company-wide", value: "company-wide" },
+    ...projects.map(p => ({ label: p.name, value: p.id }))
+  ], [projects]);
 
   return (
     <div className="space-y-6">
@@ -204,23 +208,23 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
 
-          <select
-            value={projectFilter}
-            onChange={(e) => { setProjectFilter(e.target.value); setCurrentPage(1); }}
-            className="h-10 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white appearance-none cursor-pointer w-full sm:w-48 shrink-0"
-          >
-            <option value="">All Projects</option>
-            <option value="company-wide">Company-wide</option>
-            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <div className="w-full sm:w-64 shrink-0">
+            <SearchableSelect
+              value={projectFilter}
+              onValueChange={(val) => { setProjectFilter(val); setCurrentPage(1); }}
+              options={projectOptions}
+              placeholder="All Projects"
+              searchPlaceholder="Search projects..."
+            />
+          </div>
 
           <button
-            onClick={handleExportCSV}
+            onClick={handleExportExcel}
             disabled={isExporting || filteredData.length === 0}
             className="h-10 px-4 shrink-0 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm"
           >
             <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export CSV'}</span>
+            <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export Excel'}</span>
           </button>
         </div>
       </div>
@@ -248,13 +252,12 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
                     <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Added By</th>
                   </>
                 )}
-                <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={type === 'income' ? 7 : 7} className="py-20 text-center">
+                  <td colSpan={6} className="py-20 text-center">
                     <EmptyState 
                       icon={BarChart3} 
                       message="No records found for the given filters." 
@@ -307,21 +310,6 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
                         </td>
                       </>
                     )}
-                    
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {item.receipt_url ? (
-                        <a 
-                          href={item.receipt_url} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-                        >
-                          <FileText className="w-3.5 h-3.5" /> View
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-400 dark:text-slate-500 px-3">-</span>
-                      )}
-                    </td>
                   </tr>
                 ))
               )}
