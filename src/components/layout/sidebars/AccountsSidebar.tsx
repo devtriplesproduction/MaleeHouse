@@ -27,7 +27,6 @@ const accountsLinks: SidebarLink[] = [
   { title: "Project Milestones", href: "/accounts/milestones", icon: Target },
   { title: "Billing & Collections", href: "/accounts/billing", icon: DollarSign },
   { title: "Outstanding Payments", href: "/accounts/outstanding", icon: AlertCircle },
-  { title: "Payment Verification", href: "/accounts/verification", icon: Receipt },
   { title: "T&C Templates", href: "/accounts/templates", icon: Scroll },
   { title: "Financial Reports", href: "/accounts/reports", icon: BarChart2 },
   { title: "Audit Logs", href: "/accounts/audit", icon: ShieldAlert },

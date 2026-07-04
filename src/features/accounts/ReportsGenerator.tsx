@@ -4,20 +4,22 @@ import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { FileText, FileSpreadsheet, Calendar, ChevronDown, CheckCircle2, Loader2, Download } from 'lucide-react';
+import { FileText, FileSpreadsheet, Calendar, ChevronDown, CheckCircle2, Loader2, Download, User, Briefcase, TrendingUp, TrendingDown, Wallet, FileBarChart2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, subDays, subMonths, subWeeks } from 'date-fns';
 import { 
   getProfitLossReportAction, 
   getIncomeStatementAction, 
   getExpenseStatementAction, 
   getCashFlowStatementAction, 
-  getBalanceSheetAction 
+  getBalanceSheetAction,
+  getProjectStatementAction
 } from '@/actions/reports.actions';
 import { getProjectsListAction } from '@/actions/project.actions';
+import { generateFinancialReportPDF } from '@/lib/financial-pdf-generator';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
 
-type ReportType = 'profit_loss' | 'income' | 'expense' | 'cash_flow' | 'balance_sheet';
+type ReportType = 'profit_loss' | 'income' | 'expense' | 'cash_flow' | 'balance_sheet' | 'project_statement';
 type DateRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
 
 const formatCurrency = (value: number) => {
@@ -82,6 +84,14 @@ export function ReportsGenerator() {
   };
 
   const handleGenerate = async () => {
+    if (reportType === 'project_statement' && !selectedProjectId) {
+      toast.error('Project Required', { description: 'Please select a specific project to generate a Project Statement.' });
+      return;
+    }
+    if (reportType !== 'project_statement' && (!dateTo || (reportType !== 'balance_sheet' && !dateFrom))) {
+      toast.error('Invalid Date', { description: 'Please select a valid date range.' });
+      return;
+    }
     setIsLoading(true);
     setReportData(null);
     try {
@@ -102,6 +112,9 @@ export function ReportsGenerator() {
           break;
         case 'balance_sheet':
           res = await getBalanceSheetAction(dateTo, pid);
+          break;
+        case 'project_statement':
+          if (pid) res = await getProjectStatementAction(pid);
           break;
       }
       
@@ -125,102 +138,25 @@ export function ReportsGenerator() {
       case 'expense': return 'Expense Statement';
       case 'cash_flow': return 'Cash Flow Statement';
       case 'balance_sheet': return 'Balance Sheet';
+      case 'project_statement': return 'Project Statement (Client Copy)';
       default: return 'Financial Report';
     }
   };
 
   const exportPDF = () => {
     if (!reportData || !generatedConfig) return;
-    const doc = new jsPDF();
     const title = getReportTitle(generatedConfig.type);
     
-    doc.setFontSize(16);
-    doc.text(title, 14, 22);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    if (generatedConfig.type === 'balance_sheet') {
-      doc.text(`As of: ${format(new Date(generatedConfig.to), 'MMM d, yyyy')}`, 14, 30);
-    } else {
-      doc.text(`Period: ${format(new Date(generatedConfig.from), 'MMM d, yyyy')} to ${format(new Date(generatedConfig.to), 'MMM d, yyyy')}`, 14, 30);
-    }
-    
-    if (generatedConfig.projectId) {
-      const p = projects.find(p => p.id === generatedConfig.projectId);
-      if (p) doc.text(`Project: ${p.name}`, 14, 36);
+    // We already fetch company and project data in the report actions
+    const companySettings = reportData.company || {};
+    let currentProject = reportData.project;
+
+    // Fallback if not populated
+    if (generatedConfig.projectId && !currentProject) {
+      currentProject = projects.find(p => p.id === generatedConfig.projectId) || { client_name: 'Client', client_address: 'Address Not Provided', client_contact: '' };
     }
 
-    let yPos = generatedConfig.projectId ? 45 : 40;
-
-    const createTable = (head: string[][], body: any[][], theme: 'striped' | 'grid' | 'plain' = 'striped') => {
-      autoTable(doc, {
-        startY: yPos,
-        head,
-        body,
-        theme,
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [79, 70, 229] }, // Indigo 600
-        margin: { top: 10, right: 14, bottom: 10, left: 14 },
-      });
-      yPos = (doc as any).lastAutoTable.finalY + 10;
-    };
-
-    if (generatedConfig.type === 'profit_loss' || generatedConfig.type === 'cash_flow') {
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text('Revenue by Project', 14, yPos);
-      yPos += 5;
-      
-      const revBody = Object.entries(reportData.revenueByProject || {}).map(([k, v]) => [k, formatCurrency(v as number)]);
-      revBody.push(['Total Revenue', formatCurrency(reportData.totalRevenue)]);
-      createTable([['Project', 'Amount']], revBody);
-      
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text('Costs by Category', 14, yPos);
-      yPos += 5;
-      
-      const costBody = Object.entries(reportData.costsByCategory || {}).map(([k, v]) => [k, formatCurrency(v as number)]);
-      costBody.push(['Total Costs', formatCurrency(reportData.totalCosts)]);
-      createTable([['Category', 'Amount']], costBody);
-      
-      doc.setFontSize(14);
-      doc.setTextColor(0);
-      doc.text(`Net Profit: ${formatCurrency(reportData.netProfit)}`, 14, yPos + 5);
-      
-    } else if (generatedConfig.type === 'income') {
-      const body = Object.entries(reportData.incomeByProject || {}).map(([k, v]) => [k, formatCurrency(v as number)]);
-      body.push(['Total Income', formatCurrency(reportData.totalIncome)]);
-      createTable([['Project', 'Amount']], body);
-      
-    } else if (generatedConfig.type === 'expense') {
-      const body = Object.entries(reportData.expensesByCategory || {}).map(([k, v]) => [k, formatCurrency(v as number)]);
-      body.push(['Total Expenses', formatCurrency(reportData.totalExpenses)]);
-      createTable([['Category', 'Amount']], body);
-      
-    } else if (generatedConfig.type === 'balance_sheet') {
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text('Assets', 14, yPos);
-      yPos += 5;
-      const assetBody = Object.entries(reportData.assets || {}).map(([k, v]) => [k, formatCurrency(v as number)]);
-      assetBody.push(['Total Assets', formatCurrency(reportData.totalAssets)]);
-      createTable([['Asset', 'Amount']], assetBody);
-      
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text('Liabilities', 14, yPos);
-      yPos += 5;
-      const liabBody = Object.entries(reportData.liabilities || {}).map(([k, v]) => [k, formatCurrency(v as number)]);
-      liabBody.push(['Total Liabilities', formatCurrency(reportData.totalLiabilities)]);
-      createTable([['Liability', 'Amount']], liabBody);
-      
-      doc.setFontSize(14);
-      doc.setTextColor(0);
-      doc.text(`Total Equity: ${formatCurrency(reportData.equity)}`, 14, yPos + 5);
-    }
-
-    doc.save(`${generatedConfig.type}_report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    generateFinancialReportPDF(reportData, generatedConfig, companySettings, currentProject, title);
   };
 
   const exportExcel = () => {
@@ -277,51 +213,223 @@ export function ReportsGenerator() {
   const renderTableData = () => {
     if (!reportData || !generatedConfig) return null;
     const type = generatedConfig.type;
+    
+    const isCashFlow = type === 'cash_flow';
+    const inflowTitle = isCashFlow ? '1. CASH INFLOW (REVENUE)' : '1. REVENUE';
+    const outflowTitle = isCashFlow ? '2. CASH OUTFLOW (EXPENSES)' : '2. COSTS & EXPENSES';
+    const summaryTitle = isCashFlow ? '3. CASH FLOW SUMMARY' : '3. PROFIT & LOSS SUMMARY';
+    const overviewTitle = isCashFlow ? '4. CASH FLOW OVERVIEW' : '4. FINANCIAL OVERVIEW';
+    const totalInflowLabel = isCashFlow ? 'TOTAL CASH INFLOW' : 'TOTAL REVENUE';
+    const totalOutflowLabel = isCashFlow ? 'TOTAL CASH OUTFLOW' : 'TOTAL COSTS';
+    const netLabel = isCashFlow ? 'NET CASH FLOW' : 'NET PROFIT';
+
+    const UniversalHeader = (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-2 px-6">
+        {/* Client Details */}
+        <div className="bg-slate-50 dark:bg-[#0f172a]/50 border border-slate-200/60 dark:border-border rounded-2xl p-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+          <div className="flex items-start gap-4">
+            <div className="bg-blue-100 dark:bg-blue-900/30 p-2.5 rounded-xl text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+              <User size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-blue-600 dark:text-blue-400 text-sm mb-4 uppercase tracking-wider">Client Details</h4>
+              <table className="w-full text-xs sm:text-sm">
+                <tbody>
+                  <tr><td className="py-1.5 text-slate-500 w-24 sm:w-28 font-medium">Client Name</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.client_name || 'N/A'}</td></tr>
+                  <tr><td className="py-1.5 text-slate-500 font-medium align-top">Address</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.client_address || (generatedConfig.projectId ? 'Address Not Provided' : 'N/A')}</td></tr>
+                  <tr><td className="py-1.5 text-slate-500 font-medium">Phone</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.client_contact || (generatedConfig.projectId ? '' : 'N/A')}</td></tr>
+                  <tr><td className="py-1.5 text-slate-500 font-medium">Email</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.client_email || 'N/A'}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Details */}
+        <div className="bg-slate-50 dark:bg-[#0f172a]/50 border border-slate-200/60 dark:border-border rounded-2xl p-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+          <div className="flex items-start gap-4">
+            <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2.5 rounded-xl text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+              <Briefcase size={22} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-sm mb-4 uppercase tracking-wider">Project Details</h4>
+              <table className="w-full text-xs sm:text-sm">
+                <tbody>
+                  <tr><td className="py-1.5 text-slate-500 w-24 sm:w-28 font-medium">Project Name</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.name || 'All Projects'}</td></tr>
+                  <tr><td className="py-1.5 text-slate-500 font-medium">Manager</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: Malee House Team</td></tr>
+                  <tr><td className="py-1.5 text-slate-500 font-medium">Status</td><td className="py-1.5 font-semibold text-emerald-600 dark:text-emerald-400">: {reportData.project?.status || 'Completed'}</td></tr>
+                  <tr><td className="py-1.5 text-slate-500 font-medium">Currency</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: INR</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
 
     if (type === 'profit_loss' || type === 'cash_flow') {
       return (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-3 px-6">Revenue</h3>
-            <table className="w-full text-left border-collapse">
-              <tbody>
-                {Object.entries(reportData.revenueByProject || {}).map(([k, v], idx) => (
-                  <tr key={idx} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                    <td className="py-3 px-6 text-sm text-slate-900 dark:text-white font-medium">{k}</td>
-                    <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-white">{formatCurrency(v as number)}</td>
+        <div className="space-y-8 pb-10">
+          {UniversalHeader}
+          
+          {/* Revenue / Inflow */}
+          <div className="px-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-blue-600 text-white p-2 rounded-full shadow-lg shadow-blue-500/30">
+                <TrendingUp size={20} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-base font-black text-blue-600 uppercase tracking-wide">{inflowTitle}</h3>
+            </div>
+            <div className="border border-blue-200 dark:border-blue-900 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-blue-600 text-white">
+                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider w-16 text-center">#</th>
+                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider">Description</th>
+                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider text-right">Amount (INR)</th>
                   </tr>
-                ))}
-                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b-2 border-slate-200 dark:border-white/10">
-                  <td className="py-4 px-6 text-sm text-slate-900 dark:text-white font-bold">Total Revenue</td>
-                  <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-emerald-600 dark:text-emerald-400">{formatCurrency(reportData.totalRevenue)}</td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {Object.entries(reportData.revenueByProject || {}).map(([k, v], idx) => (
+                    <tr key={idx} className="border-b border-blue-100 dark:border-blue-900/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20">
+                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400 text-center">{idx + 1}</td>
+                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-foreground font-medium">{k}</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">{formatCurrency(v as number)}</td>
+                    </tr>
+                  ))}
+                  {Object.keys(reportData.revenueByProject || {}).length === 0 && (
+                    <tr className="border-b border-blue-100 dark:border-blue-900/50">
+                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400 text-center">1</td>
+                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-foreground font-medium">Other Income</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">₹ 0.00</td>
+                    </tr>
+                  )}
+                  <tr className="bg-blue-50/80 dark:bg-blue-900/20">
+                    <td colSpan={2} className="py-4 px-6 text-sm text-blue-700 dark:text-blue-400 font-bold uppercase tracking-wider">{totalInflowLabel}</td>
+                    <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-blue-700 dark:text-blue-400">{formatCurrency(reportData.totalRevenue)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-3 px-6 mt-6">Costs & Expenses</h3>
-            <table className="w-full text-left border-collapse">
-              <tbody>
-                {Object.entries(reportData.costsByCategory || {}).map(([k, v], idx) => (
-                  <tr key={idx} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                    <td className="py-3 px-6 text-sm text-slate-900 dark:text-white font-medium capitalize">{k}</td>
-                    <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-white">{formatCurrency(v as number)}</td>
+          {/* Costs / Outflow */}
+          <div className="px-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-purple-600 text-white p-2 rounded-full shadow-lg shadow-purple-500/30">
+                <TrendingDown size={20} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-base font-black text-purple-600 uppercase tracking-wide">{outflowTitle}</h3>
+            </div>
+            <div className="border border-purple-200 dark:border-purple-900 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-purple-600 text-white">
+                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider w-16 text-center">#</th>
+                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider">Description</th>
+                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider text-right">Amount (INR)</th>
                   </tr>
-                ))}
-                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b-2 border-slate-200 dark:border-white/10">
-                  <td className="py-4 px-6 text-sm text-slate-900 dark:text-white font-bold">Total Costs</td>
-                  <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-rose-600 dark:text-rose-400">{formatCurrency(reportData.totalCosts)}</td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {Object.entries(reportData.costsByCategory || {}).map(([k, v], idx) => (
+                    <tr key={idx} className="border-b border-purple-100 dark:border-purple-900/50 hover:bg-purple-50/50 dark:hover:bg-purple-900/20">
+                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400 text-center">{idx + 1}</td>
+                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-foreground font-medium capitalize">{k}</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">{formatCurrency(v as number)}</td>
+                    </tr>
+                  ))}
+                  {Object.keys(reportData.costsByCategory || {}).length === 0 && (
+                    <tr className="border-b border-purple-100 dark:border-purple-900/50">
+                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400 text-center">1</td>
+                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-foreground font-medium">Other Expenses</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">₹ 0.00</td>
+                    </tr>
+                  )}
+                  <tr className="bg-purple-50/80 dark:bg-purple-900/20">
+                    <td colSpan={2} className="py-4 px-6 text-sm text-purple-700 dark:text-purple-400 font-bold uppercase tracking-wider">{totalOutflowLabel}</td>
+                    <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-purple-700 dark:text-purple-400">{formatCurrency(reportData.totalCosts)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="px-6 py-5 bg-indigo-50/50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-between border border-indigo-100 dark:border-indigo-500/20">
-            <span className="text-base font-bold text-indigo-900 dark:text-indigo-100">Net Profit</span>
-            <span className={`text-xl font-black tabular-nums ${reportData.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-              {formatCurrency(reportData.netProfit)}
-            </span>
+          {/* Summary Section */}
+          <div className="px-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-teal-600 text-white p-2 rounded-full shadow-lg shadow-primary/20">
+                <Wallet size={20} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-base font-black text-teal-600 uppercase tracking-wide">{summaryTitle}</h3>
+            </div>
+            <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                    <td className="py-4 px-6 text-sm text-slate-600 dark:text-slate-400 font-medium">Opening Balance</td>
+                    <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">₹ 0.00</td>
+                  </tr>
+                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                    <td className="py-4 px-6 text-sm text-emerald-600 dark:text-emerald-500 font-medium">{totalInflowLabel}</td>
+                    <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-emerald-600 dark:text-emerald-500">{formatCurrency(reportData.totalRevenue)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                    <td className="py-4 px-6 text-sm text-rose-600 dark:text-rose-500 font-medium">{totalOutflowLabel}</td>
+                    <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-rose-600 dark:text-rose-500">- {formatCurrency(reportData.totalCosts)}</td>
+                  </tr>
+                  <tr className="bg-teal-50/50 dark:bg-teal-900/10 border-t-2 border-slate-100 dark:border-slate-800">
+                    <td className="py-5 px-6 text-sm text-teal-700 dark:text-teal-400 font-bold uppercase tracking-wider">Closing Balance</td>
+                    <td className="py-5 px-6 text-sm font-bold tabular-nums text-right text-teal-700 dark:text-teal-400">{formatCurrency(reportData.netProfit)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Overview Block */}
+          <div className="px-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-indigo-600 text-white p-2 rounded-full shadow-lg shadow-primary/20">
+                <FileBarChart2 size={20} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-base font-black text-indigo-600 uppercase tracking-wide">{overviewTitle}</h3>
+            </div>
+            <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm flex flex-col md:flex-row">
+              <div className="flex-1 p-6 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 flex flex-col justify-center">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Revenue (Inflow)</span>
+                  <span className="text-sm font-bold tabular-nums text-emerald-600">{formatCurrency(reportData.totalRevenue)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Expenses (Outflow)</span>
+                  <span className="text-sm font-bold tabular-nums text-rose-600">{formatCurrency(reportData.totalCosts)}</span>
+                </div>
+              </div>
+              <div className="flex-1 p-8 bg-slate-50 dark:bg-white/[0.02] flex flex-col items-center justify-center text-center">
+                <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2">{netLabel}</span>
+                <span className={`text-4xl font-black tabular-nums tracking-tight ${reportData.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {reportData.netProfit < 0 ? '- ' : ''}{formatCurrency(Math.abs(reportData.netProfit))}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Signatures */}
+          <div className="px-6 mt-16 flex justify-between items-end pb-8">
+            <div className="text-center w-48">
+              <div className="border-b border-slate-300 dark:border-slate-700 pb-2 mb-2">
+                <span className="text-xs font-bold text-slate-800 dark:text-foreground">Prepared By</span>
+              </div>
+              <span className="text-xs text-slate-500">Malee House Team</span>
+            </div>
+            <div className="text-center w-48">
+              <div className="border-b border-slate-300 dark:border-slate-700 pb-2 mb-2">
+                <span className="text-xs font-bold text-slate-800 dark:text-foreground">Approved By</span>
+              </div>
+              <span className="text-xs text-slate-500">Authorized Signatory</span>
+            </div>
           </div>
         </div>
       );
@@ -330,18 +438,19 @@ export function ReportsGenerator() {
     if (type === 'balance_sheet') {
       return (
         <div className="space-y-6">
+          {UniversalHeader}
           <div>
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-3 px-6">Assets</h3>
             <table className="w-full text-left border-collapse">
               <tbody>
                 {Object.entries(reportData.assets || {}).map(([k, v], idx) => (
-                  <tr key={idx} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                    <td className="py-3 px-6 text-sm text-slate-900 dark:text-white font-medium">{k}</td>
-                    <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-white">{formatCurrency(v as number)}</td>
+                  <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                    <td className="py-3 px-6 text-sm text-slate-900 dark:text-foreground font-medium">{k}</td>
+                    <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-foreground">{formatCurrency(v as number)}</td>
                   </tr>
                 ))}
-                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b-2 border-slate-200 dark:border-white/10">
-                  <td className="py-4 px-6 text-sm text-slate-900 dark:text-white font-bold">Total Assets</td>
+                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b-2 border-slate-200 dark:border-border">
+                  <td className="py-4 px-6 text-sm text-slate-900 dark:text-foreground font-bold">Total Assets</td>
                   <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-emerald-600 dark:text-emerald-400">{formatCurrency(reportData.totalAssets)}</td>
                 </tr>
               </tbody>
@@ -353,13 +462,13 @@ export function ReportsGenerator() {
             <table className="w-full text-left border-collapse">
               <tbody>
                 {Object.entries(reportData.liabilities || {}).map(([k, v], idx) => (
-                  <tr key={idx} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                    <td className="py-3 px-6 text-sm text-slate-900 dark:text-white font-medium capitalize">{k}</td>
-                    <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-white">{formatCurrency(v as number)}</td>
+                  <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                    <td className="py-3 px-6 text-sm text-slate-900 dark:text-foreground font-medium capitalize">{k}</td>
+                    <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-foreground">{formatCurrency(v as number)}</td>
                   </tr>
                 ))}
-                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b-2 border-slate-200 dark:border-white/10">
-                  <td className="py-4 px-6 text-sm text-slate-900 dark:text-white font-bold">Total Liabilities</td>
+                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b-2 border-slate-200 dark:border-border">
+                  <td className="py-4 px-6 text-sm text-slate-900 dark:text-foreground font-bold">Total Liabilities</td>
                   <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-rose-600 dark:text-rose-400">{formatCurrency(reportData.totalLiabilities)}</td>
                 </tr>
               </tbody>
@@ -375,32 +484,121 @@ export function ReportsGenerator() {
         </div>
       );
     }
+    
+    if (type === 'project_statement') {
+      return (
+        <div className="space-y-6">
+          {UniversalHeader}
+          
+          <div className="mt-6">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-3 px-6">Payment Timeline</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-y border-slate-200/60 dark:border-border">
+                    <th className="py-3 px-6 text-xs font-black uppercase tracking-widest text-slate-400">Milestone</th>
+                    <th className="py-3 px-6 text-xs font-black uppercase tracking-widest text-slate-400">Due Date</th>
+                    <th className="py-3 px-6 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Amount</th>
+                    <th className="py-3 px-6 text-xs font-black uppercase tracking-widest text-slate-400 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(reportData.timeline || []).map((t: any, idx: number) => (
+                    <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                      <td className="py-3 px-6 text-sm text-slate-900 dark:text-foreground font-medium">{t.title}</td>
+                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400">{t.due_date ? new Date(t.due_date).toLocaleDateString() : 'N/A'}</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-foreground">{formatCurrency(t.total_amount)}</td>
+                      <td className="py-3 px-6 text-sm text-center">
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${t.status === 'paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'}`}>
+                          {t.status.toUpperCase()}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div className="px-6 py-5 grid grid-cols-3 gap-4 border-t border-slate-100 dark:border-border bg-slate-50/50 dark:bg-white/[0.02]">
+            <div>
+              <p className="text-xs font-bold text-slate-500">Total Billed</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-foreground">{formatCurrency(reportData.summary?.totalBilled || 0)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-500">Total Paid</p>
+              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(reportData.summary?.totalPaid || 0)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-500">Outstanding</p>
+              <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{formatCurrency(reportData.summary?.outstanding || 0)}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-    const items = type === 'income' ? reportData.incomeByProject : reportData.expensesByCategory;
-    const total = type === 'income' ? reportData.totalIncome : reportData.totalExpenses;
+    if (type === 'income') {
+      return (
+        <div className="space-y-6">
+          {UniversalHeader}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-border">
+                  <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400">Date</th>
+                  <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400">Project</th>
+                  <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(reportData.incomeTransactions || []).map((t: any, idx: number) => (
+                  <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                    <td className="py-4 px-6 text-sm text-slate-900 dark:text-foreground font-medium">{new Date(t.date).toLocaleDateString()}</td>
+                    <td className="py-4 px-6 text-sm text-slate-900 dark:text-foreground font-medium">{t.project}</td>
+                    <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-foreground">{formatCurrency(t.amount)}</td>
+                  </tr>
+                ))}
+                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-t-2 border-slate-200 dark:border-border">
+                  <td colSpan={2} className="py-4 px-6 text-sm text-slate-900 dark:text-foreground font-bold">Total Income</td>
+                  <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-emerald-600 dark:text-emerald-400">{formatCurrency(reportData.totalIncome)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+    
+    // Fallback for expense
+    const items = reportData.expensesByCategory;
+    const total = reportData.totalExpenses;
     
     return (
-      <div>
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-white/5">
-              <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400">{type === 'income' ? 'Project' : 'Category'}</th>
+      <div className="space-y-6">
+        {UniversalHeader}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+            <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-border">
+              <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400">Category</th>
               <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Amount</th>
             </tr>
           </thead>
           <tbody>
             {Object.entries(items || {}).map(([k, v], idx) => (
-              <tr key={idx} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                <td className="py-4 px-6 text-sm text-slate-900 dark:text-white font-medium capitalize">{k}</td>
-                <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-white">{formatCurrency(v as number)}</td>
+              <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                <td className="py-4 px-6 text-sm text-slate-900 dark:text-foreground font-medium capitalize">{k}</td>
+                <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-foreground">{formatCurrency(v as number)}</td>
               </tr>
             ))}
-            <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-t-2 border-slate-200 dark:border-white/10">
-              <td className="py-4 px-6 text-sm text-slate-900 dark:text-white font-bold">Total</td>
-              <td className={`py-4 px-6 text-sm font-bold tabular-nums text-right ${type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{formatCurrency(total)}</td>
+            <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-t-2 border-slate-200 dark:border-border">
+              <td className="py-4 px-6 text-sm text-slate-900 dark:text-foreground font-bold">Total Expenses</td>
+              <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-rose-600 dark:text-rose-400">{formatCurrency(total)}</td>
             </tr>
           </tbody>
         </table>
+      </div>
       </div>
     );
   };
@@ -408,25 +606,26 @@ export function ReportsGenerator() {
   return (
     <div className="space-y-6">
       {/* Controls Header */}
-      <div className="bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 shadow-sm flex flex-col gap-4 sticky top-4 z-10 backdrop-blur-md">
+      <div className="bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-slate-200/60 dark:border-border shadow-sm flex flex-col gap-4 sticky top-4 z-10 backdrop-blur-md">
         
         <div className="flex flex-wrap items-center gap-4">
           <select
             value={reportType}
             onChange={(e) => setReportType(e.target.value as ReportType)}
-            className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white appearance-none cursor-pointer"
+            className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground appearance-none cursor-pointer"
           >
             <option value="profit_loss">Profit & Loss Statement</option>
             <option value="income">Income Statement</option>
             <option value="expense">Expense Statement</option>
             <option value="cash_flow">Cash Flow Statement</option>
             <option value="balance_sheet">Balance Sheet</option>
+            <option value="project_statement">Project Statement (Client Copy)</option>
           </select>
 
           <select
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white appearance-none cursor-pointer"
+            className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground appearance-none cursor-pointer"
           >
             <option value="">All Projects (Company-wide)</option>
             {projects.map(p => (
@@ -434,11 +633,11 @@ export function ReportsGenerator() {
             ))}
           </select>
 
-          {reportType !== 'balance_sheet' && (
+          {reportType !== 'balance_sheet' && reportType !== 'project_statement' && (
             <select
               value={datePreset}
               onChange={(e) => handleDatePresetChange(e.target.value as DateRangePreset)}
-              className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white appearance-none cursor-pointer"
+              className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground appearance-none cursor-pointer"
             >
               <option value="today">Daily (Today)</option>
               <option value="yesterday">Daily (Yesterday)</option>
@@ -451,23 +650,25 @@ export function ReportsGenerator() {
           )}
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {reportType !== 'balance_sheet' && (
+            {reportType !== 'balance_sheet' && reportType !== 'project_statement' && (
               <>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => { setDateFrom(e.target.value); setDatePreset('custom'); }}
-                  className="w-full sm:w-36 h-11 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white"
+                  className="w-full sm:w-36 h-11 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground"
                 />
                 <span className="text-slate-400 text-sm font-medium">to</span>
               </>
             )}
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); if (reportType !== 'balance_sheet') setDatePreset('custom'); }}
-              className="w-full sm:w-36 h-11 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white"
-            />
+            {reportType !== 'project_statement' && (
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); if (reportType !== 'balance_sheet') setDatePreset('custom'); }}
+                className="w-full sm:w-36 h-11 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground"
+              />
+            )}
           </div>
 
           <button
@@ -482,17 +683,17 @@ export function ReportsGenerator() {
 
         {/* Exports only visible if report generated */}
         {reportData && generatedConfig && (
-          <div className="flex items-center justify-end gap-3 shrink-0 pt-3 border-t border-slate-100 dark:border-white/5">
+          <div className="flex items-center justify-end gap-3 shrink-0 pt-3 border-t border-slate-100 dark:border-border">
             <button
               onClick={exportExcel}
-              className="h-10 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+              className="h-10 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-border text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               Export Excel
             </button>
             <button
               onClick={exportPDF}
-              className="h-10 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+              className="h-10 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-border text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
             >
               <FileText className="w-4 h-4 text-rose-600 dark:text-rose-400" />
               Export PDF
@@ -503,14 +704,16 @@ export function ReportsGenerator() {
 
       {/* Report Output */}
       {reportData && generatedConfig && (
-        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 pb-2">
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-border rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 pb-2">
           
-          <div className="p-6 border-b border-slate-100 dark:border-white/5 text-center">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+          <div className="p-6 border-b border-slate-100 dark:border-border text-center">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-foreground tracking-tight">
               {getReportTitle(generatedConfig.type)}
             </h2>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-              {generatedConfig.type === 'balance_sheet' 
+              {generatedConfig.type === 'project_statement' 
+                ? 'Client Statement of Account & Payment Timeline'
+                : generatedConfig.type === 'balance_sheet' 
                 ? `As of ${format(new Date(generatedConfig.to), 'MMMM d, yyyy')}`
                 : `For the period ${format(new Date(generatedConfig.from), 'MMM d, yyyy')} to ${format(new Date(generatedConfig.to), 'MMM d, yyyy')}`
               }

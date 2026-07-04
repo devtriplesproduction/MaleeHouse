@@ -1,6 +1,7 @@
 'use server'
 
 import { cache } from 'react'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_REDIRECTS, Role } from '@/lib/permissions/roles'
@@ -78,6 +79,44 @@ const getCachedSessionProfile = cache(async () => {
 
 export async function getUserProfileAction() {
   return await getCachedSessionProfile()
+}
+
+export async function updateMyProfileAction(updates: Partial<any>) {
+  try {
+    const profile: any = await getCachedSessionProfile()
+    if (!profile) return { success: false, error: 'Unauthorized' }
+
+    const supabase: any = await createClient()
+
+    // Filter out fields that users shouldn't update themselves
+    const allowedUpdates = {
+      phone_number: updates.phone_number,
+      personal_email: updates.personal_email,
+      address: updates.address,
+      emergency_contact: updates.emergency_contact,
+      blood_group: updates.blood_group,
+      dob: updates.dob,
+      gender: updates.gender,
+      profile_photo: updates.profile_photo,
+    }
+
+    // Clean undefined values
+    Object.keys(allowedUpdates).forEach(key => allowedUpdates[key as keyof typeof allowedUpdates] === undefined && delete allowedUpdates[key as keyof typeof allowedUpdates])
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ ...allowedUpdates, updated_at: new Date().toISOString() })
+      .eq('id', profile.id)
+      .select()
+      .maybeSingle()
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath('/profile')
+    return { success: true, data }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
 }
 
 export async function getStaffMembersAction() {

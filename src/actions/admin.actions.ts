@@ -247,7 +247,7 @@ export async function onboardEmployeeAction(
 
 export async function updateEmployeeProfileAction(userId: string, updates: Partial<any>) {
   const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
 
   try {
     const supabaseAdmin: any = createAdminClient()
@@ -265,6 +265,19 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
 
     if (error) return { success: false, error: error.message }
     if (!data) return { success: false, error: "Profile not found or could not be updated." }
+
+    // Sync email and metadata to auth user if they were updated
+    const authUpdates: any = {};
+    if (updates.email) authUpdates.email = updates.email;
+    if (updates.first_name || updates.last_name) {
+      authUpdates.user_metadata = { 
+        first_name: updates.first_name || data.first_name, 
+        last_name: updates.last_name || data.last_name 
+      };
+    }
+    if (Object.keys(authUpdates).length > 0) {
+      await supabaseAdmin.auth.admin.updateUserById(userId, authUpdates);
+    }
 
     await logAdminAuditAction({
       action: 'EMPLOYEE_PROFILE_UPDATED',
@@ -289,7 +302,7 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
 
 export async function toggleUserActiveAction(userId: string, isActive: boolean) {
   const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
 
   try {
     const supabaseAdmin: any = createAdminClient()
@@ -323,7 +336,7 @@ export async function toggleUserActiveAction(userId: string, isActive: boolean) 
 
 export async function resetUserPasswordAction(userId: string) {
   const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
 
   if (!checkActionRateLimit(adminProfile.id, 'resetUserPasswordAction', 5, 60 * 1000)) {
     return { success: false, error: 'Rate limit exceeded. Too many password resets.' }
@@ -461,7 +474,7 @@ export async function getAdminAuditLogsAction() {
 
 export async function overrideUserCredentialsAction(userId: string, newPassword: string) {
   const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
 
   if (!checkActionRateLimit(adminProfile.id, 'overrideUserCredentialsAction', 5, 60 * 1000)) {
     return { success: false, error: 'Rate limit exceeded. Too many credential overrides.' }
@@ -512,7 +525,7 @@ export async function overrideUserCredentialsAction(userId: string, newPassword:
 
 export async function offboardEmployeeAction(userId: string) {
   const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
 
   try {
     const supabaseAdmin: any = createAdminClient()
@@ -541,7 +554,7 @@ export async function offboardEmployeeAction(userId: string) {
 
 export async function deleteEmployeeAction(userId: string) {
   const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
 
   try {
     const supabaseAdmin: any = createAdminClient()

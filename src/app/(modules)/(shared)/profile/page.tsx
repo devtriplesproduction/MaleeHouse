@@ -4,6 +4,7 @@ import { Shield, Mail, Phone, Calendar, Briefcase, User as UserIcon, MapPin, Glo
 import { cn } from "@/lib/utils";
 import UpdatePasswordClient from "./UpdatePasswordClient";
 import ActiveSessionsClient from "./ActiveSessionsClient";
+import EditPersonalProfileClient from "./EditPersonalProfileClient";
 import { getCompanySettingsAction } from "@/actions/settings.actions";
 
 export const dynamic = "force-dynamic";
@@ -241,6 +242,11 @@ export default async function ProfilePage() {
                {/* Footer */}
                <div className="bg-[#102b4e] h-6 w-full mt-auto"></div>
             </div>
+         </div>
+
+         {/* ── Edit Personal Information Section ── */}
+         <div className="max-w-3xl mx-auto pt-4">
+            <EditPersonalProfileClient profile={profile} />
          </div>
 
          {/* ── Security Protocol Section ── */}

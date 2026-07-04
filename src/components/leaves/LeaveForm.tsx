@@ -10,6 +10,7 @@ import { applyLeaveAction } from '@/actions/leave.actions';
 import { getHolidaysAction } from '@/actions/holiday.actions';
 import { Calendar, FileText, Send, AlertCircle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
 
 export function LeaveForm() {
   const router = useRouter();
@@ -24,37 +25,45 @@ export function LeaveForm() {
   });
 
   // Fetch holidays on mount
-  import('react').then(React => {
-    React.useEffect(() => {
-      getHolidaysAction().then(res => {
-        if (res.success && res.data) {
-          setHolidays(res.data);
-        }
-      });
-    }, []);
-  });
+  // import('react').then(React => {
+  //   React.useEffect(() => {
+  //     getHolidaysAction().then(res => {
+  //       if (res.success && res.data) {
+  //         setHolidays(res.data);
+  //       }
+  //     });
+  //   }, []);
+  // });
+
+  useEffect(() => {
+    getHolidaysAction().then((res) => {
+      if (res.success && res.data) {
+        setHolidays(res.data);
+      }
+    });
+  }, []);
 
   // Check for adjacent or overlapping holidays
   const conflictingHolidays = holidays.filter(h => {
     if (!formData.start_date || !formData.end_date) return false;
-    
-    const hDate = new Date(h.date).setHours(0,0,0,0);
-    
+
+    const hDate = new Date(h.date).setHours(0, 0, 0, 0);
+
     // Create Date objects for comparison
     const start = new Date(formData.start_date);
-    start.setHours(0,0,0,0);
-    
+    start.setHours(0, 0, 0, 0);
+
     const end = new Date(formData.end_date);
-    end.setHours(0,0,0,0);
-    
+    end.setHours(0, 0, 0, 0);
+
     // Check if holiday is inside the leave period
     if (hDate >= start.getTime() && hDate <= end.getTime()) return true;
-    
+
     // Check adjacency (1 day before start or 1 day after end)
     const oneDay = 24 * 60 * 60 * 1000;
     if (hDate === start.getTime() - oneDay) return true;
     if (hDate === end.getTime() + oneDay) return true;
-    
+
     return false;
   });
 
@@ -121,7 +130,7 @@ export function LeaveForm() {
       transition={{ duration: 0.5, delay: 0.2 }}
     >
       <div className="glass-card p-8 space-y-8 relative shadow-2xl border border-slate-200/80 dark:border-white/10 font-sans">
-        
+
         {/* Glow Header */}
         <div className="flex items-center gap-4 pb-6 border-b border-slate-200/50 dark:border-white/5">
           <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 shrink-0">

@@ -228,9 +228,12 @@ function ReportRow({ report }: { report: EODReport }) {
   const handleApprove = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     setIsUpdating(true);
+    
+    const parsedHours = parseFloat(adjustedHours);
+    
     const result = await updateEODReportAction(report.id, {
       status: 'approved',
-      adjusted_hours: parseFloat(adjustedHours),
+      adjusted_hours: isNaN(parsedHours) ? report.hours_spent : parsedHours,
       admin_note: adminNote
     });
     
@@ -246,8 +249,11 @@ function ReportRow({ report }: { report: EODReport }) {
   const handleUpdate = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     setIsUpdating(true);
+    
+    const parsedHours = parseFloat(adjustedHours);
+    
     const result = await updateEODReportAction(report.id, {
-      adjusted_hours: parseFloat(adjustedHours),
+      adjusted_hours: isNaN(parsedHours) ? report.hours_spent : parsedHours,
       admin_note: adminNote
     });
     
