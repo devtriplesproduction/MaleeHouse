@@ -36,6 +36,35 @@ export async function applyLeaveAction(payload: {
       }
     }
 
+    if (payload.leave_type === 'casual' || payload.leave_type === 'earned') {
+      const dateObj = new Date(payload.start_date)
+      const year = dateObj.getFullYear()
+      const month = dateObj.getMonth() + 1 // 1-12
+      
+      const startDateMonth = `${year}-${month.toString().padStart(2, '0')}-01`
+      const endDateMonth = new Date(year, month, 0).toISOString().split('T')[0] // last day of month
+
+      const { data: existingLeaves, error: existingLeavesError } = await supabase
+        .from('leaves')
+        .select('id')
+        .eq('user_id', profile.id)
+        .in('leave_type', ['casual', 'earned'])
+        .neq('status', 'rejected')
+        .gte('start_date', startDateMonth)
+        .lte('start_date', endDateMonth)
+
+      if (existingLeavesError) {
+        return { success: false, error: existingLeavesError.message }
+      }
+
+      if (existingLeaves && existingLeaves.length > 0) {
+        return {
+          success: false,
+          error: 'You already have a pending or approved paid leave (casual or earned) for this month.'
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from('leaves')
       .insert({
@@ -84,10 +113,11 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
     const profile: any = await getUserProfileAction()
     if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins and HR only.' }
 
-    const supabase: any = await createClient()
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const supabase: any = createAdminClient()
     const { data, error } = await supabase
       .from('leaves')
-      .select('*, profiles!user_id(first_name, last_name, email, role)')
+      .select('*, profiles!leaves_user_id_fkey (first_name, last_name, email, role)')
       .order('created_at', { ascending: false })
 
     if (error) return { success: false, error: error.message }
@@ -107,7 +137,7 @@ export async function updateLeaveStatusAction(id: string, status: 'approved' | '
     // Get the leave owner's role before updating
     const { data: leaveData } = await supabase
       .from('leaves')
-      .select('*, profiles!user_id(role)')
+      .select('*, profiles!leaves_user_id_fkey (role)')
       .eq('id', id)
       .single()
 

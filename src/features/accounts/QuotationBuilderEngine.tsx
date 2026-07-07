@@ -7,7 +7,7 @@ import {
   Save, X, Loader2, LayoutGrid, Receipt, RefreshCw, Scroll,
   ArrowUp, ArrowDown, Tag, Lock, Building2, User, Phone, Mail, MapPin, ChevronDown
 } from 'lucide-react';
-import { createQuotationAction, createQuotationRevisionAction, getQuotationTemplatesAction, saveQuotationTemplateAction } from '@/actions/quotation.actions';
+import { createQuotationAction, createQuotationRevisionAction, updateDraftQuotationAction, getQuotationTemplatesAction, saveQuotationTemplateAction } from '@/actions/quotation.actions';
 import { getStaffMembersAction, getUserProfileAction } from '@/actions/auth.actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -60,16 +60,16 @@ export function QuotationBuilderEngine({
   project, existingQuotation, onCancel, onSuccess, isRevision,
 }: QuotationBuilderEngineProps) {
   const router = useRouter();
-  const isScratch = !project; // standalone quotation with no linked project
+  const isScratch = !project || project?.id?.startsWith('QUO-'); // standalone quotation with no linked project
 
   // Client / company details (scratch mode only)
   const [clientDetails, setClientDetails] = useState({
-    company_name: '',
-    contact_person: '',
-    phone: '',
-    email: '',
-    address: '',
-    project_title: '',
+    company_name: existingQuotation?.client_details?.company_name || (project?.id?.startsWith('QUO-') ? project.client_name : '') || '',
+    contact_person: existingQuotation?.client_details?.contact_person || '',
+    phone: existingQuotation?.client_details?.phone || '',
+    email: existingQuotation?.client_details?.email || '',
+    address: existingQuotation?.client_details?.address || '',
+    project_title: existingQuotation?.client_details?.project_title || (project?.id?.startsWith('QUO-') ? project.name : '') || '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -257,9 +257,14 @@ export function QuotationBuilderEngine({
         },
       };
 
-      const res = isRevision && existingQuotation
-        ? await createQuotationRevisionAction(existingQuotation.id, payload, revisionReason)
-        : await createQuotationAction(payload);
+      let res;
+      if (isRevision && existingQuotation) {
+        res = await createQuotationRevisionAction(existingQuotation.id, payload, revisionReason);
+      } else if (existingQuotation) {
+        res = await updateDraftQuotationAction(existingQuotation.id, payload as any);
+      } else {
+        res = await createQuotationAction(payload as any);
+      }
 
       if (res.success) {
         toast.success(isRevision ? `Revision V${(existingQuotation.current_version || 1) + 1} created` : 'Quotation saved');
@@ -297,7 +302,7 @@ export function QuotationBuilderEngine({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-                {isRevision ? 'Quotation Revision' : isScratch ? 'New Quotation' : 'Quotation Builder'}
+                {isRevision ? 'Quotation Revision' : existingQuotation ? 'Edit Quotation' : isScratch ? 'New Quotation' : 'Quotation Builder'}
               </h3>
               {isRevision && (
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[10px] font-semibold flex items-center gap-1">

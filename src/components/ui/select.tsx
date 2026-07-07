@@ -11,6 +11,7 @@ interface SelectProps {
   children: React.ReactNode;
   className?: string;
   buttonClassName?: string;
+  disabled?: boolean;
 }
 
 const SelectContext = React.createContext<{
@@ -20,7 +21,7 @@ const SelectContext = React.createContext<{
   setOpen: (open: boolean) => void;
 } | null>(null);
 
-export function Select({ value, onValueChange, placeholder, children, className, buttonClassName }: SelectProps) {
+export function Select({ value, onValueChange, placeholder, children, className, buttonClassName, disabled }: SelectProps) {
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -43,10 +44,12 @@ export function Select({ value, onValueChange, placeholder, children, className,
       <div ref={containerRef} className={cn("relative w-full", className)}>
         <button
           type="button"
-          onClick={() => setOpen(!open)}
+          onClick={() => !disabled && setOpen(!open)}
+          disabled={disabled}
           className={cn(
             "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/8 text-slate-600 dark:text-slate-350 hover:border-indigo-400 dark:hover:border-indigo-500/50 hover:bg-slate-100/50 dark:hover:bg-white/[0.08] transition-all duration-200 outline-none select-none",
             open && "ring-2 ring-indigo-500/20 border-indigo-400 dark:border-indigo-500",
+            disabled && "opacity-50 cursor-not-allowed hover:bg-slate-50 hover:border-slate-200 dark:hover:bg-white/5 dark:hover:border-white/8",
             buttonClassName
           )}
         >

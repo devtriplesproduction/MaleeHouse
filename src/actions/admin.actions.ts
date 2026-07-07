@@ -63,8 +63,8 @@ async function insertSystemNotification(
 }
 
 export async function generateReadableEmployeeId(deptId: string): Promise<string> {
-  const supabase: any = await createClient()
-  const { data: profiles } = await supabase.from('profiles').select('employee_id')
+  const supabaseAdmin: any = createAdminClient()
+  const { data: profiles } = await supabaseAdmin.from('profiles').select('employee_id')
   const currentYear = new Date().getFullYear()
   const deptShort =
     deptId === 'admin' ? 'ADM' :

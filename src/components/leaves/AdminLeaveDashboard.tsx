@@ -144,8 +144,10 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
   // Filtering & Sorting logic: Pending requests always sorted to the top
   const filteredLeaves = leaves
     .filter((leave: any) => {
+      const profile = Array.isArray(leave.profiles) ? leave.profiles[0] : leave.profiles;
+      const empName = profile && (profile.first_name || profile.last_name) ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : (leave.employee_name || 'Unknown User');
       const matchesStatus = filter === 'all' || leave.status?.toLowerCase() === filter;
-      const matchesSearch = !searchQuery || leave.employee_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = !searchQuery || empName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesMonth = selectedMonth === 'all' || (() => {
         if (!leave.start_date) return false;
         const date = new Date(leave.start_date);
@@ -384,6 +386,8 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
         <div className="space-y-4">
           <AnimatePresence mode="popLayout">
             {filteredLeaves.map((leave, index) => {
+              const profile = Array.isArray(leave.profiles) ? leave.profiles[0] : leave.profiles;
+              const empName = profile && (profile.first_name || profile.last_name) ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : (leave.employee_name || 'Unknown User');
               const days = getDaysCount(leave.start_date, leave.end_date);
               const isProcessing = processingId === leave.id;
               const isPending = leave.status?.toLowerCase() === 'pending';
@@ -419,13 +423,13 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       {/* Minimal Initials Avatar */}
                       <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm tracking-wider shrink-0 transition-all duration-300 group-hover:scale-105 border border-indigo-100 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 shadow-sm shadow-indigo-500/[0.02]">
-                        {getInitials(leave.employee_name)}
+                        {getInitials(empName)}
                       </div>
                       
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h4 className="font-semibold text-sm text-slate-900 dark:text-white tracking-tight leading-tight">
-                            {leave.employee_name}
+                            {empName}
                           </h4>
                           <Badge 
                             variant="glass"
@@ -483,7 +487,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
                       <div className="w-36 shrink-0 z-20">
                         <Select
                           value={leave.status?.toLowerCase()}
-                          // disabled logic moved to onValueChange
+                          disabled={!isPending}
                           onValueChange={(val) => {
                             if (val === 'approved' || val === 'rejected' || val === 'pending') {
                               handleStatusUpdate(leave.id, val as any);

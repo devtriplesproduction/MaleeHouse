@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Calendar,
   ArrowRight,
+  Pencil,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -28,9 +29,10 @@ interface QuotationListProps {
   project?: any;
   userRole?: string;
   onUpdate?: () => void;
+  onEditStandalone?: (q: any) => void;
 }
 
-export function QuotationList({ quotations, project, userRole, onUpdate }: QuotationListProps) {
+export function QuotationList({ quotations, project, userRole, onUpdate, onEditStandalone }: QuotationListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [previewQuotation, setPreviewQuotation] = useState<any>(null);
@@ -119,18 +121,12 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
               {/* Name + meta — grows to fill available space */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  {q.project ? (
-                    <button
-                      onClick={() => router.push(`/accounts/quotations?project=${q.project.id}&mode=manage`)}
-                      className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline truncate text-left leading-tight"
-                    >
-                      {name}
-                    </button>
-                  ) : (
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white truncate leading-tight">
-                      {name}
-                    </span>
-                  )}
+                  <button
+                    onClick={() => router.push(`/accounts/quotations?${q.project ? `project=${q.project.id}` : `quotation=${q.id}`}&mode=manage`)}
+                    className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline truncate text-left leading-tight"
+                  >
+                    {name}
+                  </button>
 
                   {/* Status badge */}
                   <span className={cn(
@@ -180,6 +176,19 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
 
               {/* Actions — fixed, right-aligned */}
               <div className="shrink-0 flex items-center gap-1.5">
+                {/* Edit */}
+                {['Draft', 'Revision Requested'].includes(q.status) && (
+                  <button
+                    onClick={() => {
+                      router.push(`/accounts/quotations?${q.project ? `project=${q.project.id}` : `quotation=${q.id}`}&mode=manage`);
+                    }}
+                    title="Edit Quotation"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-all"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
                 {/* Preview */}
                 <button
                   onClick={() => setPreviewQuotation(q)}

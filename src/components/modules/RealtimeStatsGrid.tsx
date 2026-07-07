@@ -13,7 +13,7 @@ import {
 import { TrendingUp, Activity, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface RealtimeStatsGridProps {
-  type: 'admin' | 'sales' | 'engineer' | 'accountant' | 'qc' | 'field' | 'cad' | 'operations';
+  type: 'admin' | 'sales' | 'engineer' | 'accountant' | 'qc' | 'field' | 'cad' | 'operations' | 'hr';
 }
 
 export function RealtimeStatsGrid({ type }: RealtimeStatsGridProps) {

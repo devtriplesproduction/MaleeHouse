@@ -35,7 +35,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; bg: 
   'Revision Requested': { label: 'Revision Needed', icon: <AlertCircle className="w-3.5 h-3.5" />, bg: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
 };
 
-type View = 'list' | 'create' | 'revision' | 'preview' | 'history';
+type View = 'list' | 'create' | 'revision' | 'preview' | 'history' | 'edit';
 
 // ─── PDF download ─────────────────────────────────────────────────────────────
 async function downloadQuotationPDF(q: any, project: any) {
@@ -117,6 +117,17 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
     );
   }
 
+  if (view === 'edit' && selected) {
+    return (
+      <QuotationBuilderEngine
+        project={project}
+        existingQuotation={selected}
+        onCancel={() => { setView('list'); setSelected(null); }}
+        onSuccess={handleSuccess}
+      />
+    );
+  }
+
   if (view === 'preview' && selected) {
     return (
       <div className="space-y-4">
@@ -183,7 +194,7 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
             const status = STATUS_CONFIG[q.status] || STATUS_CONFIG['Draft'];
             const isDraft = q.status === 'Draft';
             const isSentOrViewed = q.status === 'Sent' || q.status === 'Viewed';
-            const canRevise = isAccountant && ['Revision Requested', 'Draft'].includes(q.status);
+            const canRevise = isAccountant && ['Revision Requested'].includes(q.status);
             // Version number is unique per quotation card (index from fetched array, sorted newest first = highest version)
             const versionNum = q.current_version || (quotations.length - qIdx);
             const isConfirmingDelete = confirmDelete === q.id;
@@ -284,6 +295,15 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
                       <button onClick={() => { setSelected(q); setView('revision'); }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] font-medium text-amber-600 hover:bg-amber-500/20 transition-all">
                         <RefreshCw className="w-3.5 h-3.5" /> Revise
+                      </button>
+                    )}
+
+                    {/* Edit — only Draft */}
+                    {isAccountant && isDraft && (
+                      <button onClick={() => { setSelected(q); setView('edit'); }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                        Edit
                       </button>
                     )}
 

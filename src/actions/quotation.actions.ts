@@ -365,6 +365,15 @@ export async function getProjectQuotationsAction(projectId: string, _cacheBuster
     }
 
     const supabase: any = await createClient();
+
+    if (projectId.startsWith('QUO-')) {
+      const { data: standalone } = await supabase
+        .from('quotations')
+        .select('*, project:projects(id, name, client_name, status)')
+        .eq('id', projectId);
+      return { success: true, data: standalone || [] };
+    }
+
     const { data: projectQuotations } = await supabase
       .from('quotations')
       .select('*, project:projects(id, name, client_name, status)')
@@ -372,6 +381,24 @@ export async function getProjectQuotationsAction(projectId: string, _cacheBuster
       .order('created_at', { ascending: false });
 
     return { success: true, data: projectQuotations || [] };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getQuotationByIdAction(id: string): Promise<ActionResponse> {
+  try {
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+    const { data: quotation } = await supabase
+      .from('quotations')
+      .select('*, project:projects(id, name, client_name, status)')
+      .eq('id', id)
+      .single();
+
+    return { success: true, data: quotation };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -716,6 +743,58 @@ export async function getQuotationByTokenAction(token: string): Promise<ActionRe
         project: project ? { id: project.id, name: project.name, client_name: project.client_name, status: project.status } : null
       }
     };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateDraftQuotationAction(id: string, payload: CreateQuotationInput): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+    
+    const { data: existing } = await supabase.from('quotations').select('status').eq('id', id).single();
+    if (!existing) return { success: false, error: 'Quotation not found' };
+    if (existing.status !== 'Draft') return { success: false, error: 'Only Draft quotations can be updated directly.' };
+
+    const compiledTerms = payload.clauses?.map((c: any) => `${(c.title || '').toUpperCase()}:\n${c.content || ''}`).join('\n\n') || payload.terms || '';
+
+    const updatePayload = {
+      client_details: (payload as any).client_details || null,
+      items: payload.items || [],
+      subtotal: payload.subtotal || 0,
+      discount_pct: (payload as any).discount_pct || 0,
+      discount_amount: (payload as any).discount_amount || 0,
+      gst_rate: payload.gst_rate || 18,
+      gst_amount: payload.gst_amount || 0,
+      total_amount: payload.total_amount || 0,
+      notes: payload.notes || '',
+      terms: compiledTerms,
+      clauses: payload.clauses || [],
+      internal_notes: payload.internal_notes || '',
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: updateError } = await supabase.from('quotations').update(updatePayload).eq('id', id);
+    if (updateError) throw updateError;
+
+    // also update version 1 if we're maintaining it
+    const { data: v1 } = await supabase.from('quotation_versions').select('id').eq('quotation_id', id).eq('version_number', 1).single();
+    if (v1) {
+      await supabase.from('quotation_versions').update({
+        items: updatePayload.items,
+        subtotal: updatePayload.subtotal,
+        gst_amount: updatePayload.gst_amount,
+        total_amount: updatePayload.total_amount,
+        notes: updatePayload.notes,
+        terms: updatePayload.terms,
+        clauses: updatePayload.clauses,
+      }).eq('id', v1.id);
+    }
+
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

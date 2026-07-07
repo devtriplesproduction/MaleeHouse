@@ -6,7 +6,7 @@ import { QuotationBuilderEngine } from "@/features/accounts/QuotationBuilderEngi
 import { QuotationManagementPanel } from "@/features/accounts/QuotationManagementPanel";
 import { QuotationList } from "@/features/accounts/QuotationList";
 import { getProjectByIdAction } from "@/actions/project.actions";
-import { getAllQuotationsAction } from "@/actions/quotation.actions";
+import { getAllQuotationsAction, getQuotationByIdAction } from "@/actions/quotation.actions";
 import { ArrowLeft, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import DashboardLoading from "@/app/(modules)/loading";
 
@@ -16,13 +16,14 @@ function QuotationWorkspaceContent() {
   const router = useRouter();
 
   const projectId = searchParams.get("project");
+  const quotationId = searchParams.get("quotation");
   const mode = searchParams.get("mode");
 
   const [project, setProject] = useState<any>(null);
   const [quotations, setQuotations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  // scratch = standalone "New Quotation" builder (no project)
-  const [scratchMode, setScratchMode] = useState(false);
+  // scratch = standalone "New Quotation" builder (no project) or editing existing standalone
+  const [scratchMode, setScratchMode] = useState<boolean | any>(false);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
 
@@ -43,10 +44,26 @@ function QuotationWorkspaceContent() {
         .then((res) => { if (res?.data) setProject(res.data); })
         .catch(console.error)
         .finally(() => setLoading(false));
+    } else if (quotationId) {
+      setLoading(true);
+      getQuotationByIdAction(quotationId)
+        .then((res) => {
+          if (res?.data) {
+            const q = res.data;
+            setProject({
+              id: q.id,
+              name: q.client_details?.project_title || 'Standalone Quotation',
+              client_name: q.client_details?.company_name || 'No Client Details',
+              status: 'standalone'
+            });
+          }
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
     } else {
       fetchWorkspaceData();
     }
-  }, [projectId]);
+  }, [projectId, quotationId]);
 
   if (loading) return <DashboardLoading />;
 
@@ -62,6 +79,7 @@ function QuotationWorkspaceContent() {
         </button>
         <QuotationBuilderEngine
           project={null}
+          existingQuotation={typeof scratchMode === 'object' ? scratchMode : undefined}
           onCancel={() => setScratchMode(false)}
           onSuccess={() => {
             setScratchMode(false);
@@ -94,7 +112,7 @@ function QuotationWorkspaceContent() {
   }
 
   // ── Project manage mode ─────────────────────────────────────────────────
-  if (projectId && mode === "manage" && project) {
+  if ((projectId || quotationId) && mode === "manage" && project) {
     return (
       <div className="space-y-6 pb-20 animate-in fade-in duration-300">
         <button
@@ -115,7 +133,21 @@ function QuotationWorkspaceContent() {
           project={project}
           userRole="accountant"
           onRefresh={() => {
-            getProjectByIdAction(project.id).then((res) => { if (res?.data) setProject(res.data); });
+            if (projectId) {
+              getProjectByIdAction(project.id).then((res) => { if (res?.data) setProject(res.data); });
+            } else if (quotationId) {
+              getQuotationByIdAction(quotationId).then((res) => {
+                if (res?.data) {
+                  const q = res.data;
+                  setProject({
+                    id: q.id,
+                    name: q.client_details?.project_title || 'Standalone Quotation',
+                    client_name: q.client_details?.company_name || 'No Client Details',
+                    status: 'standalone'
+                  });
+                }
+              });
+            }
           }}
         />
       </div>
