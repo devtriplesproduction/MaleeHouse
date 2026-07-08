@@ -162,7 +162,7 @@ export async function updateLeaveStatusAction(id: string, status: 'approved' | '
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0]
           
-          let attendanceStatus = 'unpaid_leave'
+          let attendanceStatus: 'unpaid_leave' | 'paid_leave' = 'unpaid_leave'
           if (remainingBalance > 0) {
             attendanceStatus = 'paid_leave'
             remainingBalance--
@@ -201,7 +201,7 @@ export async function getLeaveBalanceAction(userId?: string): Promise<{ success:
       .from('profiles')
       .select('created_at, joining_date')
       .eq('id', targetUserId)
-      .single()
+      .single() as { data: { created_at: string; joining_date?: string | null } }
 
     if (!profileData) return { success: false, error: 'User not found' }
 
