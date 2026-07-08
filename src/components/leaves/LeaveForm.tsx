@@ -21,7 +21,7 @@ export function LeaveForm() {
     start_date: '',
     end_date: '',
     reason: '',
-    leave_type: 'casual' as 'casual' | 'sick' | 'earned' | 'unpaid' | 'maternity' | 'paternity' | 'other'
+    leave_type: 'casual' as 'casual' | 'sick' | 'earned' | 'maternity' | 'paternity' | 'other'
   });
 
   // Fetch holidays on mount
@@ -186,7 +186,6 @@ export function LeaveForm() {
               <SelectItem value="casual">Casual Leave (Paid)</SelectItem>
               <SelectItem value="sick">Sick/Medical Leave (Paid)</SelectItem>
               <SelectItem value="earned">Vacation / Annual Leave (Paid)</SelectItem>
-              <SelectItem value="unpaid">Unpaid Leave</SelectItem>
             </Select>
           </div>
 

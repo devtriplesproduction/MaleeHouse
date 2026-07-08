@@ -5,9 +5,10 @@ import { Award, TrendingUp, CheckCircle2, CalendarDays, ShieldAlert } from 'luci
 interface LeaveMetricsProps {
   leaves: any[];
   profile: any;
+  leaveBalance?: number;
 }
 
-export function LeaveMetrics({ leaves, profile }: LeaveMetricsProps) {
+export function LeaveMetrics({ leaves, profile, leaveBalance = 0 }: LeaveMetricsProps) {
   const getDaysCount = (start: string, end: string) => {
     try {
       const s = new Date(start);
@@ -29,24 +30,22 @@ export function LeaveMetrics({ leaves, profile }: LeaveMetricsProps) {
   const monthsDiff = now.getMonth() - joinDate.getMonth();
   const totalMonths = Math.max(1, yearsDiff * 12 + monthsDiff + 1);
 
-  // 2 paid leaves per month
-  const earnedPaidLeaves = totalMonths * 2;
+  // 1 paid leave per month
+  const earnedPaidLeaves = totalMonths * 1;
 
   // Filter approved leaves
   const approvedLeaves = leaves.filter((l: any) => l.status?.toLowerCase() === 'approved');
 
-  // Calculate total days for approved paid leaves (type !== 'unpaid')
-  const approvedPaidDays = approvedLeaves
-    .filter((l: any) => l.leave_type?.toLowerCase() !== 'unpaid')
+  // Calculate total days applied for approved leaves
+  const totalApprovedDays = approvedLeaves
     .reduce((sum: any, l: any) => sum + getDaysCount(l.start_date, l.end_date), 0);
 
-  // Calculate total days for approved unpaid leaves (type === 'unpaid')
-  const approvedUnpaidDays = approvedLeaves
-    .filter((l: any) => l.leave_type?.toLowerCase() === 'unpaid')
-    .reduce((sum: any, l: any) => sum + getDaysCount(l.start_date, l.end_date), 0);
+  // The used paid days is capped by what was available originally
+  const approvedPaidDays = Math.min(earnedPaidLeaves, totalApprovedDays);
+  const approvedUnpaidDays = Math.max(0, totalApprovedDays - earnedPaidLeaves);
 
-  // Remaining Balance (accumulated paid leaves minus approved paid leaves)
-  const remainingPaidBalance = Math.max(0, earnedPaidLeaves - approvedPaidDays);
+  // Remaining Balance (from server)
+  const remainingPaidBalance = leaveBalance;
 
   return (
     <div className="space-y-4 font-sans animate-in fade-in slide-in-from-top-4 duration-500">

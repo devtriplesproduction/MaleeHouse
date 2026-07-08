@@ -666,18 +666,23 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Employment Type *</label>
                       <div className="relative">
-                        <select 
-                          {...register("employment_type")} 
-                          className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white appearance-none cursor-pointer"
-                        >
-                          <option value="full-time" className="dark:bg-[#0d1222]">Full Time</option>
-                          <option value="part-time" className="dark:bg-[#0d1222]">Part Time</option>
-                          <option value="contract" className="dark:bg-[#0d1222]">Contract</option>
-                          <option value="intern" className="dark:bg-[#0d1222]">Intern</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                          <ChevronDown className="w-4 h-4" />
-                        </div>
+                        <Controller
+                          control={control}
+                          name="employment_type"
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="— Select Type —"
+                              buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                            >
+                              <SelectItem value="full-time">Full Time</SelectItem>
+                              <SelectItem value="part-time">Part Time</SelectItem>
+                              <SelectItem value="contract">Contract</SelectItem>
+                              <SelectItem value="intern">Intern</SelectItem>
+                            </Select>
+                          )}
+                        />
                       </div>
                       {errors.employment_type && <p className="text-xs text-rose-500 font-bold mt-1">{errors.employment_type.message}</p>}
                     </div>
@@ -716,12 +721,13 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                         control={control}
                         name="joining_date"
                         render={({ field }) => (
-                          <PremiumDatePicker
-                            value={field.value}
-                            onChange={(date) => {
-                              field.onChange(date);
-                            }}
-                          />
+                      <PremiumDatePicker
+                        value={field.value}
+                        align="right"
+                        onChange={(date) => {
+                          field.onChange(date);
+                        }}
+                      />
                         )}
                       />
                       {errors.joining_date && <p className="text-xs text-rose-500 font-bold mt-1">{errors.joining_date.message}</p>}
@@ -731,21 +737,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
 
 
 
-                  {/* Toggle Department Head */}
-                  <div className="p-4 bg-slate-50/30 dark:bg-white/[0.01] border border-slate-150 dark:border-white/5 rounded-xl flex items-center justify-between shadow-sm mt-2">
-                    <div className="space-y-0.5">
-                      <h5 className="text-xs font-bold text-slate-900 dark:text-white">Is Department Head?</h5>
-                      <p className="text-xs text-slate-400 dark:text-slate-500">Enable this if employee is leading this specific department.</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        {...register("department_head")} 
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-slate-200 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:bg-slate-900 peer-checked:bg-indigo-600 hover:bg-indigo-700 dark:peer-checked:bg-[#a78bfa]"></div>
-                    </label>
-                  </div>
+
                 </div>
               )}
 

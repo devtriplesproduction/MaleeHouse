@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,6 +71,13 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchQuery, selectedMonth, selectedYear]);
 
   // Sync state if initialLeaves changes
   if (JSON.stringify(initialLeaves) !== JSON.stringify(leaves)) {
@@ -171,6 +178,12 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
       const bTime = b.start_date ? new Date(b.start_date).getTime() : 0;
       return bTime - aTime;
     });
+
+  const totalPages = Math.ceil(filteredLeaves.length / ITEMS_PER_PAGE);
+  const paginatedLeaves = filteredLeaves.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -297,8 +310,8 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
       </div>
 
       {/* ── Toolbar with Premium Tabs & Search ── */}
-      <Tabs defaultValue="all" value={filter} onValueChange={(v: any) => setFilter(v)} className="w-full">
-        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/60 dark:border-white/5 rounded-[2rem] p-2 mb-8">
+      <Tabs defaultValue="all" value={filter} onValueChange={(v: any) => setFilter(v)} className="w-full relative z-[60]">
+        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/60 dark:border-white/5 rounded-[2rem] p-2 mb-8 relative z-[60]">
           <TabsList className="bg-transparent border-none p-0 flex flex-row items-center gap-1 overflow-x-auto scrollbar-none shrink-0">
             {[
               { value: 'all', label: 'All Requests' },
@@ -385,7 +398,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
       ) : (
         <div className="space-y-4">
           <AnimatePresence mode="popLayout">
-            {filteredLeaves.map((leave, index) => {
+            {paginatedLeaves.map((leave, index) => {
               const profile = Array.isArray(leave.profiles) ? leave.profiles[0] : leave.profiles;
               const empName = profile && (profile.first_name || profile.last_name) ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : (leave.employee_name || 'Unknown User');
               const days = getDaysCount(leave.start_date, leave.end_date);
@@ -523,6 +536,35 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
               );
             })}
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 pt-4 mt-8">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Showing <span className="font-semibold text-slate-900 dark:text-white">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="font-semibold text-slate-900 dark:text-white">{Math.min(currentPage * ITEMS_PER_PAGE, filteredLeaves.length)}</span> of <span className="font-semibold text-slate-900 dark:text-white">{filteredLeaves.length}</span> requests
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="text-xs rounded-xl"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="text-xs rounded-xl"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
 

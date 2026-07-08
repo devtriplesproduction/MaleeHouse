@@ -1,5 +1,5 @@
 import { getUserProfileAction } from '@/actions/auth.actions';
-import { getMyLeavesAction, getAllLeavesAction } from '@/actions/leave.actions';
+import { getMyLeavesAction, getAllLeavesAction, getLeaveBalanceAction } from '@/actions/leave.actions';
 import { LeaveForm } from '@/components/leaves/LeaveForm';
 import { LeaveHistory } from '@/components/leaves/LeaveHistory';
 import { LeaveMetrics } from '@/components/leaves/LeaveMetrics';
@@ -20,6 +20,9 @@ export default async function LeavesPage() {
   const isManager = profile.role === 'admin' || profile.role === 'hr';
   const response = isManager ? await getAllLeavesAction() : await getMyLeavesAction();
   const leaves = response.success ? response.data : [];
+
+  const balanceRes = await getLeaveBalanceAction(profile.id);
+  const leaveBalance = balanceRes.success ? (balanceRes.data || 0) : 0;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-20 pt-1 lg:pt-2">
@@ -42,7 +45,7 @@ export default async function LeavesPage() {
 
       {/* ── Leave Metrics Dashboard (Employee Only, Top Section) ── */}
       {!isManager && (
-        <LeaveMetrics leaves={leaves} profile={profile} />
+        <LeaveMetrics leaves={leaves} profile={profile} leaveBalance={leaveBalance} />
       )}
 
       {isManager ? (

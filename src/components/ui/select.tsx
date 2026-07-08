@@ -21,7 +21,7 @@ const SelectContext = React.createContext<{
   setOpen: (open: boolean) => void;
 } | null>(null);
 
-export function Select({ value, onValueChange, placeholder, children, className, buttonClassName, disabled }: SelectProps) {
+export function Select({ value, onValueChange, placeholder, children, className, buttonClassName, disabled, align = "left" }: SelectProps & { align?: "left" | "right" }) {
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -59,7 +59,7 @@ export function Select({ value, onValueChange, placeholder, children, className,
           <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 dark:text-slate-500 transition-transform duration-300 flex-shrink-0 ml-2", open && "rotate-180")} />
         </button>
         {open && (
-          <div className="absolute top-full right-0 z-50 mt-1.5 min-w-[12rem] w-full max-w-[18rem] rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl shadow-slate-100/40 dark:shadow-black/40 animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden">
+          <div className={cn("absolute top-full z-50 mt-1.5 min-w-[12rem] w-full max-w-[18rem] rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl shadow-slate-100/40 dark:shadow-black/40 animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden", align === "right" ? "right-0" : "left-0")}>
             <div className="p-1 max-h-60 overflow-auto scrollbar-thin scrollbar-thumb-slate-250 dark:scrollbar-thumb-white/10 scrollbar-track-transparent">
               {React.Children.count(children) > 0 ? (
                 children

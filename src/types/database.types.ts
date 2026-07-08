@@ -10,7 +10,7 @@ export interface Database {
       field_report_type: 'progress' | 'completion' | 'issue'
       invoice_status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
       leave_status: 'pending' | 'approved' | 'rejected' | 'cancelled'
-      leave_type: 'sick' | 'casual' | 'earned' | 'unpaid' | 'maternity' | 'paternity' | 'other'
+      leave_type: 'sick' | 'casual' | 'earned' | 'maternity' | 'paternity' | 'other'
       milestone_status: 'pending' | 'invoiced' | 'paid'
       notification_type: 'assignment' | 'stage_update' | 'approval' | 'rejection' | 'deadline_warning' | 'system'
       payment_status: 'pending' | 'verified' | 'rejected'
