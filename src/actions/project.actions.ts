@@ -60,6 +60,8 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
     const existingIds = (existingProjects || []).map((p: any) => p.id);
     const projectId = generateSequentialCode('PRJ', existingIds);
 
+    const initialStatus = profile.role === 'accountant' ? 'quotation_requested' : 'lead_created';
+
     const newProject = {
       id: projectId,
       name: validatedFields.data.name,
@@ -71,7 +73,7 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
       survey_requirements: validatedFields.data.survey_requirements || '',
       services: validatedFields.data.services || [],
       target_completion_date: validatedFields.data.target_completion_date || null,
-      status: 'lead_created',
+      status: initialStatus,
       created_by: profile.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -85,7 +87,7 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
     await supabase.from("workflow_history").insert({
       project_id: projectId,
       from_stage: null,
-      to_stage: "lead_created",
+      to_stage: initialStatus,
       changed_by: profile.id,
       comment: "Project created.",
       created_at: new Date().toISOString()

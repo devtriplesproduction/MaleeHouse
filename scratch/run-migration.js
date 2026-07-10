@@ -12,7 +12,7 @@ const env = envFile.split('\n').reduce((acc, line) => {
 
 if (env.DATABASE_URL) {
   try {
-    execSync('psql "' + env.DATABASE_URL + '" -f supabase/migrations/56_add_bank_to_payments.sql', { stdio: 'inherit' });
+    execSync('psql "' + env.DATABASE_URL + '" -f supabase/migrations/57_fix_project_insert_rls.sql', { stdio: 'inherit' });
     console.log('Migration applied!');
   } catch (err) {
     console.error('Error applying migration via psql:', err.message);

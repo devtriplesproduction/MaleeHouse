@@ -9,6 +9,7 @@ import {
 import { updateProjectStageAction } from "./workflow.actions";
 import { addProjectCommentAction } from "./comment.actions";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 
 export type OpResponse<T = null> = {
@@ -145,7 +146,23 @@ export async function assignTeamMemberAction(
       return { success: false, error: "Only Admins and Engineers can assign team members." };
 
     const supabase: any = await createClient();
-    const supabaseAdmin: any = await createClient();
+
+    // Enforce that an engineer/team member can only be assigned if the quotation is approved
+    const { data: quote } = await supabase
+      .from("quotations")
+      .select("status")
+      .eq("project_id", projectId)
+      .eq("status", "Approved")
+      .limit(1);
+
+    if (!quote || quote.length === 0) {
+      return {
+        success: false,
+        error: "Cannot assign team members: An approved quotation is required first."
+      };
+    }
+
+    const supabaseAdmin: any = await createAdminClient();
     const { data: existing } = await supabase.from('project_assignments').select('id').eq('project_id', projectId).eq('user_id', userId).maybeSingle();
     if (existing)
       return { success: false, error: "User is already assigned to this project." };

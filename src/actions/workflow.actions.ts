@@ -105,6 +105,13 @@ async function validateStageTransition(
       case "project_created": {
         // Relaxed payment validation to allow direct dispatch to survey operations
         // once a quotation is approved, even if payment is handled externally.
+        const { data: quote } = await supabase.from("quotations").select("status").eq("project_id", projectId).eq("status", "Approved").limit(1);
+        if (!quote || quote.length === 0) {
+          return {
+            success: false,
+            error: "Cannot transition to Engineering: An approved quotation is required before pushing to operations."
+          };
+        }
         break;
       }
       case "data_collection": {
