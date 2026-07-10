@@ -184,15 +184,15 @@ export function QuotationList({ quotations, project, userRole, onUpdate, onEditS
                 </p>
               </div>
 
-              {/* Actions — fixed, right-aligned */}
-              <div className="shrink-0 flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100 dark:border-white/5">
+              {/* Actions — fixed width to align columns perfectly */}
+              <div className="shrink-0 w-[240px] flex items-center justify-end gap-2 bg-slate-50/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100 dark:border-white/5">
 
                 {/* Additional Actions based on status (Primary Actions) */}
                 {isSales && q.status === 'Draft' && (
                   <button
                     onClick={() => handleStatusUpdate(q.id, 'Sent')}
                     disabled={loading === q.id}
-                    className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+                    className="h-8 w-[100px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
                   >
                     <Send className="w-3 h-3" /> Send
                   </button>
@@ -202,7 +202,7 @@ export function QuotationList({ quotations, project, userRole, onUpdate, onEditS
                   <button
                     onClick={() => handleStatusUpdate(q.id, 'Draft')}
                     disabled={loading === q.id}
-                    className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+                    className="h-8 w-[100px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
                   >
                     <MessageSquare className="w-3 h-3" /> Re-draft
                   </button>
@@ -211,7 +211,7 @@ export function QuotationList({ quotations, project, userRole, onUpdate, onEditS
                 {q.status === 'Approved' && q.project && (
                   <button
                     onClick={() => router.push(`/accounts/quotations?project=${q.project.id}&mode=manage`)}
-                    className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 border border-emerald-200 dark:border-emerald-500/30 hover:scale-[1.02] active:scale-95 transition-all shadow-sm"
+                    className="h-8 w-[100px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 border border-emerald-200 dark:border-emerald-500/30 hover:scale-[1.02] active:scale-95 transition-all shadow-sm"
                   >
                     <ArrowRight className="w-3.5 h-3.5" /> Ops
                   </button>

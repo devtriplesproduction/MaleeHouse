@@ -101,6 +101,27 @@ export async function notifyApprovalAction(projectId: string) {
   return { success: true }
 }
 
+export async function notifyAdminDispatchOverrideRequestAction(projectId: string) {
+  const supabase: any = createAdminClient()
+  const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
+  const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin').eq('is_active', true)
+
+  if (!admins || admins.length === 0) return { success: true }
+
+  await Promise.all(
+    admins.map((admin: any) =>
+      insertNotification({
+        userId: admin.id,
+        title: 'Dispatch Override Requested',
+        message: `Accountant requested dispatch override for Project "${project?.name || projectId}" (Payment is pending).`,
+        type: 'approval',
+        relatedProjectId: projectId,
+      })
+    )
+  )
+  return { success: true }
+}
+
 export async function notifyPaymentAction(projectId: string) {
   const supabase: any = createAdminClient()
   const { data: project } = await supabase.from('projects').select('name, client_name, created_by').eq('id', projectId).single()

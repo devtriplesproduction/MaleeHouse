@@ -3,6 +3,13 @@ import { ProjectCreationWizard } from '@/components/modules/ProjectCreationWizar
 import { getUserProfileAction } from '@/actions/auth.actions';
 import { ProjectsTableWrapper } from '@/components/modules/ProjectsTableWrapper';
 import { Briefcase, FolderKanban } from 'lucide-react';
+import { getAllOverrideRequestsAction } from '@/actions/workflow.actions';
+import { DispatchOverridesTable } from '@/components/modules/DispatchOverridesTable';
+
+async function DispatchOverridesTableWrapper() {
+  const result = await getAllOverrideRequestsAction();
+  return <DispatchOverridesTable requests={result.data || []} />;
+}
 
 export const metadata = {
   title: 'Project Directory | Survey Workflow',
@@ -72,6 +79,18 @@ export default async function ProjectsPage() {
       <Suspense fallback={<TableSkeleton />}>
         <ProjectsTableWrapper />
       </Suspense>
+
+      {/* ── Dispatch Overrides Table ── */}
+      {role === 'admin' && (
+        <div className="mt-8 space-y-4">
+          <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight px-1">
+            Dispatch Overrides History
+          </h3>
+          <Suspense fallback={<div className="h-[200px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
+            <DispatchOverridesTableWrapper />
+          </Suspense>
+        </div>
+      )}
 
     </div>
   );

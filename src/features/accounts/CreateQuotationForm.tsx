@@ -48,7 +48,7 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
   });
   const [assignedTo, setAssignedTo] = useState<string>('');
   const [staff, setStaff] = useState<any[]>([]);
-  const [gstType, setGstType] = useState<'NO_GST' | 'IGST' | 'CGST_SGST'>('CGST_SGST');
+  const [gstType, setGstType] = useState<string>('CGST_SGST_18');
   const [banks, setBanks] = useState<any[]>([]);
   const [selectedBank, setSelectedBank] = useState<string>('');
 
@@ -89,7 +89,7 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
   };
 
   const subtotal = items.reduce((sum: any, item: any) => sum + item.total, 0);
-  const gstRate = gstType === 'NO_GST' ? 0 : 18;
+  const gstRate = gstType === 'NO_GST' ? 0 : (gstType.endsWith('_5') ? 5 : 18);
   const gstAmount = (subtotal * gstRate) / 100;
   const totalAmount = subtotal + gstAmount;
 
@@ -113,7 +113,7 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
         notes,
         assigned_to: assignedTo || undefined,
         bank_id: selectedBank || undefined,
-        client_details: { gst_type: gstType },
+        client_details: { gst_type: gstType.startsWith('CGST_SGST') ? 'CGST_SGST' : (gstType.startsWith('IGST') ? 'IGST' : 'NO_GST') },
         internal_notes: {
           pricing_discussions: [internalNotes.pricing_discussions],
           margin_notes: internalNotes.margin_notes,
@@ -278,11 +278,13 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">GST Type</span>
                   <select
                     value={gstType}
-                    onChange={(e) => setGstType(e.target.value as 'NO_GST' | 'IGST' | 'CGST_SGST')}
+                    onChange={(e) => setGstType(e.target.value)}
                     className="bg-transparent border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1 text-xs font-bold text-slate-900 dark:text-white outline-none cursor-pointer"
                   >
-                    <option value="CGST_SGST" className="bg-white dark:bg-slate-900">CGST & SGST (18%)</option>
-                    <option value="IGST" className="bg-white dark:bg-slate-900">IGST (18%)</option>
+                    <option value="CGST_SGST_18" className="bg-white dark:bg-slate-900">CGST & SGST (18%)</option>
+                    <option value="IGST_18" className="bg-white dark:bg-slate-900">IGST (18%)</option>
+                    <option value="CGST_SGST_5" className="bg-white dark:bg-slate-900">CGST & SGST (5%)</option>
+                    <option value="IGST_5" className="bg-white dark:bg-slate-900">IGST (5%)</option>
                     <option value="NO_GST" className="bg-white dark:bg-slate-900">No GST (0%)</option>
                   </select>
                 </div>
@@ -290,13 +292,34 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Subtotal</span>
                   <span className="nums text-sm font-bold text-slate-900 dark:text-white">INR {subtotal.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between items-center px-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">GST</span>
-                    <div className="px-2 py-0.5 rounded-md bg-indigo-500 text-[8px] font-black text-white">{gstRate}%</div>
+                {gstType.startsWith('CGST_SGST') ? (
+                  <>
+                    <div className="flex justify-between items-center px-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">CGST</span>
+                        <div className="px-2 py-0.5 rounded-md bg-indigo-500 text-[8px] font-black text-white">{gstRate / 2}%</div>
+                      </div>
+                      <span className="nums text-sm font-bold text-slate-900 dark:text-white">INR {(gstAmount / 2).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between items-center px-2 mt-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">SGST</span>
+                        <div className="px-2 py-0.5 rounded-md bg-indigo-500 text-[8px] font-black text-white">{gstRate / 2}%</div>
+                      </div>
+                      <span className="nums text-sm font-bold text-slate-900 dark:text-white">INR {(gstAmount / 2).toLocaleString('en-IN')}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-between items-center px-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        {gstType.startsWith('IGST') ? 'IGST' : 'GST'}
+                      </span>
+                      <div className="px-2 py-0.5 rounded-md bg-indigo-500 text-[8px] font-black text-white">{gstRate}%</div>
+                    </div>
+                    <span className="nums text-sm font-bold text-slate-900 dark:text-white">INR {gstAmount.toLocaleString('en-IN')}</span>
                   </div>
-                  <span className="nums text-sm font-bold text-slate-900 dark:text-white">INR {gstAmount.toLocaleString('en-IN')}</span>
-                </div>
+                )}
                 <div className="pt-6 border-t border-slate-200 dark:border-white/10 flex flex-col items-end gap-1">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-2">Grand Total Projection</span>
                   <div className="text-4xl font-black text-slate-900 dark:text-white nums tracking-tighter">

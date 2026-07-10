@@ -3,13 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getAllQuotationsAction } from "@/actions/quotation.actions";
-import { transitionWorkflowAction } from "@/actions/workflow.actions";
+import { transitionWorkflowAction, requestDispatchOverrideAction } from "@/actions/workflow.actions";
 import { getMilestonesAction } from "@/actions/finance.actions";
+import { getUserProfileAction } from "@/actions/auth.actions";
 import {
   Clock, Send, CheckCircle2, XCircle, AlertCircle, FileText, Eye,
   Download, ArrowRight, Hammer, TrendingUp, DollarSign, RefreshCw,
-  Search, Building, BarChart2, X, Info, Sparkles, ShieldCheck, Phone
+  Search, Building, BarChart2, X, Info, Sparkles, ShieldCheck, Phone,
+  Lock
 } from "lucide-react";
+
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -60,13 +63,22 @@ export default function ClientApprovalsPage() {
   const [quotations, setQuotations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState<string | null>(null);
+  const [overriding, setOverriding] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected" | "history">("all");
   const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [overrideRequests, setOverrideRequests] = useState<Record<string, boolean>>({});
 
   const fetchData = async () => {
     if (quotations.length === 0) setLoading(true);
-    const res = await getAllQuotationsAction();
+    const [res, userRes] = await Promise.all([
+      getAllQuotationsAction(),
+      getUserProfileAction()
+    ]);
+    
+    setIsAdmin(userRes?.role === "admin");
+    
     if (res && res.data) {
       setQuotations(
         res.data.filter((q: any) =>
@@ -80,6 +92,24 @@ export default function ClientApprovalsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleRequestOverride = async (quotation: any) => {
+    if (!quotation.project_id) return;
+    setOverriding(quotation.id);
+    try {
+      const res = await requestDispatchOverrideAction(quotation.project_id);
+      if (res.success) {
+        toast.success("Admin override requested successfully!");
+        setOverrideRequests(prev => ({ ...prev, [quotation.id]: true }));
+      } else {
+        toast.error(res.error || "Failed to request override.");
+      }
+    } catch {
+      toast.error("Unexpected error occurred.");
+    } finally {
+      setOverriding(null);
+    }
+  };
 
   const handleSendToEngineering = async (quotation: any) => {
     console.log("handleSendToEngineering called for quotation:", quotation.id, "Project ID:", quotation.project_id);
@@ -100,6 +130,20 @@ export default function ClientApprovalsPage() {
         console.log("Executing redirect to:", `/accounts/milestones?project=${quotation.project_id}&plan=true`);
         window.location.href = `/accounts/milestones?project=${quotation.project_id}&plan=true`;
         return;
+      }
+
+      // Payment Compulsion Check
+      const isPaymentPending = ["lead", "quotation_requested", "quotation_sent", "payment_pending"].includes(quotation.project?.status || "payment_pending");
+      
+      if (isPaymentPending) {
+        const userProfile = await getUserProfileAction();
+        if (userProfile?.role !== "admin") {
+          toast.error("Payment log is incomplete. Admin permission required to dispatch without payment.");
+          setDispatching(null);
+          return;
+        } else {
+          toast.warning("Bypassing payment check via Admin override.");
+        }
       }
 
       const res = await transitionWorkflowAction(
@@ -450,8 +494,8 @@ export default function ClientApprovalsPage() {
                         </p>
                       </div>
 
-                      {/* Actions — shrink-0 */}
-                      <div className="shrink-0 flex items-center gap-1.5">
+                      {/* Actions — fixed width to ensure columns align perfectly */}
+                      <div className="shrink-0 w-[240px] flex items-center justify-end gap-1.5">
                         {/* Preview */}
                         <button
                           onClick={() => setSelectedQuote(q)}
@@ -473,25 +517,31 @@ export default function ClientApprovalsPage() {
                         {/* Approved actions */}
                         {isApproved && (() => {
                           const isDispatched = q.project?.status && !["lead", "quotation_requested", "quotation_sent", "payment_pending", "payment_done"].includes(q.project.status);
+                          const isPaymentPending = ["lead", "quotation_requested", "quotation_sent", "payment_pending"].includes(q.project?.status || "payment_pending");
+                          const isDispatching = dispatching === q.id;
+                          const isOverriding = overriding === q.id;
+
                           if (isDispatched) {
                             return (
-                              <div className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                              <div className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                                 <ShieldCheck className="w-3 h-3 animate-pulse" /> Active in Ops
                               </div>
                             );
                           }
+
+
                           return (
                             <button
                               onClick={() => handleSendToEngineering(q)}
                               disabled={isDispatching}
-                              className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-emerald-500 text-white transition-all disabled:opacity-60 active:scale-95"
+                              className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-emerald-500 text-white transition-all disabled:opacity-60 active:scale-95"
                             >
                               {isDispatching ? (
                                 <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                               ) : (
                                 <Hammer className="w-3 h-3" />
                               )}
-                              {isDispatching ? "Dispatching…" : "create MileStones"}
+                              {isDispatching ? "Dispatching…" : "create Milestones"}
                             </button>
                           );
                         })()}

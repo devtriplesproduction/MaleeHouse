@@ -336,7 +336,7 @@ export default function ProjectOverviewTab({
           projectId={project.id}
           assignments={teamMembers || []}
           staff={allUsers || []}
-          canAssign={(isAdmin || (isEngineer && teamMembers.some((m: any) => m.userId === currentUserId))) && !isProjectClosed}
+          canAssign={(isAdmin || isEngineer) && !isProjectClosed}
         />
 
       </div>

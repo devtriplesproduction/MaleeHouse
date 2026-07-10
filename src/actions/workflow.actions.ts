@@ -12,13 +12,105 @@ import {
   canUpdateProjectStage,
   canUploadFileCategory
 } from "@/lib/permissions/permissions";
-import { notifySupplementalUploadAction, notifyStageUpdateAction } from "@/actions/notification.actions";
+import { notifySupplementalUploadAction, notifyStageUpdateAction, notifyAdminDispatchOverrideRequestAction } from "@/actions/notification.actions";
 import { getTasksForStage } from "@/lib/workflow-engine";
 
 export type WorkflowResponse = {
   success: boolean;
   error: string | null;
 };
+
+export async function requestDispatchOverrideAction(projectId: string): Promise<WorkflowResponse> {
+  try {
+    const supabase: any = await createClient();
+    
+    // Optional: Could store this in metadata or a custom column. For now, we just rely on sending the notification.
+    await notifyAdminDispatchOverrideRequestAction(projectId);
+    
+    return { success: true, error: null };
+  } catch (err) {
+    console.error("requestDispatchOverrideAction error:", err);
+    return { success: false, error: "Failed to request override." };
+  }
+}
+
+export async function getAllOverrideRequestsAction() {
+  try {
+    const supabase: any = createAdminClient();
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id, title, message, is_read, created_at, related_project_id, projects!notifications_related_project_id_fkey(name, client_name, status)')
+      .eq('title', 'Dispatch Override Requested')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      // Fallback if projects relation fails
+      const { data: fallbackData } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('title', 'Dispatch Override Requested')
+        .order('created_at', { ascending: false });
+        
+      if (!fallbackData) return { success: false, error: error.message };
+      
+      const uniqueMap = new Map();
+      for (const n of fallbackData) {
+        if (n.related_project_id && !uniqueMap.has(n.related_project_id)) {
+          uniqueMap.set(n.related_project_id, { ...n, projects: null });
+        }
+      }
+      return { success: true, data: Array.from(uniqueMap.values()) };
+    }
+    
+    // De-duplicate by project_id just in case multiple admins get the notification
+    const uniqueMap = new Map();
+    for (const n of data) {
+      if (n.related_project_id && !uniqueMap.has(n.related_project_id)) {
+        uniqueMap.set(n.related_project_id, n);
+      }
+    }
+
+    return { success: true, data: Array.from(uniqueMap.values()) };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function approveDispatchOverrideAction(projectId: string) {
+  try {
+    const supabase: any = createAdminClient();
+    // 1. Transition the workflow (dispatch)
+    const res = await transitionWorkflowAction(projectId, "project_created", "Admin Approved Dispatch Override");
+    if (!res.success) throw new Error(res.error || 'Failed to dispatch project');
+    
+    // 2. Mark ALL related override notifications as read for this project
+    await supabase.from('notifications')
+      .update({ is_read: true })
+      .eq('related_project_id', projectId)
+      .eq('title', 'Dispatch Override Requested');
+      
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function rejectDispatchOverrideAction(projectId: string) {
+  try {
+    const supabase: any = createAdminClient();
+    // 1. Mark ALL related override notifications as read for this project
+    await supabase.from('notifications')
+      .update({ is_read: true })
+      .eq('related_project_id', projectId)
+      .eq('title', 'Dispatch Override Requested');
+      
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
 
 /**
  * verifyProjectNotLocked

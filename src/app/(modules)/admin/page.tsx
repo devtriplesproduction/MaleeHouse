@@ -11,7 +11,13 @@ import { QuickIntegrityOverview } from '@/components/modules/QuickIntegrityOverv
 import { TrendingUp } from 'lucide-react';
 import DashboardNotificationCenter from '@/components/modules/DashboardNotificationCenter';
 import { MaterialApprovalWidget } from '@/components/modules/MaterialApprovalWidget';
+import { DispatchOverrideRequestsWidget } from '@/components/modules/DispatchOverrideRequestsWidget';
 import { getAllMaterialRequestsAction } from '@/actions/field.actions';
+import { getAllOverrideRequestsAction } from '@/actions/workflow.actions';
+import { DispatchOverridesTable } from '@/components/modules/DispatchOverridesTable';
+import { getOperationsQueueAction } from '@/actions/operations.actions';
+import { ActiveDispatchedProjectsWidget } from '@/components/modules/ActiveDispatchedProjectsWidget';
+import { ProjectsTableWrapper } from '@/components/modules/ProjectsTableWrapper';
 
 import { requireRole } from '@/lib/auth-guard';
 
@@ -51,6 +57,22 @@ async function ClientSatisfactionMetricWrapper() {
 async function MaterialApprovalWidgetWrapper() {
   const result = await getAllMaterialRequestsAction();
   return <MaterialApprovalWidget requests={result.data || []} />;
+}
+
+async function DispatchOverridesTableWrapper() {
+  const result = await getAllOverrideRequestsAction();
+  return <DispatchOverridesTable requests={result.data || []} />;
+}
+
+async function DispatchOverrideRequestsWidgetWrapper() {
+  const result = await getAllOverrideRequestsAction();
+  return <DispatchOverrideRequestsWidget requests={result.data || []} />;
+}
+
+async function ActiveDispatchedProjectsWidgetWrapper() {
+  const result = await getOperationsQueueAction();
+  const projects = result.data?.active || [];
+  return <ActiveDispatchedProjectsWidget projects={projects} />;
 }
 
 export default async function AdminDashboardPage() {
@@ -107,10 +129,23 @@ export default async function AdminDashboardPage() {
           <Suspense fallback={<div className="h-[400px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
             <TeamPerformanceLeaderboardWrapper />
           </Suspense>
+
+          {/* Dispatch Overrides Table */}
+          <Suspense fallback={<div className="h-[400px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
+            <DispatchOverridesTableWrapper />
+          </Suspense>
         </div>
 
         {/* Side Panel */}
         <div className="space-y-8">
+          <Suspense fallback={<div className="h-[200px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
+            <ActiveDispatchedProjectsWidgetWrapper />
+          </Suspense>
+
+          <Suspense fallback={<div className="h-[200px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
+            <DispatchOverrideRequestsWidgetWrapper />
+          </Suspense>
+
           <Suspense fallback={<div className="h-[200px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
             <MaterialApprovalWidgetWrapper />
           </Suspense>
@@ -125,6 +160,16 @@ export default async function AdminDashboardPage() {
             <GlobalActivityStream />
           </div>
         </div>
+      </div>
+
+      {/* ── Full-Width Projects Table ── */}
+      <div className="mt-8 space-y-4">
+        <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight px-1">
+          Complete Project Directory
+        </h3>
+        <Suspense fallback={<div className="h-[500px] bg-white/5 animate-pulse rounded-3xl border border-white/5" />}>
+          <ProjectsTableWrapper />
+        </Suspense>
       </div>
     </div>
   );

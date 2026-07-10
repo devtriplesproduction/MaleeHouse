@@ -82,9 +82,9 @@ export function QuotationBuilderEngine({
   const [discountPct, setDiscountPct] = useState<number>(existingQuotation?.discount_pct ?? 0);
 
   // GST
-  const [gstType, setGstType] = useState<'NO_GST' | 'IGST' | 'CGST_SGST'>(
-    existingQuotation?.client_details?.gst_type || 'CGST_SGST'
-  );
+  const defaultGstType = existingQuotation?.client_details?.gst_type;
+  const initialGstType = defaultGstType === 'CGST_SGST' ? 'CGST_SGST_18' : (defaultGstType === 'IGST' ? 'IGST_18' : defaultGstType || 'CGST_SGST_18');
+  const [gstType, setGstType] = useState<string>(initialGstType);
 
   // Notes
   const [notes, setNotes] = useState(existingQuotation?.notes || '');
@@ -242,7 +242,7 @@ export function QuotationBuilderEngine({
   const discountPctVal = Math.min(Math.max(Number(discountPct) || 0, 0), 100);
   const discountAmt = (subtotal * discountPctVal) / 100;
   const afterDiscount = subtotal - discountAmt;
-  const gstRate = gstType === 'NO_GST' ? 0 : 18;
+  const gstRate = gstType === 'NO_GST' ? 0 : (gstType.endsWith('_5') ? 5 : 18);
   const gstAmount = (afterDiscount * gstRate) / 100;
   const total = afterDiscount + gstAmount;
   const fmt = (n: number) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -263,7 +263,7 @@ export function QuotationBuilderEngine({
         quotation_number: existingQuotation?.quotation_number || `QTN-${Date.now().toString().slice(-6)}`,
         client_details: {
           ...(isScratch ? clientDetails : existingQuotation?.client_details || {}),
-          gst_type: gstType
+          gst_type: gstType.startsWith('CGST_SGST') ? 'CGST_SGST' : (gstType.startsWith('IGST') ? 'IGST' : 'NO_GST')
         },
         items: items.map((i: any) => ({ ...i, total: Number(i.total) || 0 })),
         discount_pct: discountPctVal,
@@ -712,11 +712,13 @@ export function QuotationBuilderEngine({
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">GST Type</span>
                 <select
                   value={gstType}
-                  onChange={(e) => setGstType(e.target.value as 'NO_GST' | 'IGST' | 'CGST_SGST')}
+                  onChange={(e) => setGstType(e.target.value)}
                   className="bg-transparent border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
                 >
-                  <option value="CGST_SGST" className="bg-white dark:bg-[#0f172a]">CGST & SGST (18%)</option>
-                  <option value="IGST" className="bg-white dark:bg-[#0f172a]">IGST (18%)</option>
+                  <option value="CGST_SGST_18" className="bg-white dark:bg-[#0f172a]">CGST & SGST (18%)</option>
+                  <option value="IGST_18" className="bg-white dark:bg-[#0f172a]">IGST (18%)</option>
+                  <option value="CGST_SGST_5" className="bg-white dark:bg-[#0f172a]">CGST & SGST (5%)</option>
+                  <option value="IGST_5" className="bg-white dark:bg-[#0f172a]">IGST (5%)</option>
                   <option value="NO_GST" className="bg-white dark:bg-[#0f172a]">No GST (0%)</option>
                 </select>
               </div>
@@ -743,12 +745,25 @@ export function QuotationBuilderEngine({
                 </div>
               )}
 
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">
-                  {gstType === 'CGST_SGST' ? 'CGST & SGST (18%)' : gstType === 'IGST' ? 'IGST (18%)' : 'No GST (0%)'}
-                </span>
-                <span className="nums font-medium text-slate-700 dark:text-slate-200">₹{fmt(gstAmount)}</span>
-              </div>
+              {gstType.startsWith('CGST_SGST') ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">CGST ({gstRate / 2}%)</span>
+                    <span className="nums font-medium text-slate-700 dark:text-slate-200">₹{fmt(gstAmount / 2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">SGST ({gstRate / 2}%)</span>
+                    <span className="nums font-medium text-slate-700 dark:text-slate-200">₹{fmt(gstAmount / 2)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">
+                    {gstType.startsWith('IGST') ? `IGST (${gstRate}%)` : 'No GST (0%)'}
+                  </span>
+                  <span className="nums font-medium text-slate-700 dark:text-slate-200">₹{fmt(gstAmount)}</span>
+                </div>
+              )}
             </div>
 
             {/* Grand total */}
@@ -795,7 +810,7 @@ export function QuotationBuilderEngine({
               <p className="text-[11px] text-amber-700 dark:text-amber-400">
                 {gstType === 'NO_GST' 
                   ? 'No GST is applied to this quotation.' 
-                  : `${gstType === 'IGST' ? 'IGST' : 'CGST & SGST'} @ 18% is applied on the discounted amount.`}
+                  : `${gstType.startsWith('IGST') ? 'IGST' : 'CGST & SGST'} @ ${gstRate}% is applied on the discounted amount.`}
               </p>
             </div>
           </div>

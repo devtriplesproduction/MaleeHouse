@@ -29,6 +29,8 @@ import {
   freezeProjectAction,
   unfreezeProjectAction
 } from '@/actions/finance.actions';
+import { requestDispatchOverrideAction } from '@/actions/workflow.actions';
+import { getUserProfileAction } from '@/actions/auth.actions';
 
 export interface MilestonePayment {
   id: string;
@@ -95,8 +97,15 @@ const getDisplayStatus = (m: MilestonePayment) => {
 
 export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: MilestonePaymentsTableProps) {
   const [mounted, setMounted] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [overriding, setOverriding] = useState<string | null>(null);
+  const [overrideRequests, setOverrideRequests] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     setMounted(true);
+    getUserProfileAction().then(user => {
+      setIsAdmin(user?.role === "admin");
+    });
   }, []);
 
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'upcoming' | 'overdue' | 'hold' | 'paid'>('upcoming');
@@ -174,6 +183,24 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
   const paginatedItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   // Action handlers
+  const handleRequestOverride = async (milestone: MilestonePayment) => {
+    if (!milestone.project_id) return;
+    setOverriding(milestone.id);
+    try {
+      const res = await requestDispatchOverrideAction(milestone.project_id);
+      if (res.success) {
+        toast.success("Admin override requested successfully!");
+        setOverrideRequests(prev => ({ ...prev, [milestone.id]: true }));
+      } else {
+        toast.error(res.error || "Failed to request override.");
+      }
+    } catch {
+      toast.error("Unexpected error occurred.");
+    } finally {
+      setOverriding(null);
+    }
+  };
+
   const handleMarkAsPaid = async (m: MilestonePayment) => {
     setSelectedPaymentMilestone(m);
     setPaymentModalOpen(true);
@@ -428,22 +455,53 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                             Awaiting Verif.
                           </span>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkAsPaid(m);
-                            }}
-                            disabled={isProjectFrozen}
-                            title={isProjectFrozen ? "Project is frozen. Resume project to log payment." : "Log Payment"}
-                            className={cn(
-                              "h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
-                              isProjectFrozen && "opacity-50 cursor-not-allowed active:scale-100 bg-slate-400 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-700"
+                          <>
+                            {!isAdmin && (!m.projects?.status || !['ops_active', 'completed', 'archived', 'on_hold', 'cancelled'].includes(m.projects.status)) && (
+                              overrideRequests[m.id] ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="h-8 px-3 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-not-allowed flex items-center justify-center gap-1.5 whitespace-nowrap"
+                                >
+                                  <Lock className="w-3.5 h-3.5" />
+                                  Override Requested
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRequestOverride(m);
+                                  }}
+                                  disabled={overriding === m.id || isProjectFrozen}
+                                  className="h-8 px-3 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-60"
+                                >
+                                  {overriding === m.id ? (
+                                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                  ) : (
+                                    <Lock className="w-3.5 h-3.5" />
+                                  )}
+                                  Request Override
+                                </button>
+                              )
                             )}
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Log Payment
-                          </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkAsPaid(m);
+                              }}
+                              disabled={isProjectFrozen}
+                              title={isProjectFrozen ? "Project is frozen. Resume project to log payment." : "Log Payment"}
+                              className={cn(
+                                "h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
+                                isProjectFrozen && "opacity-50 cursor-not-allowed active:scale-100 bg-slate-400 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-700"
+                              )}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Log Payment
+                            </button>
+                          </>
                         )}
 
                         <button

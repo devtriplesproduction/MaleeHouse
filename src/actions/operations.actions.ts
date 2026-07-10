@@ -1037,8 +1037,8 @@ export async function getMyAssignedProjectsAction() {
     const { data: assignments } = await supabase.from('project_assignments').select('*').eq('user_id', profile.id);
     const assignedProjectIds = new Set((assignments || []).map((a: any) => a.project_id));
     
-    // Include unassigned projects in 'project_created' phase for engineers to claim
-    if (profile.role === 'engineer') {
+    // Include unassigned projects in 'project_created' phase for engineers (and admins) to claim/view
+    if (profile.role === 'engineer' || profile.role === 'admin') {
       const { data: createdProjects } = await supabase.from('projects').select('id').eq('status', 'project_created').is('deleted_at', null);
       if (createdProjects && createdProjects.length > 0) {
         const createdIds = createdProjects.map((p: any) => p.id);
