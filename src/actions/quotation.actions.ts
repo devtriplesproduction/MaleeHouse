@@ -400,11 +400,16 @@ export async function getQuotationIntakeQueueAction(): Promise<ActionResponse> {
     const { data: intakeProjects } = await supabase
       .from('projects')
       .select('*, creator:profiles!created_by(*), files(*)')
-      .eq('status', 'quotation_requested')
+      .in('status', ['quotation_requested', 'lead_created'])
       .is('deleted_at', null)
       .order('updated_at', { ascending: false });
 
-    return { success: true, data: intakeProjects || [] };
+    const filteredProjects = (intakeProjects || []).filter((p: any) => 
+      p.status === 'quotation_requested' || 
+      (p.status === 'lead_created' && p.creator?.role === 'accountant')
+    );
+
+    return { success: true, data: filteredProjects };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

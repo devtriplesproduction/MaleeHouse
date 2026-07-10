@@ -1001,6 +1001,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                       value={formData.password || ""}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       disabled={!isEditing}
+                      autoComplete="new-password"
                       className="w-full pl-4 pr-11 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                     />
                     <button
@@ -1021,6 +1022,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                         type={showConfirmPassword ? "text" : "password"}
                         value={formData.confirm_password || ""}
                         onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
+                        autoComplete="new-password"
                         className="w-full pl-4 pr-11 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                       />
                       <button
