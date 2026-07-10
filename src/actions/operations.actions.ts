@@ -227,7 +227,7 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
       id: generateId('asn'),
       project_id: projectId,
       user_id: profile.id,
-      assigned_role: profile.role,
+      role: profile.role,
       assigned_by: profile.id
     });
 
@@ -1019,9 +1019,30 @@ export async function getMyAssignedProjectsAction() {
     const supabase: any = await createClient();
     const { data: assignments } = await supabase.from('project_assignments').select('*').eq('user_id', profile.id);
     const assignedProjectIds = new Set((assignments || []).map((a: any) => a.project_id));
+    
+    // Include unassigned projects in 'project_created' phase for engineers to claim
+    if (profile.role === 'engineer') {
+      const { data: createdProjects } = await supabase.from('projects').select('id').eq('status', 'project_created').is('deleted_at', null);
+      if (createdProjects && createdProjects.length > 0) {
+        const createdIds = createdProjects.map((p: any) => p.id);
+        const { data: engineerAssignments } = await supabase.from('project_assignments').select('project_id').in('project_id', createdIds).eq('role', 'engineer');
+        const assignedEngineersSet = new Set((engineerAssignments || []).map((a: any) => a.project_id));
+        
+        createdIds.forEach((id: string) => {
+          if (!assignedEngineersSet.has(id)) {
+            assignedProjectIds.add(id);
+          }
+        });
+      }
+    }
+
     const projectIdsArray = Array.from(assignedProjectIds);
 
-    const { data: projects } = await supabase.from('projects').select('*').is('deleted_at', null).in('id', projectIdsArray);
+    let projects = [];
+    if (projectIdsArray.length > 0) {
+      const res = await supabase.from('projects').select('*').is('deleted_at', null).in('id', projectIdsArray);
+      projects = res.data || [];
+    }
 
     const myProjects = (projects || [])
       .map((p: any) => ({

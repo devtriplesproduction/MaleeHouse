@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   X, User, Mail, ShieldCheck, Loader2, Lock,
   Phone, Contact, Building2, Briefcase, MapPin,
@@ -14,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
   updateEmployeeProfileAction,
-  resetUserPasswordAction,
   offboardEmployeeAction,
   deleteEmployeeAction,
   overrideUserCredentialsAction
@@ -42,7 +42,6 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   const [activeTab, setActiveTab] = useState<"personal" | "professional" | "documents" | "security">("personal");
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resetCreds, setResetCreds] = useState<string | null>(null);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -114,12 +113,11 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
       });
       setSelectedAvatar(employee.profile_photo || "");
       setDocumentsList(employee.documents || []);
-      setResetCreds(null);
       setIsEditing(false);
       setShowPassword(false);
       setShowConfirmPassword(false);
     }
-  }, [employee, isOpen]);
+  }, [employee?.id, isOpen]);
 
   // Keep work email updated if names change in edit mode
   useEffect(() => {
@@ -218,35 +216,6 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
     }
   };
 
-  const handleResetPassword = async () => {
-    if (confirm(`Are you absolutely sure you want to generate a new temporary password for ${formData.first_name}?`)) {
-      try {
-        const result = await resetUserPasswordAction(employee.id);
-        if (result?.success) {
-          setResetCreds(result.tempPassword!);
-          toast({
-            title: "Access Code Refreshed",
-            description: "Temporary password generated successfully. It will expire in 24 hours.",
-            variant: "success"
-          });
-          if (onSuccess) onSuccess();
-        } else {
-          toast({
-            title: "Action Restricted",
-            description: result?.error,
-            variant: "error"
-          });
-        }
-      } catch (err) {
-        toast({
-          title: "Security Action Aborted",
-          description: "Password reset transaction was aborted.",
-          variant: "error"
-        });
-      }
-    }
-  };
-
   const handleOffboard = async () => {
     if (confirm(`Are you sure you want to offboard ${formData.first_name} ${formData.last_name}? This will suspend system access and mark their status as resigned.`)) {
       setIsOffboarding(true);
@@ -316,36 +285,45 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach((file: any) => {
-      const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-      const newFileObj = {
-        id: fileId,
-        name: file.name,
-        size: file.size,
-        type: "identity_proof", // default type
-        uploaded_at: new Date().toISOString()
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+        const newFileObj = {
+          id: fileId,
+          name: file.name,
+          size: file.size,
+          type: "other", // default type
+          uploaded_at: new Date().toISOString(),
+          url: reader.result // Save the actual file data
+        };
+
+        setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+        setDocumentsList(prev => {
+          const newList = [...prev, newFileObj];
+          
+          let progress = 0;
+          const interval = setInterval(() => {
+            progress += 25;
+            setUploadProgress(p => ({ ...p, [fileId]: progress }));
+            if (progress >= 100) {
+              clearInterval(interval);
+              toast({
+                title: "Document Registered",
+                description: `${file.name} successfully encrypted and staged in repository.`,
+                variant: "success"
+              });
+
+              // Auto save immediately when document is uploaded to avoid loss
+              updateEmployeeProfileAction(employee.id, {
+                documents: newList
+              });
+            }
+          }, 80);
+
+          return newList;
+        });
       };
-
-      setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
-      setDocumentsList(prev => [...prev, newFileObj]);
-
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 25;
-        setUploadProgress(prev => ({ ...prev, [fileId]: progress }));
-        if (progress >= 100) {
-          clearInterval(interval);
-          toast({
-            title: "Document Registered",
-            description: `${file.name} successfully encrypted and staged in repository.`,
-            variant: "success"
-          });
-
-          // Auto save immediately when document is uploaded to avoid loss
-          updateEmployeeProfileAction(employee.id, {
-            documents: [...documentsList, newFileObj]
-          });
-        }
-      }, 80);
+      reader.readAsDataURL(file);
     });
   };
 
@@ -374,7 +352,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
     });
   };
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
 
@@ -453,7 +431,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-black tracking-widest transition-all flex items-center gap-2"
               >
                 <Edit2 className="w-3.5 h-3.5" /> Edit Profile
               </button>
@@ -461,7 +439,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <button
                 onClick={handleSave}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
+                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 Save Changes
@@ -865,8 +843,15 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                           <FileText className="w-5 h-5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-[280px]">
-                            {doc.name}
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-[280px] uppercase">
+                            {{
+                              aadhar: "Aadhaar Card",
+                              pan: "PAN Card",
+                              contract: "Agreement / Contract",
+                              certificate: "Certificate",
+                              nda: "NDA File",
+                              other: "Other File"
+                            }[doc.type as string] || "Document"}
                           </p>
                           <div className="flex items-center gap-2 flex-wrap mt-1">
                             <select
@@ -896,6 +881,30 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                               description: `Retrieving and decrypting ${doc.name} (Category: ${doc.type})...`,
                               variant: "success"
                             });
+                            
+                            setTimeout(() => {
+                              const downloadUrl = doc.url || URL.createObjectURL(new Blob(["[MOCK DOCUMENT DATA]\n\nDocument Name: " + doc.name + "\nType: " + doc.type + "\nDate: " + new Date().toLocaleString()]));
+                              
+                              const docLabel = {
+                                aadhar: "Aadhaar_Card",
+                                pan: "PAN_Card",
+                                contract: "Agreement_Contract",
+                                certificate: "Certificate",
+                                nda: "NDA_File",
+                                other: "Other_File"
+                              }[doc.type as string] || "Document";
+                              const ext = doc.name.split('.').pop() || 'pdf';
+                              
+                              const a = document.createElement('a');
+                              a.href = downloadUrl;
+                              a.download = `${docLabel}.${ext}`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              if (!doc.url) {
+                                URL.revokeObjectURL(downloadUrl);
+                              }
+                            }, 1000);
                           }}
                           className="p-2.5 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all"
                           title="Verify & Download"
@@ -931,36 +940,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Security Credentials & Logs</h4>
               </div>
 
-              {resetCreds && (
-                <div className="p-6 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-3xl space-y-4 animate-in zoom-in-95">
-                  <div className="flex items-center gap-3">
-                    <UserCheck className="w-5 h-5 text-emerald-500" />
-                    <h5 className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Credentials Refreshed</h5>
-                  </div>
-                  <p className="text-sm text-slate-500 font-semibold leading-relaxed">
-                    A fresh, high-entropy password was safely generated. Please securely convey this new access key immediately.
-                  </p>
 
-                  <div className="p-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl flex items-center justify-between shadow-sm">
-                    <span className="nums font-black text-emerald-600 dark:text-emerald-400 text-sm tracking-wider">
-                      {resetCreds}
-                    </span>
-                    <button
-                      onClick={() => copyToClipboard(resetCreds)}
-                      className="p-2 bg-emerald-500/10 rounded-lg hover:bg-emerald-500/20 transition-all"
-                    >
-                      <Copy className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    </button>
-                  </div>
-
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-2.5">
-                    <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
-                    <p className="text-xs text-amber-700 dark:text-amber-400 font-bold">
-                      WARNING: This temporary password will expire in 24 hours. The employee will be forced to change it on their first login.
-                    </p>
-                  </div>
-                </div>
-              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -1054,24 +1034,6 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                   </div>
                 )}
               </div>
-
-              <div className="p-6 bg-slate-50 dark:bg-white/2 border border-slate-200 dark:border-white/5 rounded-3xl space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-indigo-500" /> Admin Password Refresh
-                    </h5>
-                    <p className="text-xs text-slate-500">Generates a fresh temporary password for the employee.</p>
-                  </div>
-
-                  <button
-                    onClick={handleResetPassword}
-                    className="px-4 py-2.5 bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-black tracking-wider transition-all flex items-center gap-1.5"
-                  >
-                    Reset Password
-                  </button>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -1110,4 +1072,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modalContent, document.body);
 }

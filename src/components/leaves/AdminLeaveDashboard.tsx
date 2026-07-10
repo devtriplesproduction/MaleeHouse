@@ -203,15 +203,18 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
     const joinDate = new Date(joinDateStr);
     const now = new Date();
 
-    const yearsDiff = now.getFullYear() - joinDate.getFullYear();
-    const monthsDiff = now.getMonth() - joinDate.getMonth();
-    const totalMonths = Math.max(1, yearsDiff * 12 + monthsDiff + 1);
+    // 1 paid leave per month, no carry forward
+    const earnedPaid = 1;
 
-    const earnedPaid = totalMonths * 2;
+    // Filter approved leaves for this employee for the current month
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
 
-    // Filter approved leaves for this employee
     const approvedEmployeeLeaves = leaves.filter(
-      l => l.user_id === employeeId && l.status?.toLowerCase() === 'approved'
+      l => l.user_id === employeeId && 
+           l.status?.toLowerCase() === 'approved' &&
+           l.start_date >= currentMonthStart.split('T')[0] && 
+           l.start_date <= currentMonthEnd.split('T')[0]
     );
 
     const paidTaken = approvedEmployeeLeaves

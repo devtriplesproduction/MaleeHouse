@@ -47,13 +47,15 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
   const [loading, setLoading] = useState(false);
   const [companySettings, setCompanySettings] = useState<any>(null);
   const [projectData, setProjectData] = useState<any>(null);
+  const [banks, setBanks] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     invoice_number: `INV-${Date.now().toString().slice(-6)}`,
     amount: initialAmount || 0,
     gst_rate: 18,
     notes: '',
-    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Default 7 days
+    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days
+    bank_id: ''
   });
 
   useEffect(() => {
@@ -89,8 +91,21 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
         }
       };
       if (!projectData) fetchProject();
+
+      const fetchBanks = async () => {
+        const { getBankAccountsAction } = await import('@/actions/bank.actions');
+        const res = await getBankAccountsAction();
+        if (res.success && res.data) {
+          setBanks(res.data as any[]);
+          const defaultBank = (res.data as any[]).find((b: any) => b.is_default);
+          if (defaultBank) {
+            setFormData(prev => ({ ...prev, bank_id: defaultBank.id }));
+          }
+        }
+      };
+      if (banks.length === 0) fetchBanks();
     }
-  }, [open, companySettings, projectId, projectData]);
+  }, [open, companySettings, projectId, projectData, banks.length]);
 
   useEffect(() => {
     if (initialAmount !== undefined) {
@@ -108,7 +123,8 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
         amount: Number(formData.amount),
         gst_rate: Number(formData.gst_rate),
         notes: formData.notes,
-        due_date: formData.due_date
+        due_date: formData.due_date,
+        bank_id: formData.bank_id || undefined
       });
 
       if (result.success) {
@@ -211,7 +227,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                       Print
                     </Button>
                     <Button 
-                      onClick={() => generateInvoicePDF(createdInvoice, projectData, companySettings)}
+                      onClick={() => generateInvoicePDF(createdInvoice, projectData, companySettings, banks.find(b => b.id === (createdInvoice.bank_id || formData.bank_id)))}
                       variant="ghost" 
                       className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all"
                     >
@@ -480,7 +496,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                   
                   <div className="space-y-3">
                     <button 
-                      onClick={() => generateInvoicePDF(createdInvoice, projectData, companySettings)}
+                      onClick={() => generateInvoicePDF(createdInvoice, projectData, companySettings, banks.find(b => b.id === (createdInvoice.bank_id || formData.bank_id)))}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
                     >
                       <Download className="w-4 h-4" /> Download PDF
@@ -557,24 +573,54 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                   <p className="text-[10px] text-indigo-700 mt-1 font-medium">Please include invoice number in payment reference.</p>
                 </div>
               </div>
-              <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium">
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">Bank</span>
-                    <span>State Bank of India</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">A/C Name</span>
-                    <span>Malee House Services</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">A/C No</span>
-                    <span className="font-mono">09876543212345</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">IFSC</span>
-                    <span className="font-mono">SBIN0001234</span>
-                 </div>
-              </div>
+
+              {!createdInvoice && (
+                <div className="mb-4">
+                  <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Select Bank Account</label>
+                  <select 
+                    value={formData.bank_id}
+                    onChange={(e) => setFormData({...formData, bank_id: e.target.value})}
+                    className="w-full bg-white border border-indigo-200 rounded-lg p-2 text-xs font-semibold text-indigo-950 focus:ring-1 focus:ring-indigo-500 outline-none"
+                  >
+                    <option value="">Select Bank...</option>
+                    {banks.map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.bank_name} - {b.account_number}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {formData.bank_id && banks.find(b => b.id === formData.bank_id) ? (() => {
+                const b = banks.find(b => b.id === formData.bank_id);
+                return (
+                  <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium">
+                    <div className="flex justify-between">
+                        <span className="text-indigo-600">Bank</span>
+                        <span>{b.bank_name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-indigo-600">A/C Name</span>
+                        <span>{b.account_name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-indigo-600">A/C No</span>
+                        <span className="font-mono">{b.account_number}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-indigo-600">IFSC</span>
+                        <span className="font-mono">{b.ifsc_code}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-indigo-600">Branch</span>
+                        <span>{b.branch_name}</span>
+                    </div>
+                  </div>
+                );
+              })() : (
+                <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium text-center">
+                   Please select a bank account to display payment details.
+                </div>
+              )}
             </div>
           </div>
         </div>

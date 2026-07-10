@@ -143,26 +143,11 @@ export async function onboardEmployeeAction(
       }
     }
 
-    // Generate temporary password
-    const lowercase = 'abcdefghjkmnpqrstuvwxyz'
-    const uppercase = 'ABCDEFGHJKMNPQRSTUVWXYZ'
-    const numbers = '23456789'
-    const symbols = '!@#$%&*?'
-    const all = lowercase + uppercase + numbers + symbols
-    let tempPassword = 'MH'
-    tempPassword += uppercase[Math.floor(Math.random() * uppercase.length)]
-    tempPassword += lowercase[Math.floor(Math.random() * lowercase.length)]
-    tempPassword += numbers[Math.floor(Math.random() * numbers.length)]
-    tempPassword += symbols[Math.floor(Math.random() * symbols.length)]
-    for (let i = 0; i < 4; i++) tempPassword += all[Math.floor(Math.random() * all.length)]
-
-    const tempPasswordExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     const isActive = ['active', 'probation', 'onboarding_pending', 'invited'].includes(data.status)
 
-    // Create Supabase Auth user
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
-      password: data.password || tempPassword,
+      password: data.password,
       email_confirm: true,
       user_metadata: { first_name: data.first_name, last_name: data.last_name },
     })
@@ -193,8 +178,7 @@ export async function onboardEmployeeAction(
       salary: data.salary || 0,
       experience: data.experience || 0,
       location: data.location || 'office',
-      temp_password_expires_at: tempPasswordExpiresAt,
-      force_password_reset: true,
+      force_password_reset: false,
       reporting_manager_id: data.reporting_manager_id || null,
       department_head_id: data.department_head_id || null,
       escalation_chain: data.escalation_chain || [],
@@ -223,7 +207,7 @@ export async function onboardEmployeeAction(
     await insertSystemNotification(
       userId,
       'Welcome to Malee House Software',
-      'Your account has been created. Please complete onboarding. Your temporary password expires in 24 hours.',
+      'Your account has been created. Please complete onboarding.',
       'system'
     )
 
@@ -238,7 +222,7 @@ export async function onboardEmployeeAction(
 
     revalidatePath('/admin/users')
     revalidatePath('/admin')
-    return { success: true, tempPassword, data: { id: userId, email: data.email }, message: `Employee ${data.first_name} onboarded successfully.` }
+    return { success: true, data: { id: userId, email: data.email }, message: `Employee ${data.first_name} onboarded successfully.` }
   } catch (err: any) {
     console.error('Onboarding Failure:', err)
     return { success: false, error: err.message || 'Provisioning failed' }
@@ -334,59 +318,6 @@ export async function toggleUserActiveAction(userId: string, isActive: boolean) 
   }
 }
 
-export async function resetUserPasswordAction(userId: string) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
-
-  if (!checkActionRateLimit(adminProfile.id, 'resetUserPasswordAction', 5, 60 * 1000)) {
-    return { success: false, error: 'Rate limit exceeded. Too many password resets.' }
-  }
-
-  try {
-    const lowercase = 'abcdefghjkmnpqrstuvwxyz'
-    const uppercase = 'ABCDEFGHJKMNPQRSTUVWXYZ'
-    const numbers = '23456789'
-    const symbols = '!@#$%&*?'
-    const all = lowercase + uppercase + numbers + symbols
-    let tempPassword = 'MH'
-    tempPassword += uppercase[Math.floor(Math.random() * uppercase.length)]
-    tempPassword += lowercase[Math.floor(Math.random() * lowercase.length)]
-    tempPassword += numbers[Math.floor(Math.random() * numbers.length)]
-    tempPassword += symbols[Math.floor(Math.random() * symbols.length)]
-    for (let i = 0; i < 4; i++) tempPassword += all[Math.floor(Math.random() * all.length)]
-
-    const tempPasswordExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-
-    const supabaseAdmin: any = createAdminClient()
-    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: tempPassword })
-    if (authError) return { success: false, error: authError.message }
-
-    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
-    await supabaseAdmin
-      .from('profiles')
-      .update({ temp_password_expires_at: tempPasswordExpiresAt, force_password_reset: true, updated_at: new Date().toISOString() } as any)
-      .eq('id', userId)
-
-    await logAdminAuditAction({
-      action: 'CREDENTIAL_RESET_ADMIN',
-      details: { email: profile?.email },
-      severity: 'security',
-      targetUserId: userId,
-    })
-
-    await insertSystemNotification(
-      userId,
-      'Security Notice: Password Reset Initiated',
-      'Your password has been administratively reset. Use your temporary password to log in immediately.',
-      'system'
-    )
-
-    revalidatePath('/admin/users')
-    return { success: true, tempPassword }
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
-}
 
 export async function updateUserRoleAction(userId: string, role: string) {
   const adminProfile: any = await getUserProfileAction()

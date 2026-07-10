@@ -24,11 +24,21 @@ interface QuotationPreviewProps {
 export function QuotationPreview({ quotation, project, onClose }: QuotationPreviewProps) {
   const [mounted, setMounted] = React.useState(false);
   const [companySettings, setCompanySettings] = React.useState<CompanySettings | null>(null);
+  const [bank, setBank] = React.useState<any>(null);
 
   React.useEffect(() => {
     setMounted(true);
     getCompanySettingsAction().then(setCompanySettings);
-  }, []);
+    if (quotation.bank_id) {
+      import('@/actions/bank.actions').then(m => {
+        m.getBankAccountsAction().then(res => {
+          if (res.success && res.data) {
+            setBank(res.data.find((b: any) => b.id === quotation.bank_id) || null);
+          }
+        });
+      });
+    }
+  }, [quotation.bank_id]);
 
   const items = quotation.items || [];
   const discountAmount = quotation.discount_amount || 0;
@@ -60,7 +70,7 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
 
           <div className="flex items-center gap-2">
             <Button 
-              onClick={() => generateQuotationPDF(quotation, project, companySettings)}
+              onClick={() => generateQuotationPDF(quotation, project, companySettings, bank)}
               variant="ghost" 
               className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all"
             >
@@ -68,7 +78,7 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
               Print
             </Button>
             <Button 
-              onClick={() => generateQuotationPDF(quotation, project, companySettings)}
+              onClick={() => generateQuotationPDF(quotation, project, companySettings, bank)}
               variant="ghost" 
               className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all"
             >
@@ -271,6 +281,31 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                     )}
                  </div>
               </div>
+
+              {/* Payment Details (Bank Info) */}
+              {bank && (
+                 <div className="border-t border-slate-100 pt-6 space-y-3">
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-[11px] leading-relaxed text-slate-600 bg-slate-50/50 p-4 rounded-xl border border-slate-200/60">
+                       <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Bank Name</p>
+                          <p className="font-semibold">{bank.bank_name}</p>
+                       </div>
+                       <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Account Name</p>
+                          <p className="font-semibold">{bank.account_name}</p>
+                       </div>
+                       <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Account Number</p>
+                          <p className="font-semibold font-mono tracking-tight">{bank.account_number}</p>
+                       </div>
+                       <div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">IFSC Code</p>
+                          <p className="font-semibold uppercase">{bank.ifsc_code}</p>
+                       </div>
+                    </div>
+                 </div>
+              )}
            </div>
 
            {/* Professional Prepared By & Signatures Section at the very bottom of Page 2 */}

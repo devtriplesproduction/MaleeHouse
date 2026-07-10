@@ -58,6 +58,41 @@ export interface Database {
           created_at?: string
         }
       }
+      bank_accounts: {
+        Row: {
+          id: string
+          bank_name: string
+          account_name: string
+          account_number: string
+          ifsc_code: string
+          branch_name: string
+          is_default: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          bank_name: string
+          account_name: string
+          account_number: string
+          ifsc_code: string
+          branch_name: string
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          bank_name?: string
+          account_name?: string
+          account_number?: string
+          ifsc_code?: string
+          branch_name?: string
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
       cad_revisions: {
         Row: {
           id: string
@@ -316,6 +351,7 @@ export interface Database {
           due_date: string | null
           notes: string | null
           created_by: string | null
+          bank_id: string | null
           created_at: string
           updated_at: string
         }
@@ -333,6 +369,7 @@ export interface Database {
           due_date?: string | null
           notes?: string | null
           created_by?: string | null
+          bank_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -350,6 +387,7 @@ export interface Database {
           due_date?: string | null
           notes?: string | null
           created_by?: string | null
+          bank_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1005,6 +1043,7 @@ export interface Database {
           client_approved_at: string | null
           client_approver_phone: string | null
           created_by: string | null
+          bank_id: string | null
           created_at: string
           updated_at: string
         }
@@ -1032,6 +1071,7 @@ export interface Database {
           client_approved_at?: string | null
           client_approver_phone?: string | null
           created_by?: string | null
+          bank_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1059,6 +1099,7 @@ export interface Database {
           client_approved_at?: string | null
           client_approver_phone?: string | null
           created_by?: string | null
+          bank_id?: string | null
           created_at?: string
           updated_at?: string
         }

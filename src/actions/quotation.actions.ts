@@ -99,13 +99,15 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
       subtotal: payload.subtotal || 0,
       discount_pct: (payload as any).discount_pct || 0,
       discount_amount: (payload as any).discount_amount || 0,
-      gst_rate: payload.gst_rate || 18,
+      gst_rate: payload.gst_rate !== undefined ? payload.gst_rate : 18,
       gst_amount: payload.gst_amount || 0,
       total_amount: payload.total_amount || 0,
       notes: payload.notes || '',
       terms: payload.terms || '',
       clauses: payload.clauses || [],
       internal_notes: payload.internal_notes || '',
+      bank_id: (payload as any).bank_id || null,
+      assigned_to: (payload as any).assigned_to || null,
       created_by: profile.id,
       status: 'Draft',
       current_version: 1,
@@ -269,7 +271,9 @@ export async function clientUpdateQuotationStatusAction(
   approverPhone?: string
 ): Promise<ActionResponse> {
   try {
-    const supabase: any = await createClient();
+    // Use service role to bypass RLS for unauthenticated client portal interactions
+    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
+    const supabase = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { data: quotation } = await supabase.from('quotations').select('*').or(`client_token.eq.${token},id.eq.${token}`).single();
 
     if (!quotation) return { success: false, error: 'Invalid quotation token or quotation not found.' };
@@ -295,14 +299,67 @@ export async function clientUpdateQuotationStatusAction(
     if (updateError) throw updateError;
 
     if (status === 'Approved') {
-      const stageResponse = await updateProjectStageAction(quotation.project_id, 'payment_pending', comment || 'Quotation approved by client via portal.');
-      if (!stageResponse.success) return { success: false, error: stageResponse.error || 'Failed to update project stage.' };
-    } else if (status === 'Rejected') {
-      const stageResponse = await updateProjectStageAction(quotation.project_id, 'quotation_requested', `Quotation rejected by client via portal. Category: ${rejectionCategory}. Reason: ${rejectionReason}`);
-      if (!stageResponse.success) return { success: false, error: stageResponse.error || 'Failed to update project stage.' };
-    } else if (status === 'Revision Requested') {
-      const stageResponse = await updateProjectStageAction(quotation.project_id, 'quotation_requested', `Revision requested by client: ${comment}`);
-      if (!stageResponse.success) return { success: false, error: stageResponse.error || 'Failed to update project stage.' };
+      // Direct Admin update for project stage to 'payment_pending'
+      const { data: proj } = await supabase.from("projects").select("status").eq("id", quotation.project_id).single();
+      const fromStage = proj?.status || 'quotation_sent';
+      
+      await supabase.from("projects").update({
+        status: "payment_pending",
+        updated_at: new Date().toISOString()
+      }).eq("id", quotation.project_id);
+
+      const sysUserId = quotation.created_by; // Assign audit trail to the user who created the quotation
+
+      await supabase.from("workflow_history").insert({
+        id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        project_id: quotation.project_id,
+        from_stage: fromStage,
+        to_stage: "payment_pending",
+        changed_by: sysUserId,
+        comment: comment || 'Quotation approved by client via portal.',
+        created_at: new Date().toISOString()
+      });
+
+      await supabase.from("activity_logs").insert({
+        project_id: quotation.project_id,
+        user_id: sysUserId,
+        action: "STAGE_UPDATE",
+        details: { from_status: fromStage, new_status: "payment_pending", role: "client" },
+        created_at: new Date().toISOString()
+      });
+
+      await revalidateAccountsPaths(quotation.project_id);
+    } else if (status === 'Rejected' || status === 'Revision Requested') {
+      const { data: proj } = await supabase.from("projects").select("status").eq("id", quotation.project_id).single();
+      const fromStage = proj?.status || 'quotation_sent';
+      const commentMsg = status === 'Rejected' ? `Quotation rejected by client via portal. Category: ${rejectionCategory}. Reason: ${rejectionReason}` : `Revision requested by client: ${comment}`;
+      
+      await supabase.from("projects").update({
+        status: "quotation_requested",
+        updated_at: new Date().toISOString()
+      }).eq("id", quotation.project_id);
+
+      const sysUserId = quotation.created_by;
+
+      await supabase.from("workflow_history").insert({
+        id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        project_id: quotation.project_id,
+        from_stage: fromStage,
+        to_stage: "quotation_requested",
+        changed_by: sysUserId,
+        comment: commentMsg,
+        created_at: new Date().toISOString()
+      });
+
+      await supabase.from("activity_logs").insert({
+        project_id: quotation.project_id,
+        user_id: sysUserId,
+        action: "STAGE_UPDATE",
+        details: { from_status: fromStage, new_status: "quotation_requested", role: "client" },
+        created_at: new Date().toISOString()
+      });
+
+      await revalidateAccountsPaths(quotation.project_id);
     }
 
     let activityUserId = quotation.created_by;
@@ -736,10 +793,20 @@ export async function getQuotationByTokenAction(token: string): Promise<ActionRe
       await revalidateAccountsPaths(quotation.project_id);
     }
 
+    let bankDetails = null;
+    if (quotation.bank_id) {
+      // Use service role to bypass RLS for unauthenticated client portal
+      const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
+      const adminSupabase = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const { data: bank } = await adminSupabase.from('bank_accounts').select('*').eq('id', quotation.bank_id).single();
+      bankDetails = bank;
+    }
+
     return {
       success: true,
       data: {
         ...quotation,
+        bank: bankDetails,
         project: project ? { id: project.id, name: project.name, client_name: project.client_name, status: project.status } : null
       }
     };

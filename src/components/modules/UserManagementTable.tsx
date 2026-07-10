@@ -6,17 +6,17 @@ import {
   LayoutGrid, Table, Calendar, MapPin, Key, Eye, Edit3,
   Building2, BadgeInfo, CheckCircle2, AlertCircle, RefreshCw, ChevronDown,
   CreditCard, Shield, ShieldCheck, Lock, Unlock, Wallet, Check, Loader2, FileText, Activity,
-  EyeOff, ChevronLeft, ChevronRight, UserX, Trash2, MoreVertical, ArrowUpRight
+  EyeOff, ChevronLeft, ChevronRight, UserX, Trash2, MoreVertical, ArrowUpRight, Gift
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
   toggleUserActiveAction, 
-  resetUserPasswordAction, 
-  getAllUsersAction,
-  getAdminAuditLogsAction,
+  updateEmployeeProfileAction,
   overrideUserCredentialsAction,
   offboardEmployeeAction,
-  deleteEmployeeAction
+  deleteEmployeeAction,
+  getAdminAuditLogsAction,
+  getAllUsersAction
 } from "@/actions/admin.actions";
 import { 
   calculateMonthlyPayrollAction, 
@@ -85,7 +85,7 @@ function getAvatarColor(name: string) {
 
 export function UserManagementTable({ initialUsers, mode = "full" }: UserManagementTableProps) {
   const [users, setUsers] = useState<UserProfile[]>(initialUsers);
-  const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security">(mode === "payroll-only" ? "payroll" : "directory");
+  const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security" | "birthdays">(mode === "payroll-only" ? "payroll" : "directory");
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
   
   // Filtering & Search state
@@ -102,7 +102,6 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
   // Modals state
   const [isNewUserModalOpen, setIsNewUserModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<UserProfile | null>(null);
-  const [oneTimePassModal, setOneTimePassModal] = useState<string | null>(null);
   const [activeMenuUserId, setActiveMenuUserId] = useState<string | null>(null);
 
   // Payroll state
@@ -193,19 +192,19 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
   const getStatusBadgeStyles = (status?: string) => {
     switch (status) {
       case "active":
-        return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
+        return "bg-gradient-to-r from-emerald-500/20 to-emerald-500/5 text-emerald-600 border border-emerald-500/20 shadow-sm";
       case "onboarding_pending":
-        return "bg-amber-500/10 text-amber-500 border border-amber-500/20";
+        return "bg-gradient-to-r from-amber-500/20 to-amber-500/5 text-amber-600 border border-amber-500/20 shadow-sm";
       case "invited":
-        return "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20";
+        return "bg-gradient-to-r from-indigo-500/20 to-indigo-500/5 text-indigo-600 border border-indigo-500/20 shadow-sm";
       case "suspended":
-        return "bg-rose-500/10 text-rose-500 border border-rose-500/20";
+        return "bg-gradient-to-r from-rose-500/20 to-rose-500/5 text-rose-600 border border-rose-500/20 shadow-sm";
       case "resigned":
-        return "bg-slate-500/10 text-slate-500 border border-slate-500/20";
+        return "bg-gradient-to-r from-slate-500/20 to-slate-500/5 text-slate-600 border border-slate-500/20 shadow-sm";
       case "archived":
-        return "bg-purple-500/10 text-purple-500 border border-purple-500/20";
+        return "bg-gradient-to-r from-purple-500/20 to-purple-500/5 text-purple-600 border border-purple-500/20 shadow-sm";
       default:
-        return "bg-slate-500/10 text-slate-500 border border-slate-500/20";
+        return "bg-gradient-to-r from-slate-500/20 to-slate-500/5 text-slate-600 border border-slate-500/20 shadow-sm";
     }
   };
 
@@ -213,15 +212,15 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
   const getDeptBadgeStyles = (dept?: string) => {
     switch (dept) {
       case "admin":
-        return "bg-blue-500/10 text-blue-500 border border-blue-500/25";
+        return "bg-gradient-to-r from-blue-500/20 to-blue-500/5 text-blue-600 border border-blue-500/25 shadow-sm";
       case "operations":
-        return "bg-indigo-500/10 text-indigo-500 border-indigo-500/25";
+        return "bg-gradient-to-r from-indigo-500/20 to-indigo-500/5 text-indigo-600 border border-indigo-500/25 shadow-sm";
       case "survey":
-        return "bg-teal-500/10 text-teal-500 border-teal-500/25";
+        return "bg-gradient-to-r from-teal-500/20 to-teal-500/5 text-teal-600 border border-teal-500/25 shadow-sm";
       case "design":
-        return "bg-purple-500/10 text-purple-500 border-purple-500/25";
+        return "bg-gradient-to-r from-purple-500/20 to-purple-500/5 text-purple-600 border border-purple-500/25 shadow-sm";
       default:
-        return "bg-slate-500/10 text-slate-500 border-slate-500/25";
+        return "bg-gradient-to-r from-slate-500/20 to-slate-500/5 text-slate-600 border border-slate-500/25 shadow-sm";
     }
   };
 
@@ -281,37 +280,6 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
         });
       }
     });
-  };
-
-  // Administrative password reset
-  const handleResetPassword = async (userId: string, name: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm(`Refresh access credentials and reset password for ${name}?`)) {
-      try {
-        const result = await resetUserPasswordAction(userId);
-        if (result?.success) {
-          setOneTimePassModal(result.tempPassword!);
-          toast({
-            title: "Access Code Refreshed",
-            description: "Temporary password generated successfully.",
-            variant: "success"
-          });
-          handleRefreshData();
-        } else {
-          toast({
-            title: "Action Aborted",
-            description: result?.error,
-            variant: "error"
-          });
-        }
-      } catch (err) {
-        toast({
-          title: "Reset Prevented",
-          description: "Credential manager encountered a lock failure.",
-          variant: "error"
-        });
-      }
-    }
   };
 
   // Offboard employee
@@ -411,20 +379,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
     }
   };
 
-  const generateRandomPasswordForUser = (userId: string) => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$";
-    let pwd = "";
-    for (let i = 0; i < 10; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setOverridePasswords(prev => ({ ...prev, [userId]: pwd }));
-    setVisiblePasswords(prev => ({ ...prev, [userId]: true }));
-    toast({
-      title: "Password Generated",
-      description: "A random secure password has been generated for review.",
-      variant: "success"
-    });
-  };
+
   const filteredPayrollData = useMemo(() => {
     if (!payrollSearch.trim()) return payrollData;
     const query = payrollSearch.toLowerCase().trim();
@@ -603,6 +558,22 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
             )}
           </button>
+          
+          <button
+            onClick={() => setActiveTab("birthdays")}
+            className={cn(
+              "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
+              activeTab === "birthdays"
+                ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
+                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            )}
+          >
+            <Gift className="w-4 h-4" />
+            Birthday Details
+            {activeTab === "birthdays" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+            )}
+          </button>
         </div>
       )}
 
@@ -614,7 +585,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
           
           <div className="glass-card overflow-hidden">
             {/* ── Toolbar ── */}
-            <div className="px-6 py-4 border-b border-slate-200/60 dark:border-white/5 flex flex-col lg:flex-row gap-3 lg:items-center justify-between bg-white/50 dark:bg-white/[0.02]">
+            <div className="sticky top-0 z-10 backdrop-blur-xl px-6 py-4 border-b border-slate-200/60 dark:border-white/5 flex flex-col lg:flex-row gap-3 lg:items-center justify-between bg-white/60 dark:bg-[#0c101b]/60">
               {/* Search */}
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -668,9 +639,9 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[700px]">
+              <table className="w-full text-left border-separate border-spacing-y-2 min-w-[700px]">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-white/5">
+                  <tr>
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Employee</th>
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Role</th>
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Department</th>
@@ -680,7 +651,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                     <th className="px-4 py-3.5" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+                <tbody>
                   {filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-24 text-center">
@@ -704,7 +675,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                       <tr 
                         key={user.id} 
                         onClick={() => setSelectedEmployee(user)}
-                        className="group hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors duration-150 cursor-pointer"
+                        className="group bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.04] hover:-translate-y-0.5 hover:shadow-md hover:shadow-indigo-500/5 transition-all duration-300 cursor-pointer [&>td:first-child]:rounded-l-2xl [&>td:last-child]:rounded-r-2xl"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2.5">
@@ -731,7 +702,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                         </td>
 
                         <td className="px-6 py-4">
-                          <span className="px-2.5 py-1 rounded-full text-sm font-semibold bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 text-slate-500 dark:text-slate-400 capitalize">
+                          <span className="px-2.5 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-slate-100 to-slate-50 dark:from-white/10 dark:to-white/5 border border-slate-200/50 dark:border-white/10 text-slate-600 dark:text-slate-300 capitalize shadow-sm">
                             {user.designation?.replace("_", " ") || user.role}
                           </span>
                         </td>
@@ -791,15 +762,15 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                                   className="fixed inset-0 z-40" 
                                   onClick={() => setActiveMenuUserId(null)} 
                                 />
-                                <div className="absolute right-6 top-12 w-48 bg-[#0f121d] border border-slate-800/80 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
+                                <div className="absolute right-6 top-12 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
                                   <button
                                     onClick={() => {
                                       setActiveMenuUserId(null);
                                       setSelectedEmployee(user);
                                     }}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
                                   >
-                                    <Eye className="w-4 h-4 text-slate-400" />
+                                    <Eye className="w-4 h-4 text-slate-500" />
                                     <span>View Profile</span>
                                   </button>
 
@@ -808,29 +779,29 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                                       setActiveMenuUserId(null);
                                       handleToggleStatus(user.id, user.is_active, e);
                                     }}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
                                   >
                                     {user.is_active ? (
                                       <>
-                                        <UserX className="w-4 h-4 text-slate-400" />
+                                        <UserX className="w-4 h-4 text-slate-500" />
                                         <span>Set Inactive</span>
                                       </>
                                     ) : (
                                       <>
-                                        <Check className="w-4 h-4 text-slate-400" />
+                                        <Check className="w-4 h-4 text-slate-500" />
                                         <span>Set Active</span>
                                       </>
                                     )}
                                   </button>
 
-                                  <div className="my-1.5 border-t border-slate-800/50" />
+                                  <div className="my-1.5 border-t border-slate-200" />
 
                                   <button
                                     onClick={(e) => {
                                       setActiveMenuUserId(null);
                                       handleDeleteEmployee(user.id, `${user.first_name} ${user.last_name}`, e);
                                     }}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                                   >
                                     <Trash2 className="w-4 h-4 text-rose-500" />
                                     <span>Delete</span>
@@ -1280,14 +1251,6 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                               {visiblePasswords[user.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                             </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => generateRandomPasswordForUser(user.id)}
-                            className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400 hover:text-indigo-500 transition-colors shrink-0"
-                            title="Generate Random Password"
-                          >
-                            <RefreshCw className="w-3.5 h-3.5" />
-                          </button>
                         </div>
                       </td>
 
@@ -1318,50 +1281,111 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
         </div>
       )}
 
-      {/* ONE-TIME PASSWORD DIALOG OVERLAY */}
-      {oneTimePassModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setOneTimePassModal(null)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-[#080b14] rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/20 text-indigo-500">
-              <Key className="w-6 h-6" />
+      {/* ========================================================================= */}
+      {/* 4. TAB: BIRTHDAYS DIRECTORY                                               */}
+      {/* ========================================================================= */}
+      {activeTab === "birthdays" && (
+        <div className="space-y-6 font-sans">
+          <div className="glass-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-200/60 dark:border-white/5 flex items-center gap-3">
+              <Gift className="w-5 h-5 text-pink-500" />
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-none">Employee Birthdays</h3>
+                <p className="text-xs text-slate-500 mt-1">A complete list of all employee birthdates, sorted by upcoming dates.</p>
+              </div>
             </div>
-
-            <h4 className="text-lg font-bold text-slate-900 dark:text-white">Temporary Key Generated</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold max-w-xs mx-auto mt-1.5 leading-relaxed">
-              Temporary access key refreshed. Securely transfer this password to the employee immediately.
-            </p>
-
-            <div className="my-5 p-4 rounded-2xl bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
-              <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-lg tracking-wider">
-                {oneTimePassModal}
-              </span>
-              <Button 
-                onClick={() => copyToClipboard(oneTimePassModal)}
-                variant="outline"
-                className="h-9 w-9 p-0 rounded-xl"
-                title="Copy password key"
-              >
-                <Key className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              </Button>
+            <div className="overflow-x-auto p-6">
+              <table className="w-full text-left border-separate border-spacing-y-2 min-w-[700px]">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Employee</th>
+                    <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Department</th>
+                    <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Date of Birth</th>
+                    <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...(users || [])].sort((a, b) => {
+                    if (!a.dob) return 1;
+                    if (!b.dob) return -1;
+                    const dateA = new Date(a.dob);
+                    const dateB = new Date(b.dob);
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    let nextA = new Date(today.getFullYear(), dateA.getMonth(), dateA.getDate());
+                    if (nextA < today) nextA.setFullYear(today.getFullYear() + 1);
+                    let nextB = new Date(today.getFullYear(), dateB.getMonth(), dateB.getDate());
+                    if (nextB < today) nextB.setFullYear(today.getFullYear() + 1);
+                    return nextA.getTime() - nextB.getTime();
+                  }).map((user: any) => {
+                    let status = null;
+                    if (user.dob) {
+                      const dob = new Date(user.dob);
+                      if (!isNaN(dob.getTime())) {
+                        const today = new Date();
+                        const nextWeek = new Date();
+                        nextWeek.setDate(nextWeek.getDate() + 7);
+                        if (dob.getMonth() === today.getMonth() && dob.getDate() === today.getDate()) status = "Today";
+                        else {
+                          const tomorrow = new Date();
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          if (dob.getMonth() === tomorrow.getMonth() && dob.getDate() === tomorrow.getDate()) status = "Tomorrow";
+                          else {
+                            const dobThisYear = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+                            if (dobThisYear >= today && dobThisYear <= nextWeek) status = "Upcoming";
+                          }
+                        }
+                      }
+                    }
+                    return (
+                      <tr key={`bday-${user.id}`} className="group bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.04] transition-all duration-300">
+                        <td className="px-6 py-4 rounded-l-2xl">
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative shrink-0">
+                              <img 
+                                src={user.profile_photo || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"}
+                                alt={`${user.first_name} avatar`}
+                                className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                              />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-800 dark:text-white leading-snug">
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <p className="text-xs font-mono text-slate-400 mt-0.5">{user.employee_id || "N/A"}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={cn("px-2.5 py-1 rounded-full text-sm font-semibold border inline-block capitalize", getDeptBadgeStyles(user.department))}>
+                            {user.department || "General"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {user.dob ? (
+                            <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                              <Calendar className="w-4 h-4 text-slate-400" />
+                              {new Date(user.dob).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic text-sm">Not provided</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 rounded-r-2xl">
+                          {status === "Today" && <span className="px-3 py-1 bg-pink-500 text-white text-xs font-bold rounded-full shadow-md">🎂 Today</span>}
+                          {status === "Tomorrow" && <span className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 text-xs font-bold rounded-full">🎈 Tomorrow</span>}
+                          {status === "Upcoming" && <span className="px-3 py-1 border border-indigo-200 text-indigo-600 dark:border-indigo-500/30 dark:text-indigo-400 text-xs font-bold rounded-full">Upcoming</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-2.5 text-left mb-6">
-              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 dark:text-amber-400 font-bold leading-normal">
-                SECURITY WARNING: Visible ONLY ONCE. The password will be salted and hashed immediately upon closing.
-              </p>
-            </div>
-
-            <Button 
-              onClick={() => setOneTimePassModal(null)}
-              className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider"
-            >
-              Acknowledge & Close
-            </Button>
           </div>
         </div>
       )}
+
 
       {/* Onboard Wizard Dialog */}
       <OnboardUserModal 

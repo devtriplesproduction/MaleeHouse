@@ -12,6 +12,7 @@ import { UpcomingMilestonesWidget } from "@/features/accounts/UpcomingMilestones
 import { getAllMilestonesAction, getFinancialOverviewAction, getProjectProfitabilityAction } from "@/actions/finance.actions";
 import { ExpenseEntryTrigger } from "@/features/accounts/ExpenseEntryTrigger";
 import { FinanceChart } from "@/features/accounts/FinanceChart";
+import { ProjectCreationWizard } from "@/components/modules/ProjectCreationWizard";
 
 export default async function AccountantDashboardPage() {
   const supabase: any = await createClient();
@@ -66,7 +67,10 @@ export default async function AccountantDashboardPage() {
             Financial KPIs and pipeline at a glance.
           </p>
         </div>
-        <ExpenseEntryTrigger projects={projects} />
+        <div className="flex items-center gap-3">
+          <ProjectCreationWizard />
+          <ExpenseEntryTrigger projects={projects} />
+        </div>
       </div>
 
       {/* KPI Grid */}
@@ -225,7 +229,9 @@ export default async function AccountantDashboardPage() {
                 <FileText className="w-5 h-5 text-slate-800 dark:text-white" />
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">Quotation Intake Queue</h2>
               </div>
-              <Link href="/accounts/intake" className="text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:underline">View All</Link>
+              <div className="flex items-center gap-3">
+                <Link href="/accounts/intake" className="text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:underline">View All</Link>
+              </div>
             </div>
             
             <div className="max-h-[360px] overflow-y-auto custom-scrollbar pr-2 -mr-2">

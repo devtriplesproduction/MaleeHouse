@@ -25,33 +25,7 @@ export function LeaveHistory({ leaves, profile }: LeaveHistoryProps) {
     }
   };
 
-  // Default join date: Jan 15, 2024
-  const joinDate = new Date(profile?.created_at || '2024-01-15T09:00:00Z');
-  const now = new Date();
 
-  // Calculate months passed since joining (inclusive of current month)
-  const yearsDiff = now.getFullYear() - joinDate.getFullYear();
-  const monthsDiff = now.getMonth() - joinDate.getMonth();
-  const totalMonths = Math.max(1, yearsDiff * 12 + monthsDiff + 1);
-
-  // 2 paid leaves per month
-  const earnedPaidLeaves = totalMonths * 2;
-
-  // Filter approved leaves
-  const approvedLeaves = leaves.filter((l: any) => l.status?.toLowerCase() === 'approved');
-
-  // Calculate total days for approved paid leaves (type !== 'unpaid')
-  const approvedPaidDays = approvedLeaves
-    .filter((l: any) => l.leave_type?.toLowerCase() !== 'unpaid')
-    .reduce((sum: any, l: any) => sum + getDaysCount(l.start_date, l.end_date), 0);
-
-  // Calculate total days for approved unpaid leaves (type === 'unpaid')
-  const approvedUnpaidDays = approvedLeaves
-    .filter((l: any) => l.leave_type?.toLowerCase() === 'unpaid')
-    .reduce((sum: any, l: any) => sum + getDaysCount(l.start_date, l.end_date), 0);
-
-  // Remaining Balance (accumulated paid leaves minus approved paid leaves)
-  const remainingPaidBalance = Math.max(0, earnedPaidLeaves - approvedPaidDays);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {

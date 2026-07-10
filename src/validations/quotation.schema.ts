@@ -22,6 +22,7 @@ export const createQuotationSchema = z.object({
   terms: z.string().optional(),
   clauses: z.array(z.any()).optional(),
   assigned_to: z.string().optional(),
+  bank_id: z.string().optional(),
   client_details: z.object({
     company_name: z.string().optional(),
     contact_person: z.string().optional(),
@@ -29,6 +30,7 @@ export const createQuotationSchema = z.object({
     email: z.string().optional(),
     address: z.string().optional(),
     project_title: z.string().optional(),
+    gst_type: z.enum(['CGST_SGST', 'IGST', 'NO_GST']).optional(),
   }).optional(),
   internal_notes: z.object({
     pricing_discussions: z.array(z.string()).default([]),

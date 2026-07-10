@@ -9,6 +9,7 @@ export const createInvoiceSchema = z.object({
   notes: z.string().optional(),
   milestone_id: z.string().min(1, 'Invalid Milestone ID').optional(),
   visit_id: z.string().min(1, 'Invalid Visit ID').optional(),
+  bank_id: z.string().optional(),
 });
 
 export const createPaymentSchema = z.object({
@@ -19,6 +20,7 @@ export const createPaymentSchema = z.object({
   payment_method: z.string().min(1, 'Payment method is required'),
   transaction_id: z.string().optional(),
   receipt_url: z.string().url('Invalid receipt URL').optional(),
+  bank_id: z.string().optional(),
 });
 
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;

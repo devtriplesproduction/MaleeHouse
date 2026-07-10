@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Plus, Trash2, Calculator, FileText, ShieldCheck, Info,
   Save, X, Loader2, LayoutGrid, Receipt, RefreshCw, Scroll,
-  ArrowUp, ArrowDown, Tag, Lock, Building2, User, Phone, Mail, MapPin, ChevronDown
+  ArrowUp, ArrowDown, Tag, Lock, Building2, User, Phone, Mail, MapPin, ChevronDown, Landmark
 } from 'lucide-react';
 import { createQuotationAction, createQuotationRevisionAction, updateDraftQuotationAction, getQuotationTemplatesAction, saveQuotationTemplateAction } from '@/actions/quotation.actions';
 import { getStaffMembersAction, getUserProfileAction } from '@/actions/auth.actions';
@@ -81,6 +81,11 @@ export function QuotationBuilderEngine({
   // Discount
   const [discountPct, setDiscountPct] = useState<number>(existingQuotation?.discount_pct ?? 0);
 
+  // GST
+  const [gstType, setGstType] = useState<'NO_GST' | 'IGST' | 'CGST_SGST'>(
+    existingQuotation?.client_details?.gst_type || 'CGST_SGST'
+  );
+
   // Notes
   const [notes, setNotes] = useState(existingQuotation?.notes || '');
   const [internalNotes, setInternalNotes] = useState({
@@ -92,6 +97,10 @@ export function QuotationBuilderEngine({
   const [assignedTo, setAssignedTo] = useState(existingQuotation?.assigned_to || '');
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [staff, setStaff] = useState<any[]>([]);
+
+  // Banks
+  const [banks, setBanks] = useState<any[]>([]);
+  const [selectedBank, setSelectedBank] = useState<string>(existingQuotation?.bank_id || '');
 
   // Templates / clauses
   const [templates, setTemplates] = useState<any[]>([]);
@@ -133,6 +142,19 @@ export function QuotationBuilderEngine({
           }
         }
       }
+    });
+
+    // 4. Fetch banks
+    import('@/actions/bank.actions').then(({ getBankAccountsAction }) => {
+      getBankAccountsAction().then(res => {
+        if (res.success && res.data) {
+          setBanks(res.data);
+          if (!existingQuotation?.bank_id) {
+            const defaultBank = res.data.find((b: any) => b.is_default);
+            if (defaultBank) setSelectedBank(defaultBank.id);
+          }
+        }
+      });
     });
   }, [existingQuotation]);
 
@@ -220,7 +242,8 @@ export function QuotationBuilderEngine({
   const discountPctVal = Math.min(Math.max(Number(discountPct) || 0, 0), 100);
   const discountAmt = (subtotal * discountPctVal) / 100;
   const afterDiscount = subtotal - discountAmt;
-  const gstAmount = (afterDiscount * 18) / 100;
+  const gstRate = gstType === 'NO_GST' ? 0 : 18;
+  const gstAmount = (afterDiscount * gstRate) / 100;
   const total = afterDiscount + gstAmount;
   const fmt = (n: number) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -238,18 +261,22 @@ export function QuotationBuilderEngine({
       const payload = {
         project_id: project?.id ?? null,
         quotation_number: existingQuotation?.quotation_number || `QTN-${Date.now().toString().slice(-6)}`,
-        ...(isScratch && { client_details: clientDetails }),
+        client_details: {
+          ...(isScratch ? clientDetails : existingQuotation?.client_details || {}),
+          gst_type: gstType
+        },
         items: items.map((i: any) => ({ ...i, total: Number(i.total) || 0 })),
         discount_pct: discountPctVal,
         discount_amount: discountAmt,
         subtotal,
-        gst_rate: 18,
+        gst_rate: gstRate,
         gst_amount: gstAmount,
         total_amount: total,
         notes,
         terms: compiledTerms,
         clauses: activeClauses,
         assigned_to: assignedTo || undefined,
+        bank_id: selectedBank || undefined,
         internal_notes: {
           pricing_discussions: [],
           margin_notes: internalNotes.margin_notes,
@@ -681,6 +708,19 @@ export function QuotationBuilderEngine({
 
             {/* Subtotal row */}
             <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">GST Type</span>
+                <select
+                  value={gstType}
+                  onChange={(e) => setGstType(e.target.value as 'NO_GST' | 'IGST' | 'CGST_SGST')}
+                  className="bg-transparent border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
+                >
+                  <option value="CGST_SGST" className="bg-white dark:bg-[#0f172a]">CGST & SGST (18%)</option>
+                  <option value="IGST" className="bg-white dark:bg-[#0f172a]">IGST (18%)</option>
+                  <option value="NO_GST" className="bg-white dark:bg-[#0f172a]">No GST (0%)</option>
+                </select>
+              </div>
+
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Subtotal</span>
                 <span className="nums font-medium text-slate-700 dark:text-slate-200">₹{fmt(subtotal)}</span>
@@ -704,7 +744,9 @@ export function QuotationBuilderEngine({
               )}
 
               <div className="flex justify-between items-center">
-                <span className="text-slate-500">GST (18%)</span>
+                <span className="text-slate-500">
+                  {gstType === 'CGST_SGST' ? 'CGST & SGST (18%)' : gstType === 'IGST' ? 'IGST (18%)' : 'No GST (0%)'}
+                </span>
                 <span className="nums font-medium text-slate-700 dark:text-slate-200">₹{fmt(gstAmount)}</span>
               </div>
             </div>
@@ -750,7 +792,41 @@ export function QuotationBuilderEngine({
 
             <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20">
               <Info className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-amber-700 dark:text-amber-400">GST @ 18% is applied on the discounted amount.</p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                {gstType === 'NO_GST' 
+                  ? 'No GST is applied to this quotation.' 
+                  : `${gstType === 'IGST' ? 'IGST' : 'CGST & SGST'} @ 18% is applied on the discounted amount.`}
+              </p>
+            </div>
+          </div>
+
+          {/* Payment Details */}
+          <div className="glass-card p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-indigo-500" />
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                Payment Details
+              </h4>
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bank Account <span className="text-rose-500">*</span></label>
+              <div className="relative group">
+                <select 
+                  value={selectedBank}
+                  onChange={(e) => setSelectedBank(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all appearance-none text-slate-700 dark:text-slate-200"
+                  required
+                >
+                  <option value="" className="bg-white dark:bg-slate-900">Select Bank Account...</option>
+                  {banks.map((b: any) => (
+                    <option key={b.id} value={b.id} className="bg-white dark:bg-slate-900">
+                      {b.bank_name} - {b.account_number}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 

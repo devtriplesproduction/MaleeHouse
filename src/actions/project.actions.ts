@@ -39,8 +39,8 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
       return { success: false, error: 'Unauthorized. Please log in.' };
     }
 
-    if (profile.role !== 'admin' && profile.role !== 'sales') {
-      return { success: false, error: 'Only Sales or Admin can create projects.' };
+    if (profile.role !== 'admin' && profile.role !== 'sales' && profile.role !== 'accountant') {
+      return { success: false, error: 'Only Sales, Admin, or Accountant can create projects.' };
     }
 
     const supabase: any = await createClient();

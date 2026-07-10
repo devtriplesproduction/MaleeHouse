@@ -1,6 +1,6 @@
 "use client";
 
-import { Calculator, Inbox, FileEdit, CheckCircle2, DollarSign, Receipt, Scroll, BarChart2, ShieldAlert, Target, Building2, Megaphone, AlertCircle } from "lucide-react";
+import { Calculator, Inbox, FileEdit, CheckCircle2, DollarSign, Receipt, Scroll, BarChart2, ShieldAlert, Target, Building2, Megaphone, AlertCircle, FolderKanban, Landmark } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
 import { SidebarLink } from "./BaseSidebar";
@@ -25,9 +25,11 @@ const accountsLinks: SidebarLink[] = [
     ]
   },
   { title: "Project Milestones", href: "/accounts/milestones", icon: Target },
+  { title: "All Projects", href: "/projects", icon: FolderKanban },
   { title: "Billing & Collections", href: "/accounts/billing", icon: DollarSign },
   { title: "Outstanding Payments", href: "/accounts/outstanding", icon: AlertCircle },
   { title: "T&C Templates", href: "/accounts/templates", icon: Scroll },
+  { title: "Bank Details", href: "/accounts/banks", icon: Landmark },
   { title: "Financial Reports", href: "/accounts/reports", icon: BarChart2 },
   { title: "Audit Logs", href: "/accounts/audit", icon: ShieldAlert },
   { title: "Announcements", href: "/announcements", icon: Megaphone },

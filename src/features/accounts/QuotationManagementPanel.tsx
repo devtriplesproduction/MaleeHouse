@@ -194,7 +194,7 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
             const status = STATUS_CONFIG[q.status] || STATUS_CONFIG['Draft'];
             const isDraft = q.status === 'Draft';
             const isSentOrViewed = q.status === 'Sent' || q.status === 'Viewed';
-            const canRevise = isAccountant && ['Revision Requested'].includes(q.status);
+            const canRevise = isAccountant && ['Revision Requested', 'Rejected'].includes(q.status);
             // Version number is unique per quotation card (index from fetched array, sorted newest first = highest version)
             const versionNum = q.current_version || (quotations.length - qIdx);
             const isConfirmingDelete = confirmDelete === q.id;

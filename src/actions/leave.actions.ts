@@ -196,30 +196,22 @@ export async function getLeaveBalanceAction(userId?: string): Promise<{ success:
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const supabase = targetUserId !== profile.id ? createAdminClient() : await createClient()
 
-    // Get user creation date or joining date
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('created_at, joining_date')
-      .eq('id', targetUserId)
-      .single() as { data: { created_at: string; joining_date?: string | null } }
-
-    if (!profileData) return { success: false, error: 'User not found' }
-
-    const startDate = profileData.joining_date ? new Date(profileData.joining_date) : new Date(profileData.created_at)
+    // Leaves are no longer carried forward to the next month
     const now = new Date()
-    
-    // Calculate months difference (current month inclusive)
-    const monthsAccrued = (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth()) + 1
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
 
-    // Get used paid leaves
+    // Get used paid leaves for the current month
     const { data: attendanceData } = await supabase
       .from('attendance_logs')
       .select('id')
       .eq('employee_id', targetUserId)
       .eq('status', 'paid_leave')
+      .gte('date', startOfMonth)
+      .lte('date', endOfMonth)
 
     const usedLeaves = attendanceData ? attendanceData.length : 0
-    const balance = Math.max(0, monthsAccrued - usedLeaves)
+    const balance = Math.max(0, 1 - usedLeaves) // 1 leave per month, no carry forward
 
     return { success: true, data: balance }
   } catch (error: any) {

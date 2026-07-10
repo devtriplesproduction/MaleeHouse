@@ -52,6 +52,8 @@ interface QuotationData {
   created_at: string;
   target_completion?: string;
   clauses?: any[];
+  bank?: any;
+  client_details?: any;
 }
 
 export default function ClientPortalPage() {
@@ -189,7 +191,7 @@ export default function ClientPortalPage() {
 
   const handleDownload = () => {
     if (!quotation) return;
-    generateQuotationPDF(quotation, { name: quotation.project_name, client_name: quotation.client_name }, companySettings);
+    generateQuotationPDF(quotation, { name: quotation.project_name, client_name: quotation.client_name }, companySettings, quotation.bank);
   };
 
   if (loading) {
@@ -383,7 +385,11 @@ export default function ClientPortalPage() {
                        )}
 
                        <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                          <span>GST (18%)</span>
+                          <span>
+                            {quotation.client_details?.gst_type === 'NO_GST' || (quotation.gst_amount ?? 0) === 0 ? 'GST (0%)' :
+                             quotation.client_details?.gst_type === 'IGST' ? 'IGST (18%)' : 
+                             'CGST & SGST (18%)'}
+                          </span>
                           <span>INR {(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</span>
                        </div>
                        <div className="pt-3 border-t border-slate-200 flex justify-between items-end">
@@ -499,13 +505,38 @@ export default function ClientPortalPage() {
                              }
                              return result;
                           })().map((note: any, index: number) => (
-                             <div key={index} className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                <strong className="text-slate-800 uppercase tracking-wide">{note.title}:</strong> {note.content}
-                             </div>
-                          ))}
-                       </div>
-                    </div>
-                 </div>
+                              <div key={index} className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                 <strong className="text-slate-800 uppercase tracking-wide">{note.title}:</strong> {note.content}
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+
+                     {/* Payment Details */}
+                     {quotation.bank && (
+                        <div className="border-t border-slate-100 pt-5 space-y-3">
+                           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Details</h3>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-[11px] leading-relaxed text-slate-600 bg-slate-50/50 p-4 rounded-xl border border-slate-200/60">
+                              <div>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Bank Name</p>
+                                 <p className="font-semibold">{quotation.bank.bank_name}</p>
+                              </div>
+                              <div>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Account Name</p>
+                                 <p className="font-semibold">{quotation.bank.account_name}</p>
+                              </div>
+                              <div>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Account Number</p>
+                                 <p className="font-semibold font-mono tracking-tight">{quotation.bank.account_number}</p>
+                              </div>
+                              <div>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">IFSC Code</p>
+                                 <p className="font-semibold uppercase">{quotation.bank.ifsc_code}</p>
+                              </div>
+                           </div>
+                        </div>
+                     )}
+                  </div>
 
                  {/* Signatures Section */}
                  <div className="border-t border-slate-200 pt-6 mt-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 text-slate-700">

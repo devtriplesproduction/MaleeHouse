@@ -23,7 +23,7 @@ const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
     "cad:upload", "field:report", "qc:verify", "vault:overwrite"
   ],
   sales: ["project:create", "ops:assign_cad"],
-  accountant: ["finance:invoice", "finance:verify_payment", "finance:unfreeze"],
+  accountant: ["project:create", "finance:invoice", "finance:verify_payment", "finance:unfreeze"],
   engineer: ["ops:assign_cad", "ops:schedule_visit", "ops:escalate_revisions", "cad:upload", "field:report"],
   cad: ["cad:upload"],
   field: ["field:report"],

@@ -32,10 +32,20 @@ interface InvoicePreviewModalProps {
 export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefresh }: InvoicePreviewModalProps) {
   const [mounted, setMounted] = React.useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [bank, setBank] = useState<any>(null);
 
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    if (invoice.bank_id) {
+      import('@/actions/bank.actions').then(m => {
+        m.getBankAccountsAction().then(res => {
+          if (res.success && res.data) {
+            setBank(res.data.find((b: any) => b.id === invoice.bank_id) || null);
+          }
+        });
+      });
+    }
+  }, [invoice.bank_id]);
 
   const invoiceLink = typeof window !== 'undefined' ? `${window.location.origin}/invoices/${invoice.id}` : '';
 
@@ -115,7 +125,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
               Print
             </Button>
             <Button 
-              onClick={() => generateInvoicePDF(invoice, invoice.projects, companySettings)}
+              onClick={() => generateInvoicePDF(invoice, invoice.projects, companySettings, bank)}
               variant="ghost" 
               className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all"
             >
@@ -377,24 +387,34 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                   <p className="text-[10px] text-indigo-700 mt-1 font-medium">Please include invoice number in payment reference.</p>
                 </div>
               </div>
-              <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium">
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">Bank</span>
-                    <span>State Bank of India</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">A/C Name</span>
-                    <span>Malee House Services</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">A/C No</span>
-                    <span className="font-mono">09876543212345</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">IFSC</span>
-                    <span className="font-mono">SBIN0001234</span>
-                 </div>
-              </div>
+              {bank ? (
+                <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium">
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">Bank</span>
+                      <span>{bank.bank_name}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">A/C Name</span>
+                      <span>{bank.account_name}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">A/C No</span>
+                      <span className="font-mono">{bank.account_number}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">IFSC</span>
+                      <span className="font-mono">{bank.ifsc_code}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">Branch</span>
+                      <span>{bank.branch_name}</span>
+                   </div>
+                </div>
+              ) : (
+                <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium text-center">
+                   Please select a bank account when creating the invoice to display payment details.
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { autoGenerateMilestoneInvoicesAction } from '@/actions/finance.actions';
 import {
   Calendar,
   Building2,
@@ -53,14 +55,41 @@ const formatCurrency = (amount: number) => {
 };
 
 export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidgetProps) {
+  const router = useRouter();
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+
+  useEffect(() => {
+    const needsGeneration = milestones.some(m => {
+      if (m.status === 'paid') return false;
+      if (m.invoices && m.invoices.length > 0) return false;
+      if (!m.due_date) return false;
+      
+      const date = new Date(m.due_date);
+      const days = differenceInDays(date, new Date());
+      return days <= 5;
+    });
+
+    if (needsGeneration) {
+      autoGenerateMilestoneInvoicesAction().then((res) => {
+        if (res.success && res.data?.generated > 0) {
+          router.refresh();
+        }
+      });
+    }
+  }, [milestones, router]);
 
   // Filter for unpaid milestones and sort by due date ascending
   const upcomingMilestones = useMemo(() => {
     return milestones
       .filter((m) => m.status !== 'paid')
       .sort((a: any, b: any) => {
+        const aHasInvoice = a.invoices && a.invoices.length > 0;
+        const bHasInvoice = b.invoices && b.invoices.length > 0;
+        
+        if (aHasInvoice && !bHasInvoice) return -1;
+        if (!aHasInvoice && bHasInvoice) return 1;
+
         if (a.due_date && !b.due_date) return -1;
         if (!a.due_date && b.due_date) return 1;
         if (a.due_date && b.due_date) {

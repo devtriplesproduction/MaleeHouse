@@ -12,6 +12,7 @@ import { OperationsSidebar } from "@/components/layout/sidebars/OperationsSideba
 import { EmployeeSidebar } from "@/components/layout/sidebars/EmployeeSidebar";
 import { EngineerSidebar } from "@/components/layout/sidebars/EngineerSidebar";
 import { HRSidebar } from "@/components/layout/sidebars/HRSidebar";
+import { BirthdayNotifier } from "@/components/modules/BirthdayNotifier";
 
 import DashboardLoading from "@/app/(modules)/loading";
 
@@ -49,6 +50,7 @@ export function DashboardLayout({
         <RealtimeProvider>
           <AutoLogout>
             <Topbar />
+            <BirthdayNotifier />
             <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-8">
               <div className="max-w-[1600px] w-full h-full">
                 {children}

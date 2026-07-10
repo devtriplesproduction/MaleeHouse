@@ -17,12 +17,14 @@ import {
   ChevronDown,
   LayoutGrid,
   Percent,
-  Receipt
+  Receipt,
+  Landmark
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createQuotationAction } from '@/actions/quotation.actions';
 import { getStaffMembersAction } from '@/actions/auth.actions';
+import { getBankAccountsAction } from '@/actions/bank.actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,11 +48,21 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
   });
   const [assignedTo, setAssignedTo] = useState<string>('');
   const [staff, setStaff] = useState<any[]>([]);
+  const [gstType, setGstType] = useState<'NO_GST' | 'IGST' | 'CGST_SGST'>('CGST_SGST');
+  const [banks, setBanks] = useState<any[]>([]);
+  const [selectedBank, setSelectedBank] = useState<string>('');
 
   useEffect(() => {
     getStaffMembersAction().then(res => {
       if (res) {
         setStaff(res.filter((s: any) => s.role === 'accountant' || s.role === 'admin'));
+      }
+    });
+    getBankAccountsAction().then(res => {
+      if (res.success && res.data) {
+        setBanks(res.data);
+        const defaultBank = (res.data as any[]).find((b: any) => b.is_default);
+        if (defaultBank) setSelectedBank(defaultBank.id);
       }
     });
   }, []);
@@ -77,7 +89,7 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
   };
 
   const subtotal = items.reduce((sum: any, item: any) => sum + item.total, 0);
-  const gstRate = 18;
+  const gstRate = gstType === 'NO_GST' ? 0 : 18;
   const gstAmount = (subtotal * gstRate) / 100;
   const totalAmount = subtotal + gstAmount;
 
@@ -100,6 +112,8 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
         total_amount: totalAmount,
         notes,
         assigned_to: assignedTo || undefined,
+        bank_id: selectedBank || undefined,
+        client_details: { gst_type: gstType },
         internal_notes: {
           pricing_discussions: [internalNotes.pricing_discussions],
           margin_notes: internalNotes.margin_notes,
@@ -260,6 +274,18 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
               </div>
 
               <div className="space-y-4">
+                <div className="flex justify-between items-center px-2 mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">GST Type</span>
+                  <select
+                    value={gstType}
+                    onChange={(e) => setGstType(e.target.value as 'NO_GST' | 'IGST' | 'CGST_SGST')}
+                    className="bg-transparent border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1 text-xs font-bold text-slate-900 dark:text-white outline-none cursor-pointer"
+                  >
+                    <option value="CGST_SGST" className="bg-white dark:bg-slate-900">CGST & SGST (18%)</option>
+                    <option value="IGST" className="bg-white dark:bg-slate-900">IGST (18%)</option>
+                    <option value="NO_GST" className="bg-white dark:bg-slate-900">No GST (0%)</option>
+                  </select>
+                </div>
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Subtotal</span>
                   <span className="nums text-sm font-bold text-slate-900 dark:text-white">INR {subtotal.toLocaleString('en-IN')}</span>
@@ -283,8 +309,36 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
               <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3">
                 <Info className="w-5 h-5 text-amber-500 shrink-0" />
                 <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold leading-relaxed">
-                  Tax logic is locked to GST 18% per regional regulatory protocol.
+                  Tax logic is calculated dynamically based on the selected GST type protocol.
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Payment Details ── */}
+          <div className="glass-card p-10 border-indigo-500/20 bg-indigo-500/[0.02] rounded-[2.5rem] space-y-8 shadow-xl">
+            <h4 className="text-xs font-black uppercase tracking-widest text-indigo-500 flex items-center gap-2">
+              <Landmark className="w-5 h-5" />
+              Payment Details
+            </h4>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Bank Account *</label>
+              <div className="relative group">
+                <select 
+                  value={selectedBank}
+                  onChange={(e) => setSelectedBank(e.target.value)}
+                  className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-xs font-bold focus:ring-1 focus:ring-indigo-500 outline-none transition-all appearance-none text-slate-900 dark:text-white"
+                  required
+                >
+                  <option value="" className="bg-white dark:bg-slate-900">Select Bank Account...</option>
+                  {banks.map((b: any) => (
+                    <option key={b.id} value={b.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                      {b.bank_name} - {b.account_number}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
             </div>
           </div>

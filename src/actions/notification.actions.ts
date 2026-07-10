@@ -406,3 +406,58 @@ export async function notifyNewHolidayAction(holidayName: string, date: string, 
     return { success: false, error: error.message }
   }
 }
+
+export async function notifyUpcomingHolidaysAction(cronSecret?: string) {
+  try {
+    const expectedSecret = process.env.CRON_SECRET
+    if (expectedSecret && cronSecret !== expectedSecret) {
+      return { success: false, error: 'Unauthorized cron request' }
+    }
+
+    const supabase: any = createAdminClient()
+
+    // Calculate tomorrow's date in YYYY-MM-DD
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowStr = tomorrow.toISOString().split('T')[0]
+
+    // Fetch holidays for tomorrow
+    const { data: holidays } = await supabase
+      .from('holidays')
+      .select('*')
+      .eq('date', tomorrowStr)
+
+    if (!holidays || holidays.length === 0) {
+      return { success: true, message: 'No holidays tomorrow' }
+    }
+
+    // Fetch active users
+    const { data: users } = await supabase.from('profiles').select('id').eq('is_active', true)
+    
+    if (!users || users.length === 0) return { success: true, message: 'No active users to notify' }
+
+    let notificationsSent = 0
+
+    for (const holiday of holidays) {
+      const typeLabel = holiday.is_optional ? 'Optional Holiday' : 'Public Holiday'
+      
+      await Promise.all(
+        users.map((u: any) =>
+          insertNotification({
+            userId: u.id,
+            title: 'Reminder: Upcoming Holiday',
+            message: `Reminder: Tomorrow is ${holiday.name} (${typeLabel}).`,
+            type: 'system',
+          })
+        )
+      )
+      notificationsSent += users.length
+    }
+
+    return { success: true, message: `Sent ${notificationsSent} notifications for ${holidays.length} holiday(s)` }
+  } catch (error: any) {
+    console.error('[notification] notifyUpcomingHolidays error:', error.message)
+    return { success: false, error: error.message }
+  }
+}
+

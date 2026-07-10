@@ -219,7 +219,7 @@ export const generateProjectReport = (data: ProjectReportData) => {
   printWindow.document.close();
 };
 
-export const generateQuotationPDF = (quotation: any, project: any, companySettings: any) => {
+export const generateQuotationPDF = (quotation: any, project: any, companySettings: any, bankDetails?: any) => {
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
     toast({
@@ -552,10 +552,28 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
                     <td class="totals-val" style="color: #ef4444;">- INR ${discountAmount.toLocaleString('en-IN')}</td>
                   </tr>
                 ` : ''}
-                <tr>
-                  <td class="totals-label">GST (18%)</td>
-                  <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
-                </tr>
+                ${(!quotation.client_details?.gst_type && (quotation.gst_amount ?? 0) > 0) ? `
+                  <tr>
+                    <td class="totals-label">GST (18%)</td>
+                    <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
+                  </tr>
+                ` : quotation.client_details?.gst_type === 'NO_GST' || (quotation.gst_amount ?? 0) === 0 ? '' : 
+                  quotation.client_details?.gst_type === 'IGST' ? `
+                  <tr>
+                    <td class="totals-label">IGST (18%)</td>
+                    <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
+                  </tr>
+                  ` : `
+                  <tr>
+                    <td class="totals-label">CGST (9%)</td>
+                    <td class="totals-val">INR ${((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</td>
+                  </tr>
+                  <tr>
+                    <td class="totals-label">SGST (9%)</td>
+                    <td class="totals-val">INR ${((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</td>
+                  </tr>
+                  `
+                }
                 <tr class="grand-total-row">
                   <td class="totals-label grand-total-label">Grand Total</td>
                   <td class="totals-val grand-total-val">INR ${(quotation.total_amount ?? 0).toLocaleString('en-IN')}</td>
@@ -623,6 +641,30 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
             </div>
             
           </div>
+
+          ${bankDetails ? `
+          <div style="border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">
+            <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Payment Details</h3>
+            <table style="width: 100%; font-size: 9px; color: #475569;">
+              <tr>
+                <td style="width: 120px; font-weight: 600;">Bank Name:</td>
+                <td>${bankDetails.bank_name}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">Account Name:</td>
+                <td>${bankDetails.account_name}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">Account Number:</td>
+                <td style="font-family: monospace; font-weight: 600;">${bankDetails.account_number}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">IFSC Code:</td>
+                <td style="font-family: monospace; font-weight: 600;">${bankDetails.ifsc_code}</td>
+              </tr>
+            </table>
+          </div>
+          ` : ''}
           
           <!-- Prepared By & Signatures Section (Locked at bottom of Page 2) -->
           <div style="margin-top: auto; border-top: 1px solid #e2e8f0; padding-top: 18px;">
@@ -688,7 +730,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
   printWindow.document.close();
 };
 
-export const generateInvoicePDF = (invoice: any, project: any, companySettings: any) => {
+export const generateInvoicePDF = (invoice: any, project: any, companySettings: any, bankDetails?: any) => {
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
     return;
@@ -812,6 +854,33 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
                 <span style="font-family: monospace;">INR ${remainingAmount.toLocaleString('en-IN')}</span>
               </div>
             </div>
+
+            </div>
+
+            ${bankDetails ? `
+            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;">
+              <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 10px;">Payment Details</div>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 600; color: #64748b; width: 120px;">Bank Name:</td>
+                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 700; color: #0f172a;">${bankDetails.bank_name}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 600; color: #64748b;">Account Name:</td>
+                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 700; color: #0f172a;">${bankDetails.account_name}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 600; color: #64748b;">Account Number:</td>
+                  <td style="padding: 4px 0; border: none; font-size: 12px; font-weight: 700; color: #0f172a; font-family: monospace;">${bankDetails.account_number}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 600; color: #64748b;">IFSC Code:</td>
+                  <td style="padding: 4px 0; border: none; font-size: 12px; font-weight: 700; color: #0f172a; font-family: monospace;">${bankDetails.ifsc_code}</td>
+                </tr>
+              </table>
+              <div style="font-size: 9px; color: #94a3b8; margin-top: 8px;">Please include invoice number in payment reference.</div>
+            </div>
+            ` : ''}
 
             ${(project?.budget > 0) ? `
             <div style="margin-left: auto; width: 300px; margin-top: 20px;">

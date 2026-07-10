@@ -2,17 +2,17 @@
 
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  User, 
-  Phone, 
-  MapPin, 
-  ExternalLink, 
-  Search, 
-  X, 
-  Calendar, 
-  FolderOpen, 
-  CheckCircle2, 
-  Clock, 
+import {
+  User,
+  Phone,
+  MapPin,
+  ExternalLink,
+  Search,
+  X,
+  Calendar,
+  FolderOpen,
+  CheckCircle2,
+  Clock,
   Building,
   ChevronRight,
   Grid,
@@ -54,7 +54,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'none'>('all');
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'projects-desc' | 'recent'>('name-asc');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState({ client_name: '', client_contact: '', client_address: '' });
@@ -151,7 +151,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
     <div className="space-y-6">
       {/* ── Minimalist Filter Control Deck ── */}
       <div className="glass-card p-3 flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-slate-200/60 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
-        
+
         {/* Left Side: Search & Filters */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 xl:gap-4 flex-1">
           {/* Search Field */}
@@ -159,8 +159,8 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
             <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
               <Search className="w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             </div>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search clients by name or contact..."
               className="w-full bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm font-medium focus:outline-none focus:border-indigo-550 transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
               value={search}
@@ -170,43 +170,39 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
 
           {/* Minimal Filters Chips */}
           <div className="flex flex-wrap items-center gap-2">
-            <button 
+            <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                filter === 'all' 
-                  ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${filter === 'all'
+                  ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
-              }`}
+                }`}
             >
               All
             </button>
-            <button 
+            <button
               onClick={() => setFilter('active')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                filter === 'active' 
-                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400' 
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${filter === 'active'
+                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
-              }`}
+                }`}
             >
               Active
             </button>
-            <button 
+            <button
               onClick={() => setFilter('completed')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                filter === 'completed' 
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${filter === 'completed'
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
-              }`}
+                }`}
             >
               Completed
             </button>
-            <button 
+            <button
               onClick={() => setFilter('none')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                filter === 'none' 
-                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400' 
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${filter === 'none'
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
-              }`}
+                }`}
             >
               No Projects
             </button>
@@ -244,22 +240,20 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
           <div className="flex bg-slate-100 dark:bg-white/5 p-0.5 rounded-lg shrink-0">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === 'grid' 
-                  ? 'bg-white dark:bg-white/10 text-indigo-500 shadow-sm' 
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
+                  ? 'bg-white dark:bg-white/10 text-indigo-500 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
-              }`}
+                }`}
               title="Grid"
             >
               <Grid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === 'list' 
-                  ? 'bg-white dark:bg-white/10 text-indigo-500 shadow-sm' 
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
+                  ? 'bg-white dark:bg-white/10 text-indigo-500 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
-              }`}
+                }`}
               title="List"
             >
               <List className="w-4 h-4" />
@@ -277,8 +271,8 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
             const completed = projects.filter((p: any) => p.status === 'completed' || p.status === 'archived');
 
             return (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 onClick={() => setSelectedClient(client)}
                 className="group glass-card p-6 border-white/10 hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/5 transition-all duration-305 cursor-pointer flex flex-col justify-between"
               >
@@ -309,7 +303,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                       </div>
                       <span className="line-clamp-2">{client.client_address}</span>
                     </div>
-                    
+
                     <div className="flex items-start gap-3 text-[11px] text-slate-400 font-semibold pt-2">
                       <div className="flex items-center gap-1.5 bg-indigo-500/5 border border-indigo-500/10 px-2 py-0.5 rounded-md">
                         <Clock className="w-3 h-3 text-indigo-500" />
@@ -326,7 +320,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between">
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedClient(client);
@@ -365,8 +359,8 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                   const completed = projects.filter((p: any) => p.status === 'completed' || p.status === 'archived');
 
                   return (
-                    <tr 
-                      key={i} 
+                    <tr
+                      key={i}
                       onClick={() => setSelectedClient(client)}
                       className="group hover:bg-slate-50/40 dark:hover:bg-white/[0.01] transition-all cursor-pointer"
                     >
@@ -442,13 +436,13 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
           <h4 className="text-sm font-bold text-slate-800 dark:text-slate-350">No clients found matching your search.</h4>
         </div>
       )}
-       {/* ── Custom Theme UI Details Modal ── */}
+      {/* ── Custom Theme UI Details Modal ── */}
       {selectedClient && typeof document !== 'undefined' && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[100] bg-slate-100/95 dark:bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={handleCloseModal}
         >
-          <div 
+          <div
             className="w-full max-w-3xl bg-white dark:bg-slate-950 rounded-[2rem] shadow-2xl border border-slate-200/60 dark:border-white/[0.08] flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 slide-in-from-bottom-6 duration-300 custom-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
@@ -480,14 +474,14 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
               <div className="flex items-center gap-2">
                 {isEditing ? (
                   <>
-                    <button 
+                    <button
                       onClick={() => setIsEditing(false)}
                       className="px-4 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10 text-xs font-bold transition-all flex items-center gap-1.5"
                       disabled={isSaving}
                     >
                       Cancel
                     </button>
-                    <button 
+                    <button
                       onClick={handleSaveClick}
                       className="px-4 h-9 rounded-xl bg-emerald-500 hover:bg-indigo-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
                       disabled={isSaving}
@@ -501,7 +495,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                     </button>
                   </>
                 ) : (
-                  <button 
+                  <button
                     onClick={handleEditClick}
                     className="px-4 h-9 rounded-xl bg-indigo-50/50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 text-xs font-bold transition-all flex items-center gap-1.5"
                   >
@@ -509,7 +503,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                     Edit Profile
                   </button>
                 )}
-                <button 
+                <button
                   onClick={handleCloseModal}
                   className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-all hover:bg-slate-200 dark:hover:bg-white/10"
                 >
@@ -575,10 +569,10 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                 <div className="space-y-1.5">
                   <p className="text-sm font-semibold text-slate-700 dark:text-slate-350 flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
-                    {new Date(selectedClient.created_at).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
+                    {new Date(selectedClient.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
                     })}
                   </p>
                   <div>
@@ -604,17 +598,17 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
 
               {/* 2-Column Split Portfolio Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                
+
                 {/* Left Column: Ongoing & Active Projects */}
                 <div className="space-y-3">
                   <h5 className="text-[10px] uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-indigo-555" />
                     Ongoing & Active ({selectedClient.projects?.filter((p: any) => p.status !== 'completed' && p.status !== 'archived').length || 0})
                   </h5>
-                  
+
                   <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
                     {(selectedClient.projects?.filter((p: any) => p.status !== 'completed' && p.status !== 'archived') || []).map((project) => (
-                      <Link 
+                      <Link
                         key={project.id}
                         href={`/projects/${project.id}`}
                         className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100/85 dark:hover:bg-white/[0.05] border border-slate-100 dark:border-white/[0.04] hover:border-indigo-500/20 dark:hover:border-indigo-500/20 transition-all group"
@@ -653,10 +647,10 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                     Completed & Past ({selectedClient.projects?.filter((p: any) => p.status === 'completed' || p.status === 'archived').length || 0})
                   </h5>
-                  
+
                   <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
                     {(selectedClient.projects?.filter((p: any) => p.status === 'completed' || p.status === 'archived') || []).map((project) => (
-                      <Link 
+                      <Link
                         key={project.id}
                         href={`/projects/${project.id}`}
                         className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/30 dark:bg-white/[0.01] hover:bg-slate-100/55 dark:hover:bg-white/[0.03] border border-slate-100 dark:border-white/[0.03] hover:border-emerald-500/20 dark:hover:border-emerald-500/20 transition-all group"
@@ -698,7 +692,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                 <UserCheck className="w-3.5 h-3.5 text-indigo-500" />
                 Malee House CRM • Enterprise Database
               </span>
-              <button 
+              <button
                 onClick={handleCloseModal}
                 className="px-5 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-bold text-slate-600 dark:text-slate-350 transition-colors"
               >

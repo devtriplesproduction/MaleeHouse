@@ -21,28 +21,28 @@ export function LeaveMetrics({ leaves, profile, leaveBalance = 0 }: LeaveMetrics
     }
   };
 
-  // Default join date: Jan 15, 2024
-  const joinDate = new Date(profile?.created_at || '2024-01-15T09:00:00Z');
   const now = new Date();
+  // Filter approved leaves for the current month
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
 
-  // Calculate months passed since joining (inclusive of current month)
-  const yearsDiff = now.getFullYear() - joinDate.getFullYear();
-  const monthsDiff = now.getMonth() - joinDate.getMonth();
-  const totalMonths = Math.max(1, yearsDiff * 12 + monthsDiff + 1);
-
-  // 1 paid leave per month
-  const earnedPaidLeaves = totalMonths * 1;
+  // 1 paid leave per month, no carry forward
+  const earnedPaidLeaves = 1;
 
   // Filter approved leaves
   const approvedLeaves = leaves.filter((l: any) => l.status?.toLowerCase() === 'approved');
 
-  // Calculate total days applied for approved leaves
-  const totalApprovedDays = approvedLeaves
+  const approvedLeavesThisMonth = approvedLeaves.filter((l: any) => {
+    return l.start_date >= currentMonthStart.split('T')[0] && l.start_date <= currentMonthEnd.split('T')[0];
+  });
+
+  // Calculate total days applied for approved leaves this month
+  const totalApprovedDaysThisMonth = approvedLeavesThisMonth
     .reduce((sum: any, l: any) => sum + getDaysCount(l.start_date, l.end_date), 0);
 
   // The used paid days is capped by what was available originally
-  const approvedPaidDays = Math.min(earnedPaidLeaves, totalApprovedDays);
-  const approvedUnpaidDays = Math.max(0, totalApprovedDays - earnedPaidLeaves);
+  const approvedPaidDays = Math.min(earnedPaidLeaves, totalApprovedDaysThisMonth);
+  const approvedUnpaidDays = Math.max(0, totalApprovedDaysThisMonth - earnedPaidLeaves);
 
   // Remaining Balance (from server)
   const remainingPaidBalance = leaveBalance;
