@@ -28,8 +28,12 @@ export const onboardSchema = z.object({
   status: z.enum(["active", "suspended", "onboarding_pending", "resigned", "archived"]).default("onboarding_pending"),
   reporting_manager: z.string().optional(),
   department_head: z.boolean().default(false),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirm_password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^a-zA-Z0-9]/, "Password must contain at least one special character"),
+  confirm_password: z.string().min(8, "Password must be at least 8 characters"),
 }).refine((data) => data.password === data.confirm_password, {
   message: "Passwords do not match",
   path: ["confirm_password"],

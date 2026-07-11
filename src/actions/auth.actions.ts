@@ -10,7 +10,16 @@ import { redirect } from 'next/navigation'
 export async function loginAction(email: string, password: string) {
   const supabase: any = await createClient()
 
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+  console.log("LOGIN ACTION ATTEMPT:", { email: email.trim(), password: password.trim() });
+  console.log("SUPABASE URL IN NEXTJS:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log("SUPABASE ANON KEY IN NEXTJS:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20) + "...");
+
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
+    email: email.trim(), 
+    password: password.trim() 
+  })
+
+  console.log("LOGIN RESULT:", { authData: !!authData, error: authError });
 
   if (authError) return { success: false, error: authError.message }
 
