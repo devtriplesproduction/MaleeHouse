@@ -36,7 +36,7 @@ async function syncUsers() {
     if (existingUser) {
         // Update password if they exist
         const { error: updateError } = await supabase.auth.admin.updateUserById(existingUser.id, {
-            password: 'password123',
+            password: 'Password@123!',
             email_confirm: true,
         });
         if (updateError) {
@@ -48,7 +48,7 @@ async function syncUsers() {
         // Create user if they don't exist
         const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
             email: user.email,
-            password: 'password123',
+            password: 'Password@123!',
             email_confirm: true,
             user_metadata: {
                 role: user.role,
@@ -78,7 +78,7 @@ async function syncUsers() {
         }
     }
   }
-  console.log('\n🎉 Sync complete! All users now have password: password123');
+  console.log('\n🎉 Sync complete! All users now have password: Password@123!');
 }
 
 syncUsers();
