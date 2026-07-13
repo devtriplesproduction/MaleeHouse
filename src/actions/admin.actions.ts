@@ -579,7 +579,7 @@ export async function addSalaryIncrementAction(employeeId: string, newSalary: nu
 
 export async function getLastSalaryIncrementAction(employeeId: string) {
   try {
-    const supabaseAdmin = getSupabaseAdmin()
+    const supabaseAdmin: any = createAdminClient()
     
     // Check permission
     const { data: { user } } = await supabaseAdmin.auth.getUser()
