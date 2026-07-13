@@ -49,6 +49,7 @@ export interface MilestonePayment {
     client_name: string;
     status: string;
     is_frozen: boolean;
+    dispatch_override_requested: boolean;
   } | null;
 }
 
@@ -457,7 +458,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                         ) : (
                           <>
                             {!isAdmin && (!m.projects?.status || !['ops_active', 'completed', 'archived', 'on_hold', 'cancelled'].includes(m.projects.status)) && (
-                              overrideRequests[m.id] ? (
+                              (m.projects?.dispatch_override_requested || overrideRequests[m.id]) ? (
                                 <button
                                   type="button"
                                   disabled

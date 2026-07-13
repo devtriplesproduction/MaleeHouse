@@ -3,14 +3,16 @@
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { updateCompanySettingsAction, CompanySettings } from "@/actions/settings.actions";
-import { Building2, MapPin, Phone, Hash, Save } from "lucide-react";
+import { Building2, MapPin, Phone, Hash, Save, CreditCard, Landmark } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   initialSettings: CompanySettings;
   canEdit?: boolean;
+  activeTab?: 'details' | 'bank';
 }
 
-export function CompanySettingsForm({ initialSettings, canEdit = true }: Props) {
+export function CompanySettingsForm({ initialSettings, canEdit = true, activeTab = 'bank' }: Props) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<CompanySettings>(initialSettings);
@@ -42,7 +44,7 @@ export function CompanySettingsForm({ initialSettings, canEdit = true }: Props) 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-      <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+      <div className="flex items-center gap-3 pb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
           <Building2 className="h-5 w-5" />
         </div>
@@ -52,100 +54,188 @@ export function CompanySettingsForm({ initialSettings, canEdit = true }: Props) 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <Building2 className="h-3.5 w-3.5" /> Company Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            required
-            disabled={!canEdit}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <Hash className="h-3.5 w-3.5" /> GSTIN
-          </label>
-          <input
-            type="text"
-            name="gstin"
-            value={formData.gstin}
-            onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            required
-            disabled={!canEdit}
-          />
-        </div>
+      {activeTab === 'details' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <Building2 className="h-3.5 w-3.5" /> Company Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              required
+              disabled={!canEdit}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <Hash className="h-3.5 w-3.5" /> GSTIN
+            </label>
+            <input
+              type="text"
+              name="gstin"
+              value={formData.gstin || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              required
+              disabled={!canEdit}
+            />
+          </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5" /> Address Line
-          </label>
-          <input
-            type="text"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            required
-            disabled={!canEdit}
-          />
-        </div>
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5" /> Address Line
+            </label>
+            <input
+              type="text"
+              name="address"
+              value={formData.address || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              required
+              disabled={!canEdit}
+            />
+          </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5" /> City, State & ZIP
-          </label>
-          <input
-            type="text"
-            name="cityStateZip"
-            value={formData.cityStateZip}
-            onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            required
-            disabled={!canEdit}
-          />
-        </div>
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5" /> City, State & ZIP
+            </label>
+            <input
+              type="text"
+              name="cityStateZip"
+              value={formData.cityStateZip || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              required
+              disabled={!canEdit}
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <Phone className="h-3.5 w-3.5" /> Telephone
-          </label>
-          <input
-            type="text"
-            name="telephone"
-            value={formData.telephone}
-            onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            required
-            disabled={!canEdit}
-          />
-        </div>
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5" /> Telephone
+            </label>
+            <input
+              type="text"
+              name="telephone"
+              value={formData.telephone || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              required
+              disabled={!canEdit}
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <Phone className="h-3.5 w-3.5" /> Mobile
-          </label>
-          <input
-            type="text"
-            name="mobile"
-            value={formData.mobile}
-            onChange={handleChange}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            required
-            disabled={!canEdit}
-          />
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5" /> Mobile
+            </label>
+            <input
+              type="text"
+              name="mobile"
+              value={formData.mobile || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              required
+              disabled={!canEdit}
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <Landmark className="h-3.5 w-3.5" /> Bank Name
+            </label>
+            <input
+              type="text"
+              name="bankName"
+              value={formData.bankName || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!canEdit}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <CreditCard className="h-3.5 w-3.5" /> Account Name
+            </label>
+            <input
+              type="text"
+              name="accountName"
+              value={formData.accountName || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!canEdit}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <Hash className="h-3.5 w-3.5" /> Account Number
+            </label>
+            <input
+              type="text"
+              name="accountNumber"
+              value={formData.accountNumber || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!canEdit}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <Hash className="h-3.5 w-3.5" /> IFSC Code
+            </label>
+            <input
+              type="text"
+              name="ifscCode"
+              value={formData.ifscCode || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!canEdit}
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5" /> Branch Name
+            </label>
+            <input
+              type="text"
+              name="branchName"
+              value={formData.branchName || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!canEdit}
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <CreditCard className="h-3.5 w-3.5" /> UPI ID
+            </label>
+            <input
+              type="text"
+              name="upiId"
+              value={formData.upiId || ""}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!canEdit}
+            />
+          </div>
+        </div>
+      )}
 
       {canEdit && (
-        <div className="pt-4 border-t border-slate-100 flex justify-end">
+        <div className="pt-4 border-t border-slate-100 flex justify-end mt-6">
           <button
             type="submit"
             disabled={isPending}

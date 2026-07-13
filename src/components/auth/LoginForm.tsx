@@ -32,12 +32,10 @@ export function LoginForm() {
             description: result.error || "Please verify your credentials and try again.",
             variant: "error"
           });
+        } else if (result && result.success && result.redirectTo) {
+          router.push(result.redirectTo);
         }
       } catch (err: any) {
-        // If it's a redirect error (NEXT_REDIRECT), we MUST throw it so Next.js can handle it
-        if (isRedirectError(err)) {
-          throw err;
-        }
         setError("An unexpected error occurred.");
         console.error(err);
       }

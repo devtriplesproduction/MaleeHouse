@@ -97,6 +97,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentPayrollPage, setCurrentPayrollPage] = useState(1);
   const PAGE_SIZE = 10;
 
   // Modals state
@@ -390,6 +391,16 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
       item.designation?.toLowerCase().includes(query)
     );
   }, [payrollData, payrollSearch]);
+
+  useEffect(() => {
+    setCurrentPayrollPage(1);
+  }, [payrollSearch, payrollMonth, payrollYear]);
+
+  const totalPayrollPages = Math.max(1, Math.ceil(filteredPayrollData.length / PAGE_SIZE));
+  const safeCurrentPayrollPage = Math.min(currentPayrollPage, totalPayrollPages);
+  const paginatedPayrollData = useMemo(() => {
+    return filteredPayrollData.slice((safeCurrentPayrollPage - 1) * PAGE_SIZE, safeCurrentPayrollPage * PAGE_SIZE);
+  }, [filteredPayrollData, safeCurrentPayrollPage]);
 
   const zeroAbsenceCount = useMemo(() => {
     return payrollData.filter((item: any) => (item.days_absent || 0) === 0).length;
@@ -1038,7 +1049,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                       </td>
                     </tr>
                   ) : (
-                    filteredPayrollData.map((item) => {
+                    paginatedPayrollData.map((item) => {
                       const totalDays = 26;
                       const earnedDays = item.days_present + item.days_field + item.days_paid_leave;
                       const deductions = item.base_salary - item.net_payable;
@@ -1132,17 +1143,58 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
             {/* Footer */}
             {!isPayrollLoading && filteredPayrollData.length > 0 && (
-              <div className="px-6 py-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.01]">
+              <div className="px-6 py-3 border-t border-slate-100 dark:border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-white/[0.01]">
                 <p className="text-xs text-slate-400 font-medium">
                   Showing{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {(safeCurrentPayrollPage - 1) * PAGE_SIZE + 1}
+                  </span>{' '}
+                  –{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {Math.min(safeCurrentPayrollPage * PAGE_SIZE, filteredPayrollData.length)}
+                  </span>{' '}
+                  of{' '}
                   <span className="font-bold text-slate-600 dark:text-slate-300">
                     {filteredPayrollData.length}
                   </span>{' '}
                   records
                 </p>
-                <p className="text-xs text-slate-400">
-                  Select month cycle to review historic records
-                </p>
+                {totalPayrollPages > 1 ? (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPayrollPage((p) => Math.max(1, p - 1))}
+                      disabled={safeCurrentPayrollPage === 1}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {Array.from({ length: totalPayrollPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPayrollPage(page)}
+                        className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${page === safeCurrentPayrollPage
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
+                            : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
+                          }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => setCurrentPayrollPage((p) => Math.min(totalPayrollPages, p + 1))}
+                      disabled={safeCurrentPayrollPage === totalPayrollPages}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400">
+                    Select month cycle to review historic records
+                  </p>
+                )}
               </div>
             )}
           </div>

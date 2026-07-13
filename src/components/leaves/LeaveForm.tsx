@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { applyLeaveAction } from '@/actions/leave.actions';
+import { applyLeaveAction, getLeaveBalanceAction, getMyLeavesAction } from '@/actions/leave.actions';
 import { getHolidaysAction } from '@/actions/holiday.actions';
 import { Calendar, FileText, Send, AlertCircle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -21,8 +21,9 @@ export function LeaveForm() {
     start_date: '',
     end_date: '',
     reason: '',
-    leave_type: 'casual' as 'casual' | 'sick' | 'earned' | 'maternity' | 'paternity' | 'other'
+    leave_type: 'casual' as 'casual' | 'sick' | 'earned' | 'maternity' | 'paternity' | 'other' | 'unpaid'
   });
+  const [leaveBalance, setLeaveBalance] = useState<number | null>(null);
 
   // Fetch holidays on mount
   // import('react').then(React => {
@@ -39,6 +40,33 @@ export function LeaveForm() {
     getHolidaysAction().then((res) => {
       if (res.success && res.data) {
         setHolidays(res.data);
+      }
+    });
+    Promise.all([getLeaveBalanceAction(), getMyLeavesAction()]).then(([balanceRes, leavesRes]) => {
+      if (balanceRes.success && balanceRes.data !== undefined) {
+        let effectiveBalance = balanceRes.data;
+        
+        // If they already have a pending or approved leave this month, effectively their balance for new applications is 0
+        if (leavesRes.success && leavesRes.data) {
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
+          
+          const hasAppliedThisMonth = leavesRes.data.some((l: any) => {
+            if (l.status === 'rejected') return false;
+            const lDate = new Date(l.start_date);
+            return lDate.getMonth() === currentMonth && lDate.getFullYear() === currentYear;
+          });
+          
+          if (hasAppliedThisMonth) {
+            effectiveBalance = 0;
+          }
+        }
+
+        setLeaveBalance(effectiveBalance);
+        if (effectiveBalance === 0) {
+          setFormData(prev => ({ ...prev, leave_type: 'unpaid' }));
+        }
       }
     });
   }, []);
@@ -141,6 +169,11 @@ export function LeaveForm() {
               Apply For <span className="text-indigo-500">Leave</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Submit a new leave request for verification.</p>
+            {leaveBalance !== null && (
+              <p className="text-xs mt-1 font-bold text-indigo-600 dark:text-indigo-400">
+                Available Paid Leaves this month: {leaveBalance}
+              </p>
+            )}
           </div>
         </div>
 
@@ -183,9 +216,15 @@ export function LeaveForm() {
               onValueChange={(val) => setFormData({ ...formData, leave_type: val as any })}
               placeholder="Select Category"
             >
-              <SelectItem value="casual">Casual Leave (Paid)</SelectItem>
-              <SelectItem value="sick">Sick/Medical Leave (Paid)</SelectItem>
-              <SelectItem value="earned">Vacation / Annual Leave (Paid)</SelectItem>
+              {leaveBalance === 0 ? (
+                <SelectItem value="unpaid">Unpaid Leave</SelectItem>
+              ) : (
+                <>
+                  <SelectItem value="casual">Casual Leave (Paid)</SelectItem>
+                  <SelectItem value="sick">Sick/Medical Leave (Paid)</SelectItem>
+                  <SelectItem value="earned">Vacation / Annual Leave (Paid)</SelectItem>
+                </>
+              )}
             </Select>
           </div>
 

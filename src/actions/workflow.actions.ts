@@ -24,6 +24,17 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
   try {
     const supabase: any = await createClient();
     
+    // Update the project to store the requested state
+    const { error } = await supabase
+      .from('projects')
+      .update({ dispatch_override_requested: true })
+      .eq('id', projectId);
+
+    if (error) {
+      console.error("Error setting override state:", error);
+      return { success: false, error: "Failed to save override request status." };
+    }
+
     // Optional: Could store this in metadata or a custom column. For now, we just rely on sending the notification.
     await notifyAdminDispatchOverrideRequestAction(projectId);
     
@@ -89,6 +100,11 @@ export async function approveDispatchOverrideAction(projectId: string) {
       .eq('related_project_id', projectId)
       .eq('title', 'Dispatch Override Requested');
       
+    // 3. Reset the override requested state
+    await supabase.from('projects')
+      .update({ dispatch_override_requested: false })
+      .eq('id', projectId);
+      
     revalidatePath('/admin');
     return { success: true };
   } catch (err: any) {
@@ -104,6 +120,11 @@ export async function rejectDispatchOverrideAction(projectId: string) {
       .update({ is_read: true })
       .eq('related_project_id', projectId)
       .eq('title', 'Dispatch Override Requested');
+      
+    // 2. Reset the override requested state
+    await supabase.from('projects')
+      .update({ dispatch_override_requested: false })
+      .eq('id', projectId);
       
     revalidatePath('/admin');
     return { success: true };

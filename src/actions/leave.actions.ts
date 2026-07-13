@@ -9,7 +9,7 @@ export async function applyLeaveAction(payload: {
   start_date: string
   end_date: string
   reason: string
-  leave_type: 'sick' | 'casual' | 'earned' | 'maternity' | 'paternity' | 'other'
+  leave_type: 'sick' | 'casual' | 'earned' | 'maternity' | 'paternity' | 'other' | 'unpaid'
 }): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction()
@@ -53,6 +53,10 @@ export async function applyLeaveAction(payload: {
 
     if (existingLeavesError) {
       return { success: false, error: existingLeavesError.message }
+    }
+
+    if (existingLeaves && existingLeaves.length > 0 && payload.leave_type !== 'unpaid') {
+      return { success: false, error: 'You have already applied for a paid leave this month. Only unpaid leaves are allowed for subsequent applications.' }
     }
 
     const { data, error } = await supabase

@@ -17,7 +17,9 @@ import {
   updateEmployeeProfileAction,
   offboardEmployeeAction,
   deleteEmployeeAction,
-  overrideUserCredentialsAction
+  overrideUserCredentialsAction,
+  addSalaryIncrementAction,
+  getLastSalaryIncrementAction
 } from "@/actions/admin.actions";
 import { DEPARTMENTS, getDesignationsForDepartment, getSystemRoleForDesignation } from "@/config/departments";
 
@@ -47,6 +49,11 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isOffboarding, setIsOffboarding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAddingIncrement, setIsAddingIncrement] = useState(false);
+  const [showIncrementModal, setShowIncrementModal] = useState(false);
+  const [incrementInput, setIncrementInput] = useState("");
+  const [lastIncrement, setLastIncrement] = useState<any>(null);
+  const [isLoadingIncrement, setIsLoadingIncrement] = useState(false);
 
   // Edited values state
   const [formData, setFormData] = useState<any>({});
@@ -118,6 +125,22 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
       setShowConfirmPassword(false);
     }
   }, [employee?.id, isOpen]);
+
+  useEffect(() => {
+    if (showIncrementModal && employee?.id) {
+      const fetchLastIncrement = async () => {
+        setIsLoadingIncrement(true);
+        const res = await getLastSalaryIncrementAction(employee.id);
+        if (res.success && res.data) {
+          setLastIncrement(res.data);
+        } else {
+          setLastIncrement(null);
+        }
+        setIsLoadingIncrement(false);
+      };
+      fetchLastIncrement();
+    }
+  }, [showIncrementModal, employee?.id]);
 
   // Keep work email updated if names change in edit mode
   useEffect(() => {
@@ -350,6 +373,115 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
       description: "Copied credential to buffer successfully.",
       variant: "success"
     });
+  };
+
+  const renderIncrementModal = () => {
+    if (!showIncrementModal) return null;
+    const currentSalary = formData.salary || 0;
+    const incAmount = parseFloat(incrementInput);
+    const isValid = !isNaN(incAmount) && incAmount > 0;
+    const newSalary = currentSalary + (isValid ? incAmount : 0);
+    
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+            <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Add Salary Increment</h3>
+            <button onClick={() => setShowIncrementModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full transition-colors">
+              <X className="w-5 h-5 text-slate-400" />
+            </button>
+          </div>
+          <div className="p-6 space-y-6">
+            {isLoadingIncrement ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+              </div>
+            ) : lastIncrement ? (
+              <div className="p-4 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-black uppercase tracking-widest text-slate-400">Last Increment</div>
+                  <Badge variant="outline" className="text-[10px] uppercase font-bold text-indigo-500 border-indigo-200 dark:border-indigo-500/30">
+                    {lastIncrement.increment_percentage}%
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-end">
+                  <div className="text-lg font-bold text-slate-700 dark:text-slate-300">₹{parseFloat(lastIncrement.increment_amount).toLocaleString('en-IN')}</div>
+                  <div className="text-xs text-slate-500 font-medium">Effective: {new Date(lastIncrement.effective_date).toLocaleDateString()}</div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center text-center">
+                <div className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">No Previous Increments</div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">This employee hasn't received any recorded salary increments yet.</div>
+              </div>
+            )}
+            
+            {lastIncrement && new Date() >= new Date(new Date(lastIncrement.effective_date).setMonth(new Date(lastIncrement.effective_date).getMonth() + 3)) && (
+              <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-sm font-bold text-amber-600 dark:text-amber-400">Increment Reminder</div>
+                  <div className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-1">
+                    It has been over 3 months since the last increment (effective {new Date(lastIncrement.effective_date).toLocaleDateString()}).
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="space-y-1">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Current Base Salary</label>
+              <div className="text-lg font-bold text-slate-700 dark:text-slate-300">₹{currentSalary.toLocaleString('en-IN')}</div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-black uppercase tracking-widest text-indigo-500">Increment Amount (₹)</label>
+              <div className="relative">
+                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="number"
+                  value={incrementInput}
+                  onChange={(e) => setIncrementInput(e.target.value)}
+                  placeholder="e.g. 2000"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-white/5 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                  autoFocus
+                />
+              </div>
+            </div>
+            {isValid && (
+              <div className="p-4 bg-green-500/10 rounded-2xl border border-green-500/20">
+                <div className="text-xs font-black uppercase tracking-widest text-green-600 dark:text-green-400 mb-1">New Salary Starting Next Month</div>
+                <div className="text-2xl font-black text-green-600 dark:text-green-400">₹{newSalary.toLocaleString('en-IN')}</div>
+              </div>
+            )}
+          </div>
+          <div className="p-6 bg-slate-50 dark:bg-white/2 border-t border-slate-100 dark:border-white/5 flex gap-3">
+            <button
+              onClick={() => setShowIncrementModal(false)}
+              className="flex-1 px-4 py-3.5 bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-slate-300 dark:hover:bg-white/20 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                if (!isValid) return;
+                setIsAddingIncrement(true);
+                const res = await addSalaryIncrementAction(employee.id, newSalary);
+                setIsAddingIncrement(false);
+                if (res.success) {
+                  toast({ title: "Success", description: `Increment of ₹${incAmount} added successfully.` });
+                  setShowIncrementModal(false);
+                } else {
+                  toast({ title: "Error", description: res.error || "Failed to add increment", variant: "error" });
+                }
+              }}
+              disabled={!isValid || isAddingIncrement}
+              className="flex-1 px-4 py-3.5 bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-indigo-600 disabled:opacity-50 transition-all flex justify-center items-center gap-2"
+            >
+              {isAddingIncrement ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const modalContent = (
@@ -674,15 +806,30 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Base Monthly Salary (INR)</label>
-                  <div className="relative">
-                    <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="number"
-                      value={formData.salary}
-                      onChange={(e) => setFormData({ ...formData, salary: parseFloat(e.target.value) || 0 })}
-                      disabled={!isEditing}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
-                    />
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="number"
+                        value={formData.salary}
+                        onChange={(e) => setFormData({ ...formData, salary: parseFloat(e.target.value) || 0 })}
+                        disabled={!isEditing}
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                      />
+                    </div>
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIncrementInput("");
+                          setShowIncrementModal(true);
+                        }}
+                        disabled={isAddingIncrement}
+                        className="px-3 py-3 bg-indigo-500 text-white rounded-2xl text-xs font-bold hover:bg-indigo-600 disabled:opacity-50 whitespace-nowrap flex items-center gap-2"
+                      >
+                        {isAddingIncrement ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Increment"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1072,6 +1219,8 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
           </button>
         </div>
       </div>
+      
+      {renderIncrementModal()}
     </div>
   );
 

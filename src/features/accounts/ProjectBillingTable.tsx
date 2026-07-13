@@ -54,9 +54,10 @@ export function ProjectBillingTable({ projects, searchQuery = "", onRefresh }: P
           const percentPaid = effectiveBudget > 0 ? Math.min(100, Math.round((paid / effectiveBudget) * 100)) : 0;
           
           return (
-            <div
+            <Link
               key={project.id}
-              className="relative rounded-2xl border bg-white dark:bg-[#0f121b] pt-[18px] pb-[18px] pl-3 pr-4 md:py-[15px] md:pl-4 md:pr-6 hover:shadow-md hover:border-slate-300 dark:hover:border-white/10 transition-all duration-300 flex flex-col md:flex-row md:items-center gap-4 md:gap-0 group border-slate-200/60 dark:border-white/5 shadow-sm"
+              href={`/projects/${project.id}`}
+              className="relative rounded-2xl border bg-white dark:bg-[#0f121b] pt-[18px] pb-[18px] pl-3 pr-4 md:py-[15px] md:pl-4 md:pr-6 hover:shadow-md hover:border-slate-300 dark:hover:border-white/10 transition-all duration-300 flex flex-col md:flex-row md:items-center gap-4 md:gap-0 group border-slate-200/60 dark:border-white/5 shadow-sm block"
             >
               {/* Section 1: Project Info (40%) */}
               <div className="flex items-start gap-3 w-full md:w-[40%] flex-shrink-0 md:pr-4 py-0.5">
@@ -65,11 +66,9 @@ export function ProjectBillingTable({ projects, searchQuery = "", onRefresh }: P
                 </div>
 
                 <div className="min-w-0 flex-1 flex flex-col justify-center">
-                  <Link href={`/projects/${project.id}`} className="hover:underline">
-                    <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block mb-1.5" title={project.name}>
-                      {project.name}
-                    </span>
-                  </Link>
+                  <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block mb-1.5 hover:underline" title={project.name}>
+                    {project.name}
+                  </span>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
                     <span className="flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
@@ -124,7 +123,7 @@ export function ProjectBillingTable({ projects, searchQuery = "", onRefresh }: P
                 </div>
               </div>
 
-            </div>
+            </Link>
           );
         })
       )}

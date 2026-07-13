@@ -13,9 +13,10 @@ interface PremiumDatePickerProps {
   className?: string;
   align?: 'left' | 'right';
   side?: 'bottom' | 'right';
+  disabled?: boolean;
 }
 
-export function PremiumDatePicker({ value, onChange, className, align = 'left', side = 'bottom' }: PremiumDatePickerProps) {
+export function PremiumDatePicker({ value, onChange, className, align = 'left', side = 'bottom', disabled = false }: PremiumDatePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [currentMonth, setCurrentMonth] = React.useState(value ? new Date(value) : new Date());
   const [mounted, setMounted] = React.useState(false);
@@ -58,6 +59,7 @@ export function PremiumDatePicker({ value, onChange, className, align = 'left', 
   };
 
   const toggleOpen = () => {
+    if (disabled) return;
     updateCoords();
     setIsOpen(!isOpen);
   };
@@ -253,7 +255,10 @@ export function PremiumDatePicker({ value, onChange, className, align = 'left', 
     <div className={cn("relative w-full", className)} ref={containerRef}>
       <div
         onClick={toggleOpen}
-        className="w-full h-9 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-lg px-3 flex items-center gap-2.5 cursor-pointer group hover:border-indigo-500/50 transition-all"
+        className={cn(
+          "w-full h-9 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-lg px-3 flex items-center gap-2.5 transition-all",
+          disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer group hover:border-indigo-500/50"
+        )}
       >
         <CalendarIcon className="w-4 h-4 text-slate-500 group-hover:text-indigo-500 transition-colors" />
         <span className={cn("flex-1 text-sm font-medium", !value ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-200")}>

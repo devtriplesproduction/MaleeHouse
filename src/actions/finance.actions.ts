@@ -463,6 +463,26 @@ export async function createMilestonesAction(
       return { success: false, error: lockCheck.error || "Project is locked." };
     }
 
+    let sum = 0;
+    for (const m of milestones) {
+      if (m.amount <= 0) {
+        return { success: false, error: 'Milestone amounts must be greater than zero.' };
+      }
+      sum += Number(m.amount);
+    }
+
+    const { data: projectFinance } = await supabase
+      .from('project_finances')
+      .select('total_quoted_amount')
+      .eq('project_id', projectId)
+      .maybeSingle();
+
+    if (projectFinance && projectFinance.total_quoted_amount) {
+      if (Math.abs(sum - Number(projectFinance.total_quoted_amount)) > 0.01) {
+        return { success: false, error: `Sum of milestones (${sum}) does not match the total project cost (${projectFinance.total_quoted_amount}).` };
+      }
+    }
+
     await supabase.from('project_milestones').delete().eq('project_id', projectId);
 
     const dbMilestones = milestones.map((m: any) => ({
@@ -630,7 +650,7 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen), invoices(id, status, payments(status))')
+      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested), invoices(id, status, payments(status))')
       .order('due_date', { ascending: true });
 
     if (error) return { success: false, error: error.message };
@@ -782,34 +802,44 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
 
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 5);
-    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const targetDateStr = targetDate.toISOString().split('T')[0] + 'T23:59:59.999Z';
 
     const supabase: any = await createClient();
 
     // 1. Fetch pending milestones
     const { data: milestones, error: mErr } = await supabase
       .from('project_milestones')
-      .select('*')
+      .select('*, projects(status, is_frozen)')
       .eq('status', 'pending')
       .lte('due_date', targetDateStr);
 
     if (mErr || !milestones || milestones.length === 0) return { success: true, data: { generated: 0, invoices: [] } };
 
+    // Filter out frozen or on-hold projects
+    const activeMilestones = milestones.filter((m: any) => {
+      if (m.projects?.is_frozen === true) return false;
+      if (m.projects?.status === 'on_hold') return false;
+      if (m.projects?.status === 'cancelled') return false;
+      return true;
+    });
+
+    if (activeMilestones.length === 0) return { success: true, data: { generated: 0, invoices: [] } };
+
     // 2. Fetch existing invoices for these milestones
-    const milestoneIds = milestones.map((m: any) => m.id);
+    const milestoneIds = activeMilestones.map((m: any) => m.id);
     const { data: existingInvoices } = await supabase
       .from('invoices')
       .select('milestone_id')
       .in('milestone_id', milestoneIds);
 
     const existingMilestoneIds = new Set((existingInvoices || []).map((i: any) => i.milestone_id));
-    const milestonesToInvoice = milestones.filter((m: any) => !existingMilestoneIds.has(m.id));
+    const milestonesToInvoice = activeMilestones.filter((m: any) => !existingMilestoneIds.has(m.id));
 
     if (milestonesToInvoice.length === 0) {
       return { success: true, data: { generated: 0, invoices: [] } };
     }
 
-    // 3. Batch fetch existing invoice numbers
+    // 3. Batch fetch existing invoice numbers and GST rates
     const projectIds = Array.from(new Set(milestonesToInvoice.map((m: any) => m.project_id).filter(Boolean))) as string[];
     const date = new Date();
     const yy = date.getFullYear().toString().slice(-2);
@@ -826,6 +856,17 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
         if (!acc[inv.project_id]) acc[inv.project_id] = [];
         acc[inv.project_id].push(inv.invoice_number);
       }
+      return acc;
+    }, {});
+
+    const { data: quotationsData } = await supabase
+      .from('quotations')
+      .select('project_id, gst_rate')
+      .in('project_id', projectIds)
+      .eq('status', 'approved');
+
+    const gstRatesByProject = (quotationsData || []).reduce((acc: any, q: any) => {
+      acc[q.project_id] = q.gst_rate;
       return acc;
     }, {});
 
@@ -855,7 +896,7 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
         fallbackGenerated.push(invoiceNumber);
       }
 
-      const gstRate = 18;
+      const gstRate = m.project_id && gstRatesByProject[m.project_id] !== undefined ? gstRatesByProject[m.project_id] : 18;
       const gstAmount = (m.amount * gstRate) / 100;
       const totalAmount = m.amount + gstAmount;
 

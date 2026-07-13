@@ -57,7 +57,7 @@ export async function loginAction(email: string, password: string) {
   const role = profile.role as Role
   const redirectPath = ROLE_REDIRECTS[role] || '/projects'
 
-  redirect(redirectPath)
+  return { success: true, redirectTo: redirectPath }
 }
 
 export async function signOutAction() {

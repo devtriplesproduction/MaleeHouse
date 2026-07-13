@@ -4,10 +4,10 @@ import { getUserProfileAction } from "@/actions/auth.actions";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Company Settings | Malee House",
+  title: "Company Details Settings | Malee House",
 };
 
-export default async function SettingsPage() {
+export default async function CompanyDetailsSettingsPage() {
   const profile = await getUserProfileAction();
   
   if (!profile) {
@@ -27,7 +27,7 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <CompanySettingsForm initialSettings={initialSettings} canEdit={canEdit} />
+      <CompanySettingsForm initialSettings={initialSettings} canEdit={canEdit} activeTab="details" />
     </div>
   );
 }

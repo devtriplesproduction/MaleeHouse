@@ -10,7 +10,7 @@ import { getAttendanceLogsAction } from './attendance.actions'
 export async function getHRDashboardStatsAction() {
   try {
     const profile: any = await getUserProfileAction()
-    if (!profile || !['admin', 'hr'].includes(profile.role)) {
+    if (!profile || !['admin', 'hr'].includes(profile.role?.toLowerCase())) {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -71,7 +71,7 @@ export async function getHRDashboardStatsAction() {
 
 export async function getPendingLeaveRequestsAction() {
   const profile: any = await getUserProfileAction()
-  if (!profile || !['admin', 'hr'].includes(profile.role)) {
+  if (!profile || !['admin', 'hr'].includes(profile.role?.toLowerCase())) {
     return { success: false, error: 'Unauthorized' }
   }
 
@@ -84,7 +84,7 @@ export async function getPendingLeaveRequestsAction() {
 
 export async function getTodayAttendanceSummaryAction() {
   const profile: any = await getUserProfileAction()
-  if (!profile || !['admin', 'hr'].includes(profile.role)) {
+  if (!profile || !['admin', 'hr'].includes(profile.role?.toLowerCase())) {
     return { success: false, error: 'Unauthorized' }
   }
 
@@ -127,7 +127,7 @@ export async function getRecentAnnouncementsAction() {
 export async function getOnboardingInProgressAction() {
   try {
     const profile: any = await getUserProfileAction()
-    if (!profile || !['admin', 'hr'].includes(profile.role)) {
+    if (!profile || !['admin', 'hr'].includes(profile.role?.toLowerCase())) {
       return { success: false, error: 'Unauthorized' }
     }
 

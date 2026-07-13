@@ -4,46 +4,68 @@ import { revalidatePath } from 'next/cache'
 import { ActionResponse } from './project.actions'
 import { getUserProfileAction } from './auth.actions'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { registerAttendanceSignalAction } from './attendance.actions'
 
 export async function submitEODAction(payload: {
   tasks_completed: string
   hours_spent: number
   blockers: string | null
   date: string
+  target_user_id?: string
+  work_location?: 'office' | 'field'
 }): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction()
     if (!profile) return { success: false, error: 'Unauthorized' }
 
     const supabase: any = await createClient()
+    const isPrivileged = profile.role === 'admin' || profile.role === 'hr';
+    const targetUserId = (payload.target_user_id && isPrivileged) ? payload.target_user_id : profile.id;
+    const isSubmittingForOther = targetUserId !== profile.id;
+
+    // Use admin client if submitting for someone else (RLS bypass)
+    // The security check (isPrivileged) has already been performed above
+    const clientToUse = isSubmittingForOther ? createAdminClient() : supabase;
 
     // Check for duplicate submission
-    const { data: existing } = await supabase
+    const { data: existing } = await clientToUse
       .from('eod_reports')
       .select('id')
-      .eq('user_id', profile.id)
+      .eq('user_id', targetUserId)
       .eq('date', payload.date)
       .maybeSingle()
 
     if (existing) {
-      return { success: false, error: 'You have already submitted an EOD report for this date.' }
+      return { success: false, error: 'An EOD report has already been submitted for this user on this date.' }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await clientToUse
       .from('eod_reports')
       .insert({
         id: `eod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        user_id: profile.id,
+        user_id: targetUserId,
         tasks_completed: payload.tasks_completed,
         hours_spent: payload.hours_spent,
         blockers: payload.blockers,
         date: payload.date,
+        status: isSubmittingForOther ? 'approved' : 'pending',
         created_at: new Date().toISOString(),
       })
       .select()
       .single()
 
     if (error) return { success: false, error: error.message }
+
+    if (payload.work_location === 'field') {
+      await registerAttendanceSignalAction(
+        targetUserId,
+        payload.date,
+        'field_assignment',
+        isSubmittingForOther ? 'admin_override' : 'eod_submission',
+        'Submitted via EOD form as Field assignment'
+      )
+    }
 
     revalidatePath('/eod')
     return { success: true, data }
@@ -73,7 +95,10 @@ export async function getMyEODReportsAction(): Promise<ActionResponse> {
 
 export async function getAllEODReportsAction(): Promise<ActionResponse> {
   try {
-    const supabase = await createClient()
+    const profile: any = await getUserProfileAction()
+    if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied.' }
+
+    const supabase = createAdminClient()
     
     const { data, error } = await supabase
       .from('eod_reports')
@@ -90,9 +115,15 @@ export async function getAllEODReportsAction(): Promise<ActionResponse> {
 export async function updateEODReportAction(id: string, updates: { adjusted_hours?: number; admin_note?: string; status?: string }): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction()
-    if (profile?.role !== 'admin') return { success: false, error: 'Access denied. Admins only.' }
+    if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins or HR only.' }
 
     const supabase: any = await createClient()
+    
+    // Security check: HR cannot approve any EOD
+    if (profile?.role === 'hr') {
+      return { success: false, error: 'HR cannot approve or edit EODs. Only an Admin can do this.' }
+    }
+
     const { data, error } = await supabase
       .from('eod_reports')
       .update(updates)
@@ -109,12 +140,3 @@ export async function updateEODReportAction(id: string, updates: { adjusted_hour
   }
 }
 
-export async function isPayrollCycleLocked(dateStr: string): Promise<{ locked: boolean; cycleId?: string }> {
-  return { locked: false }
-}
-
-export async function registerAttendanceSignalAction(
-  employeeId: string, dateStr: string, status: string, signalType: string, notes?: string
-) {
-  return { success: true }
-}

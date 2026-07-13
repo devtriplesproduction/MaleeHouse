@@ -1,12 +1,15 @@
 "use client";
 
-import { Calculator, Inbox, FileEdit, CheckCircle2, DollarSign, Receipt, Scroll, BarChart2, ShieldAlert, Target, Building2, Megaphone, AlertCircle, FolderKanban, Landmark } from "lucide-react";
+import { Calculator, Inbox, FileEdit, CheckCircle2, DollarSign, Receipt, Scroll, BarChart2, ShieldAlert, Target, Building2, Megaphone, AlertCircle, FolderKanban, Landmark, Clock, Calendar } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
 import { SidebarLink } from "./BaseSidebar";
+import { useUser } from "@/hooks/useUser";
 
 const accountsLinks: SidebarLink[] = [
   { title: "Accounts Overview", href: "/accounts", icon: Calculator },
+  { title: "Submit EOD", href: "/eod", icon: Clock },
+  { title: "Apply Leave", href: "/leaves", icon: Calendar },
   {
     title: "Quotations Workflow",
     icon: FileEdit,
@@ -33,9 +36,22 @@ const accountsLinks: SidebarLink[] = [
   { title: "Financial Reports", href: "/accounts/reports", icon: BarChart2 },
   { title: "Audit Logs", href: "/accounts/audit", icon: ShieldAlert },
   { title: "Announcements", href: "/announcements", icon: Megaphone },
-  { title: "Company Settings", href: "/settings", icon: Building2 },
+  {
+    title: "Company Settings",
+    icon: Building2,
+    subLinks: [
+      { title: "Company Account", href: "/settings/account", icon: Landmark },
+      { title: "Company Details", href: "/settings/details", icon: Building2 },
+    ]
+  },
 ];
 
 export function AccountsSidebar() {
-  return <BaseSidebar links={accountsLinks} />;
+  const { role } = useUser();
+  const filteredLinks = accountsLinks.filter(link => {
+    if (link.title === "Audit Logs" && role !== "admin") return false;
+    return true;
+  });
+
+  return <BaseSidebar links={filteredLinks} />;
 }

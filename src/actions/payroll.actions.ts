@@ -78,6 +78,30 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
 
     if (cyclesError) throw cyclesError;
 
+    // 3. Fetch EOD reports for this month
+    const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin = createAdminClient();
+    const { data: eodLogs, error: eodError } = await supabaseAdmin
+      .from('eod_reports')
+      .select('user_id, date')
+      .gte('date', startOfMonth)
+      .lte('date', endOfMonth);
+      
+    if (eodError) throw eodError;
+
+    // Fetch holidays for this month
+    const { data: holidays, error: holidayError } = await supabase
+      .from('holidays')
+      .select('date, is_optional')
+      .gte('date', startOfMonth)
+      .lte('date', endOfMonth);
+      
+    if (holidayError) throw holidayError;
+    const standardHolidaysCount = holidays ? holidays.filter((h: any) => !h.is_optional).length : 0;
+
     const existing = cycles && cycles.length > 0 ? cycles[0] : null;
     const isLocked = existing?.status === "locked";
 
@@ -93,22 +117,43 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       return { success: true, data: cycleSnapshots, isLocked: true };
     }
 
-    // Days in Month (approx working days = 22)
-    const workingDaysLimit = 22;
+    // Fetch all salary increments up to this month
+    const { data: incrementsData } = await supabase
+      .from('salary_increments')
+      .select('*')
+      .lte('effective_date', endOfMonth)
+      .order('effective_date', { ascending: false });
+
+    // Days in Month (fixed working days = 26)
+    const workingDaysLimit = 26;
 
     const draftSnapshots: PayrollSnapshot[] = employees.map((emp: any) => {
       const empLogs = attendanceLogs.filter((l: any) => l.employee_id === emp.id);
+      
+      const leave_dates = empLogs.filter((l: any) => l.status === "paid_leave" || l.status === "unpaid_leave").map((l: any) => l.date);
 
-      const days_present = empLogs.filter((l: any) => l.status === "present").length;
-      const days_field = empLogs.filter((l: any) => l.status === "field_assignment").length;
+      // Calculate leave and field days from attendance logs (approved leaves/fields)
+      const days_field = 0; // Field days are now counted implicitly through EOD submissions
       const days_paid_leave = empLogs.filter((l: any) => l.status === "paid_leave").length;
       const days_unpaid_leave = empLogs.filter((l: any) => l.status === "unpaid_leave").length;
-      const days_absent = empLogs.filter((l: any) => l.status === "absent").length;
+      
+      // Calculate days_present based on EOD submissions (deduplicate against leave logs)
+      const filteredEods = eodLogs ? eodLogs.filter((e: any) => e.user_id === emp.id && !leave_dates.includes(e.date)) : [];
+      const days_present = filteredEods.length;
+      if (emp.first_name === 'Yash') console.log('Yash eods:', filteredEods, eodLogs ? eodLogs.filter((e:any) => e.user_id === emp.id) : []);
+      
+      // Calculate days_absent: Any working day (up to 26) not accounted for by EODs, Leaves, or Holidays
+      const accounted_days = days_present + days_field + days_paid_leave + days_unpaid_leave + standardHolidaysCount;
+      const days_absent = Math.max(0, workingDaysLimit - accounted_days);
 
-      const base_salary = emp.salary || 3000;
+      // Find latest applicable increment
+      const empIncrements = (incrementsData || []).filter((inc: any) => inc.employee_id === emp.id);
+      const latestIncrement = empIncrements.length > 0 ? empIncrements[0] : null;
+
+      const base_salary = latestIncrement ? latestIncrement.new_salary : (emp.salary || 3000);
       
       // Calculate net payable (basic prorated salary deductions for unpaid leave & absent days)
-      const totalEarnedDays = Math.min(workingDaysLimit, (days_present + days_field + days_paid_leave));
+      const totalEarnedDays = Math.min(workingDaysLimit, (days_present + days_field + days_paid_leave + standardHolidaysCount));
       const penaltyDays = days_unpaid_leave + days_absent;
       
       const prorationFactor = workingDaysLimit > 0 ? totalEarnedDays / workingDaysLimit : 1;

@@ -1104,6 +1104,41 @@ export interface Database {
           updated_at?: string
         }
       }
+      salary_increments: {
+        Row: {
+          id: string
+          employee_id: string
+          previous_salary: number
+          new_salary: number
+          increment_amount: number | null
+          increment_percentage: number | null
+          effective_date: string
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          previous_salary: number
+          new_salary: number
+          increment_amount?: number | null
+          increment_percentage?: number | null
+          effective_date: string
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          previous_salary?: number
+          new_salary?: number
+          increment_amount?: number | null
+          increment_percentage?: number | null
+          effective_date?: string
+          created_at?: string
+          created_by?: string | null
+        }
+      }
       sops: {
         Row: {
           id: string

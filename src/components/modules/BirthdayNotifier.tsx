@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { getAllUsersAction } from "@/actions/admin.actions";
 import { Gift, Sparkles, Cake, Star, PartyPopper } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUser } from "@/hooks/useUser";
 
 const FloatingElement = ({ children, delay = 0, yOffset = 20, xOffset = 20, duration = 4 }: any) => (
   <motion.div
@@ -31,10 +32,13 @@ const FloatingElement = ({ children, delay = 0, yOffset = 20, xOffset = 20, dura
 export function BirthdayNotifier() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
+  const { user: currentUser, role } = useUser();
 
   useEffect(() => {
     setMounted(true);
-    const hasSeenBirthdays = sessionStorage.getItem("hasSeenBirthdays_v4");
+    if (!currentUser || !role) return;
+
+    const hasSeenBirthdays = sessionStorage.getItem("hasSeenBirthdays_v7");
     if (hasSeenBirthdays) return;
 
     async function checkBirthdays() {
@@ -54,15 +58,19 @@ export function BirthdayNotifier() {
 
           data.forEach((user: any) => {
             if (user.dob) {
-              const dob = new Date(user.dob);
-              if (!isNaN(dob.getTime())) {
-                const dobMonth = dob.getMonth();
-                const dobDate = dob.getDate();
+              const [year, month, date] = user.dob.split('-');
+              if (year && month && date) {
+                const dobMonth = parseInt(month, 10) - 1;
+                const dobDate = parseInt(date, 10);
 
                 if (dobMonth === todayMonth && dobDate === todayDate) {
-                  bdays.push({ user, type: 'today' });
+                  if (role === "hr" || role === "admin" || currentUser?.id === user.id) {
+                    bdays.push({ user, type: 'today' });
+                  }
                 } else if (dobMonth === tomorrowMonth && dobDate === tomorrowDate) {
-                  bdays.push({ user, type: 'tomorrow' });
+                  if (role === "hr" || role === "admin" || currentUser?.id === user.id) {
+                    bdays.push({ user, type: 'tomorrow' });
+                  }
                 }
               }
             }
@@ -78,10 +86,10 @@ export function BirthdayNotifier() {
     }
     
     checkBirthdays();
-  }, []);
+  }, [currentUser, role]);
 
   const handleAcknowledge = () => {
-    sessionStorage.setItem("hasSeenBirthdays_v4", "true");
+    sessionStorage.setItem("hasSeenBirthdays_v7", "true");
     setNotifications([]);
   };
 
@@ -137,12 +145,16 @@ export function BirthdayNotifier() {
 
               <div className="text-center relative z-10 w-full">
                 <h4 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 via-blue-500 to-violet-600 dark:from-indigo-300 dark:via-blue-300 dark:to-violet-300 tracking-tight mb-3">
-                  {notifications.length > 1 ? "Celebrations!" : (hasToday ? "Happy Birthday! 🎂" : "Upcoming Birthday 🎈")}
+                  {(role !== "hr" && role !== "admin") 
+                    ? "Happy Birthday! 🎂"
+                    : notifications.length > 1 ? "Celebrations!" : (hasToday ? "Happy Birthday! 🎂" : "Upcoming Birthday 🎈")}
                 </h4>
                 <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 text-base">
-                  {notifications.length > 1 
-                    ? "We have multiple birthdays to celebrate!" 
-                    : "Join us in wishing them a great day!"}
+                  {(role !== "hr" && role !== "admin") 
+                    ? "It's your special day! Time to give a party!"
+                    : notifications.length > 1 
+                      ? "We have multiple birthdays to celebrate!" 
+                      : "Celebrate this employee's birthday!"}
                 </p>
                 
                 <div className="flex flex-col gap-4 w-full mb-10 max-h-[280px] overflow-y-auto scrollbar-none px-1">

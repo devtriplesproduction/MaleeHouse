@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --font-outfit: var(--font-outfit);
+
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
@@ -28,7 +28,7 @@
   }
 
   .dark {
-    --font-outfit: var(--font-outfit);
+
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
     --card: 222 47% 8%;
@@ -52,7 +52,6 @@
 
   body {
     @apply bg-[#fcfcfd] dark:bg-[#080b14] text-foreground antialiased selection:bg-indigo-100 selection:text-indigo-900 dark:selection:bg-indigo-900/30 dark:selection:text-indigo-200;
-    font-family: var(--font-outfit), sans-serif;
   }
 }
 

@@ -13,6 +13,12 @@ export interface CompanySettings {
   gstin: string;
   telephone: string;
   mobile: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  branchName?: string;
+  upiId?: string;
 }
 
 const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
@@ -22,7 +28,13 @@ const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   cityStateZip: "Whitefield, Bangalore, Karnataka 560066",
   gstin: "36AAAAA1111A1Z1",
   telephone: "+91 80 4987 6543",
-  mobile: "+91 98765 43210"
+  mobile: "+91 98765 43210",
+  bankName: "",
+  accountName: "",
+  accountNumber: "",
+  ifscCode: "",
+  branchName: "",
+  upiId: ""
 };
 
 const stageTargetsSchema = z.record(z.string(), z.number());

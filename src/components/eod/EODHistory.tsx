@@ -101,9 +101,20 @@ function HistoryRow({ report, index }: { report: any; index: number }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400/80 mb-3">TASKS COMPLETED</h5>
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                    {report.tasks_completed}
-                  </p>
+                  <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    {report.tasks_completed.split(/!\[.*?\]\((.*?)\)/).map((part, index) => {
+                      if (index % 2 === 1) {
+                        return (
+                          <div key={index} className="my-4">
+                            <a href={part} target="_blank" rel="noopener noreferrer">
+                              <img src={part} alt="Field Photo Attachment" className="max-w-full h-auto rounded-xl border border-slate-200 dark:border-white/10 shadow-sm object-cover max-h-64 hover:opacity-90 transition-opacity" />
+                            </a>
+                          </div>
+                        );
+                      }
+                      return <span key={index}>{part}</span>;
+                    })}
+                  </div>
                 </div>
 
                 <div>

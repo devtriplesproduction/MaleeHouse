@@ -22,7 +22,6 @@ import { TodayAttendanceSnapshot } from "@/features/hr/TodayAttendanceSnapshot";
 import { UpcomingHolidaysWidget } from "@/features/hr/UpcomingHolidaysWidget";
 import { MiniTeamLeaveCalendar } from "@/features/hr/MiniTeamLeaveCalendar";
 import { RecentAnnouncements } from "@/features/hr/RecentAnnouncements";
-import { HRQuickLinks } from "@/features/hr/HRQuickLinks";
 
 export default async function HRDashboard() {
   const { profile } = await requireRole("hr");
@@ -117,8 +116,6 @@ export default async function HRDashboard() {
           </Suspense>
         </div>
       </div>
-
-      <HRQuickLinks />
     </div>
   );
 }

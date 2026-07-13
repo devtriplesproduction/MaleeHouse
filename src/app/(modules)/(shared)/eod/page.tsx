@@ -15,14 +15,16 @@ export default async function EODPage() {
   const profile = await getUserProfileAction();
   if (!profile) redirect('/login');
 
-  const isAdmin = profile.role === 'admin';
+  const canReview = profile.role === 'admin' || profile.role === 'hr';
 
-  if (isAdmin) {
-    const [reportsResponse, staff] = await Promise.all([
+  if (canReview) {
+    const [reportsResponse, staff, myReportsResponse] = await Promise.all([
       getAllEODReportsAction(),
-      getStaffMembersAction()
+      getStaffMembersAction(),
+      getMyEODReportsAction()
     ]);
     const reports = reportsResponse.success ? reportsResponse.data : [];
+    const myReports = myReportsResponse.success ? myReportsResponse.data : [];
 
     return (
       <div className="space-y-6 animate-in fade-in duration-700 pb-12">
@@ -45,7 +47,13 @@ export default async function EODPage() {
           </div>
         </div>
 
-        <EODReview reports={reports} staff={staff} />
+        {/* EOD Form for Admin/HR with Staff Selector */}
+        <EODForm reports={myReports} allReports={reports} staff={staff} currentUserId={profile.id} currentUserRole={profile.role} />
+
+        {/* Review Section */}
+        <div className="pt-8 border-t border-slate-200/60 dark:border-white/5">
+          <EODReview reports={reports} staff={staff} currentUserRole={profile.role} currentUserId={profile.id} />
+        </div>
       </div>
     );
   }
@@ -56,7 +64,7 @@ export default async function EODPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-12">
-      <EODForm reports={reports} />
+      <EODForm reports={reports} currentUserRole={profile.role} />
 
       <div className="space-y-6 pt-6 border-t border-slate-200/60 dark:border-white/5">
         <div className="flex items-center gap-2 px-2">

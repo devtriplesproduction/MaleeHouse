@@ -41,22 +41,29 @@ interface EODReport {
 interface EODReviewProps {
   reports: EODReport[];
   staff: any[];
+  currentUserRole?: string;
+  currentUserId?: string;
 }
 
-export function EODReview({ reports, staff }: EODReviewProps) {
+export function EODReview({ reports, staff, currentUserRole, currentUserId }: EODReviewProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [employeeFilter, setEmployeeFilter] = useState("all");
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Map staff to reports to get departments
+  // Map staff to reports to get departments and ensure employee_name exists
   const reportsWithDept = useMemo(() => {
     return reports.map((report: any) => {
       const member = staff.find((s: any) => s.id === report.user_id);
+      const employeeName = report.employee_name || 
+        (report.profiles ? `${report.profiles.first_name} ${report.profiles.last_name}` : 
+        (member ? `${member.first_name} ${member.last_name}` : "Unknown"));
+        
       return {
         ...report,
-        department: member?.department || member?.role || "Member"
+        employee_name: employeeName,
+        department: report.department || report.profiles?.department || member?.department || member?.role || "Member"
       };
     });
   }, [reports, staff]);
@@ -68,8 +75,8 @@ export function EODReview({ reports, staff }: EODReviewProps) {
     reportsWithDept
       .filter((report: any) => {
         const matchesSearch = 
-          report.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          report.department?.toLowerCase().includes(searchTerm.toLowerCase());
+          (report.employee_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (report.department || "").toLowerCase().includes(searchTerm.toLowerCase());
         
         const matchesEmployee = employeeFilter === "all" || report.user_id === employeeFilter;
         
@@ -192,7 +199,12 @@ export function EODReview({ reports, staff }: EODReviewProps) {
 
             <div className="space-y-2">
               {dateReports.map((report) => (
-                <ReportRow key={report.id} report={report} />
+                <ReportRow 
+                  key={report.id} 
+                  report={report} 
+                  currentUserRole={currentUserRole}
+                  currentUserId={currentUserId}
+                />
               ))}
             </div>
           </div>
@@ -212,7 +224,15 @@ export function EODReview({ reports, staff }: EODReviewProps) {
   );
 }
 
-function ReportRow({ report }: { report: EODReport }) {
+function ReportRow({ 
+  report, 
+  currentUserRole, 
+  currentUserId 
+}: { 
+  report: EODReport,
+  currentUserRole?: string,
+  currentUserId?: string
+}) {
   const [expanded, setExpanded] = useState(false);
   const [adjustedHours, setAdjustedHours] = useState(report.adjusted_hours?.toString() || report.hours_spent.toString());
   const [adminNote, setAdminNote] = useState(report.admin_note || "");
@@ -326,9 +346,20 @@ function ReportRow({ report }: { report: EODReport }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400/80 mb-3">TASKS COMPLETED</h5>
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                    {report.tasks_completed}
-                  </p>
+                  <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    {report.tasks_completed.split(/!\[.*?\]\((.*?)\)/).map((part: string, index: number) => {
+                      if (index % 2 === 1) {
+                        return (
+                          <div key={index} className="my-4">
+                            <a href={part} target="_blank" rel="noopener noreferrer">
+                              <img src={part} alt="Field Photo Attachment" className="max-w-full h-auto rounded-xl border border-slate-200 dark:border-white/10 shadow-sm object-cover max-h-64 hover:opacity-90 transition-opacity" />
+                            </a>
+                          </div>
+                        );
+                      }
+                      return <span key={index}>{part}</span>;
+                    })}
+                  </div>
                 </div>
 
                 <div>
@@ -376,13 +407,15 @@ function ReportRow({ report }: { report: EODReport }) {
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={handleApprove}
-                          disabled={isUpdating || report.status === 'approved'}
+                          disabled={isUpdating || report.status === 'approved' || currentUserRole === 'hr'}
+                          title={currentUserRole === 'hr' ? "Only Admins can approve EODs" : ""}
                           className="h-9 px-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
                           {isUpdating ? 'Saving...' : report.status === 'approved' ? 'Approved' : 'Approve'}
                         </button>
                         <button 
                           onClick={handleUpdate}
-                          disabled={isUpdating}
+                          disabled={isUpdating || currentUserRole === 'hr'}
+                          title={currentUserRole === 'hr' ? "Only Admins can edit EOD hours" : ""}
                           className="h-9 px-4 rounded-lg bg-indigo-600 dark:bg-gradient-to-r dark:from-indigo-600 dark:to-violet-600 hover:bg-indigo-700 dark:hover:from-indigo-500 dark:hover:to-violet-500 text-white text-xs font-bold shadow-md dark:shadow-[0_0_15px_rgba(79,70,229,0.3)] dark:hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
                           {isUpdating ? 'Updating...' : 'Update Hours'}
                         </button>

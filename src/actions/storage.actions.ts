@@ -92,6 +92,52 @@ export async function uploadFileToServerAction(
   }
 }
 
+export async function uploadEODPhotoAction(formData: FormData) {
+  try {
+    const file = formData.get('file') as File;
+    if (!file) throw new Error('No file provided');
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for EOD photos
+    if (file.size > MAX_FILE_SIZE) {
+      return { success: false, error: "Photo exceeds 10MB limit." };
+    }
+
+    const profile: any = await getUserProfileAction();
+    if (!profile) {
+       return { success: false, error: 'Unauthorized to upload EOD photos.' };
+    }
+
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `eod-photos/${profile.id}/${timestamp}_${safeName}`;
+
+    // Use admin client to bypass bucket RLS restrictions for EOD photos
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const supabaseAdmin = createAdminClient();
+
+    const { error: uploadError } = await supabaseAdmin
+      .storage
+      .from('project-assets')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabaseAdmin
+      .storage
+      .from('project-assets')
+      .getPublicUrl(filePath);
+
+    return { success: true, url: publicUrl, path: filePath };
+  } catch (error: any) {
+    console.error('EOD Photo Upload error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
 export async function uploadHRDocumentAction(
   formData: FormData,
   employeeId: string,

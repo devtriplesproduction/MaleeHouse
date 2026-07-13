@@ -80,7 +80,9 @@ export async function generateReadableEmployeeId(deptId: string): Promise<string
 export async function getAllUsersAction() {
   try {
     const profile: any = await getUserProfileAction()
-    if (!profile || !['admin', 'engineer', 'hr'].includes(profile.role)) {
+    console.log('getAllUsersAction profile:', profile?.id, profile?.role)
+    if (!profile || !['admin', 'engineer', 'hr'].includes(profile.role?.toLowerCase())) {
+      console.log('getAllUsersAction unauthorized:', { profileExists: !!profile, role: profile?.role })
       return { success: false, error: 'Unauthorized' }
     }
     
@@ -89,7 +91,10 @@ export async function getAllUsersAction() {
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false } as any)
-    if (error) throw error
+    if (error) {
+      console.log('getAllUsersAction db error:', error)
+      throw error
+    }
     return { success: true, data: data || [] }
   } catch (error: any) {
     console.error('Directory Fetch Error:', error)
@@ -508,6 +513,97 @@ export async function deleteEmployeeAction(userId: string) {
 
     revalidatePath('/admin/users')
     return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function addSalaryIncrementAction(employeeId: string, newSalary: number) {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (!profile || !['admin', 'hr'].includes(profile.role?.toLowerCase())) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const supabaseAdmin: any = createAdminClient()
+    
+    // Fetch current profile
+    const { data: emp, error: empError } = await supabaseAdmin
+      .from('profiles')
+      .select('salary')
+      .eq('id', employeeId)
+      .single()
+      
+    if (empError) throw new Error('Employee not found')
+    
+    const previousSalary = emp.salary || 0
+    const incrementAmount = newSalary - previousSalary
+    const incrementPercentage = previousSalary > 0 ? (incrementAmount / previousSalary) * 100 : 0
+    
+    // Effective date is 1st of next month
+    const now = new Date()
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const effectiveDateStr = nextMonth.toISOString().split('T')[0]
+
+    // Insert increment record
+    const { error: incError } = await supabaseAdmin.from('salary_increments').insert({
+      employee_id: employeeId,
+      previous_salary: previousSalary,
+      new_salary: newSalary,
+      increment_amount: incrementAmount,
+      increment_percentage: incrementPercentage,
+      effective_date: effectiveDateStr,
+      created_by: profile.id
+    })
+    
+    if (incError) {
+      console.error('Error inserting salary increment:', incError)
+      throw new Error('Failed to record increment')
+    }
+    
+    await logAdminAuditAction({
+      action: 'ADDED_SALARY_INCREMENT',
+      details: { newSalary, previousSalary, effectiveDate: effectiveDateStr },
+      severity: 'info',
+      targetUserId: employeeId
+    })
+    
+    revalidatePath('/hr/employees')
+    revalidatePath('/hr/payroll')
+    
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getLastSalaryIncrementAction(employeeId: string) {
+  try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
+    // Check permission
+    const { data: { user } } = await supabaseAdmin.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+    
+    const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
+    if (!profile || !['admin', 'hr'].includes(profile.role)) {
+      throw new Error('Not authorized')
+    }
+    
+    const { data, error } = await supabaseAdmin
+      .from('salary_increments')
+      .select('*')
+      .eq('employee_id', employeeId)
+      .order('effective_date', { ascending: false })
+      .limit(1)
+      .single()
+      
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching last increment:', error)
+      throw new Error('Failed to fetch last increment')
+    }
+    
+    return { success: true, data }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
