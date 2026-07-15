@@ -179,7 +179,7 @@ export function ReportsGenerator() {
       currentProject = projects.find(p => p.id === generatedConfig.projectId) || { client_name: 'Client', client_address: 'Address Not Provided', client_contact: '' };
     }
 
-    generateFinancialReportPDF(reportData, generatedConfig, companySettings, currentProject, title);
+    generateFinancialReportPDF(reportData, generatedConfig as any, companySettings, currentProject, title);
   };
 
   const exportExcel = () => {
