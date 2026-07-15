@@ -60,7 +60,7 @@ export function AddExpenseModal({
         res = await updateExpenseAction({
           id: expenseToEdit.id,
           project_id: projectId,
-          category,
+          category: category as any,
           description,
           amount: Number(amount),
           expense_date: expenseDate,
@@ -68,7 +68,7 @@ export function AddExpenseModal({
       } else {
         res = await createExpenseAction({
           project_id: projectId,
-          category,
+          category: category as any,
           description,
           amount: Number(amount),
           expense_date: expenseDate,
