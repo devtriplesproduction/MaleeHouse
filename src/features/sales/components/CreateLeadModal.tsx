@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { FormSelect } from '@/components/ui/FormSelect';
 
 const STEPS = [
   { id: 1, title: 'Client Info', icon: User },
@@ -224,14 +225,18 @@ export function CreateLeadModal() {
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Lead Source</label>
-                          <select {...methods.register('lead_source')} className="glass-input bg-transparent focus:border-indigo-500 focus:ring-indigo-500/10">
-                            <option value="">Select Source</option>
-                            <option value="Referral">Referral</option>
-                            <option value="Google Search">Google Search</option>
-                            <option value="Social Media">Social Media</option>
-                            <option value="Existing Client">Existing Client</option>
-                            <option value="Other">Other</option>
-                          </select>
+                          <FormSelect 
+                            name="lead_source"
+                            control={methods.control}
+                            placeholder="Select Source"
+                            options={[
+                              { value: "Referral", label: "Referral" },
+                              { value: "Google Search", label: "Google Search" },
+                              { value: "Social Media", label: "Social Media" },
+                              { value: "Existing Client", label: "Existing Client" },
+                              { value: "Other", label: "Other" },
+                            ]}
+                          />
                         </div>
                       </div>
                     </div>
@@ -248,13 +253,17 @@ export function CreateLeadModal() {
                         <div className="space-y-4">
                           <div className="space-y-1.5">
                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Project Type *</label>
-                            <select {...methods.register('project_type')} className="glass-input bg-transparent focus:border-indigo-500 focus:ring-indigo-500/10">
-                              <option value="">Select Project Type</option>
-                              <option value="Residential">Residential</option>
-                              <option value="Commercial">Commercial</option>
-                              <option value="Industrial">Industrial</option>
-                              <option value="Public Infrastructure">Public Infrastructure</option>
-                            </select>
+                            <FormSelect 
+                              name="project_type"
+                              control={methods.control}
+                              placeholder="Select Project Type"
+                              options={[
+                                { value: "Residential", label: "Residential" },
+                                { value: "Commercial", label: "Commercial" },
+                                { value: "Industrial", label: "Industrial" },
+                                { value: "Public Infrastructure", label: "Public Infrastructure" },
+                              ]}
+                            />
                           </div>
                           <div className="space-y-1.5">
                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Survey Type *</label>

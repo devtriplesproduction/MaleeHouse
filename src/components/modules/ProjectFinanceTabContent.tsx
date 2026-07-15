@@ -26,7 +26,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { CreateInvoiceModal } from "@/features/accounts/CreateInvoiceModal";
 import { LogPaymentModal } from "@/features/accounts/LogPaymentModal";
-import { AddExpenseModal } from "@/features/accounts/AddExpenseModal";
+import { ExpenseEntryModal } from "@/features/accounts/ExpenseEntryModal";
 import {
   assignAccountantAction,
   createMilestonesAction,
@@ -332,10 +332,13 @@ export function ProjectFinanceTabContent({
         setShowMilestoneForm(false);
         onRefresh?.();
       } else {
-        toast.error("Failed to Create", { description: res?.error });
+        const errorMsg = res?.error || "Failed to Create";
+        toast.error("Failed to Create", { description: errorMsg });
+        alert(errorMsg);
       }
     } catch (err: any) {
       toast.error("Unexpected Error", { description: err.message });
+      alert("Unexpected Error: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -1346,13 +1349,14 @@ export function ProjectFinanceTabContent({
         onSuccess={() => onRefresh?.()}
       />
 
-      <AddExpenseModal
+      <ExpenseEntryModal
         isOpen={expenseModalOpen}
         onClose={() => {
           setExpenseModalOpen(false);
           setEditingExpense(null);
         }}
-        projectId={projectId}
+        projects={[]}
+        defaultProjectId={projectId}
         initialCategory={expenseCategory}
         expenseToEdit={editingExpense}
         onSuccess={() => {

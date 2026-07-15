@@ -35,7 +35,7 @@ export function DispatchOverridesTable({ requests: initialRequests }: DispatchOv
     try {
       const res = await approveDispatchOverrideAction(projectId);
       if (res.success) {
-        toast.success("Override approved. Project dispatched.");
+        toast.success("Override approved. Gate unlocked.");
         setRequests(prev => prev.map(r => r.id === id ? { ...r, is_read: true } : r));
       } else {
         toast.error(res.error || "Failed to approve override.");

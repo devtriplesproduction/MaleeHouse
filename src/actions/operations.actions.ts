@@ -389,6 +389,8 @@ export async function submitCADRevisionAction(
     const { error: insertError } = await supabase.from('cad_revisions').insert(newRevision);
     if (insertError) throw new Error(insertError.message);
 
+    await updateProjectStageAction(projectId, "review", `CAD Revision #${revisionNumber} submitted for review.`);
+
     const projectName = await getProjectName(projectId);
     await logActivity(projectId, profile.id, "CAD_SUBMITTED", {
       revision_id: newRevision.id,
@@ -1047,6 +1049,38 @@ export async function getMyAssignedProjectsAction() {
         
         createdIds.forEach((id: string) => {
           if (!assignedEngineersSet.has(id)) {
+            assignedProjectIds.add(id);
+          }
+        });
+      }
+    }
+
+    // Include unassigned projects in 'prototype' or 'data_sync' phases for CAD (and admins) to claim/view
+    if (profile.role === 'cad' || profile.role === 'admin') {
+      const { data: cadProjects } = await supabase.from('projects').select('id').in('status', ['prototype', 'data_sync']).is('deleted_at', null);
+      if (cadProjects && cadProjects.length > 0) {
+        const cadIds = cadProjects.map((p: any) => p.id);
+        const { data: cadAssignments } = await supabase.from('project_assignments').select('project_id').in('project_id', cadIds).eq('role', 'cad');
+        const assignedCadSet = new Set((cadAssignments || []).map((a: any) => a.project_id));
+        
+        cadIds.forEach((id: string) => {
+          if (!assignedCadSet.has(id)) {
+            assignedProjectIds.add(id);
+          }
+        });
+      }
+    }
+
+    // Include unassigned projects in 'field_assigned' phase for field roles to claim/view
+    if (['field', 'field_engineer', 'admin'].includes(profile.role)) {
+      const { data: fieldProjects } = await supabase.from('projects').select('id').eq('status', 'field_assigned').is('deleted_at', null);
+      if (fieldProjects && fieldProjects.length > 0) {
+        const fieldIds = fieldProjects.map((p: any) => p.id);
+        const { data: fieldAssignments } = await supabase.from('project_assignments').select('project_id').in('project_id', fieldIds).in('role', ['field', 'field_engineer']);
+        const assignedFieldSet = new Set((fieldAssignments || []).map((a: any) => a.project_id));
+        
+        fieldIds.forEach((id: string) => {
+          if (!assignedFieldSet.has(id)) {
             assignedProjectIds.add(id);
           }
         });

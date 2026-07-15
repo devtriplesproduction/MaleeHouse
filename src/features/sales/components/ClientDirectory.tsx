@@ -274,11 +274,11 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
               <div
                 key={i}
                 onClick={() => setSelectedClient(client)}
-                className="group glass-card p-6 border-white/10 hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/5 transition-all duration-305 cursor-pointer flex flex-col justify-between"
+                className="group glass-card p-5 border-white/10 hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/5 transition-all duration-305 cursor-pointer flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xl group-hover:scale-110 transition-transform">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg group-hover:scale-110 transition-transform">
                       {client.client_name[0]}
                     </div>
                     <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 font-bold uppercase tracking-widest text-[9px] px-2 py-0.5">
@@ -286,11 +286,11 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                     </Badge>
                   </div>
 
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 group-hover:text-indigo-500 transition-colors">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3 group-hover:text-indigo-500 transition-colors line-clamp-1">
                     {client.client_name}
                   </h3>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
                       <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5">
                         <Phone className="w-3.5 h-3.5" />
@@ -319,7 +319,7 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
                   </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between">
+                <div className="mt-5 pt-4 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

@@ -12,6 +12,7 @@ import {
   Calendar,
   Building2,
   ChevronRight,
+  ChevronLeft,
   RefreshCw,
   ChevronDown,
   Smile
@@ -51,6 +52,8 @@ export function EODReview({ reports, staff, currentUserRole, currentUserId }: EO
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Map staff to reports to get departments and ensure employee_name exists
   const reportsWithDept = useMemo(() => {
@@ -68,11 +71,9 @@ export function EODReview({ reports, staff, currentUserRole, currentUserId }: EO
     });
   }, [reports, staff]);
 
-  // Group by Date with full filtering
-  const groupedReports = useMemo(() => {
-    const groups: Record<string, EODReport[]> = {};
-    
-    reportsWithDept
+  // 1. Filter and Sort All Reports
+  const filteredAndSortedReports = useMemo(() => {
+    return reportsWithDept
       .filter((report: any) => {
         const matchesSearch = 
           (report.employee_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -91,15 +92,34 @@ export function EODReview({ reports, staff, currentUserRole, currentUserId }: EO
 
         return matchesSearch && matchesEmployee && matchesDate;
       })
-      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .forEach((report: any) => {
-        const dateKey = format(parseISO(report.date), "EEEE, d MMMM yyyy").toUpperCase();
-        if (!groups[dateKey]) groups[dateKey] = [];
-        groups[dateKey].push(report);
-      });
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [reportsWithDept, searchTerm, employeeFilter, fromDate, toDate]);
+
+  // 2. Pagination Logic
+  const totalPages = Math.ceil(filteredAndSortedReports.length / itemsPerPage);
+  
+  const paginatedReports = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAndSortedReports.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedReports, currentPage]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, employeeFilter, fromDate, toDate]);
+
+  // 3. Group by Date
+  const groupedReports = useMemo(() => {
+    const groups: Record<string, EODReport[]> = {};
+    
+    paginatedReports.forEach((report: any) => {
+      const dateKey = format(parseISO(report.date), "EEEE, d MMMM yyyy").toUpperCase();
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(report);
+    });
       
     return groups;
-  }, [reportsWithDept, searchTerm, employeeFilter, fromDate, toDate]);
+  }, [paginatedReports]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -109,6 +129,7 @@ export function EODReview({ reports, staff, currentUserRole, currentUserId }: EO
       setEmployeeFilter("all");
       setFromDate("");
       setToDate("");
+      setCurrentPage(1);
     }, 600);
   };
 
@@ -217,6 +238,64 @@ export function EODReview({ reports, staff, currentUserRole, currentUserId }: EO
             </div>
             <p className="text-sm font-black uppercase tracking-widest text-slate-400">No reports found</p>
             <p className="text-xs text-slate-500 mt-1">Try adjusting your filters or search terms.</p>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 dark:border-white/10 pt-6 mt-8 gap-4">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Showing <span className="font-bold text-indigo-600 dark:text-indigo-400">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-indigo-600 dark:text-indigo-400">{Math.min(currentPage * itemsPerPage, filteredAndSortedReports.length)}</span> of <span className="font-bold text-slate-900 dark:text-white">{filteredAndSortedReports.length}</span> results
+            </p>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Prev
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  // Show max 5 pages around current page
+                  let pageToShow = i + 1;
+                  if (totalPages > 5) {
+                    if (currentPage > 3 && currentPage < totalPages - 1) {
+                      pageToShow = currentPage - 2 + i;
+                    } else if (currentPage >= totalPages - 1) {
+                      pageToShow = totalPages - 4 + i;
+                    }
+                  }
+                  
+                  return (
+                    <button
+                      key={pageToShow}
+                      onClick={() => setCurrentPage(pageToShow)}
+                      className={cn(
+                        "w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg transition-all",
+                        currentPage === pageToShow 
+                          ? "bg-indigo-600 dark:bg-indigo-500 text-white shadow-md shadow-indigo-500/20" 
+                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      )}
+                    >
+                      {pageToShow}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>

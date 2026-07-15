@@ -279,6 +279,8 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
         milestones={milestones}
         currentStage={project.status}
         isQcRejected={isQcRejected}
+        dispatchOverrideRequested={project.dispatch_override_requested}
+        dispatchOverrideApproved={project.dispatch_override_approved}
       />
 
       {/* Central Clean Tab-based Layout */}

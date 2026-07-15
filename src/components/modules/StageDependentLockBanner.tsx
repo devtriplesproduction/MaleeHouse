@@ -22,6 +22,8 @@ interface StageDependentLockBannerProps {
   milestones: Milestone[];
   currentStage: string;
   isQcRejected?: boolean;
+  dispatchOverrideRequested?: boolean;
+  dispatchOverrideApproved?: boolean;
 }
 
 export function StageDependentLockBanner({
@@ -32,6 +34,8 @@ export function StageDependentLockBanner({
   milestones = [],
   currentStage,
   isQcRejected = false,
+  dispatchOverrideRequested = false,
+  dispatchOverrideApproved = false,
 }: StageDependentLockBannerProps) {
   
   // 1. Global Freeze Check
@@ -54,9 +58,43 @@ export function StageDependentLockBanner({
     );
   }
 
-  // 2. Stage-Dependent Payment Checks
+  // 2. Dispatch Override Requested Check
+  if (dispatchOverrideRequested) {
+    return (
+      <div className="p-5 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl flex items-start gap-4 shadow-sm animate-in slide-in-from-top-2 duration-300">
+        <div className="p-2.5 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl flex-shrink-0">
+          <ShieldAlert className="w-5 h-5" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold text-red-900 dark:text-red-100 uppercase tracking-wider">DISPATCH OVERRIDE REQUESTED</h3>
+          <p className="text-xs font-medium text-red-700 dark:text-red-300">
+            An operations override has been requested for this project. It is currently awaiting Admin approval.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Dispatch Override Approved Check
+  if (dispatchOverrideApproved) {
+    return (
+      <div className="p-5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl flex items-start gap-4 shadow-sm animate-in slide-in-from-top-2 duration-300">
+        <div className="p-2.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex-shrink-0">
+          <ShieldAlert className="w-5 h-5" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-100 uppercase tracking-wider">DISPATCH OVERRIDE APPROVED</h3>
+          <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            Admin has approved the dispatch override. You can proceed with operations despite pending milestone payments.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Stage-Dependent Payment Checks
   const pendingMilestones = milestones.filter(
-    (m) => m.status !== "paid" && (m.linked_stage === currentStage || m.block_after_stage === currentStage)
+    (m) => m.status !== "paid" && (m.block_after_stage === currentStage)
   );
 
   if (pendingMilestones.length > 0) {
@@ -79,7 +117,7 @@ export function StageDependentLockBanner({
     );
   }
 
-  // 3. QC Rejection Check
+  // 5. QC Rejection Check
   if (isQcRejected) {
     return (
       <div className="p-5 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-2xl flex items-start gap-4 shadow-sm animate-in slide-in-from-top-2 duration-300">

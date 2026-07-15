@@ -83,6 +83,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       supabase.auth.signOut().catch(console.error);
       setUser(null);
       setRole(null);
+      sessionStorage.removeItem("hasSeenBirthdays_v7");
       router.push('/login');
       router.refresh();
       setIsLoading(false);

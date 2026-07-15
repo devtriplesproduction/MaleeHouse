@@ -33,9 +33,12 @@ export function LoginForm() {
             variant: "error"
           });
         } else if (result && result.success && result.redirectTo) {
-          router.push(result.redirectTo);
+          window.location.assign(result.redirectTo);
         }
       } catch (err: any) {
+        if (isRedirectError(err)) {
+          throw err;
+        }
         setError("An unexpected error occurred.");
         console.error(err);
       }

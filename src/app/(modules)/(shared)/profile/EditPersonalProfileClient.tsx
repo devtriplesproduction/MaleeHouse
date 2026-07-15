@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Edit2, Save, X, Loader2, Camera, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updateMyProfileAction } from "@/actions/auth.actions";
-import { DatePicker } from "@/components/ui/date-picker";
+import { PremiumDatePicker as DatePicker } from "@/components/ui/PremiumDatePicker";
 import { cn } from "@/lib/utils";
 
 export default function EditPersonalProfileClient({ profile }: { profile: any }) {
@@ -78,18 +78,18 @@ export default function EditPersonalProfileClient({ profile }: { profile: any })
     }
   };
 
-  if (!isEditing) {
-    return (
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={() => setIsEditing(true)}
-          className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
-        >
-          <Edit2 className="w-3.5 h-3.5" /> Edit Personal Info
-        </button>
-      </div>
-    );
-  }
+  // if (!isEditing) {
+  //   return (
+  //     <div className="flex justify-end mt-4">
+  //       <button
+  //         onClick={() => setIsEditing(true)}
+  //         className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
+  //       >
+  //         <Edit2 className="w-3.5 h-3.5" /> Edit Personal Info
+  //       </button>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="mt-8 bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-3xl p-6 md:p-8 space-y-6 animate-in slide-in-from-bottom-4 shadow-xl">
@@ -144,7 +144,7 @@ export default function EditPersonalProfileClient({ profile }: { profile: any })
             <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Date of Birth</label>
             <DatePicker
               value={formData.dob}
-              onChange={(e: any) => setFormData({ ...formData, dob: e.target.value })}
+              onChange={(val) => setFormData({ ...formData, dob: val })}
               className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 dark:text-white"
             />
           </div>
@@ -209,7 +209,7 @@ export default function EditPersonalProfileClient({ profile }: { profile: any })
           <button
             onClick={handleSave}
             disabled={isSubmitting}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
+            className="px-6 py-2.5 bg-indigo-400 hover:bg-indigo-400 text-white rounded-xl text-xs font-black tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
           >
             {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             Save Changes

@@ -111,7 +111,7 @@ export default async function CADDashboardPage() {
               ) : (
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                   {projects.map((p: any) => (
-                    <PendingProjectListCard key={p.id} project={p} showAccept={false} />
+                    <PendingProjectListCard key={p.id} project={p} showAccept={!p.my_role} />
                   ))}
                 </div>
               )}

@@ -278,9 +278,20 @@ export async function clientUpdateQuotationStatusAction(
 
     if (!quotation) return { success: false, error: 'Invalid quotation token or quotation not found.' };
 
-    const { data: project } = await supabase.from('projects').select('status').eq('id', quotation.project_id).single();
+    const { data: project } = await supabase.from('projects').select('status, client_contact').eq('id', quotation.project_id).single();
     if (project?.status === "completed" || project?.status === "archived") {
       return { success: false, error: "Project is locked and cannot be modified." };
+    }
+
+    if (status === 'Approved') {
+      const normalizedInput = approverPhone?.replace(/\D/g, '');
+      const normalizedRecord = project?.client_contact?.replace(/\D/g, '');
+      const inputLast10 = normalizedInput?.slice(-10);
+      const recordLast10 = normalizedRecord?.slice(-10);
+      
+      if (!recordLast10 || inputLast10 !== recordLast10) {
+        return { success: false, error: "The entered mobile number does not match the registered client contact." };
+      }
     }
 
     const currentStatus = quotation.status || 'Draft';

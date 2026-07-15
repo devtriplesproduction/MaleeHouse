@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { getAllUsersAction } from "@/actions/admin.actions";
+import { getTodayBirthdaysAction } from "@/actions/auth.actions";
 import { Gift, Sparkles, Cake, Star, PartyPopper } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
@@ -43,42 +43,9 @@ export function BirthdayNotifier() {
 
     async function checkBirthdays() {
       try {
-        const { success, data } = await getAllUsersAction();
-        if (success && data) {
-          const today = new Date();
-          const todayMonth = today.getMonth();
-          const todayDate = today.getDate();
-
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          const tomorrowMonth = tomorrow.getMonth();
-          const tomorrowDate = tomorrow.getDate();
-
-          const bdays: any[] = [];
-
-          data.forEach((user: any) => {
-            if (user.dob) {
-              const [year, month, date] = user.dob.split('-');
-              if (year && month && date) {
-                const dobMonth = parseInt(month, 10) - 1;
-                const dobDate = parseInt(date, 10);
-
-                if (dobMonth === todayMonth && dobDate === todayDate) {
-                  if (role === "hr" || role === "admin" || currentUser?.id === user.id) {
-                    bdays.push({ user, type: 'today' });
-                  }
-                } else if (dobMonth === tomorrowMonth && dobDate === tomorrowDate) {
-                  if (role === "hr" || role === "admin" || currentUser?.id === user.id) {
-                    bdays.push({ user, type: 'tomorrow' });
-                  }
-                }
-              }
-            }
-          });
-
-          if (bdays.length > 0) {
-            setNotifications(bdays);
-          }
+        const { success, data } = await getTodayBirthdaysAction();
+        if (success && data && data.length > 0) {
+          setNotifications(data);
         }
       } catch (err) {
         console.error("Failed to check birthdays:", err);

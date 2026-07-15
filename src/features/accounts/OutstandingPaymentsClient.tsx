@@ -6,7 +6,7 @@ import {
   AlertCircle, ChevronDown, ChevronRight, ChevronLeft, FileText, 
   Target, UserPlus, Award, CheckCircle2 
 } from "lucide-react";
-import { AddExpenseModal } from "@/features/accounts/AddExpenseModal";
+import { ExpenseEntryModal } from "@/features/accounts/ExpenseEntryModal";
 import Link from "next/link";
 
 interface ProjectSummary {
@@ -288,14 +288,13 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
 
       {/* Add Expense Modal */}
       {selectedProjectId && (
-        <AddExpenseModal
+        <ExpenseEntryModal
           isOpen={expenseModalOpen}
           onClose={() => setExpenseModalOpen(false)}
-          projectId={selectedProjectId}
+          projects={[]}
+          defaultProjectId={selectedProjectId}
           initialCategory={expenseCategory}
           onSuccess={() => {
-            // Ideally revalidate or refresh data here.
-            // A hard refresh works or router.refresh()
             window.location.reload();
           }}
         />

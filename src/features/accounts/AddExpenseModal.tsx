@@ -12,7 +12,7 @@ interface AddExpenseModalProps {
   onClose: () => void;
   projectId: string;
   onSuccess: () => void;
-  initialCategory?: 'labor' | 'material' | 'travel' | 'overhead' | 'other';
+  initialCategory?: string;
   expenseToEdit?: any;
 }
 
@@ -21,10 +21,10 @@ export function AddExpenseModal({
   onClose,
   projectId,
   onSuccess,
-  initialCategory = 'labor',
+  initialCategory = '',
   expenseToEdit
 }: AddExpenseModalProps) {
-  const [category, setCategory] = useState<'labor' | 'material' | 'travel' | 'overhead' | 'other'>(initialCategory);
+  const [category, setCategory] = useState<string>(initialCategory);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState<string>('');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
@@ -82,7 +82,7 @@ export function AddExpenseModal({
         // Reset state
         setDescription('');
         setAmount('');
-        setCategory('labor');
+        setCategory('');
       } else {
         toast.error(res?.error || (expenseToEdit ? 'Failed to update expense.' : 'Failed to log expense.'));
       }
@@ -138,11 +138,27 @@ export function AddExpenseModal({
                     required
                     className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   >
-
-                    <option value="material">Material Cost</option>
-                    <option value="travel">Travel</option>
-                    <option value="overhead">Overhead</option>
-                    <option value="other">Other</option>
+                    <option value="" disabled>Select category...</option>
+                    <option value="Travelling (Petrol)(Per 50Km)">Travelling (Petrol)(Per 50Km)</option>
+                    <option value="Accomodation">Accomodation</option>
+                    <option value="Food & Breakfast">Food & Breakfast</option>
+                    <option value="Vehicle Maintance">Vehicle Maintance</option>
+                    <option value="Paint">Paint</option>
+                    <option value="Fakki">Fakki</option>
+                    <option value="Other Field Expences">Other Field Expences</option>
+                    <option value="Other Designing Expences">Other Designing Expences</option>
+                    <option value="Other Submission Exp">Other Submission Exp</option>
+                    <option value="Submission Travel">Submission Travel</option>
+                    <option value="Equipment Rent (DGPS)">Equipment Rent (DGPS)</option>
+                    <option value="Equipment Rent (Drone)">Equipment Rent (Drone)</option>
+                    <option value="Equipment Rent (Lidar)">Equipment Rent (Lidar)</option>
+                    <option value="Data Processing Cost (DGPS)">Data Processing Cost (DGPS)</option>
+                    <option value="Data Processing Cost(Drone)">Data Processing Cost(Drone)</option>
+                    <option value="Data Processing Cost (Lidar)">Data Processing Cost (Lidar)</option>
+                    <option value="Computer Cost">Computer Cost</option>
+                    <option value="Auto Cad License">Auto Cad License</option>
+                    <option value="Printing/Xerox">Printing/Xerox</option>
+                    <option value="Stationary">Stationary</option>
                   </select>
                 </div>
               </div>

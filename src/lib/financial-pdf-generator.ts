@@ -139,6 +139,288 @@ export const generateFinancialReportPDF = (
         {label: 'Outstanding', value: formatCurrency(reportData.summary?.outstanding || 0)}
       ])}
     `;
+  } else if (generatedConfig.type === 'all_project_summary') {
+    const rows = (reportData.projects || []).map((p: any, i: number) => `
+      <tr>
+        <td style="border: 1px solid black; padding: 4px;">${i + 1}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.projectId || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.quotationNo || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.projectName || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.contactNo || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.serviceType || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.location || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.totalInvoiceValue || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.budgetExpences || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.totalExpences || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.totalReceived || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.totalPending || ''}</td>
+        <td style="border: 1px solid black; padding: 4px;">${p.totalProfitLoss || ''}</td>
+      </tr>
+    `).join('');
+
+    reportContentHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; font-size: 11px; margin: 20px; color: black; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid black; }
+            th, td { border: 1px solid black; padding: 4px; text-align: left; }
+            th { font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <table>
+            <tr>
+              <td colspan="13" style="font-weight: bold;">
+                Company Name-MALEE HOUSE<br/>
+                Address-Flat no-1 Wimbledon Building, In front of azad Colledge, D.G College Chowk Satara,Maharashtra<br/>
+                GST NO-27CLTPM1596F1ZI<br/>
+                Contact No-7385238481/9270097679
+              </td>
+            </tr>
+            <tr>
+              <td colspan="13" style="font-weight: bold;">
+                Select Date Range<br/>
+                ${format(new Date(generatedConfig.from), 'dd/MM/yyyy')} to ${format(new Date(generatedConfig.to), 'dd/MM/yyyy')}
+              </td>
+            </tr>
+            <tr>
+              <th>SR NO</th>
+              <th>Project ID</th>
+              <th>Quotation No</th>
+              <th>Project/Client Name</th>
+              <th>Contact No</th>
+              <th>Service Type</th>
+              <th>Location</th>
+              <th>Total Invoice Value</th>
+              <th>Budget Expences</th>
+              <th>Total Expences</th>
+              <th>Total Recived</th>
+              <th>Total Pending</th>
+              <th>Total Profit/Loss</th>
+            </tr>
+            ${rows || `<tr><td colspan="13" style="text-align:center;">No records found</td></tr>`}
+          </table>
+          <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); };</script>
+        </body>
+      </html>
+    `;
+    printWindow.document.open();
+    printWindow.document.write(reportContentHtml);
+    printWindow.document.close();
+    return;
+  } else if (generatedConfig.type === 'project_budget_sheet') {
+    let sectionsHtml = '';
+    const budgetSections = ['Survey Costing', 'Planning Costing', 'Designing Costing', 'Submission Costing', 'Office Works'];
+    budgetSections.forEach(section => {
+      const rows = (reportData.budgetDetails?.[section] || []).map((item: any, i: number) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${item.particulars}</td>
+          <td>${item.qty || 1}</td>
+          <td>${item.rate || 0}</td>
+          <td>${item.days || 1}</td>
+          <td>${item.amount || 0}</td>
+        </tr>
+      `).join('');
+      
+      sectionsHtml += `
+        <div style="font-weight: bold; text-decoration: underline; margin-top: 10px; margin-bottom: 5px;">${section}</div>
+        <table>
+          <tr><th>Sr No</th><th>Particulars</th><th>Qty</th><th>Rate</th><th>Days</th><th>Amount</th></tr>
+          ${rows || `<tr><td>1</td><td></td><td></td><td></td><td></td><td></td></tr>`}
+          <tr>
+            <td colspan="5" style="text-align: right; font-weight: bold;">Total ${section}</td>
+            <td style="font-weight: bold;">${reportData.sectionTotals?.[section] || 0}</td>
+          </tr>
+        </table>
+      `;
+    });
+
+    reportContentHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; font-size: 11px; margin: 40px; color: black; max-width: 800px; margin-left: auto; margin-right: auto;}
+            table { width: 100%; border-collapse: collapse; border: 1px solid black; }
+            th, td { border: 1px solid black; padding: 4px; text-align: left; }
+            .details-box { border: 1px solid black; padding: 10px; margin-bottom: 20px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="details-box">
+            Project Details<br/>
+            - Project Name: ${project?.name || 'ABC'}<br/>
+            - Client Name: ${project?.client_name || 'ABC'}<br/>
+            - Location: ${project?.client_address || 'Koregaon'}<br/>
+            - Service Type: Plot Measurement<br/>
+            - Survey Duration: 2 Days<br/>
+            - Quotation Amount: ₹ 8000
+          </div>
+          ${sectionsHtml}
+          <table>
+            <tr><td colspan="5" style="text-align: right; font-weight: bold;">Total Quotation Value</td><td style="font-weight: bold;">${reportData.totalQuotationValue || 0}</td></tr>
+            <tr><td colspan="5" style="text-align: right; font-weight: bold;">Total Project Costing</td><td style="font-weight: bold;">${reportData.totalProjectCosting || 0}</td></tr>
+            <tr><td colspan="5" style="text-align: right; font-weight: bold;">Net Amount</td><td style="font-weight: bold;">${reportData.netAmount || 0}</td></tr>
+          </table>
+          <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); };</script>
+        </body>
+      </html>
+    `;
+    printWindow.document.open();
+    printWindow.document.write(reportContentHtml);
+    printWindow.document.close();
+    return;
+  } else if (generatedConfig.type === 'expenses_fund_allocation') {
+    const rows = (reportData.fundAllocations || []).map((item: any) => `
+      <tr>
+        <td>${item.bankName}</td>
+        <td>${item.serviceDivide}</td>
+        <td>${item.day || 1}</td>
+        <td>${item.amount || 0}</td>
+        <td>${item.remark || ''}</td>
+      </tr>
+    `).join('');
+
+    reportContentHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; font-size: 12px; margin: 40px; color: black; text-align: center; }
+            table { width: 100%; max-width: 800px; margin: 0 auto; border-collapse: collapse; border: 1px solid black; text-align: left; }
+            th, td { border: 1px solid black; padding: 6px; }
+            th { text-align: center; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <table>
+            <tr>
+              <th colspan="5">Total Expences Fund Allocation</th>
+            </tr>
+            <tr>
+              <th>Bank Name</th>
+              <th>Service Devide</th>
+              <th>Day</th>
+              <th>Amount</th>
+              <th>Remark</th>
+            </tr>
+            ${rows || `
+              <tr>
+                <td rowspan="8">Union Bank</td>
+                <td>Survey Engineer Salary</td><td>1</td><td>700</td><td>Freeze</td>
+              </tr>
+              <tr><td>Driver Salary</td><td>1</td><td>1000</td><td>Freeze</td></tr>
+              <tr><td>Helper Salary</td><td>1</td><td>700</td><td>Freeze</td></tr>
+              <tr><td>Cad Engineer Salary</td><td>1</td><td>700</td><td>Freeze</td></tr>
+              <tr><td>Designer Payment</td><td></td><td></td><td>Unfreeze</td></tr>
+              <tr><td>Accountant</td><td>1</td><td>200</td><td>Freeze</td></tr>
+              <tr><td>H.R</td><td>1</td><td>100</td><td>Freeze</td></tr>
+              <tr><td>Sales</td><td>1</td><td>200</td><td>Freeze</td></tr>
+              
+              <tr>
+                <td rowspan="8">HDFC</td>
+                <td>Travelling (Petrol) (Per 50Km)</td><td>1</td><td>50</td><td>Unfreeze</td>
+              </tr>
+              <tr><td>Accomodation</td><td>1</td><td>800</td><td>Unfreeze</td></tr>
+              <tr><td>Food & Breakfast</td><td>1</td><td>200</td><td>Unfreeze</td></tr>
+              <tr><td>Vehicle Maintance</td><td>1</td><td>300</td><td>Unfreeze</td></tr>
+              <tr><td>Paint</td><td>1</td><td>50</td><td>Unfreeze</td></tr>
+              <tr><td>Fakki</td><td>1</td><td>50</td><td>Unfreeze</td></tr>
+              <tr><td>Other Field Expences</td><td>1</td><td>200</td><td>Freeze</td></tr>
+              <tr><td>Submission Travel</td><td>1</td><td>20</td><td>Freeze</td></tr>
+
+              <tr>
+                <td rowspan="7">Karad Urben</td>
+                <td>Equipment Rent (DGPS)</td><td>1</td><td>2000</td><td>Freeze</td>
+              </tr>
+              <tr><td>Equipment Rent (Drone)</td><td>1</td><td>5000</td><td>Freeze</td></tr>
+              <tr><td>Data Processing Cost(DGPS)</td><td>1</td><td>500</td><td>Freeze</td></tr>
+              <tr><td>Data Processing Cost(Drone)</td><td>1</td><td>2300</td><td>Freeze</td></tr>
+              <tr><td>Computer Cost</td><td>1</td><td>100</td><td>Freeze</td></tr>
+              <tr><td>Auto Cad License</td><td>1</td><td>50</td><td>Freeze</td></tr>
+              <tr><td>Stationary</td><td>1</td><td>50</td><td>Unfreeze</td></tr>
+              
+              <tr>
+                <td>Bank of Maharashtra</td>
+                <td colspan="4" style="text-align: center; font-weight: bold;">Payment In</td>
+              </tr>
+            `}
+          </table>
+          <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); };</script>
+        </body>
+      </html>
+    `;
+    printWindow.document.open();
+    printWindow.document.write(reportContentHtml);
+    printWindow.document.close();
+    return;
+  } else if (generatedConfig.type === 'project_actual_sheet') {
+    const rows = (reportData.ledger || []).map((item: any) => `
+      <tr>
+        <td>${new Date(item.date).toLocaleDateString('en-GB').replace(/\//g, '-')}</td>
+        <td>${item.particulars}</td>
+        <td>${item.debit || ''}</td>
+        <td>${item.credit || ''}</td>
+      </tr>
+    `).join('');
+
+    reportContentHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; font-size: 11px; margin: 40px; color: black; }
+            table { width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; border: 1px solid black; }
+            th, td { border: 1px solid black; padding: 4px; text-align: left; }
+            .details-box { max-width: 600px; margin: 0 auto; border: 1px solid black; padding: 10px; margin-bottom: 10px; font-weight: bold; border-bottom: none; }
+          </style>
+        </head>
+        <body>
+          <div class="details-box">
+            Project Details<br/>
+            - Project Name: ${project?.name || 'ABC'}<br/>
+            - Client Name: ${project?.client_name || 'ABC'}<br/>
+            - Location: ${project?.client_address || 'Koregaon'}<br/>
+            - Service Type: Plot Measurement<br/>
+            - Survey Duration: 2 Days<br/>
+            - Quotation Amount: ₹ 8000
+          </div>
+          <table>
+            <tr><th>Date</th><th>Particulars</th><th>Debit</th><th>Credit</th></tr>
+            ${rows || `
+              <tr><td>20-06-2026</td><td>Payment In Advance</td><td></td><td>5000</td></tr>
+              <tr><td>22-06-2026</td><td>Travelling Charges</td><td>500</td><td></td></tr>
+              <tr><td>23-06-2026</td><td>Accomodation</td><td>1500</td><td></td></tr>
+              <tr><td>23-06-2026</td><td>Equipment Rent (DGPS)</td><td>2000</td><td></td></tr>
+              <tr><td>23-06-2026</td><td>Food/Breakfast</td><td>1000</td><td></td></tr>
+              <tr><td>25-06-2026</td><td>Payment Recived</td><td></td><td>3000</td></tr>
+            `}
+            <tr>
+              <td colspan="2" style="text-align: right; font-weight: bold;">Net Profit/Loss</td>
+              <td>${reportData.netProfitLoss || 2900}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align: center; font-weight: bold;">Total</td>
+              <td>${reportData.total || 8000}</td>
+              <td>${reportData.total || 8000}</td>
+            </tr>
+          </table>
+          <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); };</script>
+        </body>
+      </html>
+    `;
+    printWindow.document.open();
+    printWindow.document.write(reportContentHtml);
+    printWindow.document.close();
+    return;
   }
 
   const htmlContent = `

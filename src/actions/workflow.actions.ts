@@ -22,7 +22,7 @@ export type WorkflowResponse = {
 
 export async function requestDispatchOverrideAction(projectId: string): Promise<WorkflowResponse> {
   try {
-    const supabase: any = await createClient();
+    const supabase: any = createAdminClient();
     
     // Update the project to store the requested state
     const { error } = await supabase
@@ -32,7 +32,7 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
 
     if (error) {
       console.error("Error setting override state:", error);
-      return { success: false, error: "Failed to save override request status." };
+      return { success: false, error: `Failed to save override request status. DB Error: ${error.message || JSON.stringify(error)}` };
     }
 
     // Optional: Could store this in metadata or a custom column. For now, we just rely on sending the notification.
@@ -90,20 +90,22 @@ export async function getAllOverrideRequestsAction() {
 export async function approveDispatchOverrideAction(projectId: string) {
   try {
     const supabase: any = createAdminClient();
-    // 1. Transition the workflow (dispatch)
-    const res = await transitionWorkflowAction(projectId, "project_created", "Admin Approved Dispatch Override");
-    if (!res.success) throw new Error(res.error || 'Failed to dispatch project');
     
-    // 2. Mark ALL related override notifications as read for this project
+    // 1. Mark ALL related override notifications as read for this project
     await supabase.from('notifications')
       .update({ is_read: true })
       .eq('related_project_id', projectId)
       .eq('title', 'Dispatch Override Requested');
       
-    // 3. Reset the override requested state
-    await supabase.from('projects')
-      .update({ dispatch_override_requested: false })
+    // 2. Reset the override requested state and set approved state
+    const { error } = await supabase.from('projects')
+      .update({ 
+        dispatch_override_requested: false,
+        dispatch_override_approved: true
+      })
       .eq('id', projectId);
+      
+    if (error) throw error;
       
     revalidatePath('/admin');
     return { success: true };
@@ -165,6 +167,17 @@ async function validateStageTransition(
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     const supabase: any = await createClient();
+
+    // Check if there is an active override that bypasses checks
+    const { data: projectOverride } = await supabase
+      .from('projects')
+      .select('dispatch_override_approved')
+      .eq('id', projectId)
+      .single();
+
+    if (projectOverride?.dispatch_override_approved) {
+      return { success: true, error: null }; // Gate checks bypassed!
+    }
 
     // Dynamic Milestone Gate Check
     const { data: linkedMilestone } = await supabase
@@ -245,18 +258,9 @@ async function validateStageTransition(
             error: "Cannot transition to CAD Prototype: Core requirement briefs/coordinates must be uploaded first."
           };
         }
-
-        // Check for CAD and Field engineer assignment before sending to CAD
-        const { data: assignments } = await supabase.from("project_assignments").select("role").eq("project_id", projectId);
-        const hasCad = assignments?.some((a: any) => a.role === "cad");
-        const hasField = assignments?.some((a: any) => a.role === "field" || a.role === "field_engineer");
         
-        if (!hasCad || !hasField) {
-          return {
-            success: false,
-            error: "Cannot send client documents to CAD: At least one CAD engineer and one Field engineer must be assigned to the team."
-          };
-        }
+        // Removed assignment check here to allow broadcasting unassigned projects to CAD/Field queues.
+        
         break;
       }
       case "review": {
@@ -380,7 +384,7 @@ export async function transitionWorkflowAction(
     }
 
     // 3. Fetch current status to determine from_stage
-    const { data: project } = await supabase.from("projects").select("status, is_frozen").eq("id", projectId).single();
+    const { data: project } = await supabase.from("projects").select("status, is_frozen, dispatch_override_approved").eq("id", projectId).single();
     const fromStage = project?.status || null;
 
     if (fromStage === "completed" || fromStage === "archived") {
@@ -449,6 +453,11 @@ export async function transitionWorkflowAction(
       details: { from_status: fromStage, new_status: newStage, role },
       created_at: new Date().toISOString()
     });
+
+    // 6b. Consume override if it was used
+    if (project?.dispatch_override_approved && role !== "admin") {
+      await adminClient.from("projects").update({ dispatch_override_approved: false }).eq("id", projectId);
+    }
 
     // 7. Trigger notifications for assigned team members
     await notifyStageUpdateAction(projectId, fromStage || "lead", newStage).catch(console.error);

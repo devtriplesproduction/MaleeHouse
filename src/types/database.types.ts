@@ -336,6 +336,41 @@ export interface Database {
           deleted_at?: string | null
         }
       }
+      fund_allocations: {
+        Row: {
+          id: string
+          project_id: string
+          bank_account_id: string | null
+          service_divide: string
+          day: number | null
+          amount: number | null
+          remark: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          bank_account_id?: string | null
+          service_divide: string
+          day?: number | null
+          amount?: number | null
+          remark?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          bank_account_id?: string | null
+          service_divide?: string
+          day?: number | null
+          amount?: number | null
+          remark?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
       invoices: {
         Row: {
           id: string
@@ -687,6 +722,44 @@ export interface Database {
           project_id?: string
           accountant_id?: string
           assigned_at?: string
+        }
+      }
+      project_budget_items: {
+        Row: {
+          id: string
+          project_id: string
+          section: string
+          particulars: string
+          qty: number | null
+          rate: number | null
+          days: number | null
+          amount: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          section: string
+          particulars: string
+          qty?: number | null
+          rate?: number | null
+          days?: number | null
+          amount?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          section?: string
+          particulars?: string
+          qty?: number | null
+          rate?: number | null
+          days?: number | null
+          amount?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
       }
       project_assignments: {

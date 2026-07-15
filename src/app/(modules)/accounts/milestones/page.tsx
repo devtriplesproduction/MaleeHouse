@@ -273,15 +273,20 @@ function ProjectMilestonesContent() {
           } else {
             toast.error(dispatchRes?.error || "Failed to dispatch to Survey.");
           }
+        } else {
+          // Fetch the updated milestones immediately to show them in the panel
+          handleOpenPanel(selectedProject);
         }
 
-        closePanel();
         fetchProjects();
       } else {
-        toast.error(res?.error || "Failed to save milestones.");
+        const errorMsg = res?.error || "Failed to save milestones.";
+        toast.error(errorMsg);
+        alert(errorMsg); // Fallback to ensure the message is seen
       }
     } catch (err) {
       toast.error("An unexpected error occurred.");
+      alert("An unexpected error occurred.");
     } finally {
       setSaving(false);
     }

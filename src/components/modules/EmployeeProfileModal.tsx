@@ -9,8 +9,10 @@ import {
   Trash2, Award, ShieldAlert, BadgeInfo, IndianRupee,
   Clock, Check, UserCheck, Eye, EyeOff, Download, Shield, Edit2, Save, Camera, ChevronDown
 } from "lucide-react";
+import { Select, SelectItem } from '@/components/ui/select';
 import { Badge } from "@/components/ui/badge";
-import { DatePicker } from "@/components/ui/date-picker";
+import { Button } from "@/components/ui/button";
+import { PremiumDatePicker as DatePicker } from "@/components/ui/PremiumDatePicker";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -323,7 +325,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
         setDocumentsList(prev => {
           const newList = [...prev, newFileObj];
-          
+
           let progress = 0;
           const interval = setInterval(() => {
             progress += 25;
@@ -381,7 +383,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
     const incAmount = parseFloat(incrementInput);
     const isValid = !isNaN(incAmount) && incAmount > 0;
     const newSalary = currentSalary + (isValid ? incAmount : 0);
-    
+
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
         <div className="bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
@@ -415,7 +417,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 <div className="text-sm text-slate-500 dark:text-slate-400">This employee hasn't received any recorded salary increments yet.</div>
               </div>
             )}
-            
+
             {lastIncrement && new Date() >= new Date(new Date(lastIncrement.effective_date).setMonth(new Date(lastIncrement.effective_date).getMonth() + 3)) && (
               <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
                 <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
@@ -427,7 +429,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
               </div>
             )}
-            
+
             <div className="space-y-1">
               <label className="text-xs font-black uppercase tracking-widest text-slate-400">Current Base Salary</label>
               <div className="text-lg font-bold text-slate-700 dark:text-slate-300">₹{currentSalary.toLocaleString('en-IN')}</div>
@@ -599,13 +601,16 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "py-3 border-b-2 text-xs font-black uppercase tracking-wider outline-none transition-all",
+                "relative py-3.5 px-1 text-xs font-black uppercase tracking-wider outline-none transition-all",
                 activeTab === tab.id
-                  ? "border-indigo-500 text-indigo-500"
-                  : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400"
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
               )}
             >
               {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-t-full shadow-[0_-2px_10px_rgba(79,70,229,0.3)]" />
+              )}
             </button>
           ))}
         </div>
@@ -681,7 +686,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Date of Birth</label>
                   <DatePicker
                     value={formData.dob}
-                    onChange={(e: any) => setFormData({ ...formData, dob: e.target.value })}
+                    onChange={(val) => setFormData({ ...formData, dob: val })}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
@@ -689,17 +694,16 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Gender</label>
                   <div className="relative">
-                    <select
+                    <Select
                       value={formData.gender}
-                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      onValueChange={(val) => setFormData({ ...formData, gender: val })}
                       disabled={!isEditing}
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none pr-10"
+                      buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 disabled:text-slate-500 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                     >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -727,7 +731,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">residential Address</label>
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Residential Address</label>
                 <textarea
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -760,29 +764,29 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Department</label>
-                  <select
+                  <Select
                     value={formData.department}
-                    onChange={(e) => handleDepartmentChange(e.target.value)}
+                    onValueChange={(val) => handleDepartmentChange(val)}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
+                    buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   >
                     {DEPARTMENTS.map((dept: any) => (
-                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Designation / Role</label>
-                  <select
+                  <Select
                     value={formData.designation}
-                    onChange={(e) => handleDesignationChange(e.target.value)}
+                    onValueChange={(val) => handleDesignationChange(val)}
                     disabled={!isEditing || !formData.department}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
+                    buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   >
                     {getDesignationsForDepartment(formData.department).map((orgRole: any) => (
-                      <option key={orgRole.id} value={orgRole.id}>{orgRole.name}</option>
+                      <SelectItem key={orgRole.id} value={orgRole.id}>{orgRole.name}</SelectItem>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -790,18 +794,17 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Employment Type</label>
                   <div className="relative">
-                    <select
+                    <Select
                       value={formData.employment_type}
-                      onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
+                      onValueChange={(val) => setFormData({ ...formData, employment_type: val })}
                       disabled={!isEditing}
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none pr-10"
+                      buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                     >
-                      <option value="full-time">Full Time</option>
-                      <option value="part-time">Part Time</option>
-                      <option value="contract">Contract</option>
-                      <option value="intern">Intern</option>
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <SelectItem value="full-time">Full Time</SelectItem>
+                      <SelectItem value="part-time">Part Time</SelectItem>
+                      <SelectItem value="contract">Contract</SelectItem>
+                      <SelectItem value="intern">Intern</SelectItem>
+                    </Select>
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -847,11 +850,11 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Joining Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={formData.joining_date}
-                    onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
+                    onChange={(val) => setFormData({ ...formData, joining_date: val })}
                     disabled={!isEditing}
+                    align="right"
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
@@ -860,30 +863,30 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Work Location Mode</label>
-                  <select
+                  <Select
                     value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    onValueChange={(val) => setFormData({ ...formData, location: val })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
+                    buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   >
-                    <option value="office">Office (On-site)</option>
-                    <option value="remote">Remote (Work from Home)</option>
-                    <option value="hybrid">Hybrid</option>
-                  </select>
+                    <SelectItem value="office">Office (On-site)</SelectItem>
+                    <SelectItem value="remote">Remote (Work from Home)</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Reporting Manager</label>
-                  <select
+                  <Select
                     value={formData.reporting_manager_id || ""}
-                    onChange={(e) => setFormData({ ...formData, reporting_manager_id: e.target.value || null })}
+                    onValueChange={(val) => setFormData({ ...formData, reporting_manager_id: val || null })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none capitalize"
+                    buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white capitalize"
                   >
-                    <option value="">-- None --</option>
+                    <SelectItem value="">-- None --</SelectItem>
                     {existingUsers.filter((u: any) => u.id !== employee.id).map((user: any) => (
-                      <option key={user.id} value={user.id}>{user.first_name} {user.last_name}</option>
+                      <SelectItem key={user.id} value={user.id}>{user.first_name} {user.last_name}</SelectItem>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -891,44 +894,44 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-100 dark:border-white/5 pt-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Branch Office</label>
-                  <select
+                  <Select
                     value={formData.branch || "Malee House HQ"}
-                    onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                    onValueChange={(val) => setFormData({ ...formData, branch: val })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
+                    buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   >
-                    <option value="Malee House HQ">Malee House HQ</option>
-                    <option value="North Field Station">North Field Station</option>
-                    <option value="Jurong Gateway Branch">Jurong Gateway Branch</option>
-                  </select>
+                    <SelectItem value="Malee House HQ">Malee House HQ</SelectItem>
+                    <SelectItem value="North Field Station">North Field Station</SelectItem>
+                    <SelectItem value="Jurong Gateway Branch">Jurong Gateway Branch</SelectItem>
+                  </Select>
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Office Location</label>
-                  <select
+                  <Select
                     value={formData.office_location || "Singapore"}
-                    onChange={(e) => setFormData({ ...formData, office_location: e.target.value })}
+                    onValueChange={(val) => setFormData({ ...formData, office_location: val })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
+                    buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   >
-                    <option value="Singapore">Singapore</option>
-                    <option value="Kuala Lumpur">Kuala Lumpur</option>
-                    <option value="Jakarta">Jakarta</option>
-                  </select>
+                    <SelectItem value="Singapore">Singapore</SelectItem>
+                    <SelectItem value="Kuala Lumpur">Kuala Lumpur</SelectItem>
+                    <SelectItem value="Jakarta">Jakarta</SelectItem>
+                  </Select>
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Operational Zone</label>
-                  <select
+                  <Select
                     value={formData.operational_zone || "Central Business District"}
-                    onChange={(e) => setFormData({ ...formData, operational_zone: e.target.value })}
+                    onValueChange={(val) => setFormData({ ...formData, operational_zone: val })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
+                    buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   >
-                    <option value="Central Business District">Central Business District</option>
-                    <option value="Industrial North">Industrial North</option>
-                    <option value="East Coast Operations">East Coast Operations</option>
-                  </select>
+                    <SelectItem value="Central Business District">Central Business District</SelectItem>
+                    <SelectItem value="Industrial North">Industrial North</SelectItem>
+                    <SelectItem value="East Coast Operations">East Coast Operations</SelectItem>
+                  </Select>
                 </div>
               </div>
 
@@ -1001,18 +1004,18 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                             }[doc.type as string] || "Document"}
                           </p>
                           <div className="flex items-center gap-2 flex-wrap mt-1">
-                            <select
+                            <Select
                               value={doc.type}
-                              onChange={(e) => handleDocumentTypeChange(doc.id, e.target.value)}
-                              className="px-2 py-0.5 bg-slate-50 dark:bg-[#121626] border border-slate-200 dark:border-white/10 rounded text-xs font-black uppercase tracking-wider outline-none text-slate-605 dark:text-slate-300"
+                              onValueChange={(val) => handleDocumentTypeChange(doc.id, val)}
+                              buttonClassName="px-2 py-0.5 bg-slate-50 dark:bg-[#121626] border border-slate-200 dark:border-white/10 rounded text-xs font-black uppercase tracking-wider outline-none text-slate-605 dark:text-slate-300 min-h-[30px]"
                             >
-                              <option value="aadhar" className="dark:bg-[#0d1222]">Aadhaar Card</option>
-                              <option value="pan" className="dark:bg-[#0d1222]">PAN Card</option>
-                              <option value="contract" className="dark:bg-[#0d1222]">Agreement / Contract</option>
-                              <option value="certificate" className="dark:bg-[#0d1222]">Certificate</option>
-                              <option value="nda" className="dark:bg-[#0d1222]">NDA File</option>
-                              <option value="other" className="dark:bg-[#0d1222]">Other File</option>
-                            </select>
+                              <SelectItem value="aadhar" className="dark:bg-[#0d1222]">Aadhaar Card</SelectItem>
+                              <SelectItem value="pan" className="dark:bg-[#0d1222]">PAN Card</SelectItem>
+                              <SelectItem value="contract" className="dark:bg-[#0d1222]">Agreement / Contract</SelectItem>
+                              <SelectItem value="certificate" className="dark:bg-[#0d1222]">Certificate</SelectItem>
+                              <SelectItem value="nda" className="dark:bg-[#0d1222]">NDA File</SelectItem>
+                              <SelectItem value="other" className="dark:bg-[#0d1222]">Other File</SelectItem>
+                            </Select>
                             <span className="text-xs text-slate-400 font-bold ml-2">
                               {(doc.size / 1024).toFixed(1)} KB
                             </span>
@@ -1028,10 +1031,10 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                               description: `Retrieving and decrypting ${doc.name} (Category: ${doc.type})...`,
                               variant: "success"
                             });
-                            
+
                             setTimeout(() => {
                               const downloadUrl = doc.url || URL.createObjectURL(new Blob(["[MOCK DOCUMENT DATA]\n\nDocument Name: " + doc.name + "\nType: " + doc.type + "\nDate: " + new Date().toLocaleString()]));
-                              
+
                               const docLabel = {
                                 aadhar: "Aadhaar_Card",
                                 pan: "PAN_Card",
@@ -1041,7 +1044,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                                 other: "Other_File"
                               }[doc.type as string] || "Document";
                               const ext = doc.name.split('.').pop() || 'pdf';
-                              
+
                               const a = document.createElement('a');
                               a.href = downloadUrl;
                               a.download = `${docLabel}.${ext}`;
@@ -1100,42 +1103,42 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">ERP Access Level</label>
-                  <select
+                  <Select
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    onValueChange={(val) => setFormData({ ...formData, role: val })}
                     disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                    buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   >
-                    <option value="admin">System Admin</option>
-                    <option value="sales">Sales Officer</option>
-                    <option value="accountant">Accountant</option>
-                    <option value="engineer">Technical Engineer</option>
-                    <option value="cad">CAD Operator</option>
-                    <option value="field">Field Surveyor</option>
-                    <option value="qc">QC Inspector</option>
-                    <option value="employee">Standard Staff</option>
-                  </select>
+                    <SelectItem value="admin">System Admin</SelectItem>
+                    <SelectItem value="sales">Sales Officer</SelectItem>
+                    <SelectItem value="accountant">Accountant</SelectItem>
+                    <SelectItem value="engineer">Technical Engineer</SelectItem>
+                    <SelectItem value="cad">CAD Operator</SelectItem>
+                    <SelectItem value="field">Field Surveyor</SelectItem>
+                    <SelectItem value="qc">QC Inspector</SelectItem>
+                    <SelectItem value="employee">Standard Staff</SelectItem>
+                  </Select>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">Account Status Override</label>
-                <select
+                <Select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  onValueChange={(val) => setFormData({ ...formData, status: val })}
                   disabled={!isEditing}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                  buttonClassName="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 disabled:bg-slate-100/50 dark:disabled:bg-white/2 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                 >
-                  <option value="invited">Invited</option>
-                  <option value="onboarding_pending">Onboarding Pending</option>
-                  <option value="active">Active (Full ERP System Access)</option>
-                  <option value="probation">Probationary Period</option>
-                  <option value="suspended">Suspended (Access Temporarily Revoked)</option>
-                  <option value="notice_period">Notice Period</option>
-                  <option value="resigned">Resigned</option>
-                  <option value="terminated">Terminated</option>
-                  <option value="archived">Archived (Decommissioned profile)</option>
-                </select>
+                  <SelectItem value="invited">Invited</SelectItem>
+                  <SelectItem value="onboarding_pending">Onboarding Pending</SelectItem>
+                  <SelectItem value="active">Active (Full ERP System Access)</SelectItem>
+                  <SelectItem value="probation">Probationary Period</SelectItem>
+                  <SelectItem value="suspended">Suspended (Access Temporarily Revoked)</SelectItem>
+                  <SelectItem value="notice_period">Notice Period</SelectItem>
+                  <SelectItem value="resigned">Resigned</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="archived">Archived (Decommissioned profile)</SelectItem>
+                </Select>
               </div>
 
               {/* Password Fields */}
@@ -1191,35 +1194,37 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         <div className="px-8 py-5 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-[#0a0d16] flex items-center justify-between shrink-0 flex-wrap gap-3">
           <div className="flex items-center gap-3">
             {formData.status !== "resigned" && formData.status !== "terminated" && (
-              <button
+              <Button
+                variant="outline"
                 onClick={handleOffboard}
                 disabled={isOffboarding}
-                className="px-5 py-3.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-00 dark:text-amber-400 rounded-2xl font-black text-xs tracking-widest transition-all flex items-center gap-2"
+                className="gap-2 text-amber-600 border-amber-200 hover:bg-amber-50 dark:border-amber-500/20 dark:text-amber-400 dark:hover:bg-amber-500/10"
               >
-                {isOffboarding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
+                {isOffboarding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
                 Offboard Employee
-              </button>
+              </Button>
             )}
 
-            <button
+            <Button
+              variant="outline"
               onClick={handleDelete}
               disabled={isDeleting}
-              className="px-5 py-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl font-black text-xs tracking-widest transition-all flex items-center gap-2"
+              className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-500/20 dark:text-rose-400 dark:hover:bg-rose-500/10"
             >
-              {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               Delete Account
-            </button>
+            </Button>
           </div>
 
-          <button
+          <Button
+            variant="primary"
             onClick={onClose}
-            className="px-6 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs tracking-widest hover:opacity-95 transition-all shadow-md"
           >
             Close Details
-          </button>
+          </Button>
         </div>
       </div>
-      
+
       {renderIncrementModal()}
     </div>
   );

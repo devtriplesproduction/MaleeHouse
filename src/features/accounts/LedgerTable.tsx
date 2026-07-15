@@ -171,14 +171,14 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
   return (
     <div className="space-y-6">
       {/* Filter Bar */}
-      <div className="flex flex-col xl:flex-row items-center gap-4 bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 shadow-sm">
+      <div className="flex flex-col xl:flex-row items-center gap-4 bg-white/60 dark:bg-[#0c101b]/60 backdrop-blur-2xl p-5 rounded-3xl border border-white/40 dark:border-white/10 shadow-xl shadow-slate-200/40 dark:shadow-none">
         <div className="relative w-full xl:w-64 shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             placeholder="Search descriptions..."
-            className="w-full pl-9 pr-4 h-10 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white placeholder:text-slate-400"
+            className="w-full pl-9 pr-4 h-11 rounded-2xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all dark:text-white placeholder:text-slate-400 shadow-sm"
           />
         </div>
         
@@ -188,21 +188,21 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
-              className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white"
+              className="w-full h-11 px-4 rounded-2xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all dark:text-white shadow-sm"
             />
             <span className="text-slate-400 text-sm">to</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
-              className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white"
+              className="w-full h-11 px-4 rounded-2xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all dark:text-white shadow-sm"
             />
           </div>
 
           <select
             value={categoryFilter}
             onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-            className="h-10 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-white appearance-none cursor-pointer w-full sm:w-32 shrink-0"
+            className="h-11 px-4 rounded-2xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all dark:text-white appearance-none cursor-pointer w-full sm:w-40 shrink-0 shadow-sm"
           >
             <option value="">All Categories</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -221,7 +221,7 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
           <button
             onClick={handleExportExcel}
             disabled={isExporting || filteredData.length === 0}
-            className="h-10 px-4 shrink-0 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm"
+            className="h-11 px-5 shrink-0 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-slate-900/10 dark:shadow-none hover:shadow-xl hover:shadow-slate-900/20 active:scale-95"
           >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export Excel'}</span>
@@ -230,26 +230,26 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-3xl overflow-hidden shadow-xl shadow-slate-200/30 dark:shadow-none relative">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-white/5">
-                <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Date</th>
-                <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Project</th>
+              <tr className="bg-slate-50/80 dark:bg-white/[0.03] border-b border-slate-200/80 dark:border-white/10">
+                <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Date</th>
+                <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Project</th>
                 {type === 'income' ? (
                   <>
-                    <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Description</th>
-                    <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Category</th>
-                    <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap text-right">Amount</th>
-                    <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Status</th>
+                    <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Description</th>
+                    <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Category</th>
+                    <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap text-right">Amount</th>
+                    <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Status</th>
                   </>
                 ) : (
                   <>
-                    <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Category</th>
-                    <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Description</th>
-                    <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap text-right">Amount</th>
-                    <th className="py-4 px-6 text-xs font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Added By</th>
+                    <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Category</th>
+                    <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Description</th>
+                    <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap text-right">Amount</th>
+                    <th className="py-5 px-6 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Added By</th>
                   </>
                 )}
               </tr>
@@ -319,7 +319,7 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-[#0a0d16] flex items-center justify-between">
+          <div className="px-6 py-5 border-t border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01] flex items-center justify-between">
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Showing <span className="font-semibold text-slate-900 dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-semibold text-slate-900 dark:text-white">{Math.min(currentPage * itemsPerPage, filteredData.length)}</span> of <span className="font-semibold text-slate-900 dark:text-white">{filteredData.length}</span> results
             </p>

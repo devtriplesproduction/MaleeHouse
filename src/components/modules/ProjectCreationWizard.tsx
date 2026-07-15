@@ -10,6 +10,7 @@ import {
   DialogContent, 
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Select, SelectItem } from "@/components/ui/select";
 import { 
   Building2, 
   MapPin, 
@@ -412,20 +413,24 @@ export function ProjectCreationWizard() {
                             <label htmlFor="input-site-type" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-50 block px-1">
                               Site Typology
                             </label>
-                            <select 
-                              id="input-site-type"
-                              {...methods.register('site_type')}
-                              className={cn(
-                                "glass-input h-14 px-4 font-bold text-sm cursor-pointer w-full",
-                                c.focusBorder, c.focusRing
+                            <Controller
+                              name="site_type"
+                              control={methods.control}
+                              render={({ field }) => (
+                                <Select 
+                                  value={field.value} 
+                                  onValueChange={field.onChange}
+                                  className={cn("glass-input h-14 p-0 m-0 flex items-center", c.focusBorder, c.focusRing)}
+                                  buttonClassName="w-full h-full bg-transparent border-0 hover:bg-transparent hover:border-0 dark:hover:bg-transparent text-sm font-bold shadow-none text-slate-800 dark:text-white"
+                                >
+                                  <SelectItem value="residential">Residential Site Selection</SelectItem>
+                                  <SelectItem value="commercial">Commercial Development Site</SelectItem>
+                                  <SelectItem value="industrial">Industrial Complex Site</SelectItem>
+                                  <SelectItem value="infrastructure">Infrastructure Route / Utility Site</SelectItem>
+                                  <SelectItem value="other">Other / Custom Survey Land</SelectItem>
+                                </Select>
                               )}
-                            >
-                              <option value="residential" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">Residential Site Selection</option>
-                              <option value="commercial" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">Commercial Development Site</option>
-                              <option value="industrial" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">Industrial Complex Site</option>
-                              <option value="infrastructure" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">Infrastructure Route / Utility Site</option>
-                              <option value="other" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">Other / Custom Survey Land</option>
-                            </select>
+                            />
                             {errors.site_type && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.site_type.message}</p>}
                           </div>
 

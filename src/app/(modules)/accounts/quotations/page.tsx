@@ -62,6 +62,18 @@ function QuotationWorkspaceContent() {
         .finally(() => setLoading(false));
     } else {
       fetchWorkspaceData();
+
+      const { createClient } = require('@/lib/supabase/client');
+      const supabase = createClient();
+      const channel = supabase.channel('quotations_all')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations' }, () => {
+          fetchWorkspaceData();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [projectId, quotationId]);
 

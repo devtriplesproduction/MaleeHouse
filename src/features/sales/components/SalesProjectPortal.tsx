@@ -44,6 +44,8 @@ import { registerFileAction } from '@/actions/file.actions';
 import { uploadProjectFile } from '@/lib/supabase/storage';
 import { deleteFileAction } from '@/actions/vault.actions';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectItem } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 
@@ -485,18 +487,15 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
                 <div className="space-y-1.5 flex-[1] min-w-[200px]">
                   <label className="text-[10px] font-medium uppercase tracking-wider text-slate-450 dark:text-slate-500 ml-1 block">Category</label>
                   <div className="relative">
-                    <select
+                    <Select
                       value={uploadCategory}
-                      onChange={(e) => setUploadCategory(e.target.value as any)}
-                      className="w-full h-11 pl-4 pr-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm font-medium text-slate-700 dark:text-slate-200 transition-all outline-none appearance-none cursor-pointer"
+                      onValueChange={(val) => setUploadCategory(val as any)}
+                      buttonClassName="w-full h-11 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
                     >
-                      <option value="legal_doc">Satbara (7/12 Extract)</option>
-                      <option value="photos">Site Images / Boundaries</option>
-                      <option value="other">Sale Deeds / Legal</option>
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                      <ChevronsUpDown className="w-4 h-4" />
-                    </div>
+                      <SelectItem value="legal_doc">Satbara (7/12 Extract)</SelectItem>
+                      <SelectItem value="photos">Site Images / Boundaries</SelectItem>
+                      <SelectItem value="other">Sale Deeds / Legal</SelectItem>
+                    </Select>
                   </div>
                 </div>
 
@@ -727,25 +726,29 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">Time</label>
                         <div className="flex gap-2 items-center">
-                          <select
-                            value={selectedHour}
-                            onChange={(e) => setSelectedHour(e.target.value)}
-                            className="glass-input flex-1 py-2.5 appearance-none cursor-pointer"
-                          >
-                            {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((h: any) => (
-                              <option key={h} value={h}>{h} Hr</option>
-                            ))}
-                          </select>
+                          <div className="flex-1">
+                            <Select
+                              value={selectedHour}
+                              onValueChange={setSelectedHour}
+                              buttonClassName="glass-input py-2.5 h-[42px]"
+                            >
+                              {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((h: any) => (
+                                <SelectItem key={h} value={h}>{h} Hr</SelectItem>
+                              ))}
+                            </Select>
+                          </div>
                           <span className="text-slate-400 font-semibold shrink-0">:</span>
-                          <select
-                            value={selectedMinute}
-                            onChange={(e) => setSelectedMinute(e.target.value)}
-                            className="glass-input flex-1 py-2.5 appearance-none cursor-pointer"
-                          >
-                            {Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map((m: any) => (
-                              <option key={m} value={m}>{m} Min</option>
-                            ))}
-                          </select>
+                          <div className="flex-1">
+                            <Select
+                              value={selectedMinute}
+                              onValueChange={setSelectedMinute}
+                              buttonClassName="glass-input py-2.5 h-[42px]"
+                            >
+                              {Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map((m: any) => (
+                                <SelectItem key={m} value={m}>{m} Min</SelectItem>
+                              ))}
+                            </Select>
+                          </div>
                           
                           {/* AM/PM PERIOD */}
                           <div className="flex border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shrink-0">
@@ -771,18 +774,18 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
                       {/* Follow-up Status */}
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">Follow-up Status</label>
-                        <select 
+                        <Select 
                           value={status}
-                          onChange={(e) => setStatus(e.target.value)}
-                          className="glass-input py-2.5 appearance-none cursor-pointer"
+                          onValueChange={setStatus}
+                          buttonClassName="glass-input py-2.5 h-[42px]"
                         >
-                          <option value="Call Back">Call Back</option>
-                          <option value="Interested">Interested</option>
-                          <option value="Not Reachable">Not Reachable</option>
-                          <option value="Waiting for Documents">Waiting for Documents</option>
-                          <option value="Negotiation">Negotiation</option>
-                          <option value="Closed">Closed</option>
-                        </select>
+                          <SelectItem value="Call Back">Call Back</SelectItem>
+                          <SelectItem value="Interested">Interested</SelectItem>
+                          <SelectItem value="Not Reachable">Not Reachable</SelectItem>
+                          <SelectItem value="Waiting for Documents">Waiting for Documents</SelectItem>
+                          <SelectItem value="Negotiation">Negotiation</SelectItem>
+                          <SelectItem value="Closed">Closed</SelectItem>
+                        </Select>
                       </div>
 
                       {/* Outcome notes */}

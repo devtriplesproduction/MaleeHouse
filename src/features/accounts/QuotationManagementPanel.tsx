@@ -71,7 +71,21 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
     if (showLoading) setLoading(false);
   };
 
-  useEffect(() => { fetchQuotations(true); }, [project.id]);
+  useEffect(() => { 
+    fetchQuotations(true); 
+
+    const { createClient } = require('@/lib/supabase/client');
+    const supabase = createClient();
+    const channel = supabase.channel(`quotations_project_${project.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations', filter: `project_id=eq.${project.id}` }, () => {
+        fetchQuotations(false);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [project.id]);
 
   const handleSuccess = () => {
     setView('list');

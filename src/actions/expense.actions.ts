@@ -10,7 +10,9 @@ import {
   createExpenseSchema,
   updateExpenseSchema,
   type CreateExpenseInput,
-  type UpdateExpenseInput
+  type UpdateExpenseInput,
+  createProjectBudgetItemSchema,
+  type CreateProjectBudgetItemInput
 } from '@/validations/expense.schema';
 
 export async function createExpenseAction(payload: CreateExpenseInput): Promise<ActionResponse> {
@@ -212,6 +214,46 @@ export async function deleteExpenseAction(id: string): Promise<ActionResponse> {
     await revalidateAccountsPaths(existing.project_id || undefined);
 
     return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createProjectBudgetItemAction(payload: CreateProjectBudgetItemInput): Promise<ActionResponse> {
+  try {
+    const validated = createProjectBudgetItemSchema.safeParse(payload);
+    if (!validated.success) {
+      return { success: false, error: validated.error.errors[0]?.message };
+    }
+
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
+    
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    if (payload.project_id) {
+      const accessCheck = await verifyProjectAccess(payload.project_id, profile.id, profile.role);
+      if (!accessCheck.isAllowed) {
+        return { success: false, error: accessCheck.error || 'Access denied to this project.' };
+      }
+    }
+
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('project_budget_items')
+      .insert(validated.data)
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    await revalidateAccountsPaths(payload.project_id || undefined);
+
+    return { success: true, data };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

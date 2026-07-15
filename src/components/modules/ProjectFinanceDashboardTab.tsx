@@ -124,64 +124,78 @@ export function ProjectFinanceDashboardTab({ projectId }: { projectId: string })
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="rounded-2xl border border-slate-200/60 dark:border-white/5 bg-white dark:bg-white/[0.02] p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="group rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg shadow-emerald-500/5 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 relative overflow-hidden">
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500 pointer-events-none"></div>
+          <div className="relative z-10 flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-emerald-500" />
             </div>
             <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Total Income (Paid)</h3>
           </div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white">
+          <div className="relative z-10 text-3xl font-black text-slate-900 dark:text-white">
             {formatCurrency(totalIncome)}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/60 dark:border-white/5 bg-white dark:bg-white/[0.02] p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="group rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg shadow-rose-500/5 hover:shadow-xl hover:shadow-rose-500/10 transition-all duration-300 relative overflow-hidden">
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl group-hover:bg-rose-500/20 transition-all duration-500 pointer-events-none"></div>
+          <div className="relative z-10 flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
               <TrendingDown className="w-5 h-5 text-rose-500" />
             </div>
             <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Total Expenses</h3>
           </div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white">
+          <div className="relative z-10 text-3xl font-black text-slate-900 dark:text-white">
             {formatCurrency(totalExpense)}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/60 dark:border-white/5 bg-white dark:bg-white/[0.02] p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="group rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg shadow-indigo-500/5 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 relative overflow-hidden">
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500 pointer-events-none"></div>
+          <div className="relative z-10 flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-indigo-500" />
             </div>
             <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Net Profit</h3>
           </div>
-          <div className={`text-3xl font-black ${netProfit >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+          <div className={`relative z-10 text-3xl font-black ${netProfit >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
             {formatCurrency(netProfit)}
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200/60 dark:border-white/5 bg-white dark:bg-white/[0.02] p-6 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Budget vs Actual Spend</h3>
-        <div className="flex justify-between text-xs text-slate-500 mb-2 font-semibold">
+      <div className="rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg shadow-indigo-500/5 relative overflow-hidden">
+        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <h3 className="relative z-10 text-sm font-bold text-slate-900 dark:text-white mb-4">Budget vs Actual Spend</h3>
+        <div className="relative z-10 flex justify-between text-xs text-slate-500 mb-2 font-semibold">
           <span>{formatCurrency(totalExpense)} Spent</span>
           <span>{formatCurrency(budget)} Budget</span>
         </div>
-        <div className="w-full bg-slate-100 dark:bg-white/5 rounded-full h-3 mb-2 overflow-hidden">
-          <div className={`h-3 rounded-full ${progressColor} transition-all duration-1000`} style={{ width: `${progressPercent}%` }}></div>
+        <div className="relative z-10 w-full bg-slate-100 dark:bg-white/5 rounded-full h-3 mb-2 overflow-hidden shadow-inner">
+          <div className={`h-3 rounded-full ${progressColor} transition-all duration-1000 shadow-md`} style={{ width: `${progressPercent}%` }}></div>
       </div>
-      <p className="text-xs text-slate-500 mt-2">
+      <p className="relative z-10 text-xs text-slate-500 mt-2 font-medium">
         {progressPercent >= 100 ? 'Over budget or matched perfectly.' : `${(100 - progressPercent).toFixed(1)}% of budget remaining.`}
       </p>
     </div>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Income Ledger</h3>
+      <div className="space-y-4 relative">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Income Ledger</h3>
+        </div>
         <LedgerTable data={incomeItems} type="income" projects={[]} />
       </div>
 
-      <div className="space-y-4 pt-8">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Expense Ledger</h3>
+      <div className="space-y-4 pt-8 relative">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center">
+            <TrendingDown className="w-4 h-4 text-rose-500" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Expense Ledger</h3>
+        </div>
         <LedgerTable data={expenseItems} type="expense" projects={[]} />
       </div>
     </div>

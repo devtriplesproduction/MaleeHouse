@@ -180,3 +180,57 @@ export async function changePasswordAction(userId: string, newPassword: string) 
     return { success: false, error: error.message }
   }
 }
+
+export async function getTodayBirthdaysAction() {
+  try {
+    const profile: any = await getCachedSessionProfile()
+    if (!profile) return { success: false, data: [] }
+
+    const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient())
+    
+    const { data: users, error } = await supabaseAdmin
+      .from('profiles')
+      .select('id, first_name, last_name, profile_photo, dob')
+      .eq('is_active', true)
+      .not('dob', 'is', null)
+
+    if (error) throw error
+
+    const today = new Date()
+    const todayMonth = today.getMonth()
+    const todayDate = today.getDate()
+
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowMonth = tomorrow.getMonth()
+    const tomorrowDate = tomorrow.getDate()
+
+    const bdays: any[] = []
+    const isHrOrAdmin = ['hr', 'admin'].includes(profile.role?.toLowerCase())
+
+    ;(users || []).forEach((user: any) => {
+      const [year, month, date] = user.dob.split('-')
+      if (year && month && date) {
+        const dobMonth = parseInt(month, 10) - 1
+        const dobDate = parseInt(date, 10)
+        
+        const isToday = dobMonth === todayMonth && dobDate === todayDate
+        const isTomorrow = dobMonth === tomorrowMonth && dobDate === tomorrowDate
+
+        if (isToday || isTomorrow) {
+          if (isHrOrAdmin || profile.id === user.id) {
+            bdays.push({
+              user,
+              type: isToday ? 'today' : 'tomorrow'
+            })
+          }
+        }
+      }
+    })
+
+    return { success: true, data: bdays }
+  } catch (error) {
+    console.error('Error fetching birthdays:', error)
+    return { success: false, data: [] }
+  }
+}

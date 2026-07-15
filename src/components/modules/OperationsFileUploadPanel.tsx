@@ -114,6 +114,8 @@ export function OperationsFileUploadPanel({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    await ensureClaimed();
+
     setIsUploading(true);
     setUploadProgress(10);
 
@@ -158,9 +160,20 @@ export function OperationsFileUploadPanel({
     }
   };
 
+  const ensureClaimed = async () => {
+    try {
+      const { claimProjectAction } = await import("@/actions/operations.actions");
+      await claimProjectAction(projectId);
+    } catch (e) {
+      // Ignore if already assigned
+    }
+  };
+
   const handleUploadControlPoint = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    await ensureClaimed();
 
     setIsUploading(true);
     setUploadProgress(10);
@@ -212,6 +225,8 @@ export function OperationsFileUploadPanel({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    await ensureClaimed();
+
     setIsUploading(true);
     setUploadProgress(10);
 
@@ -260,6 +275,10 @@ export function OperationsFileUploadPanel({
 
   const handleSendToCAD = () => {
     startTransition(async () => {
+      // Auto-claim the project for the engineer if not already assigned
+      const { claimProjectAction } = await import("@/actions/operations.actions");
+      await claimProjectAction(projectId).catch(() => {});
+
       const res = await updateProjectStageAction(
         projectId,
         'prototype',
@@ -356,6 +375,8 @@ export function OperationsFileUploadPanel({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    await ensureClaimed();
+
     setIsUploading(true);
     setUploadProgress(10);
 
@@ -405,6 +426,8 @@ export function OperationsFileUploadPanel({
   const handleUploadFinalDoc = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    await ensureClaimed();
 
     setIsUploading(true);
     setUploadProgress(10);
@@ -944,14 +967,7 @@ export function OperationsFileUploadPanel({
         icon={MapPin}
         defaultExpanded={false}
         badgeCount={surveyDocs.length + controlPointDocs.length}
-        rightAction={
-          (isAdmin || isField) && !isProjectClosed && (
-            <label className="px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 cursor-pointer transition flex items-center gap-2 shadow-sm text-xs font-bold border border-indigo-100 dark:border-indigo-500/20">
-              <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Upload</span>
-              <input type="file" className="hidden" onChange={handleUploadSurveyData} disabled={isUploading} />
-            </label>
-          )
-        }
+        rightAction={null}
       >
         <div className="space-y-8">
           {/* Part 1: Control Points */}
@@ -960,7 +976,7 @@ export function OperationsFileUploadPanel({
               <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                 1. Control Point Images <span className="text-rose-500 text-xs   font-black px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20">Required</span>
               </h4>
-              {(isAdmin || (isField && (projectStatus === 'field_work' || projectStatus === 'field_assigned'))) && !isProjectClosed && (
+              {(isAdmin || isField) && !isProjectClosed && (
                 <label className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 cursor-pointer transition flex items-center gap-2 shadow-sm text-xs font-bold border border-emerald-100 dark:border-emerald-500/20">
                   <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Upload Control Point</span>
                   <input type="file" className="hidden" onChange={handleUploadControlPoint} disabled={isUploading} accept="image/*" />
@@ -986,7 +1002,7 @@ export function OperationsFileUploadPanel({
                     <a href={file.file_url} download={file.file_name} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-800 transition">
                       <Download className="w-4 h-4" />
                     </a>
-                    {(isAdmin || (isField && (projectStatus === 'field_work' || projectStatus === 'field_assigned'))) && !isProjectClosed && (
+                    {(isAdmin || isField) && !isProjectClosed && (
                       <button onClick={() => handleDeleteFile(file.id, file.file_name)} disabled={isPending} title="Delete" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition disabled:opacity-50">
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1011,7 +1027,7 @@ export function OperationsFileUploadPanel({
               <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
                 2. Survey Data
               </h4>
-              {(isAdmin || (isField && (projectStatus === 'field_work' || projectStatus === 'field_assigned'))) && !isProjectClosed && (
+              {(isAdmin || isField) && !isProjectClosed && (
                 <label className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 cursor-pointer transition flex items-center gap-2 shadow-sm text-xs font-bold border border-emerald-100 dark:border-emerald-500/20">
                   <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Upload Survey Data</span>
                   <input type="file" className="hidden" onChange={handleUploadSurveyData} disabled={isUploading} />
@@ -1036,7 +1052,7 @@ export function OperationsFileUploadPanel({
                     <a href={file.file_url} download={file.file_name} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-800 transition">
                       <Download className="w-4 h-4" />
                     </a>
-                    {(isAdmin || (isField && (projectStatus === 'field_work' || projectStatus === 'field_assigned'))) && !isProjectClosed && (
+                    {(isAdmin || isField) && !isProjectClosed && (
                       <button onClick={() => handleDeleteFile(file.id, file.file_name)} disabled={isPending} title="Delete" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition disabled:opacity-50">
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1076,7 +1092,7 @@ export function OperationsFileUploadPanel({
           )}
 
           {/* Submit Survey Data Button */}
-          {isField && ["field_assigned", "field_work", "data_sync"].includes(projectStatus || "") && (
+          {(isField || isAdmin) && !isProjectClosed && (
             <button
               onClick={handleSubmitSurveyData}
               disabled={isPending || surveyDocs.length === 0 || controlPointDocs.length === 0 || projectStatus === "data_sync"}

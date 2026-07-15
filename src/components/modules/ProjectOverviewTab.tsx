@@ -346,22 +346,34 @@ export default function ProjectOverviewTab({
         {hasAccessToOps && (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             
-            {/* OperationsControlCenter removed as per user request */}
-
-            <OperationsFileUploadPanel
+            <OperationsControlCenter
               projectId={project.id}
-              files={files || []}
-              userRole={userRole}
               projectStatus={project.status}
+              userRole={userRole}
+              currentUserId={currentUserId}
+              teamMembers={teamMembers}
+              isFrozen={project.is_frozen}
+              files={files}
             />
             
-            {(isAdmin || isCad || isEngineer) && (
-              <CADRevisionPanel
-                projectId={project.id}
-                revisions={cadRevisions}
-                userRole={userRole}
-                currentUserId={currentUserId}
-              />
+            {(isAdmin || isClaimedByMe) && (
+              <>
+                <OperationsFileUploadPanel
+                  projectId={project.id}
+                  files={files || []}
+                  userRole={userRole}
+                  projectStatus={project.status}
+                />
+                
+                {(isAdmin || isCad || isEngineer) && (
+                  <CADRevisionPanel
+                    projectId={project.id}
+                    revisions={cadRevisions}
+                    userRole={userRole}
+                    currentUserId={currentUserId}
+                  />
+                )}
+              </>
             )}
 
           </div>

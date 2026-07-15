@@ -305,6 +305,8 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
 
 export async function getInvoicesAction(projectId?: string): Promise<ActionResponse> {
   try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
 
@@ -471,6 +473,8 @@ export async function createMilestonesAction(
       sum += Number(m.amount);
     }
 
+    let totalQuotedAmount = 0;
+
     const { data: projectFinance } = await supabase
       .from('project_finances')
       .select('total_quoted_amount')
@@ -478,8 +482,26 @@ export async function createMilestonesAction(
       .maybeSingle();
 
     if (projectFinance && projectFinance.total_quoted_amount) {
-      if (Math.abs(sum - Number(projectFinance.total_quoted_amount)) > 0.01) {
-        return { success: false, error: `Sum of milestones (${sum}) does not match the total project cost (${projectFinance.total_quoted_amount}).` };
+      totalQuotedAmount = Number(projectFinance.total_quoted_amount);
+    } else {
+      const { data: quotes } = await supabase
+        .from('quotations')
+        .select('total_amount, status')
+        .eq('project_id', projectId);
+      
+      if (quotes && quotes.length > 0) {
+        const approvedQuote = quotes.find((q: any) => q.status?.toLowerCase() === 'approved');
+        if (approvedQuote) {
+          totalQuotedAmount = Number(approvedQuote.total_amount || 0);
+        } else {
+          totalQuotedAmount = Math.max(...quotes.map((q: any) => Number(q.total_amount || 0)), 0);
+        }
+      }
+    }
+
+    if (totalQuotedAmount > 0) {
+      if (Math.abs(sum - totalQuotedAmount) > 0.01) {
+        return { success: false, error: `Sum of milestones (${sum}) does not match the total project cost (${totalQuotedAmount}).` };
       }
     }
 
@@ -514,6 +536,8 @@ export async function createMilestonesAction(
 
 export async function getMilestonesAction(projectId: string): Promise<ActionResponse> {
   try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
@@ -647,13 +671,18 @@ export async function unfreezeProjectAction(projectId: string, comment?: string)
 
 export async function getAllMilestonesAction(): Promise<ActionResponse> {
   try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested), invoices(id, status, payments(status))')
+      .select('*, projects(name, client_name, status, is_frozen), invoices(id, status, payments(status))')
       .order('due_date', { ascending: true });
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error("Supabase Error in getAllMilestonesAction:", error.message);
+      return { success: false, error: error.message };
+    }
 
     // Compute UI status based on pending payments linked through invoices
     const processedData = data.map((m: any) => {
@@ -676,6 +705,7 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
 
     return { success: true, data: processedData };
   } catch (error: any) {
+    console.error("getAllMilestonesAction Error: ", error);
     return { success: false, error: error.message };
   }
 }

@@ -12,14 +12,18 @@ import {
   getExpenseStatementAction, 
   getCashFlowStatementAction, 
   getBalanceSheetAction,
-  getProjectStatementAction
+  getProjectStatementAction,
+  getAllProjectSummaryAction,
+  getProjectBudgetSheetAction,
+  getExpensesFundAllocationAction,
+  getProjectActualSheetAction
 } from '@/actions/reports.actions';
 import { getProjectsListAction } from '@/actions/project.actions';
 import { generateFinancialReportPDF } from '@/lib/financial-pdf-generator';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
 
-type ReportType = 'profit_loss' | 'income' | 'expense' | 'cash_flow' | 'balance_sheet' | 'project_statement';
+type ReportType = 'profit_loss' | 'income' | 'expense' | 'cash_flow' | 'balance_sheet' | 'project_statement' | 'all_project_summary' | 'project_budget_sheet' | 'expenses_fund_allocation' | 'project_actual_sheet';
 type DateRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
 
 const formatCurrency = (value: number) => {
@@ -114,7 +118,22 @@ export function ReportsGenerator() {
           res = await getBalanceSheetAction(dateTo, pid);
           break;
         case 'project_statement':
-          if (pid) res = await getProjectStatementAction(pid);
+          if (!pid) { toast.error('Project Required', { description: 'Please select a specific project.' }); setIsLoading(false); return; }
+          res = await getProjectStatementAction(pid);
+          break;
+        case 'all_project_summary':
+          res = await getAllProjectSummaryAction(dateFrom, dateTo);
+          break;
+        case 'project_budget_sheet':
+          if (!pid) { toast.error('Project Required', { description: 'Please select a specific project for the Budget Sheet.' }); setIsLoading(false); return; }
+          res = await getProjectBudgetSheetAction(pid);
+          break;
+        case 'expenses_fund_allocation':
+          res = await getExpensesFundAllocationAction(dateFrom, dateTo);
+          break;
+        case 'project_actual_sheet':
+          if (!pid) { toast.error('Project Required', { description: 'Please select a specific project for the Actual Sheet.' }); setIsLoading(false); return; }
+          res = await getProjectActualSheetAction(pid);
           break;
       }
       
@@ -139,6 +158,10 @@ export function ReportsGenerator() {
       case 'cash_flow': return 'Cash Flow Statement';
       case 'balance_sheet': return 'Balance Sheet';
       case 'project_statement': return 'Project Statement (Client Copy)';
+      case 'all_project_summary': return 'All Project Summary';
+      case 'project_budget_sheet': return 'Project Budget Sheet';
+      case 'expenses_fund_allocation': return 'Total Expences Fund Allocation';
+      case 'project_actual_sheet': return 'Project Actual Sheet';
       default: return 'Financial Report';
     }
   };
@@ -620,6 +643,11 @@ export function ReportsGenerator() {
             <option value="cash_flow">Cash Flow Statement</option>
             <option value="balance_sheet">Balance Sheet</option>
             <option value="project_statement">Project Statement (Client Copy)</option>
+            <option disabled>──────────</option>
+            <option value="all_project_summary">All Project Summary</option>
+            <option value="project_budget_sheet">Project Budget Sheet</option>
+            <option value="expenses_fund_allocation">Total Expences Fund Allocation</option>
+            <option value="project_actual_sheet">Project Actual Sheet</option>
           </select>
 
           <select
