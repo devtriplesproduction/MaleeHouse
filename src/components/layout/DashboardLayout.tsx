@@ -9,7 +9,6 @@ import { AdminSidebar } from "@/components/layout/sidebars/AdminSidebar";
 import { SalesSidebar } from "@/components/layout/sidebars/SalesSidebar";
 import { AccountsSidebar } from "@/components/layout/sidebars/AccountsSidebar";
 import { OperationsSidebar } from "@/components/layout/sidebars/OperationsSidebar";
-import { EmployeeSidebar } from "@/components/layout/sidebars/EmployeeSidebar";
 import { EngineerSidebar } from "@/components/layout/sidebars/EngineerSidebar";
 import { HRSidebar } from "@/components/layout/sidebars/HRSidebar";
 import { BirthdayNotifier } from "@/components/modules/BirthdayNotifier";
@@ -35,7 +34,6 @@ export function DashboardLayout({
     if (role === "admin") return <AdminSidebar />;
     if (role === "sales") return <SalesSidebar />;
     if (role === "accountant") return <AccountsSidebar />;
-    if (role === "employee") return <EmployeeSidebar />;
     if (role === "engineer") return <EngineerSidebar />;
     if (role === "hr") return <HRSidebar />;
     // Default to operations sidebar for all technical operational roles

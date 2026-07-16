@@ -11,7 +11,8 @@ import {
 } from "@/actions/hr.actions";
 
 import { CreateEmployeeButton } from "@/components/modules/CreateEmployeeButton";
-import { ApplyLeaveButton } from "@/components/modules/ApplyLeaveButton";
+import { getMyEODReportsAction } from "@/actions/eod.actions";
+import { EODFormModal } from "@/components/eod/EODFormModal";
 import { requireRole } from "@/lib/auth-guard";
 
 // HR Feature Widgets
@@ -37,7 +38,8 @@ export default async function HRDashboard() {
     announcementsRes, 
     usersRes,
     allLeavesRes,
-    onboardingRes
+    onboardingRes,
+    eodRes
   ] = await Promise.all([
      getHRDashboardStatsAction(),
      getPendingLeaveRequestsAction(),
@@ -46,7 +48,8 @@ export default async function HRDashboard() {
      getRecentAnnouncementsAction(),
      getAllUsersAction(),
      getAllLeavesAction(),
-     getOnboardingInProgressAction()
+     getOnboardingInProgressAction(),
+     getMyEODReportsAction()
    ]);
 
   const stats: any = statsRes.data || {};
@@ -57,6 +60,7 @@ export default async function HRDashboard() {
   const users = usersRes.data || [];
   const allLeaves = allLeavesRes.data || [];
   const onboardings = onboardingRes.data || [];
+  const eodReports = eodRes.success ? eodRes.data : [];
 
   return (
     <div className="space-y-6 pb-12">
@@ -66,7 +70,7 @@ export default async function HRDashboard() {
           <p className="text-sm text-slate-500 mt-1">Overview of your team's pulse and tasks.</p>
         </div>
         <div className="flex gap-2">
-          <ApplyLeaveButton />
+          <EODFormModal reports={eodReports} roleColor="indigo" />
           <CreateEmployeeButton existingUsers={users} />
         </div>
       </div>

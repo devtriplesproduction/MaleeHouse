@@ -175,7 +175,7 @@ export default function ProjectWorkflowTab({
     if (!currentStage) return false;
     
     // Check role specific mappings
-    if (currentStage.responsibleRole === 'field' && (userRole === 'field' || userRole === 'field_engineer')) return true;
+    if (currentStage.responsibleRole === 'field' && (userRole === 'field')) return true;
     return currentStage.responsibleRole === userRole;
   };
 

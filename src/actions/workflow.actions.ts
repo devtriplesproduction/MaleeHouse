@@ -22,7 +22,7 @@ export type WorkflowResponse = {
 
 export async function requestDispatchOverrideAction(projectId: string): Promise<WorkflowResponse> {
   try {
-    const supabase: any = createAdminClient();
+    const supabase: any = await createClient();
     
     // Update the project to store the requested state
     const { error } = await supabase
@@ -38,6 +38,7 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
     // Optional: Could store this in metadata or a custom column. For now, we just rely on sending the notification.
     await notifyAdminDispatchOverrideRequestAction(projectId);
     
+    revalidatePath(`/projects/${projectId}`);
     return { success: true, error: null };
   } catch (err) {
     console.error("requestDispatchOverrideAction error:", err);
@@ -47,7 +48,7 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
 
 export async function getAllOverrideRequestsAction() {
   try {
-    const supabase: any = createAdminClient();
+    const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('notifications')
       .select('id, title, message, is_read, created_at, related_project_id, projects!notifications_related_project_id_fkey(name, client_name, status)')
@@ -89,7 +90,7 @@ export async function getAllOverrideRequestsAction() {
 
 export async function approveDispatchOverrideAction(projectId: string) {
   try {
-    const supabase: any = createAdminClient();
+    const supabase: any = await createClient();
     
     // 1. Mark ALL related override notifications as read for this project
     await supabase.from('notifications')
@@ -111,6 +112,7 @@ export async function approveDispatchOverrideAction(projectId: string) {
     await transitionWorkflowAction(projectId, "project_created", "Admin approved dispatch override without payment");
 
     revalidatePath('/admin');
+    await revalidateAccountsPaths(projectId);
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -119,7 +121,7 @@ export async function approveDispatchOverrideAction(projectId: string) {
 
 export async function rejectDispatchOverrideAction(projectId: string) {
   try {
-    const supabase: any = createAdminClient();
+    const supabase: any = await createClient();
     // 1. Mark ALL related override notifications as read for this project
     await supabase.from('notifications')
       .update({ is_read: true })
@@ -132,6 +134,7 @@ export async function rejectDispatchOverrideAction(projectId: string) {
       .eq('id', projectId);
       
     revalidatePath('/admin');
+    await revalidateAccountsPaths(projectId);
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -154,8 +157,9 @@ async function verifyProjectNotLocked(projectId: string): Promise<{ success: boo
     if (project?.status === "completed" || project?.status === "archived") {
       return { success: false, error: "Project is locked (completed/archived) and cannot be modified." };
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("verifyProjectNotLocked error:", err);
+    return { success: false, error: err.message || "Database validation failed." };
   }
   return { success: true, error: null };
 }
@@ -371,6 +375,7 @@ async function validateStageTransition(
     }
   } catch (error: any) {
     console.error("validateStageTransition error:", error);
+    return { success: false, error: error.message || "Database validation failed." };
   }
   return { success: true, error: null };
 }
@@ -444,8 +449,7 @@ export async function transitionWorkflowAction(
     }
 
     // 4. Update Project Status
-    const adminClient: any = createAdminClient();
-    const { error: updateError, data: updatedProject } = await adminClient.from("projects").update({
+    const { error: updateError, data: updatedProject } = await supabase.from("projects").update({
       status: newStage,
       updated_at: new Date().toISOString()
     }).eq("id", projectId).select();
@@ -476,7 +480,7 @@ export async function transitionWorkflowAction(
 
     // 6b. Consume override if it was used
     if (project?.dispatch_override_approved && role !== "admin") {
-      await adminClient.from("projects").update({ dispatch_override_approved: false }).eq("id", projectId);
+      await supabase.from("projects").update({ dispatch_override_approved: false }).eq("id", projectId);
     }
 
     // 7. Trigger notifications for assigned team members

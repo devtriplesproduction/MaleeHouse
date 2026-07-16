@@ -106,7 +106,7 @@ export async function getAllEODReportsAction(): Promise<ActionResponse> {
     const profile: any = await getUserProfileAction()
     if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied.' }
 
-    const supabase = createAdminClient()
+    const supabase = await createClient()
     
     const { data, error } = await supabase
       .from('eod_reports')
@@ -125,10 +125,10 @@ export async function updateEODReportAction(id: string, updates: { adjusted_hour
     const profile: any = await getUserProfileAction()
     if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins or HR only.' }
 
-    const supabaseAdmin = createAdminClient()
+    const supabase = await createClient()
     
     // Fetch the report to check ownership for HR restriction
-    const { data: report, error: fetchError } = await supabaseAdmin
+    const { data: report, error: fetchError } = await supabase
       .from('eod_reports')
       .select('user_id')
       .eq('id', id)
@@ -143,9 +143,9 @@ export async function updateEODReportAction(id: string, updates: { adjusted_hour
       return { success: false, error: 'HR cannot approve or edit their own EODs.' }
     }
 
-    const { data, error } = await (supabaseAdmin as any)
+    const { data, error } = await supabase
       .from('eod_reports')
-      .update(updates)
+      .update(updates as never)
       .eq('id', id)
       .select()
       .single()

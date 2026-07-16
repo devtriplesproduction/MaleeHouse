@@ -113,7 +113,7 @@ export default function ProjectOverviewTab({
 
   const assignedEngineer = teamMembers.find((m: any) => m.role === 'engineer');
   const assignedCADs = teamMembers.filter((m: any) => m.role === 'cad');
-  const assignedFields = teamMembers.filter((m: any) => m.role === 'field' || m.role === 'field_engineer');
+  const assignedFields = teamMembers.filter((m: any) => m.role === 'field');
 
   const handleSave = () => {
     startTransition(async () => {
@@ -173,7 +173,7 @@ export default function ProjectOverviewTab({
     });
   };
 
-  const isField = userRole === 'field' || userRole === 'field_engineer';
+  const isField = userRole === 'field';
 
   const hasAccessToOps = isAdmin || isClaimedByMe || ((isEngineer || isCad || isField) && !isProjectClosed);
 

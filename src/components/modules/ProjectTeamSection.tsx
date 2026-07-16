@@ -27,9 +27,8 @@ const ASSIGNMENT_ROLES = [
 
 const ROLE_COLORS: Record<string, string> = {
   engineer: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  field_engineer: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  employee: 'bg-slate-50 dark:bg-slate-500/10 text-slate-600 dark:text-slate-400',
-  field: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  field: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  cad: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400',
 };
 
 function getInitials(firstName?: string | null, lastName?: string | null) {
@@ -146,7 +145,7 @@ export function ProjectTeamSection({ projectId, assignments, staff, canAssign }:
                 placeholder="Select..."
               >
                 {staff
-                  .filter((s: any) => s.role === selectedRole || (selectedRole === 'field' && s.role === 'field_engineer'))
+                  .filter((s: any) => s.role === selectedRole)
                   .map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.first_name} {s.last_name}

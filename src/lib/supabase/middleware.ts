@@ -15,20 +15,10 @@ export async function updateSession(request: NextRequest) {
         },
         set(name: string, value: string, options: CookieOptions) {
           request.cookies.set({ name, value, ...options })
-          supabaseResponse = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
           supabaseResponse.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
           request.cookies.set({ name, value: '', ...options })
-          supabaseResponse = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
           supabaseResponse.cookies.set({ name, value: '', ...options })
         },
       },
@@ -87,12 +77,14 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (!isActive) {
+      await supabase.auth.signOut()
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('error', 'Account Suspended')
       const response = NextResponse.redirect(url)
-      response.cookies.delete('sb-access-token')
-      response.cookies.delete('sb-refresh-token')
+      supabaseResponse.cookies.getAll().forEach((cookie: any) =>
+        response.cookies.set(cookie.name, cookie.value)
+      )
       return response
     }
 

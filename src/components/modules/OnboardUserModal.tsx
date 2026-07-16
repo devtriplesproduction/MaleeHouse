@@ -41,6 +41,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showStep4Errors, setShowStep4Errors] = useState(false);
@@ -111,12 +112,22 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
   const selectedDept = watch("department");
   const selectedDesignation = watch("designation");
 
-  // Auto-generate employee ID when modal opens
+  const phoneNumber = watch("phone_number");
+
+  // Auto-generate employee ID based on phone number
   useEffect(() => {
-    if (isOpen) {
-      setValue("employee_id", `MH-EMP-${Math.floor(10000 + Math.random() * 90000)}`);
+    if (phoneNumber) {
+      const digits = phoneNumber.replace(/\D/g, '');
+      if (digits.length >= 5) {
+        const last5 = digits.slice(-5);
+        setValue("employee_id", `EMP-${last5}`);
+      } else {
+        setValue("employee_id", `EMP-${digits.padEnd(5, '0')}`);
+      }
+    } else if (isOpen) {
+      setValue("employee_id", `EMP-${Math.floor(10000 + Math.random() * 90000)}`); // Fallback if no phone
     }
-  }, [isOpen, setValue]);
+  }, [phoneNumber, isOpen, setValue]);
 
   // Manually register fields that don't have native inputs
   useEffect(() => {
@@ -177,31 +188,29 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
 
     Array.from(files).forEach((file: any) => {
       const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-      const newFileObj = {
-        id: fileId,
-        name: file.name,
-        size: file.size,
-        type: "aadhar", // default type
-        uploaded_at: new Date().toISOString()
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const newFileObj = {
+          id: fileId,
+          name: file.name,
+          label: "",
+          size: file.size,
+          uploaded_at: new Date().toISOString(),
+          url: reader.result as string
+        };
+        setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+        setUploadedFiles(prev => [...prev, newFileObj]);
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 20;
+          setUploadProgress(prev => ({ ...prev, [fileId]: progress }));
+          if (progress >= 100) {
+            clearInterval(interval);
+            toast({ title: "Document Registered", description: `${file.name} staged successfully.`, variant: "success" });
+          }
+        }, 100);
       };
-
-      setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
-      setUploadedFiles(prev => [...prev, newFileObj]);
-
-      // Simulate network upload speed
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 20;
-        setUploadProgress(prev => ({ ...prev, [fileId]: progress }));
-        if (progress >= 100) {
-          clearInterval(interval);
-          toast({
-            title: "Document Registered",
-            description: `${file.name} successfully encrypted and staged.`,
-            variant: "success"
-          });
-        }
-      }, 100);
+      reader.readAsDataURL(file);
     });
   };
 
@@ -213,8 +222,8 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
     });
   };
 
-  const handleDocumentTypeChange = (id: string, newType: string) => {
-    setUploadedFiles(prev => prev.map((f: any) => f.id === id ? { ...f, type: newType } : f));
+  const handleDocumentNameChange = (id: string, newName: string) => {
+    setUploadedFiles(prev => prev.map((f: any) => f.id === id ? { ...f, label: newName } : f));
   };
 
   const onSubmit = async (data: OnboardFormData) => {
@@ -385,15 +394,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit, onError)} className="flex flex-col h-[750px] max-h-[90vh]">
-            {Object.keys(errors).length > 0 && (
-              <div className="bg-red-500/10 text-red-500 p-4 text-xs overflow-auto font-mono">
-                DEBUG ERRORS: {JSON.stringify(
-                  Object.fromEntries(
-                    Object.entries(errors).map(([key, val]: any) => [key, val?.message || 'Error'])
-                  )
-                )}
-              </div>
-            )}
+
             {/* Header */}
             <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/40 dark:bg-[#0a0d16]">
               <div>
@@ -788,21 +789,27 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                       <h5 className="text-xs font-bold uppercase tracking-widest text-slate-400">Staged Documents ({uploadedFiles.length})</h5>
                       <div className="space-y-2">
                         {uploadedFiles.map((file) => (
-                          <div 
-                            key={file.id} 
-                            className="p-4 bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
+                          <div
+                            key={file.id}
+                            className="p-4 bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl flex items-center justify-between gap-4 shadow-sm"
                           >
-                            <div className="flex items-start gap-3 min-w-0">
-                              <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-400">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-400 shrink-0">
                                 <FileText className="w-5 h-5" />
                               </div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-[250px]">{file.name}</p>
+                              <div className="min-w-0 flex-1">
+                                <input
+                                  type="text"
+                                  value={file.label || ""}
+                                  onChange={(e) => handleDocumentNameChange(file.id, e.target.value)}
+                                  placeholder={file.name}
+                                  className="w-full text-xs font-bold text-slate-900 dark:text-white bg-transparent border-b border-transparent hover:border-slate-200 dark:hover:border-white/10 focus:border-indigo-400 outline-none transition-all pb-0.5"
+                                />
                                 <p className="text-xs text-slate-400 font-bold uppercase mt-0.5">{(file.size / 1024).toFixed(1)} KB</p>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                               {uploadProgress[file.id] < 100 ? (
                                 <div className="flex items-center gap-2">
                                   <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
@@ -810,27 +817,19 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                                 </div>
                               ) : (
                                 <>
-                                  <div className="relative">
-                                    <select
-                                      value={file.type}
-                                      onChange={(e) => handleDocumentTypeChange(file.id, e.target.value)}
-                                      className="appearance-none pr-8 pl-3 py-1.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider outline-none text-slate-600 dark:text-slate-300"
+                                  {file.url && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewDoc(file)}
+                                      className="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-500 rounded-xl transition-all"
+                                      title="Preview document"
                                     >
-                                      <option value="aadhar" className="dark:bg-[#0d1222]">Aadhaar Card</option>
-                                      <option value="pan" className="dark:bg-[#0d1222]">PAN Card</option>
-                                      <option value="contract" className="dark:bg-[#0d1222]">Agreement / Contract</option>
-                                      <option value="certificate" className="dark:bg-[#0d1222]">Certificate</option>
-                                      <option value="nda" className="dark:bg-[#0d1222]">NDA File</option>
-                                      <option value="other" className="dark:bg-[#0d1222]">Other File</option>
-                                    </select>
-                                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                      <ChevronDown className="w-3 h-3" />
-                                    </div>
-                                  </div>
-
-                                  <button 
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  <button
                                     type="button"
-                                    onClick={() => removeFile(file.id)} 
+                                    onClick={() => removeFile(file.id)}
                                     className="p-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-400 hover:text-rose-500 rounded-xl transition-all"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -981,6 +980,32 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
           </form>
         )}
       </div>
+
+      {/* Doc Preview Overlay */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setPreviewDoc(null)}>
+          <div className="bg-white dark:bg-[#0a0d16] rounded-2xl shadow-2xl overflow-hidden w-full max-w-3xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5">
+              <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{previewDoc.label || previewDoc.name}</p>
+              <button onClick={() => setPreviewDoc(null)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-all">
+                <X className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              {previewDoc.url?.startsWith('data:image') ? (
+                <img src={previewDoc.url} alt={previewDoc.label || previewDoc.name} className="w-full h-auto object-contain" />
+              ) : previewDoc.url?.startsWith('data:application/pdf') ? (
+                <iframe src={previewDoc.url} className="w-full h-[70vh]" title={previewDoc.label || previewDoc.name} />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                  <FileText className="w-12 h-12 mb-3" />
+                  <p className="text-sm font-semibold">Preview not available for this file type.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );

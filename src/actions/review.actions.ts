@@ -26,7 +26,7 @@ export async function approveProjectAction(projectId: string): Promise<ReviewRes
     const supabase: any = await createClient();
     const { data: assignments } = await supabase.from('project_assignments').select('role').eq('project_id', projectId);
     const hasCad = assignments?.some((a: any) => a.role === 'cad');
-    const hasField = assignments?.some((a: any) => a.role === 'field' || a.role === 'field_engineer');
+    const hasField = assignments?.some((a: any) => a.role === 'field');
     
     if (!hasCad || !hasField) {
       return { success: false, error: "Cannot approve CAD: At least one CAD engineer and one Field engineer must be assigned to the team." };

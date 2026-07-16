@@ -77,6 +77,23 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
 
     if (error) return { success: false, error: error.message };
 
+    await supabase.from('workflow_history').insert({
+      id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: payload.project_id,
+      changed_by: profile.id,
+      comment: `Created invoice for ${total_amount.toFixed(2)}`,
+      created_at: new Date().toISOString()
+    });
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: payload.project_id,
+      user_id: profile.id,
+      action: 'INVOICE_CREATED',
+      details: { invoice_id: data.id, amount: total_amount },
+      created_at: new Date().toISOString()
+    });
+
     await revalidateAccountsPaths(payload.project_id);
 
     return { success: true, data };
@@ -106,32 +123,11 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
     let finalInvoiceId = paymentData.invoice_id;
     if (milestone_id && !finalInvoiceId) {
       // Find existing invoice for milestone
-      const { data: existing } = await supabase.from('invoices').select('id').eq('milestone_id', milestone_id).single();
+      const { data: existing } = await supabase.from('invoices').select('id').eq('milestone_id', milestone_id).maybeSingle();
       if (existing) {
         finalInvoiceId = existing.id;
       } else {
-        // Create dummy invoice to link payment to milestone
-        const today = new Date().toISOString().split('T')[0];
-        const invoiceNum = `INV-${Date.now().toString().slice(-6)}`;
-        const { data: newInv, error: invError } = await supabase.from('invoices').insert({
-          id: invoiceNum,
-          invoice_number: invoiceNum,
-          project_id: payload.project_id,
-          milestone_id: milestone_id,
-          amount: payload.amount,
-          gst_rate: 0,
-          gst_amount: 0,
-          total_amount: payload.amount,
-          status: 'sent',
-          due_date: today,
-          created_by: profile.id
-        }).select('id').single();
-        
-        if (invError) {
-          console.error("Auto Invoice Error:", invError);
-          return { success: false, error: `Failed to create invoice link: ${invError.message}` };
-        }
-        if (newInv) finalInvoiceId = newInv.id;
+        return { success: false, error: "Validation failed: You must create an invoice for this milestone before logging a payment." };
       }
     }
 
@@ -152,6 +148,15 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
 
     await updateProjectStageAction(payload.project_id, 'payment_pending', 'Payment manually logged.');
 
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: payload.project_id,
+      user_id: profile.id,
+      action: 'PAYMENT_LOGGED',
+      details: { payment_id: data.id, amount: paymentData.amount },
+      created_at: new Date().toISOString()
+    });
+
     // Auto-verify if logged by accountant or admin
     if (profile.role === 'admin' || profile.role === 'accountant') {
       const verifyRes = await verifyPaymentAction(data.id, 'verified', 'Auto-verified because payment was logged by accountant or admin.');
@@ -160,7 +165,8 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
       }
     }
 
-    // revalidateAccountsPaths removed to prevent Next.js server action hanging bugs
+    await revalidateAccountsPaths(payload.project_id);
+    revalidatePath(`/projects/${payload.project_id}`);
 
     return { success: true, data };
   } catch (error: any) {
@@ -527,6 +533,23 @@ export async function createMilestonesAction(
 
     if (error) return { success: false, error: error.message };
 
+    await supabase.from('workflow_history').insert({
+      id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: projectId,
+      changed_by: profile.id,
+      comment: `Created ${milestones.length} milestone(s) totaling ${sum.toFixed(2)}`,
+      created_at: new Date().toISOString()
+    });
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: projectId,
+      user_id: profile.id,
+      action: 'MILESTONES_CREATED',
+      details: { count: milestones.length, total: sum },
+      created_at: new Date().toISOString()
+    });
+
     await revalidateAccountsPaths(projectId);
 
     return { success: true, data };
@@ -571,7 +594,7 @@ export async function freezeProjectAction(
       return { success: false, error: lockCheck.error || "Project is locked." };
     }
 
-    const supabase: any = await createAdminClient();
+    const supabase: any = await createClient();
 
     const { data: currentProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
 
@@ -625,7 +648,7 @@ export async function unfreezeProjectAction(projectId: string, comment?: string)
       return { success: false, error: 'Access denied. Accountant or Admin only.' };
     }
 
-    const supabase: any = await createAdminClient();
+    const supabase: any = await createClient();
 
     const { data: currentProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
 

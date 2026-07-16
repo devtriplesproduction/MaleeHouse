@@ -10,7 +10,6 @@ import {
   DollarSign,
   ArrowRight
 } from 'lucide-react';
-import { recordPaymentAction, markAsInvoicedAction } from '@/actions/accountant.actions';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { CreateInvoiceModal } from '@/features/accounts/CreateInvoiceModal';
@@ -28,27 +27,6 @@ export function ProjectBillingSummary({ project, userRole }: ProjectBillingSumma
   const isPaid = project.status === 'payment_done' || project.status === 'archived' || project.status === 'completed';
 
   const services = project.services || [];
-
-  const handleRecordPayment = async () => {
-    if (!confirm("Confirm payment receipt? This will move the project to 'Payment Done'.")) return;
-    setIsProcessing(true);
-    const res = await recordPaymentAction(project.id);
-    if (res?.success) {
-      toast.success("Payment Recorded", { description: "Project status updated to Payment Done." });
-    } else {
-      toast.error("Action Failed", { description: res?.error });
-    }
-    setIsProcessing(false);
-  };
-
-  const handleMarkInvoiced = async () => {
-    setIsProcessing(true);
-    const res = await markAsInvoicedAction(project.id);
-    if (res?.success) {
-      toast.success("Invoice Marked", { description: "Invoicing event has been logged." });
-    }
-    setIsProcessing(false);
-  };
 
   return (
     <div className="glass-card p-6 border-amber-500/20 bg-amber-500/5 space-y-6">

@@ -54,6 +54,12 @@ export async function loginAction(email: string, password: string) {
     }
   }
 
+  if (profile.force_password_reset) {
+    // Return a redirect to the profile page or a dedicated password reset page
+    // Since there isn't a dedicated one, we'll redirect to profile with a hash or param
+    return { success: true, redirectTo: '/profile?reset=true' }
+  }
+
   const role = profile.role as Role
   const redirectPath = ROLE_REDIRECTS[role] || '/projects'
 

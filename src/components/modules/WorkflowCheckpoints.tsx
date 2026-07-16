@@ -39,7 +39,7 @@ interface WorkflowCheckpointsProps {
 
 export function WorkflowCheckpoints({ projectStatus, teamMembers, files }: WorkflowCheckpointsProps) {
   // 1. Get all assigned Field Engineers
-  const fieldEngineers = teamMembers.filter((member: any) => member.role === 'field' || member.role === 'field_engineer');
+  const fieldEngineers = teamMembers.filter((member: any) => member.role === 'field');
 
   // Check if a specific user has uploaded any field data
   const hasUserUploadedData = (userId: string) => {

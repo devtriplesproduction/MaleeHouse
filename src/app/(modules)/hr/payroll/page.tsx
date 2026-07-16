@@ -17,7 +17,7 @@ export default async function SalaryRecordsPage() {
 
   return (
     <div className="space-y-6">
-      <UserManagementTable initialUsers={users} mode="payroll-only" />
+      <UserManagementTable initialUsers={users} />
     </div>
   );
 }

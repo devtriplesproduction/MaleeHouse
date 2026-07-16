@@ -1,7 +1,7 @@
 'use server'
 
 import { getUserProfileAction } from './auth.actions'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { getAllLeavesAction } from './leave.actions'
 import { getAttendanceLogsAction } from './attendance.actions'
 import { getHolidaysAction } from './holiday.actions'
@@ -14,10 +14,10 @@ export async function getHRDashboardStatsAction() {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const supabaseAdmin: any = createAdminClient()
+    const supabase: any = await createClient()
     
     // 1. Headcount
-    const { count: headcount } = await supabaseAdmin
+    const { count: headcount } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true)
@@ -88,13 +88,13 @@ export async function getTodayAttendanceSummaryAction() {
     return { success: false, error: 'Unauthorized' }
   }
 
-  const supabaseAdmin: any = createAdminClient()
+  const supabase: any = await createClient()
   
   // Calculate midnight today in Asia/Kolkata timezone
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   const startOfToday = new Date(`${today}T00:00:00+05:30`)
   
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('eod_reports')
     .select('*, profiles(first_name, last_name, role, profile_photo)')
     .gte('created_at', startOfToday.toISOString())
@@ -141,8 +141,8 @@ export async function getOnboardingInProgressAction() {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const supabaseAdmin: any = createAdminClient()
-    const { data, error } = await supabaseAdmin
+    const supabase: any = await createClient()
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .in('status', ['onboarding_pending', 'invited'])

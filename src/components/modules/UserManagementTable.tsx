@@ -67,41 +67,17 @@ interface UserProfile {
 
 interface UserManagementTableProps {
   initialUsers: UserProfile[];
-  mode?: "full" | "payroll-only";
 }
 
-const avatarColors = [
-  "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/25",
-  "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/25",
-  "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/25",
-  "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/25",
-  "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
-  "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25",
-];
 
-function getAvatarColor(name: string) {
-  if (!name) return avatarColors[0];
-  const idx = name.charCodeAt(0) % avatarColors.length;
-  return avatarColors[idx];
-}
-
-export function UserManagementTable({ initialUsers, mode = "full" }: UserManagementTableProps) {
+export function UserManagementTable({ initialUsers }: UserManagementTableProps) {
   const [users, setUsers] = useState<UserProfile[]>(initialUsers);
-  const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security" | "birthdays">(mode === "payroll-only" ? "payroll" : "directory");
-  const [viewMode, setViewMode] = useState<"table" | "card">("table");
-
-  useEffect(() => {
-    if (mode === "payroll-only") {
-      setActiveTab("payroll");
-    }
-  }, [mode]);
+  const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security" | "birthdays">("directory");
 
   // Filtering & Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDept, setSelectedDept] = useState("all");
-  const [selectedRole, setSelectedRole] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [showFilters, setShowFilters] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -216,50 +192,28 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
     }
   };
 
-  // Status mapping colors
+  // Status: semantic colors only
   const getStatusBadgeStyles = (status?: string) => {
     switch (status) {
-      case "active":
-        return "bg-gradient-to-r from-emerald-500/20 to-emerald-500/5 text-emerald-600 border border-emerald-500/20 shadow-sm";
-      case "onboarding_pending":
-        return "bg-gradient-to-r from-amber-500/20 to-amber-500/5 text-amber-600 border border-amber-500/20 shadow-sm";
-      case "invited":
-        return "bg-gradient-to-r from-indigo-500/20 to-indigo-500/5 text-indigo-600 border border-indigo-500/20 shadow-sm";
-      case "suspended":
-        return "bg-gradient-to-r from-rose-500/20 to-rose-500/5 text-rose-600 border border-rose-500/20 shadow-sm";
-      case "resigned":
-        return "bg-gradient-to-r from-slate-500/20 to-slate-500/5 text-slate-600 border border-slate-500/20 shadow-sm";
-      case "archived":
-        return "bg-gradient-to-r from-purple-500/20 to-purple-500/5 text-purple-600 border border-purple-500/20 shadow-sm";
-      default:
-        return "bg-gradient-to-r from-slate-500/20 to-slate-500/5 text-slate-600 border border-slate-500/20 shadow-sm";
+      case "active":          return "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/25";
+      case "onboarding_pending": return "bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/25";
+      case "invited":         return "bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-500/25";
+      case "suspended":       return "bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/25";
+      case "resigned":        return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
+      case "archived":        return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
+      default:               return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
     }
   };
 
-  // Department colors mapping
-  const getDeptBadgeStyles = (dept?: string) => {
-    switch (dept) {
-      case "admin":
-        return "bg-gradient-to-r from-blue-500/20 to-blue-500/5 text-blue-600 border border-blue-500/25 shadow-sm";
-      case "operations":
-        return "bg-gradient-to-r from-indigo-500/20 to-indigo-500/5 text-indigo-600 border border-indigo-500/25 shadow-sm";
-      case "survey":
-        return "bg-gradient-to-r from-teal-500/20 to-teal-500/5 text-teal-600 border border-teal-500/25 shadow-sm";
-      case "design":
-        return "bg-gradient-to-r from-purple-500/20 to-purple-500/5 text-purple-600 border border-purple-500/25 shadow-sm";
-      default:
-        return "bg-gradient-to-r from-slate-500/20 to-slate-500/5 text-slate-600 border border-slate-500/25 shadow-sm";
-    }
-  };
+  // Role: always indigo (primary theme accent)
+  const getRoleBadgeStyles = (_roleStr?: string) =>
+    "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/25";
 
-  // Dynamic designations based on selected department filter
-  const designationsList = useMemo(() => {
-    if (selectedDept === "all") {
-      const allDesignations = DEPARTMENTS.flatMap(d => d.designations);
-      return Array.from(new Map(allDesignations.map((r: any) => [r.id, r])).values());
-    }
-    return getDesignationsForDepartment(selectedDept);
-  }, [selectedDept]);
+  // Department: always violet (secondary accent)
+  const getDeptBadgeStyles = (_dept?: string) =>
+    "bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-500/25";
+
+
 
   // Combined Filters Logic
   const filteredUsers = useMemo(() => {
@@ -271,16 +225,15 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
       const matchesSearch = fullName.includes(search) || email.includes(search) || employeeId.includes(search);
       const matchesDept = selectedDept === "all" || u.department === selectedDept;
-      const matchesRole = selectedRole === "all" || u.designation === selectedRole;
       const matchesStatus = selectedStatus === "all" || u.status === selectedStatus;
 
-      return matchesSearch && matchesDept && matchesRole && matchesStatus;
+      return matchesSearch && matchesDept && matchesStatus;
     });
-  }, [users, searchTerm, selectedDept, selectedRole, selectedStatus]);
+  }, [users, searchTerm, selectedDept, selectedStatus]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedDept, selectedRole, selectedStatus]);
+  }, [searchTerm, selectedDept, selectedStatus]);
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -473,19 +426,14 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            {mode === "payroll-only" ? (
-              <>Salary <span className="text-indigo-500 dark:text-indigo-400">Records</span></>
-            ) : (
-              <>Team <span className="text-indigo-500 dark:text-indigo-400">Management</span></>
-            )}
+            <>Team <span className="text-indigo-500 dark:text-indigo-400">Management</span></>
           </h1>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
-            {mode === "payroll-only" ? "Read-only view of historical payroll cycles and live adjustments." : "Manage permissions, invite surveyors, and maintain system security."}
+            Manage permissions, invite surveyors, and maintain system security.
           </p>
         </div>
 
-        {mode !== "payroll-only" && (
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
             <Button
               onClick={() => setIsNewUserModalOpen(true)}
               variant="hr"
@@ -495,12 +443,10 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
               Onboard Employee
             </Button>
           </div>
-        )}
       </div>
 
       {/* Minified Quick Stats Row */}
-      {mode !== "payroll-only" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: Total Staff */}
           <div className="glass-card px-4 py-3 flex items-center justify-between border-indigo-500/10 hover:border-indigo-500/20 transition-all duration-300">
             <div className="flex items-center gap-3">
@@ -544,11 +490,9 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
             </div>
           </div>
         </div>
-      )}
 
       {/* Global Tab Navigation */}
-      {mode !== "payroll-only" && (
-        <div className="flex border-b border-slate-200 dark:border-white/5 mb-6 overflow-x-auto gap-8 scrollbar-none">
+      <div className="flex border-b border-slate-200 dark:border-white/5 mb-6 overflow-x-auto gap-8 scrollbar-none">
           <button
             onClick={() => setActiveTab("directory")}
             className={cn(
@@ -599,11 +543,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
             )}
           </button>
         </div>
-      )}
 
-      {/* ========================================================================= */}
       {/* 1. TAB: PERSONNEL DIRECTORY                                               */}
-      {/* ========================================================================= */}
       {activeTab === "directory" && (
         <div className="space-y-6 font-sans">
 
@@ -630,7 +571,6 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                   value={selectedDept}
                   onValueChange={(val) => {
                     setSelectedDept(val);
-                    setSelectedRole("all");
                   }}
                   placeholder="All Departments"
                   className="w-40"
@@ -668,7 +608,6 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Role</th>
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Department</th>
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Contact</th>
-                    <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Joined</th>
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Status</th>
                     <th className="px-4 py-3.5" />
                   </tr>
@@ -676,7 +615,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                 <tbody>
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-24 text-center">
+                      <td colSpan={6} className="px-6 py-24 text-center">
                         <div className="flex flex-col items-center gap-4">
                           <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
                             <Users className="w-8 h-8 text-slate-300 dark:text-slate-600" />
@@ -724,14 +663,14 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                         </td>
 
                         <td className="px-6 py-4">
-                          <span className="px-2.5 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-slate-100 to-slate-50 dark:from-white/10 dark:to-white/5 border border-slate-200/50 dark:border-white/10 text-slate-600 dark:text-slate-300 capitalize shadow-sm">
+                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold capitalize shadow-sm", getRoleBadgeStyles(user.designation?.replace("_", " ") || user.role))}>
                             {user.designation?.replace("_", " ") || user.role}
                           </span>
                         </td>
 
                         <td className="px-6 py-4">
                           <span className={cn(
-                            "px-2.5 py-1 rounded-full text-sm font-semibold border capitalize inline-block",
+                            "px-2.5 py-1 rounded-full text-xs font-semibold capitalize inline-block",
                             getDeptBadgeStyles(user.department)
                           )}>
                             {user.department || "General"}
@@ -746,14 +685,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                         </td>
 
                         <td className="px-6 py-4">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                            {user.joining_date ? new Date(user.joining_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
-                          </p>
-                        </td>
-
-                        <td className="px-6 py-4">
                           <span className={cn(
-                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold border",
+                            "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold",
                             getStatusBadgeStyles(user.status)
                           )}>
                             <span className={cn("w-1.5 h-1.5 rounded-full", user.is_active ? "bg-emerald-500" : "bg-slate-400")} />
@@ -792,8 +725,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                                     }}
                                     className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
                                   >
-                                    <Eye className="w-4 h-4 text-slate-500" />
-                                    <span>View Profile</span>
+                                    <Edit3 className="w-4 h-4 text-slate-500" />
+                                    <span>Edit Profile</span>
                                   </button>
 
                                   <button
@@ -896,9 +829,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* 2. TAB: INTEGRATED PAYROLL                                                */}
-      {/* ========================================================================= */}
       {activeTab === "payroll" && (
         <div className="space-y-6 font-sans">
 
@@ -1098,10 +1029,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                           {/* Identity */}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2.5">
-                              <div className={cn(
-                                "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border shrink-0",
-                                getAvatarColor(item.employee_name)
-                              )}>
+                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/25">
                                 {item.employee_name?.charAt(0).toUpperCase()}
                               </div>
                               <div>
@@ -1237,44 +1165,17 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
         </div>
       )}
 
-      {/* ========================================================================= */}
 
 
-
-
-
-
-
-      {/* ========================================================================= */}
       {/* 3. TAB: ACCOUNT SECURITY                                                  */}
-      {/* ========================================================================= */}
       {activeTab === "security" && (
         <div className="space-y-6 animate-in fade-in duration-300 font-sans">
 
-          {/* Security Protocol Banner */}
-          <div className="glass-card p-5 border-indigo-500/20 bg-gradient-to-r from-indigo-500/5 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shadow-inner">
-                <Shield className="w-6 h-6 text-indigo-500" />
-              </div>
-              <div>
-                <p className="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-0.5">Security Protocol</p>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-none">Administrative Override Active</h3>
-              </div>
-            </div>
-            <div className="md:max-w-sm border-l-2 border-slate-200 dark:border-white/10 pl-4">
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">
-                Direct authority to modify credentials. All changes are logged for auditing and take effect immediately.
-              </p>
-            </div>
-          </div>
+
 
           {/* Main Panel */}
           <div className="glass-card overflow-hidden border-slate-200 dark:border-white/5">
-            <div className="px-6 py-5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-[#0a0d16]/30">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Personnel Security Override</h3>
-              <span className="text-xs font-semibold text-slate-500">{users.length} Personnel Accounts Found</span>
-            </div>
+
 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -1292,10 +1193,16 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                       {/* Employee Identity */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0">
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                              {user.first_name?.charAt(0)}{user.last_name?.charAt(0)}
-                            </span>
+                          <div className="relative shrink-0">
+                            <img
+                              src={user.profile_photo || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"}
+                              alt={`${user.first_name} avatar`}
+                              className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                            />
+                            <span className={cn(
+                              "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-[#0c101b]",
+                              user.is_active ? "bg-emerald-500" : "bg-slate-400"
+                            )} />
                           </div>
                           <div>
                             <p className="text-sm font-bold text-slate-900 dark:text-white">
@@ -1310,19 +1217,23 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
                       {/* Access Level */}
                       <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{user.email}</span>
+                        <div className="flex flex-col gap-2">
+                          <span className="text-sm font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 text-slate-400" />
+                            {user.email}
+                          </span>
                           <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold uppercase tracking-widest text-indigo-500">
+                            <span className={cn(
+                              "px-2.5 py-1 rounded-full text-xs font-semibold capitalize",
+                              getRoleBadgeStyles(user.designation?.replace("_", " ") || user.role)
+                            )}>
                               {user.designation?.replace("_", " ") || user.role}
                             </span>
                             <span className={cn(
-                              "px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest border",
-                              user.is_active
-                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                : "bg-slate-500/10 text-slate-500 border-slate-500/20"
+                              "px-2.5 py-1 rounded-full text-xs font-semibold capitalize",
+                              getStatusBadgeStyles(user.status || (user.is_active ? "active" : "suspended"))
                             )}>
-                              {user.is_active ? "ACTIVE" : "INACTIVE"}
+                              {user.status?.replace("_", " ") || (user.is_active ? "Active" : "Inactive")}
                             </span>
                           </div>
                         </div>
@@ -1356,7 +1267,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                           onClick={() => handleManualOverride(user.id, user.email)}
                           disabled={isOverriding[user.id] || !(overridePasswords[user.id]?.length >= 4)}
                           variant="hr"
-                          className="h-9 px-4 text-sm font-bold tracking-wider rounded-lg disabled:opacity-50"
+                          className="h-9 px-4 rounded-lg disabled:opacity-50"
                         >
                           {isOverriding[user.id] ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1377,9 +1288,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* 4. TAB: BIRTHDAYS DIRECTORY                                               */}
-      {/* ========================================================================= */}
       {activeTab === "birthdays" && (
         <div className="space-y-6 font-sans">
           <div className="glass-card overflow-hidden">
@@ -1390,7 +1299,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                 <p className="text-xs text-slate-500 mt-1">A complete list of all employee birthdates, sorted by upcoming dates.</p>
               </div>
             </div>
-            <div className="overflow-x-auto p-6">
+            <div className="overflow-x-auto">
               <table className="w-full text-left border-separate border-spacing-y-2 min-w-[700px]">
                 <thead>
                   <tr>
@@ -1453,7 +1362,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={cn("px-2.5 py-1 rounded-full text-sm font-semibold border inline-block capitalize", getDeptBadgeStyles(user.department))}>
+                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border inline-block capitalize", getDeptBadgeStyles(user.department))}>
                             {user.department || "General"}
                           </span>
                         </td>

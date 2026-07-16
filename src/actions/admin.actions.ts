@@ -160,8 +160,8 @@ export async function onboardEmployeeAction(
 
     const userId = authUser.user.id
 
-    // Insert or update profile (upsert to handle auto-created profile trigger)
-    const { error: profileError } = await (supabaseAdmin as any).from('profiles').upsert({
+    // Insert profile (single source of truth now that the DB trigger is removed)
+    const { error: profileError } = await (supabaseAdmin as any).from('profiles').insert({
       id: userId,
       email: data.email,
       role: data.role,
@@ -243,6 +243,14 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
     let statusActive = updates.is_active
     if (updates.status) {
       statusActive = ['active', 'probation', 'onboarding_pending', 'invited'].includes(updates.status)
+    }
+
+    // Sanitize date fields — PostgreSQL rejects empty strings for DATE columns
+    const DATE_FIELDS = ['dob', 'joining_date', 'temp_password_expires_at', 'deleted_at']
+    for (const field of DATE_FIELDS) {
+      if (field in updates && (updates[field] === '' || updates[field] === undefined)) {
+        updates[field] = null
+      }
     }
 
     const { data, error } = await (supabaseAdmin as any)
@@ -501,8 +509,17 @@ export async function deleteEmployeeAction(userId: string) {
       return { success: false, error: authError.message }
     }
 
-    // Now delete from profiles explicitly since cascade might not trigger if auth user was missing
-    await (supabaseAdmin as any).from('profiles').delete().eq('id', userId)
+    // Delete dependent records first to avoid FK constraint violations
+    await Promise.all([
+      (supabaseAdmin as any).from('notifications').delete().eq('user_id', userId),
+      (supabaseAdmin as any).from('project_assignments').delete().eq('user_id', userId),
+      (supabaseAdmin as any).from('eod_reports').delete().eq('user_id', userId),
+      (supabaseAdmin as any).from('leaves').delete().eq('user_id', userId),
+      (supabaseAdmin as any).from('attendance_logs').delete().eq('user_id', userId),
+    ])
+
+    const { error: profileError } = await (supabaseAdmin as any).from('profiles').delete().eq('id', userId)
+    if (profileError) return { success: false, error: `Profile deletion failed: ${profileError.message}` }
 
     await logAdminAuditAction({
       action: 'USER_DELETED_PERMANENTLY',
@@ -518,7 +535,7 @@ export async function deleteEmployeeAction(userId: string) {
   }
 }
 
-export async function addSalaryIncrementAction(employeeId: string, newSalary: number) {
+export async function addSalaryIncrementAction(employeeId: string, newSalary: number, effectiveDate?: string) {
   try {
     const profile: any = await getUserProfileAction()
     if (!profile || !['admin', 'hr'].includes(profile.role?.toLowerCase())) {
@@ -530,7 +547,7 @@ export async function addSalaryIncrementAction(employeeId: string, newSalary: nu
     // Fetch current profile
     const { data: emp, error: empError } = await supabaseAdmin
       .from('profiles')
-      .select('salary')
+      .select('salary, first_name, last_name, department, designation, employee_id')
       .eq('id', employeeId)
       .single()
       
@@ -540,12 +557,17 @@ export async function addSalaryIncrementAction(employeeId: string, newSalary: nu
     const incrementAmount = newSalary - previousSalary
     const incrementPercentage = previousSalary > 0 ? (incrementAmount / previousSalary) * 100 : 0
     
-    // Effective date is 1st of next month
-    const now = new Date()
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    const effectiveDateStr = nextMonth.toISOString().split('T')[0]
+    // Use provided date or default to 1st of next month
+    let effectiveDateStr: string
+    if (effectiveDate) {
+      effectiveDateStr = effectiveDate
+    } else {
+      const now = new Date()
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+      effectiveDateStr = nextMonth.toISOString().split('T')[0]
+    }
 
-    // Insert increment record
+    // Insert increment record (salary journey log)
     const { error: incError } = await supabaseAdmin.from('salary_increments').insert({
       employee_id: employeeId,
       previous_salary: previousSalary,
@@ -560,10 +582,27 @@ export async function addSalaryIncrementAction(employeeId: string, newSalary: nu
       console.error('Error inserting salary increment:', incError)
       throw new Error('Failed to record increment')
     }
+
+    // Update the profile salary to reflect the new value
+    await supabaseAdmin
+      .from('profiles')
+      .update({ salary: newSalary })
+      .eq('id', employeeId)
     
     await logAdminAuditAction({
       action: 'ADDED_SALARY_INCREMENT',
-      details: { newSalary, previousSalary, effectiveDate: effectiveDateStr },
+      details: {
+        employee: `${emp.first_name} ${emp.last_name}`,
+        employee_id: emp.employee_id,
+        department: emp.department,
+        designation: emp.designation,
+        previousSalary,
+        newSalary,
+        incrementAmount,
+        incrementPercentage: Math.round(incrementPercentage * 100) / 100,
+        effectiveDate: effectiveDateStr,
+        approved_by: profile.id
+      },
       severity: 'info',
       targetUserId: employeeId
     })
@@ -601,6 +640,36 @@ export async function getLastSalaryIncrementAction(employeeId: string) {
     if (error && error.code !== 'PGRST116') {
       console.error('Error fetching last increment:', error)
       throw new Error('Failed to fetch last increment')
+    }
+    
+    return { success: true, data }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getSalaryIncrementHistoryAction(employeeId: string) {
+  try {
+    const supabaseAdmin: any = createAdminClient()
+    
+    // Check permission
+    const { data: { user } } = await supabaseAdmin.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+    
+    const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
+    if (!profile || !['admin', 'hr'].includes(profile.role)) {
+      throw new Error('Not authorized')
+    }
+    
+    const { data, error } = await supabaseAdmin
+      .from('salary_increments')
+      .select('*')
+      .eq('employee_id', employeeId)
+      .order('effective_date', { ascending: false })
+      
+    if (error) {
+      console.error('Error fetching increment history:', error)
+      throw new Error('Failed to fetch increment history')
     }
     
     return { success: true, data }

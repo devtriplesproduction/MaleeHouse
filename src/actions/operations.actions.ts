@@ -29,7 +29,7 @@ async function getUserById(userId: string) {
   const { data: u } = await supabase.from('profiles').select('first_name, last_name, email, role').eq('id', userId).single();
   return u
     ? { first_name: u.first_name, last_name: u.last_name, email: u.email, role: u.role }
-    : { first_name: "Unknown", last_name: "User", email: "", role: "employee" };
+    : { first_name: "Unknown", last_name: "User", email: "", role: "hr" };
 }
 
 async function verifyProjectNotLocked(projectId: string): Promise<OpResponse> {
@@ -119,7 +119,7 @@ export async function getOpsTeamMembersAction() {
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('id, first_name, last_name, email, role')
-      .in('role', ['cad', 'field', 'engineer', 'field_engineer'])
+      .in('role', ['cad', 'field', 'engineer'])
       .order('first_name');
 
     if (error) throw error;
@@ -221,7 +221,7 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
     const lockCheck = await verifyProjectNotLocked(projectId);
     if (!lockCheck.success) return lockCheck;
 
-    const allowedRoles = ["engineer", "cad", "field", "field_engineer", "admin"];
+    const allowedRoles = ["engineer", "cad", "field", "admin"];
     if (!allowedRoles.includes(profile.role)) {
        return { success: false, error: "Role not authorized to claim projects." };
     }
@@ -261,6 +261,9 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
         note: 'Project claimed by user'
       }
     });
+
+    const { updateProjectStageAction } = await import('@/actions/workflow.actions');
+    await updateProjectStageAction(projectId, 'data_collection', 'Engineer claimed project and started data collection.');
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/operations");
@@ -316,7 +319,7 @@ export async function getTeamAssignmentsAction(projectId: string): Promise<OpRes
 
     const projectAssignments = (assignments || []).map((a: any) => ({
       ...a,
-      user_profile: profileMap.get(a.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" },
+      user_profile: profileMap.get(a.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
     }));
     return { success: true, error: null, data: projectAssignments };
   } catch (err: any) {
@@ -435,7 +438,7 @@ export async function approveCADRevisionAction(
     // Check if at least one CAD engineer and one Field engineer are assigned
     const { data: assignments } = await supabase.from('project_assignments').select('role').eq('project_id', projectId);
     const hasCad = assignments?.some((a: any) => a.role === 'cad');
-    const hasField = assignments?.some((a: any) => a.role === 'field' || a.role === 'field_engineer');
+    const hasField = assignments?.some((a: any) => a.role === 'field');
     
     if (!hasCad || !hasField) {
       return { success: false, error: "Cannot approve CAD: At least one CAD engineer and one Field engineer must be assigned to the team." };
@@ -472,7 +475,7 @@ export async function approveCADRevisionAction(
     if (project?.status === "data_sync" || project?.status === "cad_finalization") {
       await updateProjectStageAction(projectId, "completed", "Final CAD Deliverable Approved. Delivered to Client.");
     } else {
-      await updateProjectStageAction(projectId, "field_assigned", "CAD Revision Approved. Ready for Field Assignment.");
+      await updateProjectStageAction(projectId, "field_work", "CAD Revision Approved. Field Engineer automatically transitioned to work.");
     }
 
     revalidatePath(`/projects/${projectId}`);
@@ -586,8 +589,8 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
 
     const data = (revisions || []).map((r: any) => ({
       ...r,
-      submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" },
-      reviewed_by_profile: r.reviewed_by ? (profileMap.get(r.reviewed_by) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" }) : null,
+      submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
+      reviewed_by_profile: r.reviewed_by ? (profileMap.get(r.reviewed_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" }) : null,
     }));
     data.sort((a: any, b: any) => b.revision_number - a.revision_number);
     return { success: true, error: null, data };
@@ -606,14 +609,7 @@ export async function reviewLatestCADRevisionAction(
 
   const pendingRevision = revisionsRes.data?.find((r: any) => r.status === "pending_review");
   if (!pendingRevision) {
-    // FALLBACK: If no pending revision exists (e.g., project was manually advanced),
-    // allow the engineer to still approve/reject to fix the state.
-    if (isApproved) {
-      await updateProjectStageAction(projectId, "field_assigned", "CAD Prototype Approved directly (no revision record found).");
-    } else {
-      await updateProjectStageAction(projectId, "prototype", `CAD Prototype Rejected directly (no revision record found). Reason: ${reason}`);
-    }
-    return { success: true, error: null };
+    return { success: false, error: "Validation failed: No pending CAD revision found for this project." };
   }
 
   if (isApproved) {
@@ -649,7 +645,7 @@ export async function submitFieldReportAction(
 
     const lockCheck = await verifyProjectNotLocked(projectId);
     if (!lockCheck.success) return lockCheck as any;
-    if (!["field", "field_engineer", "admin"].includes(profile.role))
+    if (!["field", "admin"].includes(profile.role))
       return { success: false, error: "Only Field Engineers can submit reports." };
 
     const accessCheck = await verifyProjectAccess(projectId, profile.id, profile.role as Role, true);
@@ -717,7 +713,7 @@ export async function getFieldReportsAction(projectId: string): Promise<OpRespon
 
     const data = (reports || []).map((r: any) => ({
       ...r,
-      submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" },
+      submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
     }));
     data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return { success: true, error: null, data };
@@ -733,7 +729,7 @@ export async function acceptFieldAssignmentAction(projectId: string): Promise<Op
 
     const lockCheck = await verifyProjectNotLocked(projectId);
     if (!lockCheck.success) return lockCheck;
-    if (!["field", "field_engineer", "admin"].includes(profile.role))
+    if (!["field", "admin"].includes(profile.role))
       return { success: false, error: "Only Field Engineers can accept field assignments." };
 
     await updateProjectStageAction(projectId, "field_work", "Field Engineer accepted the assignment and started work.");
@@ -814,7 +810,7 @@ export async function reviewFieldSurveyAction(
       const assignRes = await getTeamAssignmentsAction(projectId);
       if (assignRes.success && assignRes.data) {
         const fieldUserIds = assignRes.data
-          .filter((a: any) => ["field", "field_engineer"].includes(a.role))
+          .filter((a: any) => ["field"].includes(a.role))
           .map((a: any) => a.user_id);
         
         if (fieldUserIds.length > 0) {
@@ -881,7 +877,7 @@ export async function logFieldVisitAction(
 
     const lockCheck = await verifyProjectNotLocked(projectId);
     if (!lockCheck.success) return lockCheck;
-    if (!["field", "field_engineer", "engineer", "admin", "accountant"].includes(profile.role))
+    if (!["field", "engineer", "admin", "accountant"].includes(profile.role))
       return { success: false, error: "Only Field Engineers, Engineers, Admins, or Accountants can log visits." };
 
     const accessCheck = await verifyProjectAccess(projectId, profile.id, profile.role as Role, true);
@@ -927,7 +923,7 @@ export async function completeFieldVisitAction(
 
     const lockCheck = await verifyProjectNotLocked(projectId);
     if (!lockCheck.success) return lockCheck;
-    if (!["field", "field_engineer", "engineer", "admin"].includes(profile.role))
+    if (!["field", "engineer", "admin"].includes(profile.role))
       return { success: false, error: "Only Field Engineers, Engineers, or Admins can modify visits." };
 
     const supabase: any = await createClient();
@@ -1004,7 +1000,7 @@ export async function getOperationsQueueAction() {
       const projectAssigments = (assignments || []).filter((a: any) => a.project_id === p.id);
       const team = projectAssigments.map((a: any) => ({
         ...a,
-        user_profile: profileMap.get(a.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" }
+        user_profile: profileMap.get(a.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" }
       }));
       return { ...p, team };
     });
@@ -1072,11 +1068,11 @@ export async function getMyAssignedProjectsAction() {
     }
 
     // Include unassigned projects in 'field_assigned' phase for field roles to claim/view
-    if (['field', 'field_engineer', 'admin'].includes(profile.role)) {
+    if (['field', 'admin'].includes(profile.role)) {
       const { data: fieldProjects } = await supabase.from('projects').select('id').eq('status', 'field_assigned').is('deleted_at', null);
       if (fieldProjects && fieldProjects.length > 0) {
         const fieldIds = fieldProjects.map((p: any) => p.id);
-        const { data: fieldAssignments } = await supabase.from('project_assignments').select('project_id').in('project_id', fieldIds).in('role', ['field', 'field_engineer']);
+        const { data: fieldAssignments } = await supabase.from('project_assignments').select('project_id').in('project_id', fieldIds).in('role', ['field']);
         const assignedFieldSet = new Set((fieldAssignments || []).map((a: any) => a.project_id));
         
         fieldIds.forEach((id: string) => {
@@ -1123,7 +1119,7 @@ export async function getProjectActivityAction(projectId: string) {
 
     const logs = (activityLogs || []).map((l: any) => ({
       ...l,
-      user_profile: profileMap.get(l.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "employee" },
+      user_profile: profileMap.get(l.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
     }));
 
     logs.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());

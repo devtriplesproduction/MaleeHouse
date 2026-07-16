@@ -66,7 +66,7 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
     }
 
     // Auto-advance workflow if assigning field team during field_assigned stage
-    if (role === 'field' || role === 'field_engineer') {
+    if (role === 'field') {
       const { data: projectData } = await supabase
         .from('projects')
         .select('status')

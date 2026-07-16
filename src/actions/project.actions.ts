@@ -102,6 +102,8 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
     });
 
     await revalidateAccountsPaths(projectId);
+    revalidatePath('/projects');
+    revalidatePath('/operations');
 
     return { success: true, data: newProject };
   } catch (error: any) {

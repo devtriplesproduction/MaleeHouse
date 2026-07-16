@@ -89,6 +89,11 @@ export async function updateSiteProgressAction(projectId: string, progress: numb
     created_at: new Date().toISOString(),
   });
 
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/field");
+  revalidatePath("/operations");
+  
   return { success: true, message: "Progress updated successfully." };
 }
 

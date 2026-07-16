@@ -101,7 +101,7 @@ export function OperationsFileUploadPanel({
   const isAdmin = userRole === 'admin';
   const isEngineer = userRole === 'engineer';
   const isCad = userRole === 'cad';
-  const isField = userRole === 'field' || userRole === 'field_engineer';
+  const isField = userRole === 'field';
 
   const hasCADMember = teamMembers.some((m: any) => m.role === 'cad');
 

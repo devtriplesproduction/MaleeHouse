@@ -67,8 +67,7 @@ const ROLE_THEME: Record<string, { primary: string; hover: string; text: string;
   accountant: { primary: "violet-600",  hover: "hover:text-violet-600 dark:hover:text-violet-400",  text: "text-violet-500",  bg: "bg-violet-500/10",  border: "border-violet-500/20",  glow: "bg-violet-600/10" },
   engineer:   { primary: "amber-600",   hover: "hover:text-amber-600 dark:hover:text-amber-400",   text: "text-amber-500",   bg: "bg-amber-500/10",   border: "border-amber-500/20",   glow: "bg-indigo-600/10" },
   cad:        { primary: "blue-600",    hover: "hover:text-blue-600 dark:hover:text-blue-400",    text: "text-blue-500",    bg: "bg-blue-500/10",    border: "border-blue-500/20",    glow: "bg-indigo-600/10" },
-  field:      { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-indigo-600/10" },
-  field_engineer: { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-indigo-600/10" },
+  field:      { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-emerald-600/10" },
 };
 
 const ROLE_REDIRECTS: Record<string, string> = {
@@ -78,7 +77,6 @@ const ROLE_REDIRECTS: Record<string, string> = {
   engineer: "/engineer",
   cad: "/cad",
   field: "/field",
-  field_engineer: "/field",
 };
 
 const getNextRequiredAction = (status: string, files: any[], assignments: any[], activityLogs: any[]) => {
@@ -241,7 +239,7 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
   const activeQuotation = quotations.find((q: any) => q.status === 'Sent' || q.status === 'Viewed' || q.status === 'Approved' || q.status === 'Draft');
 
   // Fetch operational data from local DB for technical roles
-  const isOperationalRole = ['admin', 'engineer', 'cad', 'field', 'field_engineer'].includes(profile?.role || '');
+  const isOperationalRole = ['admin', 'engineer', 'cad', 'field'].includes(profile?.role || '');
   const [cadResult, fieldResult, checklistResult, localAssignmentsResult] = isOperationalRole
     ? await Promise.all([
         getCADRevisionsAction(params.id),

@@ -109,15 +109,13 @@ export async function uploadEODPhotoAction(formData: FormData) {
 
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filePath = `eod-photos/${profile.id}/${timestamp}_${safeName}`;
+    const filePath = `${profile.id}/${timestamp}_${safeName}`;
 
-    // Use admin client to bypass bucket RLS restrictions for EOD photos
-    const { createAdminClient } = await import('@/lib/supabase/admin');
-    const supabaseAdmin = createAdminClient();
+    const supabase = await createClient();
 
-    const { error: uploadError } = await supabaseAdmin
+    const { error: uploadError } = await supabase
       .storage
-      .from('project-assets')
+      .from('eod-photos')
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false
@@ -125,9 +123,9 @@ export async function uploadEODPhotoAction(formData: FormData) {
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabaseAdmin
+    const { data: { publicUrl } } = supabase
       .storage
-      .from('project-assets')
+      .from('eod-photos')
       .getPublicUrl(filePath);
 
     return { success: true, url: publicUrl, path: filePath };
@@ -160,13 +158,13 @@ export async function uploadHRDocumentAction(
 
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filePath = `hr-documents/${employeeId}/${timestamp}_${safeName}`;
+    const filePath = `${employeeId}/${timestamp}_${safeName}`;
 
-    const supabaseAdmin: any = await createClient();
+    const supabase = await createClient();
 
-    const { error: uploadError } = await supabaseAdmin
+    const { error: uploadError } = await supabase
       .storage
-      .from('project-assets') // Reusing same bucket to avoid RLS config overhead, but in 'hr-documents' folder
+      .from('hr-documents') 
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false
@@ -174,20 +172,20 @@ export async function uploadHRDocumentAction(
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabaseAdmin
+    const { data: { publicUrl } } = supabase
       .storage
-      .from('project-assets')
+      .from('hr-documents')
       .getPublicUrl(filePath);
 
     // Save to employee_documents table
-    const { error: dbError } = await supabaseAdmin
+    const { error: dbError } = await supabase
       .from('employee_documents')
       .insert({
         employee_id: employeeId,
         category: category,
         file_url: publicUrl,
         uploaded_by: profile.id,
-      });
+      } as any);
 
     if (dbError) throw dbError;
 
@@ -200,8 +198,8 @@ export async function uploadHRDocumentAction(
 
 export async function getEmployeeDocumentsAction(employeeId: string) {
   try {
-    const supabaseAdmin: any = await createClient();
-    const { data, error } = await supabaseAdmin
+    const supabase = await createClient();
+    const { data, error } = await supabase
       .from('employee_documents')
       .select('*, uploaded_by_profile:profiles!uploaded_by(first_name, last_name)')
       .eq('employee_id', employeeId)

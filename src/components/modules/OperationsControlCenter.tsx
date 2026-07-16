@@ -114,7 +114,7 @@ export function OperationsControlCenter({
         const result = await getOpsTeamMembersAction();
         if (result.success && result.data) {
           setCadUsers(result.data.filter((u: any) => u.role === 'cad'));
-          setFieldUsers(result.data.filter((u: any) => u.role === 'field' || u.role === 'field_engineer'));
+          setFieldUsers(result.data.filter((u: any) => u.role === 'field'));
         }
         setIsLoadingCAD(false);
       };
@@ -486,7 +486,7 @@ export function OperationsControlCenter({
                   </p>
                 </div>
               </div>
-              {['engineer', 'cad', 'field', 'field_engineer'].includes(userRole) && (
+              {['engineer', 'cad', 'field'].includes(userRole) && (
                 <button
                   onClick={handleClaimProject}
                   disabled={isClaiming}

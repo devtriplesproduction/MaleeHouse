@@ -21,23 +21,23 @@ interface EODFormModalProps {
 
 const COLOR_MAP = {
   blue: {
-    btn: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-blue-600/20 dark:shadow-blue-900/30",
+    btn: "border border-blue-500/80 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-500/30 dark:text-blue-400 dark:hover:bg-blue-950/20",
     submitted: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
   },
   amber: {
-    btn: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-amber-600/20 dark:shadow-amber-900/30",
+    btn: "border border-amber-500/80 text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:border-amber-500/30 dark:text-amber-400 dark:hover:bg-amber-950/20",
     submitted: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
   },
   emerald: {
-    btn: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-emerald-600/20 dark:shadow-emerald-900/30",
+    btn: "border border-emerald-500/80 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-400 dark:hover:bg-emerald-950/20",
     submitted: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
   },
   purple: {
-    btn: "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/20 dark:shadow-purple-900/30",
+    btn: "border border-purple-500/80 text-purple-600 hover:bg-purple-50 hover:text-purple-700 dark:border-purple-500/30 dark:text-purple-400 dark:hover:bg-purple-950/20",
     submitted: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
   },
   indigo: {
-    btn: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20 dark:shadow-indigo-900/30",
+    btn: "border border-indigo-500/80 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-500/30 dark:text-indigo-400 dark:hover:bg-indigo-950/20",
     submitted: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20",
   },
 };
@@ -55,7 +55,7 @@ export function EODFormModal({ reports = [], roleColor = "indigo" }: EODFormModa
       <DialogTrigger asChild>
         <button
           className={cn(
-            "h-11 px-5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm",
+            "inline-flex items-center justify-center whitespace-nowrap h-11 px-6 rounded-xl font-medium text-sm gap-2 transition-all active:scale-[0.98] shadow-sm",
             hasSubmittedToday ? colors.submitted : colors.btn
           )}
         >

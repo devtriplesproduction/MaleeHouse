@@ -80,13 +80,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("Sign out error:", err);
     } finally {
-      supabase.auth.signOut().catch(console.error);
-      setUser(null);
-      setRole(null);
       sessionStorage.removeItem("hasSeenBirthdays_v7");
-      router.push('/login');
-      router.refresh();
-      setIsLoading(false);
+      supabase.auth.signOut().catch(console.error);
+      // Let the onAuthStateChange listener handle the UI teardown and redirect
     }
   };
 

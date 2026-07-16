@@ -26,8 +26,6 @@ const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   engineer: ["ops:assign_cad", "ops:schedule_visit", "ops:escalate_revisions", "cad:upload", "field:report"],
   cad: ["cad:upload"],
   field: ["field:report"],
-  field_engineer: ["field:report"],
-  employee: [],
   hr: [],
 };
 
