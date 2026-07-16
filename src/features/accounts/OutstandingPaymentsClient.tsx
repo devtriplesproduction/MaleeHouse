@@ -68,53 +68,55 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
   return (
     <div className="space-y-6">
       {/* Global Summary Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg">
-              <AlertCircle className="w-4 h-4" />
-            </div>
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
               Total Outstanding
-            </h3>
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {formatRupee(totalOutstanding)}
+            </p>
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {formatRupee(totalOutstanding)}
-          </p>
         </div>
-        <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
-              <Target className="w-4 h-4" />
-            </div>
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <Target className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
               Total Billed
-            </h3>
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {formatRupee(totalReceivable)}
+            </p>
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {formatRupee(totalReceivable)}
-          </p>
         </div>
-        <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-              Active Projects
-            </h3>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {initialProjects.length}
-          </p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Active Projects
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {initialProjects.length}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Filter and Search */}
-      <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+      <div className="flex justify-between items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-3 shadow-sm">
         <div className="relative w-full max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
             </svg>
           </div>
@@ -123,22 +125,22 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
             placeholder="Search projects..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl leading-5 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 sm:text-sm transition-all"
+            className="block w-full pl-11 pr-4 py-2.5 border border-slate-200 dark:border-slate-700/60 rounded-2xl leading-5 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
           />
         </div>
       </div>
 
       {/* Master List */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-sm">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-wider">
-              <th className="p-4 w-10"></th>
-              <th className="p-4">Project Name</th>
-              <th className="p-4">Total Billed</th>
-              <th className="p-4">Outstanding</th>
-              <th className="p-4">Net Profit</th>
-              <th className="p-4 text-right">Actions</th>
+            <tr className="bg-slate-50/80 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-800/80 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+              <th className="p-5 w-12"></th>
+              <th className="p-5">Project Name</th>
+              <th className="p-5">Total Billed</th>
+              <th className="p-5">Outstanding</th>
+              <th className="p-5">Net Profit</th>
+              <th className="p-5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -146,33 +148,35 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
               <React.Fragment key={project.id}>
                 <tr 
                   className={cn(
-                    "border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition cursor-pointer",
-                    expandedProjectId === project.id ? "bg-slate-50 dark:bg-slate-800/20" : ""
+                    "border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer group",
+                    expandedProjectId === project.id ? "bg-slate-50/80 dark:bg-slate-800/20" : ""
                   )}
                   onClick={() => toggleExpand(project.id)}
                 >
-                  <td className="p-4 text-slate-400">
-                    {expandedProjectId === project.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  <td className="p-5 text-slate-400 group-hover:text-indigo-500 transition-colors">
+                    {expandedProjectId === project.id ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                   </td>
-                  <td className="p-4 font-bold text-slate-900 dark:text-white">
+                  <td className="p-5 font-bold text-slate-900 dark:text-slate-100 text-[15px]">
                     {project.name}
                   </td>
-                  <td className="p-4 text-slate-600 dark:text-slate-300">
+                  <td className="p-5 font-semibold text-slate-600 dark:text-slate-300 nums">
                     {formatRupee(project.totalBilled)}
                   </td>
-                  <td className="p-4 font-bold text-rose-500">
-                    {formatRupee(project.outstanding)}
+                  <td className="p-5 font-bold text-rose-500 dark:text-rose-400 nums">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20">
+                      {formatRupee(project.outstanding)}
+                    </div>
                   </td>
-                  <td className={cn("p-4 font-bold", project.currentProfit >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                  <td className={cn("p-5 font-bold nums", project.currentProfit >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400")}>
                     {formatRupee(project.currentProfit)}
                   </td>
-                  <td className="p-4 text-right">
+                  <td className="p-5 text-right">
                     <Link 
                       href={`/projects/${project.id}?tab=finance`}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-semibold rounded-lg text-xs transition-colors"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold rounded-xl text-xs transition-all border border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 shadow-sm"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <FileText className="w-3.5 h-3.5" />
+                      <FileText className="w-4 h-4" />
                       Open Finance Tab
                     </Link>
                   </td>

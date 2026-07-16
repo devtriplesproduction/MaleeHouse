@@ -290,7 +290,7 @@ export function LeaveForm() {
                 Your selected leave dates overlap with the following holidays:
                 <ul className="list-disc pl-5 mt-1 space-y-0.5">
                   {conflictingHolidays.map((h, i) => (
-                    <li key={i}>{h.name} ({new Date(h.date).toLocaleDateString()}) - {h.is_optional ? 'Optional' : 'Public'}</li>
+                    <li key={i}>{h.name} ({new Date(h.date).toLocaleDateString()}) - Public Holiday</li>
                   ))}
                 </ul>
                 <p className="mt-2 text-xs opacity-80">This is just a heads up. You can still submit your application.</p>

@@ -581,19 +581,18 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
         </div>
       )}
 
-      {/* Rejection Dialog */}
       <Dialog open={!!rejectingLeaveId} onOpenChange={(open) => {
         if (!open) {
           setRejectingLeaveId(null);
           setRejectionReason('');
         }
       }}>
-        <DialogContent className="p-0 overflow-hidden border-slate-200/60 dark:border-white/10 shadow-2xl shadow-rose-500/5 sm:max-w-md sm:rounded-[2rem]">
-          <div className="px-6 pt-8 pb-6 bg-gradient-to-b from-rose-50/50 to-white dark:from-rose-950/20 dark:to-slate-900 border-b border-slate-100 dark:border-white/5">
+        <DialogContent className="p-0 overflow-hidden border-slate-200/60 dark:border-white/10 shadow-2xl shadow-indigo-500/5 sm:max-w-md sm:rounded-[2rem]">
+          <div className="px-6 pt-8 pb-6 bg-gradient-to-b from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900 border-b border-slate-100 dark:border-white/5">
             <DialogHeader>
               <DialogTitle className="text-xl text-slate-900 dark:text-white flex items-center gap-2.5 font-bold">
-                <div className="p-2 bg-rose-100 dark:bg-rose-500/20 rounded-xl">
-                  <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl">
+                  <XCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 Reject Leave Request
               </DialogTitle>
@@ -607,7 +606,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
               placeholder="Enter reason for rejection..."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              className="min-h-[120px] resize-none rounded-xl border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-950/50 focus-visible:ring-4 focus-visible:ring-rose-500/10 focus-visible:border-rose-500 dark:focus-visible:border-rose-500 transition-all text-sm"
+              className="min-h-[120px] resize-none rounded-xl border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-950/50 focus-visible:ring-4 focus-visible:ring-indigo-500/10 focus-visible:border-indigo-500 dark:focus-visible:border-indigo-500 transition-all text-sm"
             />
           </div>
           <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-white/5 sm:justify-between items-center flex-row">
@@ -623,7 +622,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
             </Button>
             <Button
               variant="primary"
-              className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-lg shadow-rose-500/25 transition-all px-6"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/25 transition-all px-6"
               onClick={() => {
                 if (rejectionReason.trim() === '') {
                   toast.error("Rejection reason is required");

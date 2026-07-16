@@ -76,13 +76,15 @@ interface OperationsFileUploadPanelProps {
   files: any[];
   userRole: string;
   projectStatus?: string;
+  teamMembers?: any[];
 }
 
 export function OperationsFileUploadPanel({
   projectId,
   files,
   userRole,
-  projectStatus
+  projectStatus,
+  teamMembers = []
 }: OperationsFileUploadPanelProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -100,6 +102,8 @@ export function OperationsFileUploadPanel({
   const isEngineer = userRole === 'engineer';
   const isCad = userRole === 'cad';
   const isField = userRole === 'field' || userRole === 'field_engineer';
+
+  const hasCADMember = teamMembers.some((m: any) => m.role === 'cad');
 
   const isProjectClosed = projectStatus === 'completed' || projectStatus === 'archived';
   const isMidstage = projectStatus && projectStatus !== 'project_created' && projectStatus !== 'data_collection';
@@ -852,11 +856,12 @@ export function OperationsFileUploadPanel({
             ) : (
               <button
                 onClick={handleSendToCAD}
-                disabled={isPending || files.length === 0}
+                disabled={isPending || files.length === 0 || !hasCADMember}
+                title={!hasCADMember ? "Please assign a CAD Specialist before sending" : undefined}
                 className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 transition-all shadow-sm"
               >
                 {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Send to CAD
+                {hasCADMember ? 'Send to CAD' : 'Assign CAD Specialist First'}
               </button>
             )
           )}

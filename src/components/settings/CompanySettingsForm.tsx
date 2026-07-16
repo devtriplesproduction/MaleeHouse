@@ -124,10 +124,14 @@ export function CompanySettingsForm({ initialSettings, canEdit = true, activeTab
             <Phone className="h-3.5 w-3.5 text-indigo-500" /> Telephone
           </label>
           <input
-            type="text"
+            type="tel"
             name="telephone"
             value={formData.telephone || ""}
             onChange={handleChange}
+            maxLength={10}
+            onInput={(e) => {
+              e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+            }}
             className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
             required
             disabled={!canEdit}
@@ -139,10 +143,14 @@ export function CompanySettingsForm({ initialSettings, canEdit = true, activeTab
             <Phone className="h-3.5 w-3.5 text-indigo-500" /> Mobile
           </label>
           <input
-            type="text"
+            type="tel"
             name="mobile"
             value={formData.mobile || ""}
             onChange={handleChange}
+            maxLength={10}
+            onInput={(e) => {
+              e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+            }}
             className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
             required
             disabled={!canEdit}

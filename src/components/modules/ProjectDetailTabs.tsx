@@ -126,13 +126,13 @@ export function ProjectDetailTabs({
               className={cn(
                 "flex-1 flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-full text-xs font-bold tracking-wide transition-all duration-200",
                 isActive 
-                  ? "bg-white dark:bg-slate-800 text-amber-500 dark:text-amber-400 shadow-sm border border-slate-200/50 dark:border-white/5" 
+                  ? cn("bg-white dark:bg-slate-800 shadow-sm border border-slate-200/50 dark:border-white/5", theme.text) 
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/40 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-200"
               )}
             >
               <Icon className={cn(
                 "w-4 h-4",
-                isActive ? "text-amber-500 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"
+                isActive ? theme.text : "text-slate-400 dark:text-slate-500"
               )} />
               {tab.label}
             </button>
@@ -243,7 +243,7 @@ export function ProjectDetailTabs({
             
             {activeTab === 'finance' && showFinanceTab && (
               <div className="animate-in fade-in duration-300">
-                <ProjectFinanceDashboardTab projectId={project.id} />
+                <ProjectFinanceDashboardTab projectId={project.id} theme={theme} />
               </div>
             )}
           </motion.div>

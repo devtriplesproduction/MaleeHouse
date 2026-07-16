@@ -677,7 +677,7 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen), invoices(id, status, payments(status))')
+      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved), invoices(id, status, payments(status))')
       .order('due_date', { ascending: true });
 
     if (error) {

@@ -49,6 +49,7 @@ export interface MilestonePayment {
     status: string;
     is_frozen: boolean;
     dispatch_override_requested: boolean;
+    dispatch_override_approved: boolean;
   } | null;
 }
 
@@ -59,10 +60,10 @@ interface MilestonePaymentsTableProps {
 }
 
 const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
-  pending: { label: 'Pending', className: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Clock },
+  pending: { label: 'Pending', className: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20', icon: Clock },
   paid: { label: 'Paid & Clear', className: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 },
   hold: { label: 'Payment Hold', className: 'bg-rose-500/10 text-rose-500 border-rose-500/20', icon: Pause },
-  reminder: { label: 'Reminder', className: 'bg-orange-500/10 text-orange-500 border-orange-500/20', icon: Bell },
+  reminder: { label: 'Reminder', className: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20', icon: Bell },
   payment_verification_pending: { label: 'Verification Pending', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock },
 };
 
@@ -330,7 +331,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
             className={cn(
               "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all",
               filterStatus === 'hold'
-                ? "bg-white dark:bg-white/10 text-amber-600 dark:text-white shadow-sm"
+                ? "bg-white dark:bg-white/10 text-indigo-600 dark:text-white shadow-sm"
                 : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             )}
           >
@@ -445,14 +446,23 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                     {m.status !== 'paid' ? (
                       <>
                         {m.status === 'payment_verification_pending' ? (
-                          <span className="h-8 px-3 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
+                          <span className="h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-500 shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <Clock className="w-3.5 h-3.5" />
                             Awaiting Verif.
                           </span>
                         ) : (
                           <>
                             {!isAdmin && (!m.projects?.status || !['ops_active', 'completed', 'archived', 'on_hold', 'cancelled'].includes(m.projects.status)) && (
-                              (m.projects?.dispatch_override_requested || overrideRequests[m.id]) ? (
+                              m.projects?.dispatch_override_approved ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="h-8 px-3 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 cursor-not-allowed flex items-center justify-center gap-1.5 whitespace-nowrap"
+                                >
+                                  <Lock className="w-3.5 h-3.5" />
+                                  Override Approved
+                                </button>
+                              ) : (m.projects?.dispatch_override_requested || overrideRequests[m.id]) ? (
                                 <button
                                   type="button"
                                   disabled
@@ -469,7 +479,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                                     handleRequestOverride(m);
                                   }}
                                   disabled={overriding === m.id || isProjectFrozen}
-                                  className="h-8 px-3 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-60"
+                                  className="h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-60"
                                 >
                                   {overriding === m.id ? (
                                     <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -493,7 +503,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                           disabled={isProjectFrozen}
                           title={isProjectFrozen ? "Project is frozen. Resume project to create invoice." : "Create Invoice"}
                           className={cn(
-                            "h-8 px-3 rounded-lg text-xs font-semibold border border-amber-600 text-amber-600 dark:border-amber-500/50 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
+                            "h-8 px-3 rounded-lg text-xs font-semibold border border-indigo-600 text-indigo-600 dark:border-indigo-500/50 dark:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
                             isProjectFrozen && "opacity-50 cursor-not-allowed active:scale-100"
                           )}
                         >
@@ -536,12 +546,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                         </button>
                       </>
                     ) : (
-                      <div className="relative flex items-center justify-center w-full min-h-[32px]">
-                        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 mx-auto">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                          Cleared
-                        </span>
-
+                      <div className="flex items-center justify-end w-full min-h-[32px]">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -554,7 +559,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                           }}
                           title={isProjectFrozen ? "Resume Project Operations" : "Hold Project Operations"}
                           className={cn(
-                            "absolute right-0 h-8 w-8 rounded-lg border shadow-sm transition-all active:scale-95 flex items-center justify-center flex-shrink-0",
+                            "h-8 w-8 rounded-lg border shadow-sm transition-all active:scale-95 flex items-center justify-center flex-shrink-0",
                             isProjectFrozen
                               ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
                               : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10"

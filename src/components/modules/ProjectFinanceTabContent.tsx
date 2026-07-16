@@ -68,6 +68,8 @@ interface Milestone {
 interface Visit {
   id: string;
   visit_date: string;
+  scheduled_date?: string;
+  created_at?: string;
   completed_at?: string;
   status:
   | "scheduled"
@@ -77,6 +79,7 @@ interface Visit {
   | "cancelled";
   reported_by: string;
   description?: string;
+  purpose?: string;
   is_billable?: boolean;
   visit_cost?: number;
 }
@@ -181,6 +184,7 @@ export function ProjectFinanceTabContent({
   const [selectedPaymentMilestone, setSelectedPaymentMilestone] = useState<any>(null);
   const [expenseInvoiceModalOpen, setExpenseInvoiceModalOpen] = useState(false);
   const [selectedExpenseForInvoice, setSelectedExpenseForInvoice] = useState<any>(null);
+  const [selectedVisitForInvoice, setSelectedVisitForInvoice] = useState<any>(null);
   const [selectedExpenseIds, setSelectedExpenseIds] = useState<Set<string>>(new Set());
 
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -220,7 +224,7 @@ export function ProjectFinanceTabContent({
   const totalExpenses = expenses.reduce(
     (sum, exp) => sum + (exp.amount || 0),
     0,
-  );
+  ) + visits.reduce((sum, v) => sum + Number(v.visit_cost || 0), 0);
   const currentProfit = totalBilled - totalExpenses;
 
   // 1. Accountant Assignment Submit
@@ -1108,9 +1112,67 @@ export function ProjectFinanceTabContent({
                   </td>
                 </tr>
               ))}
-              {!loadingExpenses && expenses.length === 0 && (
+              
+              {/* Inject visits as expenses */}
+              {visits.filter(v => Number(v.visit_cost || 0) > 0).map((v) => (
+                <tr key={`visit-${v.id}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200 bg-slate-50/30 dark:bg-slate-900/10">
+                  {isAccountant && (
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox"
+                        disabled
+                        className="rounded bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-50 cursor-not-allowed focus:ring-0"
+                        title="System generated visit cannot be billed from here"
+                      />
+                    </td>
+                  )}
+                  <td className="p-4 text-slate-700 dark:text-slate-300 nums font-bold">
+                    {new Date(v.scheduled_date || v.created_at || new Date()).toLocaleDateString()}
+                  </td>
+                  <td className="p-4">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-widest bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 uppercase">
+                      Field Visit
+                    </span>
+                  </td>
+                  <td className="p-4 text-slate-600 dark:text-slate-300 max-w-[200px] truncate" title={v.purpose || 'Field Visit'}>
+                    {v.purpose || 'Scheduled from Milestones Portal'}
+                  </td>
+                  <td className="p-4 text-right font-bold text-rose-400 nums">
+                    {formatRupee(Number(v.visit_cost || 0))}
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className="text-slate-400">-</span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Added by System</span>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      {isAccountant && v.status !== 'paid' && v.status !== 'invoice_generated' && (
+                        <button
+                          onClick={() => {
+                            setSelectedVisitForInvoice(v);
+                            setExpenseInvoiceModalOpen(true);
+                          }}
+                          className="px-3 py-1 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-indigo-400 font-semibold rounded-lg text-xs transition-all shadow-sm"
+                          title="Generate Invoice for this Field Visit"
+                        >
+                          Bill
+                        </button>
+                      )}
+                      {(v.status === 'paid' || v.status === 'invoice_generated') && (
+                        <span className="text-[10px] font-bold text-emerald-500 uppercase">
+                          {v.status === 'paid' ? 'Paid' : 'Billed'}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+              {!loadingExpenses && expenses.length === 0 && visits.filter(v => Number(v.visit_cost || 0) > 0).length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-500 italic">
+                  <td colSpan={7} className="p-8 text-center text-slate-500 italic">
                     No expenses logged for this project yet.
                   </td>
                 </tr>
@@ -1429,14 +1491,19 @@ export function ProjectFinanceTabContent({
         isOpen={expenseInvoiceModalOpen}
         onOpenChange={(open) => {
           setExpenseInvoiceModalOpen(open);
-          if (!open) setSelectedExpenseForInvoice(null);
+          if (!open) {
+            setSelectedExpenseForInvoice(null);
+            setSelectedVisitForInvoice(null);
+          }
         }}
         projectId={project.id}
         projectName={project.name}
         clientName={project.client_name}
         expenseId={selectedExpenseForInvoice?.id}
         expenseTitle={selectedExpenseForInvoice?.description}
-        initialAmount={selectedExpenseForInvoice?.amount}
+        visitId={selectedVisitForInvoice?.id}
+        visitTitle={selectedVisitForInvoice ? (selectedVisitForInvoice.purpose || 'Field Visit Services') : undefined}
+        initialAmount={selectedExpenseForInvoice?.amount || Number(selectedVisitForInvoice?.visit_cost || 0)}
         onSuccess={() => {
           setSelectedExpenseIds(new Set());
           onRefresh?.();

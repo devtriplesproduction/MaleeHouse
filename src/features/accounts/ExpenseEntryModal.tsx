@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { createExpenseAction, updateExpenseAction } from '@/actions/expense.actions';
 import { uploadFileToServerAction } from '@/actions/storage.actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectItem } from '@/components/ui/select';
+import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 
 interface ExpenseEntryModalProps {
   isOpen: boolean;
@@ -17,6 +19,29 @@ interface ExpenseEntryModalProps {
   expenseToEdit?: any;
   initialCategory?: string;
 }
+
+const EXPENSE_CATEGORIES = [
+  "Travelling (Petrol)(Per 50Km)",
+  "Accomodation",
+  "Food & Breakfast",
+  "Vehicle Maintance",
+  "Paint",
+  "Fakki",
+  "Other Field Expences",
+  "Other Designing Expences",
+  "Other Submission Exp",
+  "Submission Travel",
+  "Equipment Rent (DGPS)",
+  "Equipment Rent (Drone)",
+  "Equipment Rent (Lidar)",
+  "Data Processing Cost (DGPS)",
+  "Data Processing Cost(Drone)",
+  "Data Processing Cost (Lidar)",
+  "Computer Cost",
+  "Auto Cad License",
+  "Printing/Xerox",
+  "Stationary"
+];
 
 export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaultProjectId, expenseToEdit, initialCategory }: ExpenseEntryModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,19 +167,21 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
     }
   };
 
+  const inputBaseClass = "w-full px-4 h-[50px] bg-background border border-border/50 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-foreground hover:border-border shadow-sm";
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-background border-border/40 shadow-2xl rounded-[1.5rem] sm:rounded-[2rem]">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-background border-border/40 shadow-2xl rounded-2xl sm:rounded-3xl">
         
         {/* Header */}
-        <DialogHeader className="px-8 py-7 border-b border-border/30 flex flex-row items-center justify-between bg-card space-y-0 text-left">
-          <div className="flex items-center gap-5">
+        <DialogHeader className="px-8 py-6 border-b border-border/30 flex flex-row items-center justify-between bg-card space-y-0 text-left">
+          <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <IndianRupee className="w-5 h-5 text-primary" strokeWidth={2.5} />
+              <IndianRupee className="w-6 h-6 text-primary" strokeWidth={2} />
             </div>
             <div>
-              <DialogTitle className="text-2xl font-semibold text-foreground tracking-tight">Record Expense</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground font-medium mt-1">
+              <DialogTitle className="text-xl font-semibold text-foreground tracking-tight">Record Expense</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground mt-1">
                 Log a new business expense or transaction.
               </DialogDescription>
             </div>
@@ -162,30 +189,30 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
         </DialogHeader>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-card/30">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/50 dark:bg-slate-900/20">
           <form id="expense-form" onSubmit={handleSubmit} className="space-y-6">
             
             {/* Project Select */}
             {projects.length > 0 && (
               <div className="space-y-2">
                 <label className={cn(
-                  "text-xs font-semibold uppercase tracking-wider px-1 flex items-center gap-2 transition-colors",
-                  focusedField === 'project' ? "text-primary" : "text-muted-foreground"
+                  "text-sm font-medium flex items-center gap-2 transition-colors",
+                  focusedField === 'project' ? "text-primary" : "text-foreground"
                 )}>
-                  <Building2 className="w-4 h-4" /> Project Allocation
+                  <Building2 className="w-4 h-4 text-muted-foreground" /> Project Allocation
                 </label>
-                <select
-                  value={formData.project_id}
-                  onFocus={() => setFocusedField('project')}
-                  onBlur={() => setFocusedField(null)}
-                  onChange={(e) => setFormData({...formData, project_id: e.target.value})}
-                  className="w-full px-5 py-4 bg-background border border-border/60 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-foreground appearance-none cursor-pointer hover:border-border/80"
-                >
-                  <option value="company-wide">🏢 Company-wide (Overhead/General)</option>
-                  {projects.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+                <div onFocusCapture={() => setFocusedField('project')} onBlurCapture={() => setFocusedField(null)}>
+                  <Select
+                    value={formData.project_id}
+                    onValueChange={(val) => setFormData({...formData, project_id: val})}
+                    buttonClassName={cn(inputBaseClass, "py-0")}
+                  >
+                    <SelectItem value="company-wide">🏢 Company-wide (Overhead/General)</SelectItem>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </Select>
+                </div>
               </div>
             )}
 
@@ -193,54 +220,36 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
               {/* Category */}
               <div className="space-y-2">
                 <label className={cn(
-                  "text-xs font-semibold uppercase tracking-wider px-1 flex items-center gap-2 transition-colors",
-                  focusedField === 'category' ? "text-primary" : "text-muted-foreground"
+                  "text-sm font-medium flex items-center gap-2 transition-colors",
+                  focusedField === 'category' ? "text-primary" : "text-foreground"
                 )}>
-                  <Tag className="w-4 h-4" /> Category <span className="text-destructive">*</span>
+                  <Tag className="w-4 h-4 text-muted-foreground" /> Category <span className="text-destructive">*</span>
                 </label>
-                <select
-                  value={formData.category}
-                  onFocus={() => setFocusedField('category')}
-                  onBlur={() => setFocusedField(null)}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  className="w-full px-5 py-4 bg-background border border-border/60 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-foreground appearance-none cursor-pointer hover:border-border/80"
-                  required
-                >
-                  <option value="" disabled>Select category...</option>
-                  <option value="Travelling (Petrol)(Per 50Km)">Travelling (Petrol)(Per 50Km)</option>
-                  <option value="Accomodation">Accomodation</option>
-                  <option value="Food & Breakfast">Food & Breakfast</option>
-                  <option value="Vehicle Maintance">Vehicle Maintance</option>
-                  <option value="Paint">Paint</option>
-                  <option value="Fakki">Fakki</option>
-                  <option value="Other Field Expences">Other Field Expences</option>
-                  <option value="Other Designing Expences">Other Designing Expences</option>
-                  <option value="Other Submission Exp">Other Submission Exp</option>
-                  <option value="Submission Travel">Submission Travel</option>
-                  <option value="Equipment Rent (DGPS)">Equipment Rent (DGPS)</option>
-                  <option value="Equipment Rent (Drone)">Equipment Rent (Drone)</option>
-                  <option value="Equipment Rent (Lidar)">Equipment Rent (Lidar)</option>
-                  <option value="Data Processing Cost (DGPS)">Data Processing Cost (DGPS)</option>
-                  <option value="Data Processing Cost(Drone)">Data Processing Cost(Drone)</option>
-                  <option value="Data Processing Cost (Lidar)">Data Processing Cost (Lidar)</option>
-                  <option value="Computer Cost">Computer Cost</option>
-                  <option value="Auto Cad License">Auto Cad License</option>
-                  <option value="Printing/Xerox">Printing/Xerox</option>
-                  <option value="Stationary">Stationary</option>
-                </select>
+                <div onFocusCapture={() => setFocusedField('category')} onBlurCapture={() => setFocusedField(null)}>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(val) => setFormData({...formData, category: val})}
+                    placeholder="Select category..."
+                    buttonClassName={cn(inputBaseClass, "py-0")}
+                  >
+                    {EXPENSE_CATEGORIES.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </Select>
+                </div>
               </div>
 
               {/* Amount */}
               <div className="space-y-2">
                 <label className={cn(
-                  "text-xs font-semibold uppercase tracking-wider px-1 flex items-center gap-2 transition-colors",
-                  focusedField === 'amount' ? "text-primary" : "text-muted-foreground"
+                  "text-sm font-medium flex items-center gap-2 transition-colors",
+                  focusedField === 'amount' ? "text-primary" : "text-foreground"
                 )}>
-                  <IndianRupee className="w-4 h-4" /> Amount <span className="text-destructive">*</span>
+                  <IndianRupee className="w-4 h-4 text-muted-foreground" /> Amount <span className="text-destructive">*</span>
                 </label>
                 <div className="relative">
                   <div className={cn(
-                    "absolute left-5 top-1/2 -translate-y-1/2 font-medium transition-colors",
+                    "absolute left-4 top-1/2 -translate-y-1/2 font-medium transition-colors",
                     focusedField === 'amount' ? "text-primary" : "text-muted-foreground"
                   )}>₹</div>
                   <input
@@ -252,7 +261,7 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
                     onFocus={() => setFocusedField('amount')}
                     onBlur={() => setFocusedField(null)}
                     onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                    className="w-full pl-9 pr-5 py-4 bg-background border border-border/60 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-foreground hover:border-border/80"
+                    className={cn(inputBaseClass, "pl-9")}
                     required
                   />
                 </div>
@@ -262,29 +271,28 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
             {/* Date */}
             <div className="space-y-2">
               <label className={cn(
-                "text-xs font-semibold uppercase tracking-wider px-1 flex items-center gap-2 transition-colors",
-                focusedField === 'date' ? "text-primary" : "text-muted-foreground"
+                "text-sm font-medium flex items-center gap-2 transition-colors",
+                focusedField === 'date' ? "text-primary" : "text-foreground"
               )}>
-                <Calendar className="w-4 h-4" /> Expense Date <span className="text-destructive">*</span>
+                <Calendar className="w-4 h-4 text-muted-foreground" /> Expense Date <span className="text-destructive">*</span>
               </label>
-              <input
-                type="date"
-                value={formData.expense_date}
-                onFocus={() => setFocusedField('date')}
-                onBlur={() => setFocusedField(null)}
-                onChange={(e) => setFormData({...formData, expense_date: e.target.value})}
-                className="w-full px-5 py-4 bg-background border border-border/60 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-foreground hover:border-border/80"
-                required
-              />
+              <div onFocusCapture={() => setFocusedField('date')} onBlurCapture={() => setFocusedField(null)}>
+                <PremiumDatePicker
+                  value={formData.expense_date}
+                  onChange={(dateStr) => setFormData({...formData, expense_date: dateStr})}
+                  className="w-full"
+                  triggerClassName="h-[50px] bg-background border-border/50 rounded-xl w-full px-4"
+                />
+              </div>
             </div>
 
             {/* Description */}
             <div className="space-y-2">
               <label className={cn(
-                "text-xs font-semibold uppercase tracking-wider px-1 flex items-center gap-2 transition-colors",
-                focusedField === 'description' ? "text-primary" : "text-muted-foreground"
+                "text-sm font-medium flex items-center gap-2 transition-colors",
+                focusedField === 'description' ? "text-primary" : "text-foreground"
               )}>
-                <FileText className="w-4 h-4" /> Description <span className="text-destructive">*</span>
+                <FileText className="w-4 h-4 text-muted-foreground" /> Description <span className="text-destructive">*</span>
               </label>
               <textarea
                 placeholder="What was this expense for? Add details like vendor, purpose, etc."
@@ -292,15 +300,15 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
                 onFocus={() => setFocusedField('description')}
                 onBlur={() => setFocusedField(null)}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full px-5 py-4 bg-background border border-border/60 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-foreground min-h-[120px] resize-none hover:border-border/80"
+                className={cn(inputBaseClass, "h-auto py-3 min-h-[100px] resize-none")}
                 required
               />
             </div>
 
             {/* Receipt Upload */}
             <div className="space-y-2 pt-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 flex items-center gap-2">
-                <Upload className="w-4 h-4" /> Receipt Document (Optional)
+              <label className="text-sm font-medium flex items-center gap-2 text-foreground">
+                <Upload className="w-4 h-4 text-muted-foreground" /> Receipt Document <span className="text-muted-foreground font-normal ml-1">(Optional)</span>
               </label>
               
               <input
@@ -315,27 +323,27 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full px-6 py-10 bg-muted/20 border-2 border-dashed border-border/50 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-muted/40 hover:border-primary/50 transition-all group outline-none focus:ring-4 focus:ring-primary/10"
+                  className="w-full px-6 py-8 bg-background border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-muted/30 hover:border-primary/50 transition-all group outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
                 >
-                  <div className="w-12 h-12 rounded-full bg-background border border-border/50 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-300">
+                  <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                     <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-foreground">Click to upload receipt</p>
+                    <p className="text-sm font-medium text-foreground">Click to upload receipt</p>
                     <p className="text-xs text-muted-foreground mt-1">Supports PDF, JPG, or PNG (max. 50MB)</p>
                   </div>
                 </button>
               ) : (
-                <div className="p-4 bg-background border border-border/80 rounded-2xl flex items-center justify-between shadow-sm">
+                <div className="p-4 bg-background border border-border/60 rounded-xl flex items-center justify-between shadow-sm">
                   <div className="flex items-center gap-4 overflow-hidden">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-6 h-6 text-primary" />
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {file.name}
                       </p>
-                      <p className="text-xs font-medium text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -343,9 +351,9 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
                   <button
                     type="button"
                     onClick={() => setFile(null)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               )}
@@ -355,12 +363,12 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
         </div>
 
         {/* Footer Actions */}
-        <DialogFooter className="px-8 py-6 border-t border-border/30 bg-card flex flex-col sm:flex-row items-center justify-end gap-3 shrink-0">
+        <DialogFooter className="px-8 py-5 border-t border-border/30 bg-card flex flex-col sm:flex-row items-center justify-end gap-3 shrink-0">
           <button 
             type="button"
             onClick={onClose} 
             disabled={isSubmitting}
-            className="w-full sm:w-auto px-6 py-3.5 bg-transparent text-foreground hover:bg-muted/50 rounded-xl font-semibold text-sm transition-all focus:ring-4 focus:ring-muted outline-none disabled:opacity-50"
+            className="w-full sm:w-auto px-5 h-11 bg-transparent text-foreground hover:bg-muted rounded-xl font-medium text-sm transition-colors focus:ring-2 focus:ring-muted outline-none disabled:opacity-50"
           >
             Cancel
           </button>
@@ -368,7 +376,7 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
             type="submit"
             form="expense-form"
             disabled={!isFormValid || isSubmitting}
-            className="w-full sm:w-auto px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2 focus:ring-4 focus:ring-primary/30 outline-none active:scale-[0.98]"
+            className="w-full sm:w-auto px-6 h-11 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-medium text-sm transition-all shadow-sm flex items-center justify-center gap-2 focus:ring-2 focus:ring-primary/30 outline-none active:scale-[0.98]"
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
             {isSubmitting ? 'Saving Expense...' : 'Save Expense'}

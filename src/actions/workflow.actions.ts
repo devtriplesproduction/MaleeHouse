@@ -107,6 +107,9 @@ export async function approveDispatchOverrideAction(projectId: string) {
       
     if (error) throw error;
       
+    // Auto-advance project to project_created so it appears in Engineer's queue
+    await transitionWorkflowAction(projectId, "project_created", "Admin approved dispatch override without payment");
+
     revalidatePath('/admin');
     return { success: true };
   } catch (err: any) {

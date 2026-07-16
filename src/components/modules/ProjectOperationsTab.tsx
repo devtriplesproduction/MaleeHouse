@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { OperationsControlCenter } from './OperationsControlCenter';
+
 import { OperationsFileUploadPanel } from './OperationsFileUploadPanel';
 
 interface ProjectOperationsTabProps {
@@ -49,23 +49,6 @@ export default function ProjectOperationsTab({
         </section>
       )}
 
-      {/* 2. Active Operations Center */}
-      {isOperational && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Active Control Center
-          </h2>
-          <OperationsControlCenter
-            projectId={projectId}
-            projectStatus={projectStatus}
-            userRole={userRole}
-            currentUserId={currentUserId}
-            teamMembers={teamMembers}
-            isFrozen={isFrozen}
-            files={files}
-          />
-        </section>
-      )}
     </div>
   );
 }

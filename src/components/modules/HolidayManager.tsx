@@ -91,7 +91,7 @@ export function HolidayManager({ initialHolidays, isAdmin }: { initialHolidays: 
     const payload = {
       name,
       date: date.toISOString(), // Standard format for DB
-      is_optional: isOptional
+      is_optional: false
     };
 
     try {
@@ -185,18 +185,15 @@ export function HolidayManager({ initialHolidays, isAdmin }: { initialHolidays: 
                 {holidays.map(h => (
                   <div 
                     key={h.id} 
-                    className={cn(
-                      "flex justify-between items-start p-3 rounded-xl border transition-all duration-200 group relative",
-                      h.is_optional ? "bg-muted/20 border-border" : "bg-primary/5 border-primary/20 shadow-sm"
-                    )}
+                    className="flex justify-between items-start p-3 rounded-xl border transition-all duration-200 group relative bg-primary/5 border-primary/20 shadow-sm"
                   >
                     <div>
                       <div className="font-bold text-sm mb-0.5">{new Date(h.date).getDate()} {name}</div>
                       <div className="text-sm text-foreground/80 font-medium flex items-center gap-1.5">
-                        {h.is_optional ? '📅' : '🎉'} {h.name}
+                        🎉 {h.name}
                       </div>
                       <div className="text-[10px] uppercase font-bold text-muted-foreground mt-1 tracking-wider">
-                        {h.is_optional ? 'Optional' : 'Public Holiday'}
+                        Public Holiday
                       </div>
                     </div>
                     {isAdmin && (
@@ -247,7 +244,7 @@ export function HolidayManager({ initialHolidays, isAdmin }: { initialHolidays: 
                     {editingId ? 'Edit Holiday' : 'Add Holiday'}
                   </DialogTitle>
                   <DialogDescription className="text-muted-foreground text-sm mt-0.5">
-                    {editingId ? 'Update the details below.' : 'Add a new public or optional holiday.'}
+                    {editingId ? 'Update the details below.' : 'Add a new public holiday.'}
                   </DialogDescription>
                 </div>
               </div>
@@ -272,19 +269,7 @@ export function HolidayManager({ initialHolidays, isAdmin }: { initialHolidays: 
                 />
               </div>
             </div>
-            <label htmlFor="optional-toggle" className="group flex items-start gap-3.5 bg-muted/30 hover:bg-muted/50 p-4 rounded-xl border border-transparent hover:border-border transition-all cursor-pointer">
-              <input 
-                type="checkbox" 
-                id="optional-toggle"
-                checked={isOptional}
-                onChange={(e) => setIsOptional(e.target.checked)}
-                className="mt-0.5 h-5 w-5 accent-primary rounded cursor-pointer shrink-0"
-              />
-              <div className="flex flex-col">
-                <span className="text-[15px] font-semibold text-foreground group-hover:text-primary transition-colors">Optional Holiday</span>
-                <span className="text-xs text-muted-foreground mt-0.5">Is this a restricted/optional holiday? Employees can choose whether to take this day off.</span>
-              </div>
-            </label>
+
             
             <div className="pt-3 sm:flex sm:justify-end gap-3 flex-col sm:flex-row">
               <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto h-12 px-6 rounded-xl font-semibold">

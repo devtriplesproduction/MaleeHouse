@@ -1024,16 +1024,16 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                 </Button>
 
                 <Button
-                  onClick={handleLockPayroll}
-                  disabled={isPayrollLocked || isLockingPayroll || payrollData.length === 0}
+                  onClick={isPayrollLocked ? handleUnlockPayroll : handleLockPayroll}
+                  disabled={(isPayrollLocked ? isUnlockingPayroll : isLockingPayroll) || payrollData.length === 0}
                   className={cn(
                     "h-9 px-4 flex items-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all",
                     isPayrollLocked
-                      ? "bg-emerald-600/10 text-emerald-500 border border-emerald-500/25 cursor-default hover:bg-emerald-600/10"
+                      ? "bg-emerald-600/10 text-emerald-500 border border-emerald-500/25 hover:bg-emerald-600/20"
                       : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 border-none"
                   )}
                 >
-                  {isLockingPayroll ? (
+                  {(isPayrollLocked ? isUnlockingPayroll : isLockingPayroll) ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : isPayrollLocked ? (
                     <Lock className="w-3.5 h-3.5" />
@@ -1042,21 +1042,6 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                   )}
                   {isPayrollLocked ? "Locked" : "Lock Cycle"}
                 </Button>
-
-                {isPayrollLocked && (
-                  <Button
-                    onClick={handleUnlockPayroll}
-                    disabled={isUnlockingPayroll}
-                    className="h-9 px-4 flex items-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/20 border-none"
-                  >
-                    {isUnlockingPayroll ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Unlock className="w-3.5 h-3.5" />
-                    )}
-                    Unlock
-                  </Button>
-                )}
               </div>
             </div>
 

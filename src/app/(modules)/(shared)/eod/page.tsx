@@ -28,27 +28,24 @@ export default async function EODPage() {
 
     return (
       <div className="space-y-6 animate-in fade-in duration-700 pb-12">
-        {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              Review <span className="text-indigo-500">EOD</span>
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-              Monitor team performance and daily achievements across departments.
-            </p>
-          </div>
-
-          <div className="inline-flex items-center gap-2.5 self-start md:self-auto px-5 py-2.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
-            <BarChart3 className="w-4 h-4 text-indigo-500" />
-            <span className="text-base font-semibold text-indigo-600 dark:text-indigo-400">
-              {reports.length} <span className="font-normal text-indigo-400 dark:text-indigo-500">Daily Reports</span>
-            </span>
-          </div>
-        </div>
-
         {/* EOD Form for Admin/HR with Staff Selector */}
-        <EODForm reports={myReports} allReports={reports} staff={staff} currentUserId={profile.id} currentUserRole={profile.role} hideHeader />
+        <EODForm 
+          reports={myReports} 
+          allReports={reports} 
+          staff={staff} 
+          currentUserId={profile.id} 
+          currentUserRole={profile.role}
+          title={<>Review <span className="text-indigo-500">EOD</span></>}
+          subtitle="Monitor team performance and daily achievements across departments."
+          headerRightContent={
+            <div className="inline-flex items-center gap-2.5 h-11 px-5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
+              <BarChart3 className="w-4 h-4 text-indigo-500" />
+              <span className="text-base font-semibold text-indigo-600 dark:text-indigo-400">
+                {reports.filter((r: any) => r.date === new Date().toISOString().split('T')[0]).length} <span className="font-normal text-indigo-400 dark:text-indigo-500">Reports Today</span>
+              </span>
+            </div>
+          }
+        />
 
         {/* Review Section */}
         <div className="pt-8 border-t border-slate-200/60 dark:border-white/5">

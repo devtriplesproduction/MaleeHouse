@@ -40,7 +40,7 @@ import { useToast } from '@/hooks/use-toast';
 import { OperationsFileUploadPanel } from './OperationsFileUploadPanel';
 import { CADRevisionPanel } from './CADRevisionPanel';
 import { ProjectTeamSection } from './ProjectTeamSection';
-import { OperationsControlCenter } from './OperationsControlCenter';
+
 
 interface ProjectOverviewTabProps {
   project: any;
@@ -345,16 +345,7 @@ export default function ProjectOverviewTab({
         {hasAccessToOps && (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             
-            <OperationsControlCenter
-              projectId={project.id}
-              projectStatus={project.status}
-              userRole={userRole}
-              currentUserId={currentUserId}
-              teamMembers={teamMembers}
-              isFrozen={project.is_frozen}
-              files={files}
-            />
-            
+
             {(isAdmin || isClaimedByMe) && (
               <>
                 <OperationsFileUploadPanel

@@ -101,7 +101,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       .lte('date', endOfMonth);
       
     if (holidayError) throw holidayError;
-    const standardHolidaysCount = holidays ? holidays.filter((h: any) => !h.is_optional).length : 0;
+    const standardHolidaysCount = holidays ? holidays.length : 0;
 
     const existing: any = cycles && cycles.length > 0 ? cycles[0] : null;
     const isLocked = existing?.status === "locked";
@@ -258,6 +258,7 @@ export async function lockPayrollCycleAction(month: number, year: number) {
     });
 
     revalidatePath("/admin/payroll");
+    revalidatePath("/hr/payroll");
     return { success: true, message: `Payroll cycle for ${month}/${year} locked successfully.` };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -317,6 +318,7 @@ export async function unlockPayrollCycleAction(month: number, year: number) {
     });
 
     revalidatePath("/admin/payroll");
+    revalidatePath("/hr/payroll");
     return { success: true, message: `Payroll cycle for ${month}/${year} unlocked successfully.` };
   } catch (error: any) {
     return { success: false, error: error.message };

@@ -38,7 +38,7 @@ export async function createHolidayAction(payload: {
       .insert({
         date: payload.date,
         name: payload.name,
-        is_optional: payload.is_optional
+        is_optional: false
       })
       .select()
       .single();
@@ -96,7 +96,7 @@ export async function updateHolidayAction(
       .update({
         date: payload.date,
         name: payload.name,
-        is_optional: payload.is_optional,
+        is_optional: false,
       })
       .eq('id', id)
       .select()

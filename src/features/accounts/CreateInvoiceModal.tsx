@@ -29,13 +29,15 @@ interface CreateInvoiceModalProps {
   milestoneTitle?: string;
   expenseId?: string;
   expenseTitle?: string;
+  visitId?: string;
+  visitTitle?: string;
   initialAmount?: number;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
-export function CreateInvoiceModal({ projectId, projectName, clientName, milestoneId, milestoneTitle, expenseId, expenseTitle, initialAmount, isOpen, onOpenChange, onSuccess }: CreateInvoiceModalProps) {
+export function CreateInvoiceModal({ projectId, projectName, clientName, milestoneId, milestoneTitle, expenseId, expenseTitle, visitId, visitTitle, initialAmount, isOpen, onOpenChange, onSuccess }: CreateInvoiceModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<any>(null);
@@ -119,6 +121,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
       const result = await createInvoiceAction({
         project_id: projectId,
         milestone_id: milestoneId,
+        visit_id: visitId,
         invoice_number: formData.invoice_number,
         amount: Number(formData.amount),
         gst_rate: Number(formData.gst_rate),
@@ -344,12 +347,12 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                         <tbody className="divide-y divide-slate-100 text-slate-700">
                            <tr className="align-top">
                               <td className="py-4 text-xs font-semibold text-slate-400">1</td>
-                              <td className="py-4">
+                               <td className="py-4">
                                  <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">
-                                   {expenseId ? 'Project Expense Reimbursement' : 'Professional Services'}
+                                   {expenseId ? 'Project Expense Reimbursement' : visitId ? 'Field Visit Services' : 'Professional Services'}
                                  </p>
                                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">
-                                   {expenseId ? (expenseTitle || 'Approved project expense reimbursement.') : milestoneTitle ? `As per milestone: ${milestoneTitle}` : 'As per project milestone agreement.'}
+                                   {expenseId ? (expenseTitle || 'Approved project expense reimbursement.') : visitId ? (visitTitle || 'Field visit and inspection.') : milestoneTitle ? `As per milestone: ${milestoneTitle}` : 'As per project milestone agreement.'}
                                  </p>
                               </td>
                               <td className="py-4 text-center text-xs font-semibold text-slate-800">1</td>

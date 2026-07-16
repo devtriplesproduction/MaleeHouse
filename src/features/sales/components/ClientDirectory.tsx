@@ -274,60 +274,57 @@ export function ClientDirectory({ clients }: ClientDirectoryProps) {
               <div
                 key={i}
                 onClick={() => setSelectedClient(client)}
-                className="group glass-card p-5 border-white/10 hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/5 transition-all duration-305 cursor-pointer flex flex-col justify-between"
+                className="group bg-white dark:bg-slate-900/40 p-4 border border-slate-200 dark:border-white/5 rounded-2xl hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 cursor-pointer flex flex-col justify-between"
               >
-                <div>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg group-hover:scale-110 transition-transform">
-                      {client.client_name[0]}
+                <div className="flex flex-col">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg group-hover:scale-105 transition-transform shrink-0">
+                        {client.client_name[0]?.toUpperCase()}
+                      </div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-indigo-500 transition-colors line-clamp-1" title={client.client_name}>
+                        {client.client_name}
+                      </h3>
                     </div>
-                    <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 font-bold uppercase tracking-widest text-[9px] px-2 py-0.5">
-                      Active Client
+                    <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 font-bold uppercase tracking-widest text-[8px] px-1.5 py-0.5 shrink-0 ml-2 mt-1">
+                      Active
                     </Badge>
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3 group-hover:text-indigo-500 transition-colors line-clamp-1">
-                    {client.client_name}
-                  </h3>
+                  <div className="space-y-2 mt-4 bg-slate-50/50 dark:bg-white/[0.02] p-3 rounded-xl border border-slate-100 dark:border-white/5">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400" title={client.client_contact}>
+                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{client.client_contact.split(',')[0]}</span>
+                    </div>
+                    <div className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400" title={client.client_address}>
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <span className="line-clamp-1">{client.client_address}</span>
+                    </div>
+                  </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                      <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5">
-                        <Phone className="w-3.5 h-3.5" />
-                      </div>
-                      {client.client_contact}
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="flex-1 flex items-center gap-1.5 bg-indigo-500/5 border border-indigo-500/10 px-2 py-1.5 rounded-lg justify-center">
+                      <Clock className="w-3 h-3 text-indigo-500" />
+                      <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">{ongoing.length} Ongoing</span>
                     </div>
-                    <div className="flex items-start gap-3 text-sm text-slate-500 dark:text-slate-400">
-                      <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 mt-0.5">
-                        <MapPin className="w-3.5 h-3.5" />
+                    {completed.length > 0 && (
+                      <div className="flex-1 flex items-center gap-1.5 bg-emerald-500/5 border border-emerald-500/10 px-2 py-1.5 rounded-lg justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">{completed.length} Done</span>
                       </div>
-                      <span className="line-clamp-2">{client.client_address}</span>
-                    </div>
-
-                    <div className="flex items-start gap-3 text-[11px] text-slate-400 font-semibold pt-2">
-                      <div className="flex items-center gap-1.5 bg-indigo-500/5 border border-indigo-500/10 px-2 py-0.5 rounded-md">
-                        <Clock className="w-3 h-3 text-indigo-500" />
-                        <span>{ongoing.length} Ongoing</span>
-                      </div>
-                      {completed.length > 0 && (
-                        <div className="flex items-center gap-1.5 bg-emerald-500/5 border border-emerald-500/10 px-2 py-0.5 rounded-md">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                          <span>{completed.length} Completed</span>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between">
+                <div className="mt-4 pt-3 border-t border-slate-200/50 dark:border-white/5 flex items-center justify-between">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedClient(client);
                     }}
-                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-500 transition-colors flex items-center gap-2"
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-500 transition-colors flex items-center gap-1.5"
                   >
-                    View Client File
+                    View File
                     <ExternalLink className="w-3 h-3" />
                   </button>
                   <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">

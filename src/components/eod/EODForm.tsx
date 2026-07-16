@@ -28,6 +28,9 @@ interface EODFormProps {
   currentUserId?: string;
   currentUserRole?: string;
   hideHeader?: boolean;
+  title?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  headerRightContent?: React.ReactNode;
 }
 
 // Dynamic Streak Calculation
@@ -87,7 +90,7 @@ function calculateStreak(reports: any[]) {
   return streak;
 }
 
-export function EODForm({ reports = [], allReports = [], onSuccess, staff, currentUserId, currentUserRole, hideHeader }: EODFormProps) {
+export function EODForm({ reports = [], allReports = [], onSuccess, staff, currentUserId, currentUserRole, hideHeader, title, subtitle, headerRightContent }: EODFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>('myself');
@@ -217,32 +220,37 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
       {/* ── Header Section with Streak ── */}
       {(!hideHeader || !isSubmittingForOther) && (
         <div className={cn(
-          "flex flex-col sm:flex-row sm:items-center gap-6", 
-          hideHeader ? "justify-end" : "justify-between pb-2 border-b border-slate-200/60 dark:border-white/5"
+          "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6", 
+          hideHeader ? "justify-end" : "pb-2 border-b border-slate-200/60 dark:border-white/5"
         )}>
           {!hideHeader && (
             <div className="space-y-1">
               <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-                Daily Status <span className="text-indigo-500">Report</span>
+                {title || (
+                  <>Daily Status <span className="text-indigo-500">Report</span></>
+                )}
               </h1>
               <p className="text-slate-500 dark:text-slate-400 text-lg">
-                Log your daily achievements and identify blockers.
+                {subtitle || "Log your daily achievements and identify blockers."}
               </p>
             </div>
           )}
 
-          {/* Streak Badge (Only show if submitting for self) */}
-          {!isSubmittingForOther && (
-            <div className="flex flex-col items-start sm:items-end flex-shrink-0">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-orange-500/20 dark:border-orange-500/10 bg-orange-500/5 text-orange-600 dark:text-orange-400 font-black text-base shadow-lg shadow-orange-500/5">
-                <span>{streak} Days</span>
-                <Flame className="w-5 h-5 fill-current animate-pulse text-orange-500" />
+          <div className="flex flex-wrap items-start justify-end gap-4 flex-shrink-0">
+            {headerRightContent}
+            {/* Streak Badge (Only show if submitting for self) */}
+            {!isSubmittingForOther && (
+              <div className="flex flex-col items-end flex-shrink-0">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-orange-500/20 dark:border-orange-500/10 bg-orange-500/5 text-orange-600 dark:text-orange-400 font-black text-base shadow-lg shadow-orange-500/5">
+                  <span>{streak} Days</span>
+                  <Flame className="w-5 h-5 fill-current animate-pulse text-orange-500" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-1.5 px-1">
+                  SUBMISSION STREAK
+                </span>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-1.5 px-1">
-                SUBMISSION STREAK
-              </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 

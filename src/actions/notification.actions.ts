@@ -487,7 +487,7 @@ export async function notifyUpcomingHolidaysAction(cronSecret?: string) {
     let notificationsSent = 0
 
     for (const holiday of holidays) {
-      const typeLabel = holiday.is_optional ? 'Optional Holiday' : 'Public Holiday'
+      const typeLabel = 'Public Holiday';
       
       await Promise.all(
         users.map((u: any) =>

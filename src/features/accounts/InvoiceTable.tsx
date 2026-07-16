@@ -85,8 +85,8 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
               {/* Section 1: Icon + Project, Client, & Invoice ID (50%) */}
               <div className="flex items-start gap-3 w-full md:w-[50%] flex-shrink-0 md:pr-4 py-0.5">
                 {/* Tinted Icon Box */}
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm group-hover:scale-105 transition-transform duration-200 flex-shrink-0 mt-1">
-                  <FileText className="w-4 h-4 text-amber-500" />
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm group-hover:scale-105 transition-transform duration-200 flex-shrink-0 mt-1">
+                  <FileText className="w-4 h-4 text-indigo-500" />
                 </div>
 
                 <div className="min-w-0 flex-1 flex flex-col justify-center">

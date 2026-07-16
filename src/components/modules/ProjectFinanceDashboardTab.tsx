@@ -7,7 +7,7 @@ import { LedgerTable, LedgerItem } from '@/features/accounts/LedgerTable';
 import { Activity, TrendingUp, TrendingDown, DollarSign, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function ProjectFinanceDashboardTab({ projectId }: { projectId: string }) {
+export function ProjectFinanceDashboardTab({ projectId, theme }: { projectId: string; theme?: any }) {
   const [loading, setLoading] = useState(true);
   const [finances, setFinances] = useState<any>(null);
   const [incomeItems, setIncomeItems] = useState<LedgerItem[]>([]);
@@ -150,11 +150,11 @@ export function ProjectFinanceDashboardTab({ projectId }: { projectId: string })
           </div>
         </div>
 
-        <div className="group rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg shadow-indigo-500/5 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500 pointer-events-none"></div>
+        <div className={`group rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg ${theme?.glow || 'shadow-indigo-500/5'} hover:shadow-xl hover:${theme?.glow || 'shadow-indigo-500/10'} transition-all duration-300 relative overflow-hidden`}>
+          <div className={`absolute -right-10 -top-10 w-32 h-32 ${theme?.bg || 'bg-indigo-500/10'} rounded-full blur-3xl group-hover:${theme?.hover || 'bg-indigo-500/20'} transition-all duration-500 pointer-events-none`}></div>
           <div className="relative z-10 flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-indigo-500" />
+            <div className={`w-10 h-10 rounded-xl ${theme?.bg || 'bg-indigo-500/10'} flex items-center justify-center`}>
+              <DollarSign className={`w-5 h-5 ${theme?.text || 'text-indigo-500'}`} />
             </div>
             <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Net Profit</h3>
           </div>
@@ -164,8 +164,8 @@ export function ProjectFinanceDashboardTab({ projectId }: { projectId: string })
         </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg shadow-indigo-500/5 relative overflow-hidden">
-        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className={`rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg ${theme?.glow || 'shadow-indigo-500/5'} relative overflow-hidden`}>
+        <div className={`absolute -left-10 -bottom-10 w-40 h-40 ${theme?.bg || 'bg-indigo-500/10'} rounded-full blur-3xl pointer-events-none`}></div>
         <h3 className="relative z-10 text-sm font-bold text-slate-900 dark:text-white mb-4">Budget vs Actual Spend</h3>
         <div className="relative z-10 flex justify-between text-xs text-slate-500 mb-2 font-semibold">
           <span>{formatCurrency(totalExpense)} Spent</span>

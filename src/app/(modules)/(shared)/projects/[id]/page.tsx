@@ -283,7 +283,7 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
       />
 
       {/* Central Clean Tab-based Layout */}
-      <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700 mt-5">
+      <div className="w-full space-y-8 animate-in fade-in duration-700 mt-5">
         {project.is_frozen ? (
           <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-red-200 dark:border-red-500/20 rounded-3xl bg-red-50/50 dark:bg-red-500/5 mt-10">
             <div className="w-20 h-20 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mb-6 shadow-inner">

@@ -14,9 +14,10 @@ interface PremiumDatePickerProps {
   align?: 'left' | 'right';
   side?: 'bottom' | 'right';
   disabled?: boolean;
+  triggerClassName?: string;
 }
 
-export function PremiumDatePicker({ value, onChange, className, align = 'left', side = 'bottom', disabled = false }: PremiumDatePickerProps) {
+export function PremiumDatePicker({ value, onChange, className, align = 'left', side = 'bottom', disabled = false, triggerClassName }: PremiumDatePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [currentMonth, setCurrentMonth] = React.useState(value ? new Date(value) : new Date());
   const [mounted, setMounted] = React.useState(false);
@@ -257,7 +258,8 @@ export function PremiumDatePicker({ value, onChange, className, align = 'left', 
         onClick={toggleOpen}
         className={cn(
           "w-full h-9 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-lg px-3 flex items-center gap-2.5 transition-all",
-          disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer group hover:border-indigo-500/50"
+          disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer group hover:border-indigo-500/50",
+          triggerClassName
         )}
       >
         <CalendarIcon className="w-4 h-4 text-slate-500 group-hover:text-indigo-500 transition-colors" />

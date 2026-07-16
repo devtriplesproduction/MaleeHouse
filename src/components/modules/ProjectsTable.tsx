@@ -7,7 +7,6 @@ import {
   Download,
   ChevronRight,
   Calendar,
-  SlidersHorizontal,
   LayoutList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -167,9 +166,6 @@ export function ProjectsTable({ initialProjects, userRole = 'admin' }: ProjectsT
 
         {/* Right controls */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-          </div>
 
           <Select
             value={statusFilter}
