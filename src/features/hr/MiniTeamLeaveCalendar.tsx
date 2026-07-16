@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export function MiniTeamLeaveCalendar({ leaves }: { leaves: any[] }) {
   // Filter for approved leaves happening around now (mock simple logic)
-  const approvedLeaves = leaves.filter(l => l.status === 'approved').slice(0, 3);
+  const approvedLeaves = leaves.filter(l => l.status === 'approved');
 
   const container = {
     hidden: { opacity: 0 },
@@ -26,7 +26,7 @@ export function MiniTeamLeaveCalendar({ leaves }: { leaves: any[] }) {
   };
 
   return (
-    <Card className="glass-card shadow-lg border-slate-200/50 dark:border-white/10 h-full flex flex-col hover:border-cyan-400/30 transition-colors duration-300">
+    <Card className="glass-card shadow-lg border-slate-200/50 dark:border-white/10 h-full flex flex-col overflow-hidden hover:border-cyan-400/30 transition-colors duration-300">
       <CardHeader className="pb-3 border-b border-slate-100/50 dark:border-white/5 bg-gradient-to-r from-slate-50/50 to-transparent dark:from-slate-900/20 dark:to-transparent">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-500/10 text-cyan-500">
@@ -38,7 +38,7 @@ export function MiniTeamLeaveCalendar({ leaves }: { leaves: any[] }) {
         </div>
         <CardDescription className="text-xs font-medium">Who's off this week</CardDescription>
       </CardHeader>
-      <CardContent className="p-0 flex-1">
+      <CardContent className="p-0 flex-1 overflow-y-auto thin-scrollbar">
         {approvedLeaves.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}

@@ -88,28 +88,40 @@ export async function getTodayAttendanceSummaryAction() {
     return { success: false, error: 'Unauthorized' }
   }
 
+  const supabaseAdmin: any = createAdminClient()
+  
+  // Calculate midnight today in Asia/Kolkata timezone
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-  const attendanceRes = await getAttendanceLogsAction()
-  if (!attendanceRes.success) return attendanceRes
+  const startOfToday = new Date(`${today}T00:00:00+05:30`)
+  
+  const { data, error } = await supabaseAdmin
+    .from('eod_reports')
+    .select('*, profiles(first_name, last_name, role, profile_photo)')
+    .gte('created_at', startOfToday.toISOString())
+    .order('created_at', { ascending: false })
 
-  const todayLogs = (attendanceRes.data || []).filter((a: any) => a.date === today)
-  
-  let presentCount = 0
-  let absentCount = 0
-  let onLeaveCount = 0
-  
-  for (const log of todayLogs) {
-    if (log.status === 'present') presentCount++
-    else if (log.status === 'absent') absentCount++
-    else if (log.status === 'paid_leave' || log.status === 'unpaid_leave') onLeaveCount++
+  if (error) {
+    return { success: false, error: error.message }
   }
 
+  // Calculate unique users who submitted EOD as 'present' count
+  const uniqueUsers = new Set((data || []).map((r: any) => r.user_id));
+
+  // Filter out current user's EOD from review list and deduplicate by user_id (most recent first)
+  const seenUsers = new Set<string>();
+  const filteredEods = (data || [])
+    .filter((r: any) => r.user_id !== profile.id)
+    .filter((r: any) => {
+      if (seenUsers.has(r.user_id)) return false;
+      seenUsers.add(r.user_id);
+      return true;
+    });
+  
   return {
     success: true,
     data: {
-      present: presentCount,
-      absent: absentCount,
-      onLeave: onLeaveCount
+      recentEods: filteredEods,
+      present: uniqueUsers.size,
     }
   }
 }
@@ -130,12 +142,20 @@ export async function getOnboardingInProgressAction() {
     }
 
     const supabaseAdmin: any = createAdminClient()
-    const { data } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('*')
-      .eq('status', 'invited')
+      .in('status', ['onboarding_pending', 'invited'])
       
-    return { success: true, data: data || [] }
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    const filtered = (data || []).filter(
+      (u: any) => !['admin', 'hr'].includes(u.role?.toLowerCase())
+    );
+
+    return { success: true, data: filtered }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

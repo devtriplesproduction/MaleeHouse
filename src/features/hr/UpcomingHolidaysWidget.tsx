@@ -15,7 +15,7 @@ export function UpcomingHolidaysWidget({ holidays }: { holidays: any[] }) {
   });
 
   return (
-    <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col">
+    <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col overflow-hidden">
       <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/20">
         <div className="flex items-center gap-2">
           <CalendarHeart className="h-4.5 w-4.5 text-pink-500" />
@@ -23,7 +23,7 @@ export function UpcomingHolidaysWidget({ holidays }: { holidays: any[] }) {
         </div>
         <CardDescription className="text-xs">Next official days off</CardDescription>
       </CardHeader>
-      <CardContent className="p-0 flex-1 overflow-auto max-h-[300px]">
+      <CardContent className="p-0 flex-1 overflow-y-auto thin-scrollbar">
         {upcoming.length === 0 ? (
           <div className="p-8 text-center flex flex-col items-center justify-center">
             <CalendarHeart className="h-8 w-8 text-slate-200 dark:text-slate-700 mb-2" />

@@ -125,7 +125,7 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
     const supabase: any = createAdminClient()
     const { data, error } = await supabase
       .from('leaves')
-      .select('*, profiles!leaves_user_id_fkey (first_name, last_name, email, role)')
+      .select('*, profiles!leaves_user_id_fkey (first_name, last_name, email, role, profile_photo)')
       .order('created_at', { ascending: false })
 
     if (error) return { success: false, error: error.message }

@@ -16,8 +16,8 @@ import { requireRole } from "@/lib/auth-guard";
 
 // HR Feature Widgets
 import { HRStatsRow } from "@/features/hr/HRStatsRow";
-import { LeaveApprovalQueue } from "@/features/hr/LeaveApprovalQueue";
-import { PerformanceReviewsDue } from "@/features/hr/PerformanceReviewsDue";
+import { LeaveApprovalWidget } from "@/features/hr/LeaveApprovalWidget";
+
 import { OnboardingInProgress } from "@/features/hr/OnboardingInProgress";
 import { TodayAttendanceSnapshot } from "@/features/hr/TodayAttendanceSnapshot";
 import { UpcomingHolidaysWidget } from "@/features/hr/UpcomingHolidaysWidget";
@@ -51,7 +51,7 @@ export default async function HRDashboard() {
 
   const stats: any = statsRes.data || {};
   const pendingLeaves = pendingLeavesRes.data || [];
-  const attendanceToday = attendanceTodayRes.data || {};
+  const attendanceToday: any = attendanceTodayRes.data || {};
   const holidays = holidaysRes.data || [];
   const announcements = announcementsRes.data || [];
   const users = usersRes.data || [];
@@ -71,50 +71,50 @@ export default async function HRDashboard() {
         </div>
       </div>
 
-      <HRStatsRow stats={stats} />
+      <HRStatsRow 
+        stats={{
+          headcount: stats.headcount || 0,
+          presentCount: attendanceToday.present || 0,
+          onLeaveToday: allLeaves.filter((leave: any) => {
+            const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+            return leave.status === 'approved' && todayStr >= leave.start_date && todayStr <= leave.end_date;
+          }).length,
+          pendingLeavesCount: pendingLeaves.length,
+        }} 
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 flex flex-col h-full min-h-[350px]">
+        <div className="md:col-span-1 h-[380px]">
           <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
-            <LeaveApprovalQueue leaves={pendingLeaves} />
+            <TodayAttendanceSnapshot data={attendanceToday} headcount={stats.headcount || 0} users={users} />
           </Suspense>
         </div>
-        <div className="flex flex-col gap-6">
-          <div className="flex-1">
-            <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl min-h-[160px]" />}>
-              <OnboardingInProgress data={onboardings} />
-            </Suspense>
-          </div>
-          <div className="flex-1">
-            <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl min-h-[160px]" />}>
-              <PerformanceReviewsDue />
-            </Suspense>
-          </div>
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <LeaveApprovalWidget leaves={pendingLeaves} />
+          </Suspense>
         </div>
-      </div>
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <RecentAnnouncements announcements={announcements} />
+          </Suspense>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="md:col-span-1 min-h-[300px]">
-          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl min-h-[300px]" />}>
-            <TodayAttendanceSnapshot data={attendanceToday} headcount={stats.headcount || 0} />
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <OnboardingInProgress data={onboardings} />
           </Suspense>
         </div>
         
-        <div className="md:col-span-1 min-h-[300px]">
-          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl min-h-[300px]" />}>
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
             <UpcomingHolidaysWidget holidays={holidays} />
           </Suspense>
         </div>
 
-        <div className="md:col-span-1 min-h-[300px]">
-          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl min-h-[300px]" />}>
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
             <MiniTeamLeaveCalendar leaves={allLeaves} />
-          </Suspense>
-        </div>
-
-        <div className="md:col-span-1 min-h-[300px]">
-          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl min-h-[300px]" />}>
-            <RecentAnnouncements announcements={announcements} />
           </Suspense>
         </div>
       </div>

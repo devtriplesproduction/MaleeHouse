@@ -8,7 +8,7 @@ export function OnboardingInProgress({ data }: { data: any[] }) {
   const onboardings = data || [];
 
   return (
-    <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col">
+    <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col overflow-hidden">
       <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/20">
         <div className="flex items-center gap-2">
           <UserPlus className="h-4.5 w-4.5 text-blue-500" />
@@ -19,7 +19,7 @@ export function OnboardingInProgress({ data }: { data: any[] }) {
         </div>
         <CardDescription className="text-xs">New hires pending setup completion</CardDescription>
       </CardHeader>
-      <CardContent className="p-0 flex-1 overflow-auto max-h-[300px]">
+      <CardContent className="p-0 flex-1 overflow-y-auto thin-scrollbar">
         {onboardings.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground flex flex-col items-center">
             <UserPlus className="h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
