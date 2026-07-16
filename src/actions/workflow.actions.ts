@@ -273,7 +273,24 @@ async function validateStageTransition(
         }
         break;
       }
+      case "field_assigned": {
+        const { data: assignment } = await supabase.from("project_assignments").select("id").eq("project_id", projectId).limit(1);
+        if (!assignment || assignment.length === 0) {
+          return {
+            success: false,
+            error: "Cannot transition to Field Assigned: No technical team is assigned to this project."
+          };
+        }
+        break;
+      }
       case "field_work": {
+        const { data: assignment } = await supabase.from("project_assignments").select("id").eq("project_id", projectId).limit(1);
+        if (!assignment || assignment.length === 0) {
+          return {
+            success: false,
+            error: "Cannot transition to Field Work: No technical team is assigned to this project."
+          };
+        }
         const { data: revisions } = await supabase.from("cad_revisions").select("id").eq("project_id", projectId).eq("status", "approved").limit(1);
         if (!revisions || revisions.length === 0) {
           return {

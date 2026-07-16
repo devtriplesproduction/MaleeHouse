@@ -1095,11 +1095,11 @@ export function OperationsFileUploadPanel({
           {(isField || isAdmin) && !isProjectClosed && (
             <button
               onClick={handleSubmitSurveyData}
-              disabled={isPending || surveyDocs.length === 0 || controlPointDocs.length === 0 || projectStatus === "data_sync"}
+              disabled={isPending || surveyDocs.length === 0 || controlPointDocs.length === 0}
               className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (projectStatus === "data_sync" ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />)}
-              {projectStatus === "data_sync" ? "Survey Submitted for CAD Review" : "Send to CAD"}
+              {projectStatus === "data_sync" ? "Resubmit / Update CAD Survey Data" : "Send to CAD"}
             </button>
           )}
         </div>

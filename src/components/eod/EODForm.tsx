@@ -27,6 +27,7 @@ interface EODFormProps {
   staff?: any[];
   currentUserId?: string;
   currentUserRole?: string;
+  hideHeader?: boolean;
 }
 
 // Dynamic Streak Calculation
@@ -86,7 +87,7 @@ function calculateStreak(reports: any[]) {
   return streak;
 }
 
-export function EODForm({ reports = [], allReports = [], onSuccess, staff, currentUserId, currentUserRole }: EODFormProps) {
+export function EODForm({ reports = [], allReports = [], onSuccess, staff, currentUserId, currentUserRole, hideHeader }: EODFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>('myself');
@@ -103,9 +104,9 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
   if (isSubmittingForOther) {
     const targetStaff = staff?.find((s: any) => s.id === selectedUser);
     const targetRole = (targetStaff?.department || targetStaff?.role || '').toLowerCase();
-    showLocationSelection = ['field', 'field_engineer', 'engineer'].includes(targetRole);
+    showLocationSelection = targetRole === 'survey';
   } else {
-    showLocationSelection = ['hr', 'field', 'field_engineer', 'engineer'].includes(currentUserRole?.toLowerCase() || '');
+    showLocationSelection = currentUserRole?.toLowerCase() === 'survey';
   }
 
   let targetReport = null;
@@ -214,29 +215,36 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
   return (
     <div className="space-y-8">
       {/* ── Header Section with Streak ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-2 border-b border-slate-200/60 dark:border-white/5">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-            Daily Status <span className="text-indigo-500">Report</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-lg">
-            Log your daily achievements and identify blockers.
-          </p>
-        </div>
-
-        {/* Streak Badge (Only show if submitting for self) */}
-        {!isSubmittingForOther && (
-          <div className="flex flex-col items-start sm:items-end flex-shrink-0">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-orange-500/20 dark:border-orange-500/10 bg-orange-500/5 text-orange-600 dark:text-orange-400 font-black text-base shadow-lg shadow-orange-500/5">
-              <span>{streak} Days</span>
-              <Flame className="w-5 h-5 fill-current animate-pulse text-orange-500" />
+      {(!hideHeader || !isSubmittingForOther) && (
+        <div className={cn(
+          "flex flex-col sm:flex-row sm:items-center gap-6", 
+          hideHeader ? "justify-end" : "justify-between pb-2 border-b border-slate-200/60 dark:border-white/5"
+        )}>
+          {!hideHeader && (
+            <div className="space-y-1">
+              <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
+                Daily Status <span className="text-indigo-500">Report</span>
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 text-lg">
+                Log your daily achievements and identify blockers.
+              </p>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-1.5 px-1">
-              SUBMISSION STREAK
-            </span>
-          </div>
-        )}
-      </div>
+          )}
+
+          {/* Streak Badge (Only show if submitting for self) */}
+          {!isSubmittingForOther && (
+            <div className="flex flex-col items-start sm:items-end flex-shrink-0">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-orange-500/20 dark:border-orange-500/10 bg-orange-500/5 text-orange-600 dark:text-orange-400 font-black text-base shadow-lg shadow-orange-500/5">
+                <span>{streak} Days</span>
+                <Flame className="w-5 h-5 fill-current animate-pulse text-orange-500" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-1.5 px-1">
+                SUBMISSION STREAK
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Form Card or Already Submitted Card ── */}
       {/* ── Form Card ── */}
@@ -425,16 +433,20 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                     <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                       Location <span className="text-rose-500">*</span>
                     </label>
-                    <SearchableSelect
-                      value={formData.work_location}
-                      onValueChange={(val) => setFormData({ ...formData, work_location: val as 'office' | 'field' })}
-                      disabled={hasSubmitted}
-                      options={[
-                        { label: "Office", value: "office" },
-                        { label: "Field", value: "field" }
-                      ]}
-                      className="w-full h-11"
-                    />
+                    <div className="relative group">
+                      <select
+                        value={formData.work_location}
+                        onChange={(e) => setFormData({ ...formData, work_location: e.target.value as 'office' | 'field' })}
+                        disabled={hasSubmitted}
+                        className="w-full h-11 bg-slate-100 dark:bg-[#070b14]/50 border border-slate-200 dark:border-white/5 rounded-xl px-4 pr-10 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all appearance-none cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed shadow-inner font-semibold"
+                      >
+                        <option value="office">Office</option>
+                        <option value="field">Field</option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                      </div>
+                    </div>
                   </div>
                 )}
 

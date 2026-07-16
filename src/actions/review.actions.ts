@@ -5,6 +5,7 @@ import { notifyApprovalAction, notifyRejectionAction } from "@/actions/notificat
 import { updateProjectStageAction } from "@/actions/workflow.actions";
 import { requireAuthContext } from "@/lib/permissions/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { randomUUID } from "crypto";
 
 export type ReviewResponse = {
@@ -164,6 +165,19 @@ export async function engineerReviewFinalCADAction(
         created_at: new Date().toISOString()
       });
 
+      // Update the CAD revision record so it appears as approved in the Revision History UI
+      const adminClient: any = createAdminClient();
+      await adminClient
+        .from('cad_revisions')
+        .update({
+          status: 'approved',
+          reviewed_by: auth.userId,
+          reviewed_at: new Date().toISOString(),
+          review_notes: 'Final CAD Deliverable Approved by Engineer.'
+        })
+        .eq('project_id', projectId)
+        .eq('status', 'pending_review');
+
       // 3. Create completion notification for all assigned team members
       const { data: assignments } = await supabase
         .from('project_assignments')
@@ -202,6 +216,57 @@ export async function engineerReviewFinalCADAction(
         return { success: false, error: stageResponse.error || "Failed to update workflow stage to CAD Finalization." };
       }
 
+      // Mark the current final deliverable files as rejected so they don't trigger the validation UI again
+      const adminClient: any = createAdminClient();
+      await adminClient
+        .from('files')
+        .update({ category: 'rejected_final_file' })
+        .eq('project_id', projectId)
+        .eq('category', 'final_file');
+
+      // Update the CAD revision record so it appears in the Revision History UI
+      const { data: updatedRevisions } = await adminClient
+        .from('cad_revisions')
+        .update({
+          status: 'rejected',
+          reviewed_by: auth.userId,
+          reviewed_at: new Date().toISOString(),
+          review_notes: `Rejected by Engineer. Reason: ${rejectionReason}. Comments: ${comments || 'None'}`
+        })
+        .eq('project_id', projectId)
+        .eq('status', 'pending_review')
+        .select('id');
+
+      // Notify assigned CAD Specialist (we fetch this early to use for the insert below if needed)
+      const { data: cadAssignments } = await supabase
+        .from('project_assignments')
+        .select('user_id')
+        .eq('project_id', projectId)
+        .eq('role', 'cad');
+
+      if (!updatedRevisions || updatedRevisions.length === 0) {
+        // If there was no pending revision (CAD just uploaded but didn't click submit),
+        // we create a rejected record directly so it shows in the history.
+        const { data: existingRevisions } = await adminClient.from('cad_revisions').select('id').eq('project_id', projectId);
+        const revisionNumber = (existingRevisions || []).length + 1;
+        const cadUserId = (cadAssignments && cadAssignments.length > 0) ? cadAssignments[0].user_id : auth.userId;
+
+        await adminClient.from('cad_revisions').insert({
+          id: `cad_${randomUUID().substring(0, 8)}`,
+          project_id: projectId,
+          submitted_by: cadUserId,
+          title: "Final Deliverable (Auto-generated on Rejection)",
+          description: "File was rejected before formal submission.",
+          files: [],
+          revision_number: revisionNumber,
+          status: "rejected",
+          revision_type: "prototype",
+          reviewed_by: auth.userId,
+          reviewed_at: new Date().toISOString(),
+          review_notes: `Rejected by Engineer. Reason: ${rejectionReason}. Comments: ${comments || 'None'}`
+        });
+      }
+
       // Log Activity
       await supabase.from('activity_logs').insert({
         id: randomUUID(),
@@ -217,12 +282,7 @@ export async function engineerReviewFinalCADAction(
         created_at: new Date().toISOString()
       });
 
-      // Notify assigned CAD Specialist
-      const { data: cadAssignments } = await supabase
-        .from('project_assignments')
-        .select('user_id')
-        .eq('project_id', projectId)
-        .eq('role', 'cad');
+      // CAD assignment is fetched above now
 
       const { insertNotification } = await import('@/actions/notification.actions');
 

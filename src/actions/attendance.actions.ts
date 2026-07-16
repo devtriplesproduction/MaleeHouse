@@ -74,10 +74,10 @@ export async function registerAttendanceSignalAction(
       return { success: false, error: "Mutation failed. The payroll cycle for this month is historically locked." };
     }
 
-    const supabase: any = await createClient();
+    const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
     
     // Check if a record already exists
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('attendance_logs')
       .select('id, signal_type, notes')
       .eq('employee_id', employeeId)
@@ -89,7 +89,7 @@ export async function registerAttendanceSignalAction(
         return { success: true, message: "Administrative override preserved." };
       }
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('attendance_logs')
         .update({
           status,
@@ -101,7 +101,7 @@ export async function registerAttendanceSignalAction(
         
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('attendance_logs')
         .insert({
           employee_id: employeeId,

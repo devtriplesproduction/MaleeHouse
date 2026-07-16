@@ -48,7 +48,7 @@ export default async function EODPage() {
         </div>
 
         {/* EOD Form for Admin/HR with Staff Selector */}
-        <EODForm reports={myReports} allReports={reports} staff={staff} currentUserId={profile.id} currentUserRole={profile.role} />
+        <EODForm reports={myReports} allReports={reports} staff={staff} currentUserId={profile.id} currentUserRole={profile.role} hideHeader />
 
         {/* Review Section */}
         <div className="pt-8 border-t border-slate-200/60 dark:border-white/5">
@@ -68,8 +68,8 @@ export default async function EODPage() {
 
       <div className="space-y-6 pt-6 border-t border-slate-200/60 dark:border-white/5">
         <div className="flex items-center gap-2 px-2">
-            <Clock className="w-5 h-5 text-indigo-500" />
-            <h2 className="text-xl font-bold tracking-tight text-gray-700 dark:text-gray-200">Recent Logs</h2>
+          <Clock className="w-5 h-5 text-indigo-500" />
+          <h2 className="text-xl font-bold tracking-tight text-gray-700 dark:text-gray-200">Recent Logs</h2>
         </div>
         <EODHistory reports={reports} />
       </div>
