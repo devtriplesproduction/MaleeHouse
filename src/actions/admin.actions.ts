@@ -160,8 +160,8 @@ export async function onboardEmployeeAction(
 
     const userId = authUser.user.id
 
-    // Insert profile (single source of truth now that the DB trigger is removed)
-    const { error: profileError } = await (supabaseAdmin as any).from('profiles').insert({
+    // Insert or update profile (handles case where DB trigger is still active)
+    const { error: profileError } = await (supabaseAdmin as any).from('profiles').upsert({
       id: userId,
       email: data.email,
       role: data.role,
@@ -194,7 +194,7 @@ export async function onboardEmployeeAction(
       profile_photo: data.profile_photo || null,
       documents: documents,
       created_at: new Date().toISOString(),
-    } as any)
+    } as any, { onConflict: 'id' })
 
     if (profileError) {
       // Rollback auth user
@@ -416,57 +416,6 @@ export async function getAdminAuditLogsAction() {
   }
 }
 
-export async function overrideUserCredentialsAction(userId: string, newPassword: string) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
-
-  if (!checkActionRateLimit(adminProfile.id, 'overrideUserCredentialsAction', 5, 60 * 1000)) {
-    return { success: false, error: 'Rate limit exceeded. Too many credential overrides.' }
-  }
-  if (!newPassword || newPassword.trim().length < 8) {
-    return { success: false, error: 'Password must be at least 8 characters long.' }
-  }
-
-  try {
-    const supabaseAdmin: any = createAdminClient()
-    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: newPassword.trim() })
-    if (authError) {
-      if (authError.message.includes('User not found')) {
-        return { 
-          success: false, 
-          error: 'User account is missing from the authentication system (sync error). Please delete and re-invite the user.' 
-        }
-      }
-      return { success: false, error: authError.message }
-    }
-
-    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
-    await supabaseAdmin
-      .from('profiles')
-      .update({ force_password_reset: false, temp_password_expires_at: null, updated_at: new Date().toISOString() } as any)
-      .eq('id', userId)
-
-    await logAdminAuditAction({
-      action: 'CREDENTIAL_OVERRIDE_ADMIN',
-      details: { email: profile?.email },
-      severity: 'security',
-      targetUserId: userId,
-    })
-
-    await insertSystemNotification(
-      userId,
-      'Security Notice: Administrative Password Override',
-      'Your account password has been updated by an Administrator.',
-      'system'
-    )
-
-    revalidatePath('/admin/users')
-    return { success: true }
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
-}
-
 export async function offboardEmployeeAction(userId: string) {
   const adminProfile: any = await getUserProfileAction()
   if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
@@ -620,13 +569,9 @@ export async function getLastSalaryIncrementAction(employeeId: string) {
   try {
     const supabaseAdmin: any = createAdminClient()
     
-    // Check permission
-    const { data: { user } } = await supabaseAdmin.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
-    
-    const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
-    if (!profile || !['admin', 'hr'].includes(profile.role)) {
-      throw new Error('Not authorized')
+    const profile: any = await getUserProfileAction()
+    if (!profile || !['admin', 'hr'].includes(profile.role?.toLowerCase())) {
+      return { success: false, error: 'Unauthorized' }
     }
     
     const { data, error } = await supabaseAdmin
@@ -652,13 +597,9 @@ export async function getSalaryIncrementHistoryAction(employeeId: string) {
   try {
     const supabaseAdmin: any = createAdminClient()
     
-    // Check permission
-    const { data: { user } } = await supabaseAdmin.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
-    
-    const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
-    if (!profile || !['admin', 'hr'].includes(profile.role)) {
-      throw new Error('Not authorized')
+    const profile: any = await getUserProfileAction()
+    if (!profile || !['admin', 'hr'].includes(profile.role?.toLowerCase())) {
+      return { success: false, error: 'Unauthorized' }
     }
     
     const { data, error } = await supabaseAdmin

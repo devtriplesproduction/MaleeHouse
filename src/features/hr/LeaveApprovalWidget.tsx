@@ -44,7 +44,7 @@ export function LeaveApprovalWidget({ leaves }: { leaves: any[] }) {
             {pendingLeaves.map((leave: any) => (
               <Link 
                 key={leave.id} 
-                href="/hr/team" 
+                href="/leaves" 
                 className="p-4 flex items-center justify-between group hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0">

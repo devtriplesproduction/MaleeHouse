@@ -328,7 +328,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
 
   return createPortal(
     <div className="fixed inset-0 z-[50] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="absolute inset-0 bg-slate-900/40 dark:bg-[#020408]/80 backdrop-blur-2xl animate-in fade-in duration-300" onClick={handleClose} />
+      <div className="absolute inset-0 bg-slate-900/40 dark:bg-[#020408]/80 backdrop-blur-2xl animate-in fade-in duration-300" />
       
       <div className="relative w-full max-w-2xl bg-white dark:bg-[#080b14] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8">
         
@@ -393,7 +393,15 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit, onError)} className="flex flex-col h-[750px] max-h-[90vh]">
+          <form 
+            onSubmit={handleSubmit(onSubmit, onError)} 
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                e.preventDefault();
+              }
+            }}
+            className="flex flex-col h-[750px] max-h-[90vh]"
+          >
 
             {/* Header */}
             <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/40 dark:bg-[#0a0d16]">
@@ -507,7 +515,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                       <input 
                         {...register("first_name")} 
                         placeholder="John" 
-                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                       />
                       {errors.first_name && <p className="text-xs text-rose-500 font-bold mt-1">{errors.first_name.message}</p>}
                     </div>
@@ -517,7 +525,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                       <input 
                         {...register("last_name")} 
                         placeholder="Doe" 
-                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                       />
                       {errors.last_name && <p className="text-xs text-rose-500 font-bold mt-1">{errors.last_name.message}</p>}
                     </div>
@@ -544,7 +552,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                             { value: "female", label: "Female" },
                             { value: "other", label: "Other" }
                           ]}
-                          buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                          buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
                         />
                       </div>
                     </div>
@@ -561,7 +569,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                           e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
                         }}
                         placeholder="10-digit number" 
-                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                       />
                       {errors.phone_number && <p className="text-xs text-rose-500 font-bold mt-1">{errors.phone_number.message}</p>}
                     </div>
@@ -572,7 +580,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                         {...register("personal_email")} 
                         type="email" 
                         placeholder="personal@email.com" 
-                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                       />
                       {errors.personal_email && <p className="text-xs text-rose-500 font-bold mt-1">{errors.personal_email.message}</p>}
                     </div>
@@ -584,7 +592,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                       {...register("address")} 
                       placeholder="Full address" 
                       rows={2}
-                      className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white resize-none" 
+                      className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all resize-none" 
                     />
                   </div>
 
@@ -593,7 +601,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                     <input 
                       {...register("emergency_contact")} 
                       placeholder="Name - Relationship - Phone" 
-                      className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                      className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                     />
                   </div>
                 </div>
@@ -628,7 +636,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                                 setValue("designation", "");
                               }}
                               placeholder="Select Department"
-                              buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                              buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
                             >
                               {DEPARTMENTS.map((dept: any) => (
                                 <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
@@ -651,7 +659,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                               value={field.value}
                               onValueChange={field.onChange}
                               placeholder="— Select Role —"
-                              buttonClassName={cn("w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white", !watch("department") && "opacity-50 cursor-not-allowed pointer-events-none")}
+                              buttonClassName={cn("w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all", !watch("department") && "opacity-50 cursor-not-allowed pointer-events-none")}
                             >
                               {getDesignationsForDepartment(watch("department") || "").map((orgRole: any) => (
                                 <SelectItem key={orgRole.id} value={orgRole.id}>{orgRole.name}</SelectItem>
@@ -676,7 +684,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                               value={field.value}
                               onValueChange={field.onChange}
                               placeholder="— Select Type —"
-                              buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                              buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
                             >
                               <SelectItem value="full-time">Full Time</SelectItem>
                               <SelectItem value="part-time">Part Time</SelectItem>
@@ -697,7 +705,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                           type="number" 
                           {...register("salary")} 
                           placeholder="0"
-                          className="w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                          className="w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                         />
                       </div>
                       {errors.salary && <p className="text-xs text-rose-500 font-bold mt-1">{errors.salary.message}</p>}
@@ -712,7 +720,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                         step="0.5" 
                         {...register("experience")} 
                         placeholder="0"
-                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                       />
                       {errors.experience && <p className="text-xs text-rose-500 font-bold mt-1">{errors.experience.message}</p>}
                     </div>
@@ -865,7 +873,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                         {...register("employee_id")} 
                         readOnly
                         placeholder="MH-EMP-XXXXX" 
-                        className="w-full px-4 py-3 bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold cursor-not-allowed opacity-75 outline-none transition-all dark:text-slate-400" 
+                        className="w-full px-4 py-3 bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-500 cursor-not-allowed opacity-75 outline-none transition-all dark:text-slate-400" 
                       />
                       {errors.employee_id && <p className="text-xs text-rose-500 font-bold mt-1">{errors.employee_id.message}</p>}
                     </div>
@@ -876,7 +884,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                         {...register("email")} 
                         type="email" 
                         placeholder="employee@agency.com" 
-                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                       />
                       {showStep4Errors && errors.email && <p className="text-xs text-rose-500 font-bold mt-1">{errors.email.message}</p>}
                     </div>
@@ -890,7 +898,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                           {...register("password")} 
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••" 
-                          className="w-full pl-4 pr-11 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                          className="w-full pl-4 pr-11 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                         />
                         <button
                           type="button"
@@ -910,7 +918,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                           {...register("confirm_password")} 
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder="••••••••" 
-                          className="w-full pl-4 pr-11 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-semibold focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all dark:text-white" 
+                          className="w-full pl-4 pr-11 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
                         />
                         <button
                           type="button"

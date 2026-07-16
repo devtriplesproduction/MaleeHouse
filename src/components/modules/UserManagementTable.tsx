@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import {
   toggleUserActiveAction,
   updateEmployeeProfileAction,
-  overrideUserCredentialsAction,
   offboardEmployeeAction,
   deleteEmployeeAction,
   getAdminAuditLogsAction,
@@ -102,9 +101,6 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
   // Security state
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLogsLoading, setIsLogsLoading] = useState(false);
-  const [overridePasswords, setOverridePasswords] = useState<Record<string, string>>({});
-  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
-  const [isOverriding, setIsOverriding] = useState<Record<string, boolean>>({});
 
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -320,45 +316,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
     });
   };
 
-  const handleManualOverride = async (userId: string, email: string) => {
-    const pwd = overridePasswords[userId];
-    if (!pwd || pwd.trim().length < 4) {
-      toast({
-        title: "Validation Error",
-        description: "Password must be at least 4 characters long.",
-        variant: "error"
-      });
-      return;
-    }
 
-    setIsOverriding(prev => ({ ...prev, [userId]: true }));
-    try {
-      const res = await overrideUserCredentialsAction(userId, pwd);
-      if (res?.success) {
-        toast({
-          title: "Override Success",
-          description: `Access key modified safely for ${email}.`,
-          variant: "success"
-        });
-        setOverridePasswords(prev => ({ ...prev, [userId]: "" }));
-        handleRefreshData();
-      } else {
-        toast({
-          title: "Override Failed",
-          description: res?.error || "Credentials override unsuccessful.",
-          variant: "error"
-        });
-      }
-    } catch (err) {
-      toast({
-        title: "Override Failed",
-        description: "An unexpected error occurred during credential update.",
-        variant: "error"
-      });
-    } finally {
-      setIsOverriding(prev => ({ ...prev, [userId]: false }));
-    }
-  };
 
 
   const filteredPayrollData = useMemo(() => {
@@ -1183,8 +1141,6 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                   <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-[#0a0d16]/30">
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-400">Employee Identity</th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-400">Access Level</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-400 w-80">Credential Override</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest text-slate-400">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -1238,48 +1194,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                           </div>
                         </div>
                       </td>
-
-                      {/* Credential Override */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <input
-                              type={visiblePasswords[user.id] ? "text" : "password"}
-                              placeholder="Set new credentials..."
-                              value={overridePasswords[user.id] || ""}
-                              onChange={(e) => setOverridePasswords(prev => ({ ...prev, [user.id]: e.target.value }))}
-                              className="w-full h-9 pl-3 pr-10 bg-slate-50 dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-lg text-xs font-semibold focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all dark:text-white"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setVisiblePasswords(prev => ({ ...prev, [user.id]: !prev[user.id] }))}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
-                            >
-                              {visiblePasswords[user.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Action */}
-                      <td className="px-6 py-4 text-right">
-                        <Button
-                          onClick={() => handleManualOverride(user.id, user.email)}
-                          disabled={isOverriding[user.id] || !(overridePasswords[user.id]?.length >= 4)}
-                          variant="hr"
-                          className="h-9 px-4 rounded-lg disabled:opacity-50"
-                        >
-                          {isOverriding[user.id] ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <>
-                              <Key className="w-3 h-3 mr-1.5" />
-                              Update
-                            </>
-                          )}
-                        </Button>
-                      </td>
-                    </tr>
+                      </tr>
                   ))}
                 </tbody>
               </table>

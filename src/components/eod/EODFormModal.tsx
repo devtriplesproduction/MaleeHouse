@@ -56,20 +56,13 @@ export function EODFormModal({ reports = [], roleColor = "indigo" }: EODFormModa
         <button
           className={cn(
             "inline-flex items-center justify-center whitespace-nowrap h-11 px-6 rounded-xl font-medium text-sm gap-2 transition-all active:scale-[0.98] shadow-sm",
-            hasSubmittedToday ? colors.submitted : colors.btn
+            colors.btn
           )}
         >
-          {hasSubmittedToday ? (
-            <>
-              <CheckCircle2 className="w-4 h-4" />
-              EOD Logged
-            </>
-          ) : (
-            <>
-              <Send className="w-4 h-4" />
-              Log Daily EOD
-            </>
-          )}
+          <>
+            <Send className="w-4 h-4" />
+            Submit EOD
+          </>
         </button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-6 md:p-8 rounded-[2.5rem] border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-2xl">

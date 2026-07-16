@@ -19,7 +19,6 @@ import {
   updateEmployeeProfileAction,
   offboardEmployeeAction,
   deleteEmployeeAction,
-  overrideUserCredentialsAction,
   addSalaryIncrementAction,
   getLastSalaryIncrementAction,
   getSalaryIncrementHistoryAction
@@ -50,8 +49,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [isOffboarding, setIsOffboarding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddingIncrement, setIsAddingIncrement] = useState(false);
@@ -122,17 +120,14 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         email: employee.email || "",
         role: employee.role || "employee",
         status: employee.status || "active",
-        employee_id: employee.employee_id || "",
-        password: employee.password || "",
-        confirm_password: employee.password || ""
+        employee_id: employee.employee_id || ""
       
       };
       setFormData(initialData);
       setInitialFormData(initialData);
       setSelectedAvatar(employee.profile_photo || "");
       setDocumentsList(employee.documents || []);
-            setShowPassword(false);
-      setShowConfirmPassword(false);
+
     }
   }, [employee?.id, isOpen]);
 
@@ -218,18 +213,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   };
 
   const handleSave = async () => {
-    if (isEditing && formData.password !== formData.confirm_password) {
-      toast({
-        title: "Validation Check Failed",
-        description: "Password and Confirm Password must match.",
-        variant: "error"
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      const { confirm_password, password, ...restFormData } = formData;
+      const { ...restFormData } = formData;
       const payload = {
         ...restFormData,
         profile_photo: selectedAvatar,
@@ -237,19 +223,6 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
       };
 
       const result = await updateEmployeeProfileAction(employee.id, payload);
-
-      if (result?.success && password) {
-        const pwResult = await overrideUserCredentialsAction(employee.id, password);
-        if (!pwResult?.success) {
-          toast({
-            title: "Password Update Failed",
-            description: pwResult?.error || "Could not update credentials",
-            variant: "error"
-          });
-          setIsSubmitting(false);
-          return;
-        }
-      }
 
       if (result?.success) {
         toast({
@@ -682,6 +655,19 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     </Select>
                   </div>
                 </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Base Salary (₹) *</label>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="number"
+                      value={formData.salary || 0}
+                      onChange={(e) => setFormData({ ...formData, salary: parseFloat(e.target.value) || 0 })}
+                      disabled={!isEditing}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -854,8 +840,16 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Current Base Salary</label>
-                      <div className="text-xl font-bold text-slate-700 dark:text-slate-300 px-4 py-3 bg-white dark:bg-[#0a0d16] rounded-xl border border-slate-200 dark:border-white/10">₹{(formData.salary || 0).toLocaleString('en-IN')}</div>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Previous Salary (₹)</label>
+                      <div className="relative">
+                        <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          value={(formData.salary || 0).toLocaleString('en-IN')}
+                          disabled
+                          className="w-full pl-10 pr-4 py-3 bg-slate-100/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold text-slate-500 dark:text-slate-400 cursor-not-allowed outline-none transition-all shadow-sm"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-1">
@@ -925,25 +919,75 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
               ) : (
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-slate-50 dark:bg-[#0d1222] border border-slate-200 dark:border-white/10 rounded-2xl p-6 flex flex-col justify-center items-center relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center mb-4 text-indigo-600 dark:text-indigo-400 relative z-10">
-                    <IndianRupee className="w-6 h-6" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Current Salary */}
+                <div className="bg-slate-50 dark:bg-[#0d1222] border border-slate-200 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center items-center relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center mb-3 text-indigo-600 dark:text-indigo-400 relative z-10">
+                    <IndianRupee className="w-5 h-5" />
                   </div>
-                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Current Base Salary</p>
-                  <h3 className="text-3xl font-bold text-slate-900 dark:text-white relative z-10">₹{(formData.salary || 0).toLocaleString('en-IN')}</h3>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Current Salary</p>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white relative z-10">₹{(formData.salary || 0).toLocaleString('en-IN')}</h3>
                 </div>
-                
-                {lastIncrement && new Date() >= new Date(new Date(lastIncrement.effective_date).setMonth(new Date(lastIncrement.effective_date).getMonth() + 3)) && (
-                  <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-6 flex flex-col justify-center items-center text-center">
-                    <ShieldAlert className="w-8 h-8 text-amber-500 mb-3" />
-                    <h4 className="text-sm font-bold text-amber-700 dark:text-amber-400">Hike Reminder</h4>
-                    <p className="text-xs font-medium text-amber-600/80 dark:text-amber-400/80 mt-2 max-w-[200px]">
-                      It has been over 3 months since the last increment on {new Date(lastIncrement.effective_date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}.
-                    </p>
+
+                {/* Next Hike */}
+                {(() => {
+                  const baseDate = lastIncrement
+                    ? new Date(lastIncrement.effective_date)
+                    : employee?.joining_date
+                    ? new Date(employee.joining_date)
+                    : null;
+                  const nextHikeDate = baseDate
+                    ? new Date(new Date(baseDate).setFullYear(new Date(baseDate).getFullYear() + 1))
+                    : null;
+                  const isOverdue = nextHikeDate && new Date() > nextHikeDate;
+                  const daysLeft = nextHikeDate
+                    ? Math.ceil((nextHikeDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                    : null;
+
+                  return (
+                    <div className={`rounded-2xl p-5 flex flex-col justify-center items-center border relative overflow-hidden group ${isOverdue ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20'}`}>
+                      <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110 ${isOverdue ? 'bg-rose-500/10' : 'bg-emerald-500/10'}`} />
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 relative z-10 ${isOverdue ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10 ${isOverdue ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {isOverdue ? 'Hike Overdue' : 'Next Hike'}
+                      </p>
+                      {nextHikeDate ? (
+                        <>
+                          <h3 className={`text-lg font-bold relative z-10 ${isOverdue ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-800 dark:text-emerald-200'}`}>
+                            {nextHikeDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </h3>
+                          <p className={`text-[11px] font-semibold mt-1 relative z-10 ${isOverdue ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600/80 dark:text-emerald-400/80'}`}>
+                            {isOverdue ? `${Math.abs(daysLeft!)} days overdue` : `in ${daysLeft} days`}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 relative z-10">Not set</p>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Last Hike */}
+                <div className="bg-slate-50 dark:bg-[#0d1222] border border-slate-200 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center items-center relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 dark:bg-violet-500/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+                  <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center mb-3 text-violet-600 dark:text-violet-400 relative z-10">
+                    <TrendingUp className="w-5 h-5" />
                   </div>
-                )}
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Last Hike</p>
+                  {lastIncrement ? (
+                    <>
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white relative z-10">+₹{parseFloat(lastIncrement.increment_amount).toLocaleString('en-IN')}</h3>
+                      <p className="text-[11px] font-semibold text-slate-400 mt-1 relative z-10">
+                        {new Date(lastIncrement.effective_date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 relative z-10">No history yet</p>
+                  )}
+                </div>
               </div>
               )}
 
@@ -1051,52 +1095,6 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                   <SelectItem value="terminated">Terminated</SelectItem>
                   <SelectItem value="archived">Archived (Decommissioned profile)</SelectItem>
                 </Select>
-              </div>
-
-              {/* Password Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 dark:border-white/5 pt-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Password *</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password || ""}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      disabled={!isEditing}
-                      autoComplete="new-password"
-                      className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {isEditing && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Confirm Password *</label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={formData.confirm_password || ""}
-                        onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
-                        autoComplete="new-password"
-                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 transition-colors"
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}
