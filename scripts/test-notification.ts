@@ -11,7 +11,7 @@ async function main() {
 
   const { data: project } = await supabase.from('projects').select('id, name').limit(1).single();
 
-  for (const acc of accountants) {
+  for (const acc of (accountants as { id: string }[])) {
     console.log('Inserting notification for accountant:', acc.id);
     await insertNotification({
       userId: acc.id,
