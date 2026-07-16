@@ -27,16 +27,16 @@ export function MiniTeamLeaveCalendar({ leaves }: { leaves: any[] }) {
 
   return (
     <Card className="glass-card shadow-lg border-slate-200/50 dark:border-white/10 h-full flex flex-col overflow-hidden hover:border-cyan-400/30 transition-colors duration-300">
-      <CardHeader className="pb-3 border-b border-slate-100/50 dark:border-white/5 bg-gradient-to-r from-slate-50/50 to-transparent dark:from-slate-900/20 dark:to-transparent">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-500/10 text-cyan-500">
-            <Plane className="h-4.5 w-4.5" />
+      <CardHeader className="pb-4 pt-5 px-5 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-cyan-50/50 to-transparent dark:from-cyan-950/20 dark:to-transparent">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
+            <Plane className="h-4 w-4 text-cyan-500" />
           </div>
-          <CardTitle className="text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-            Team Leave Calendar
-          </CardTitle>
+          <div>
+            <CardTitle className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Team Leave Calendar</CardTitle>
+            <CardDescription className="text-xs font-medium mt-0.5">Who's off this week</CardDescription>
+          </div>
         </div>
-        <CardDescription className="text-xs font-medium">Who's off this week</CardDescription>
       </CardHeader>
       <CardContent className="p-0 flex-1 overflow-y-auto thin-scrollbar">
         {approvedLeaves.length === 0 ? (
@@ -77,9 +77,8 @@ export function MiniTeamLeaveCalendar({ leaves }: { leaves: any[] }) {
                     </div>
                   </div>
                 </div>
-                <div className="text-right text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-100/50 dark:bg-white/5 px-2.5 py-1.5 rounded-md border border-slate-200/50 dark:border-white/5 group-hover:border-cyan-200 dark:group-hover:border-cyan-500/30 transition-colors">
-                  <div>{format(new Date(leave.start_date), "MMM d")} -</div>
-                  <div>{format(new Date(leave.end_date), "MMM d")}</div>
+                <div className="text-right text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-100/50 dark:bg-white/5 px-2.5 py-1.5 rounded-md border border-slate-200/50 dark:border-white/5 group-hover:border-cyan-200 dark:group-hover:border-cyan-500/30 transition-colors whitespace-nowrap">
+                  {format(new Date(leave.start_date), "MMM d")} - {format(new Date(leave.end_date), "MMM d")}
                 </div>
               </motion.div>
             ))}

@@ -16,12 +16,16 @@ export function UpcomingHolidaysWidget({ holidays }: { holidays: any[] }) {
 
   return (
     <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col overflow-hidden">
-      <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/20">
-        <div className="flex items-center gap-2">
-          <CalendarHeart className="h-4.5 w-4.5 text-pink-500" />
-          <CardTitle className="text-base font-bold">Upcoming Holidays</CardTitle>
+      <CardHeader className="pb-4 pt-5 px-5 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-pink-50/50 to-transparent dark:from-pink-950/20 dark:to-transparent">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-pink-500/10 flex items-center justify-center shrink-0">
+            <CalendarHeart className="h-4 w-4 text-pink-500" />
+          </div>
+          <div>
+            <CardTitle className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Upcoming Holidays</CardTitle>
+            <CardDescription className="text-xs font-medium mt-0.5">Next official days off</CardDescription>
+          </div>
         </div>
-        <CardDescription className="text-xs">Next official days off</CardDescription>
       </CardHeader>
       <CardContent className="p-0 flex-1 overflow-y-auto thin-scrollbar">
         {upcoming.length === 0 ? (

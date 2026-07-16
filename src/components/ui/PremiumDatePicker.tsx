@@ -257,7 +257,7 @@ export function PremiumDatePicker({ value, onChange, className, align = 'left', 
       <div
         onClick={toggleOpen}
         className={cn(
-          "w-full h-9 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-lg px-3 flex items-center gap-2.5 transition-all",
+          "w-full h-11 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-3 flex items-center gap-2.5 transition-all",
           disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer group hover:border-indigo-500/50",
           triggerClassName
         )}

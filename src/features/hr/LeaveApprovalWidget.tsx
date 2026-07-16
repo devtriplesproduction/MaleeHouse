@@ -11,19 +11,23 @@ export function LeaveApprovalWidget({ leaves }: { leaves: any[] }) {
   
   return (
     <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col overflow-hidden bg-white/50 backdrop-blur-sm dark:bg-slate-900/50">
-      <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/20">
+      <CardHeader className="pb-4 pt-5 px-5 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-emerald-50/50 to-transparent dark:from-emerald-950/20 dark:to-transparent">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CalendarClock className="h-4.5 w-4.5 text-indigo-500" />
-            <CardTitle className="text-base font-bold text-slate-900 dark:text-white">Leave Approvals</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <CalendarClock className="h-4 w-4 text-emerald-500" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Leave Approvals</CardTitle>
+              <CardDescription className="text-xs font-medium mt-0.5">Requests awaiting review</CardDescription>
+            </div>
           </div>
           {pendingLeaves.length > 0 && (
-            <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 text-xs py-1 px-3 rounded-full font-bold shadow-sm">
+            <span className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] uppercase font-bold tracking-wider py-1 px-2.5 rounded-md">
               {pendingLeaves.length} Pending
             </span>
           )}
         </div>
-        <CardDescription className="text-xs mt-1">Leave requests awaiting review</CardDescription>
       </CardHeader>
       
       <CardContent className="p-0 flex-1 overflow-y-auto thin-scrollbar bg-slate-50/30 dark:bg-slate-950/20">

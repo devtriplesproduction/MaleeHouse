@@ -19,7 +19,7 @@ export function ApplyLeaveButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-indigo-500/80 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-500/30 dark:text-indigo-400 dark:hover:bg-indigo-950/20 shadow-sm transition-all duration-200 font-medium">
+        <Button variant="hr-outline">
           <Calendar className="mr-2 h-4 w-4" />
           Apply for Leave
         </Button>

@@ -9,7 +9,7 @@ const adminLinks = [
   { title: "Project Milestones", href: "/admin/milestones", icon: Target },
   { title: "All Projects", href: "/projects", icon: FileText },
   { title: "Procedures (SOP)", href: "/sop", icon: BookOpen },
-  { title: "Submit / Review EOD", href: "/eod", icon: Clock },
+  { title: "EOD Reports", href: "/eod", icon: Clock },
   { title: "My Attendance", href: "/attendance", icon: Calendar },
   { title: "Announcements", href: "/announcements", icon: Megaphone },
   { title: "Apply / Manage Leaves", href: "/leaves", icon: Calendar },

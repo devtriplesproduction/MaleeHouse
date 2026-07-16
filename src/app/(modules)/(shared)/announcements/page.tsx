@@ -29,7 +29,7 @@ export default async function AnnouncementsPage() {
   }
 
   return (
-    <div className="pb-20 pt-1 lg:pt-2">
+    <div className="pb-20">
       <AnnouncementManager 
         announcements={visibleAnnouncements} 
         currentUserRole={profile.role} 

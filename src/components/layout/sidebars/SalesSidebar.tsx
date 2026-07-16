@@ -8,7 +8,7 @@ const salesLinks = [
   { title: "Follow-up Calendar", href: "/sales/followups", icon: PhoneCall },
   { title: "All Projects", href: "/projects", icon: FileText },
   { title: "Client Directory", href: "/clients", icon: Building },
-  { title: "Submit EOD", href: "/eod", icon: Clock },
+  { title: "EOD Reports", href: "/eod", icon: Clock },
   { title: "My Attendance", href: "/attendance", icon: Calendar },
   { title: "Apply Leave", href: "/leaves", icon: Calendar },
   { title: "Announcements", href: "/announcements", icon: Megaphone },

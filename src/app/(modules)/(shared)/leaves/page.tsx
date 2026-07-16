@@ -30,15 +30,15 @@ export default async function LeavesPage() {
   const leaveBalance = balanceRes.success ? (balanceRes.data || 0) : 0;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700 pb-20 pt-1 lg:pt-2">
+    <div className="space-y-6 animate-in fade-in duration-700 pb-20">
       {/* ── Header Section (Manager Only) ── */}
       {isManager && (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 font-sans">
-          <div className="space-y-1">
-            <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 font-sans">
-              Leave <span className="text-indigo-500 font-sans">Approvals</span>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Leave <span className="text-indigo-500">Approvals</span>
             </h1>
-            <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+            <p className="text-sm text-slate-500 mt-1">
               Review and manage leave requests submitted across all departments.
             </p>
           </div>

@@ -377,7 +377,8 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
 
             <Button 
               onClick={handleClose} 
-              className="w-full max-w-md h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-indigo-500/20 border-none"
+              variant="hr"
+              className="w-full max-w-md h-12 text-xs font-bold uppercase tracking-wider"
             >
               Complete & Close Wizard
             </Button>
@@ -954,7 +955,8 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                   <Button 
                     type="button" 
                     onClick={nextStep}
-                    className="h-10 bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-500/10 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                    variant="hr"
+                    className="h-10 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
@@ -967,7 +969,8 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                       setShowStep4Errors(true);
                       handleSubmit(onSubmit, onError)();
                     }}
-                    className="h-10 bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-500/10 text-xs font-bold uppercase tracking-wider flex items-center gap-2 disabled:opacity-50"
+                    variant="hr"
+                    className="h-10 text-xs font-bold uppercase tracking-wider flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                     {isSubmitting ? "Provisioning..." : "Provision Account"}

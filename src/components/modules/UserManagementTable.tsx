@@ -90,6 +90,12 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
   const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security" | "birthdays">(mode === "payroll-only" ? "payroll" : "directory");
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
 
+  useEffect(() => {
+    if (mode === "payroll-only") {
+      setActiveTab("payroll");
+    }
+  }, [mode]);
+
   // Filtering & Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDept, setSelectedDept] = useState("all");
@@ -456,8 +462,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
   };
 
   const monthNames = [
-    "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-    "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
   ];
 
   return (
@@ -482,8 +488,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
           <div className="flex items-center gap-3">
             <Button
               onClick={() => setIsNewUserModalOpen(true)}
-              variant="premium"
-              className="flex items-center gap-2 text-xs font-bold  tracking-wider h-10 px-4"
+              variant="hr"
+              className="flex items-center gap-2 text-xs font-bold tracking-wider h-10 px-4"
             >
               <UserPlus className="w-4 h-4" />
               Onboard Employee
@@ -559,21 +565,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
             )}
           </button>
 
-          <button
-            onClick={() => setActiveTab("payroll")}
-            className={cn(
-              "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
-              activeTab === "payroll"
-                ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
-                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            )}
-          >
-            <CreditCard className="w-4 h-4" />
-            Integrated Payroll
-            {activeTab === "payroll" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-            )}
-          </button>
+
 
           <button
             onClick={() => setActiveTab("security")}
@@ -976,7 +968,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                   </Button>
-                  <div className="px-3 text-sm font-black tracking-widest text-slate-700 dark:text-slate-200 min-w-[100px] text-center uppercase">
+                  <div className="px-3 text-sm font-bold text-slate-700 dark:text-slate-200 min-w-[100px] text-center">
                     {monthNames[payrollMonth - 1]} {payrollYear}
                   </div>
                   <Button
@@ -1017,7 +1009,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                     XLSX.writeFile(workbook, `Payroll_Report_${monthNames[payrollMonth - 1]}_${payrollYear}.xlsx`);
                   }}
                   variant="outline"
-                  className="h-9 px-3.5 flex items-center gap-2 border-slate-200 dark:border-white/8 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-xs font-bold"
+                  className="h-9 px-3.5 flex items-center gap-2 border-slate-200 dark:border-white/8 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-sm font-medium"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   Reports
@@ -1026,11 +1018,10 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                 <Button
                   onClick={isPayrollLocked ? handleUnlockPayroll : handleLockPayroll}
                   disabled={(isPayrollLocked ? isUnlockingPayroll : isLockingPayroll) || payrollData.length === 0}
+                  variant={isPayrollLocked ? "outline" : "hr"}
                   className={cn(
-                    "h-9 px-4 flex items-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all",
-                    isPayrollLocked
-                      ? "bg-emerald-600/10 text-emerald-500 border border-emerald-500/25 hover:bg-emerald-600/20"
-                      : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 border-none"
+                    "h-9 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition-all",
+                    isPayrollLocked && "bg-emerald-600/10 text-emerald-500 border border-emerald-500/25 hover:bg-emerald-600/20"
                   )}
                 >
                   {(isPayrollLocked ? isUnlockingPayroll : isLockingPayroll) ? (
@@ -1247,6 +1238,14 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
       )}
 
       {/* ========================================================================= */}
+
+
+
+
+
+
+
+      {/* ========================================================================= */}
       {/* 3. TAB: ACCOUNT SECURITY                                                  */}
       {/* ========================================================================= */}
       {activeTab === "security" && (
@@ -1356,7 +1355,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                         <Button
                           onClick={() => handleManualOverride(user.id, user.email)}
                           disabled={isOverriding[user.id] || !(overridePasswords[user.id]?.length >= 4)}
-                          variant="premium"
+                          variant="hr"
                           className="h-9 px-4 text-sm font-bold tracking-wider rounded-lg disabled:opacity-50"
                         >
                           {isOverriding[user.id] ? (

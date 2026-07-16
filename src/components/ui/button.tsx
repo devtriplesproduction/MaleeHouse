@@ -17,6 +17,10 @@ const buttonVariants = cva(
         ghost: "hover:bg-white/5 text-muted-foreground hover:text-foreground",
         premium:
           "relative overflow-hidden bg-primary text-primary-foreground shadow-2xl transition-all hover:shadow-primary/20 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent hover:before:animate-[shimmer_1.5s_infinite]",
+        hr:
+          "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium border-none",
+        "hr-outline":
+          "border border-indigo-500/80 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-500/30 dark:text-indigo-400 dark:hover:bg-indigo-950/20 shadow-sm transition-all duration-200 font-medium",
       },
       size: {
         default: "h-11 px-6 py-2",

@@ -8,7 +8,7 @@ import { useUser } from "@/hooks/useUser";
 
 const accountsLinks: SidebarLink[] = [
   { title: "Accounts Overview", href: "/accounts", icon: Calculator },
-  { title: "Submit EOD", href: "/eod", icon: Clock },
+  { title: "EOD Reports", href: "/eod", icon: Clock },
   { title: "My Attendance", href: "/attendance", icon: Calendar },
   { title: "Apply Leave", href: "/leaves", icon: Calendar },
   {

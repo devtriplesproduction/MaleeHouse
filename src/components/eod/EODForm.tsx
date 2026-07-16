@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { submitEODAction } from '@/actions/eod.actions';
 import { uploadEODPhotoAction } from '@/actions/storage.actions';
-import { Send, Clock, AlertCircle, Flame, CheckCircle2, Calendar, Camera, X } from 'lucide-react';
+import { Send, Clock, AlertCircle, CheckCircle2, Camera, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -217,42 +217,6 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
 
   return (
     <div className="space-y-8">
-      {/* ── Header Section with Streak ── */}
-      {(!hideHeader || !isSubmittingForOther) && (
-        <div className={cn(
-          "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6", 
-          hideHeader ? "justify-end" : "pb-2 border-b border-slate-200/60 dark:border-white/5"
-        )}>
-          {!hideHeader && (
-            <div className="space-y-1">
-              <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-                {title || (
-                  <>Daily Status <span className="text-indigo-500">Report</span></>
-                )}
-              </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-lg">
-                {subtitle || "Log your daily achievements and identify blockers."}
-              </p>
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-start justify-end gap-4 flex-shrink-0">
-            {headerRightContent}
-            {/* Streak Badge (Only show if submitting for self) */}
-            {!isSubmittingForOther && (
-              <div className="flex flex-col items-end flex-shrink-0">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-orange-500/20 dark:border-orange-500/10 bg-orange-500/5 text-orange-600 dark:text-orange-400 font-black text-base shadow-lg shadow-orange-500/5">
-                  <span>{streak} Days</span>
-                  <Flame className="w-5 h-5 fill-current animate-pulse text-orange-500" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-1.5 px-1">
-                  SUBMISSION STREAK
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Form Card or Already Submitted Card ── */}
       {/* ── Form Card ── */}
@@ -263,9 +227,9 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
         className="w-full"
       >
         {/* Submission Form Card */}
-        <div className="glass-card border border-slate-200/60 dark:border-white/5 bg-white/50 dark:bg-[#070b14]/30 backdrop-blur-xl p-5 md:p-6 rounded-3xl relative overflow-hidden shadow-xl">
+        <div className="border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/40 p-5 md:p-6 rounded-2xl relative overflow-hidden">
           {hasSubmitted && (
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20" />
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500/20 via-indigo-500 to-indigo-500/20" />
           )}
 
           {staff && staff.length > 0 && (
@@ -296,7 +260,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    Tasks Accomplished Today <span className="text-rose-500">*</span>
+                    Tasks Accomplished Today <span className="text-indigo-500">*</span>
                   </label>
 
                 </div>
@@ -406,7 +370,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                       <button
                         type="button"
                         onClick={() => setPhoto(null)}
-                        className="p-2 bg-white dark:bg-[#070b14]/50 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-slate-200 dark:border-white/5 rounded-full text-slate-400 hover:text-rose-500 transition-colors shrink-0 shadow-sm"
+                        className="p-2 bg-white dark:bg-[#070b14]/50 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-slate-200 dark:border-white/5 rounded-full text-slate-400 hover:text-indigo-500 transition-colors shrink-0 shadow-sm"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -424,7 +388,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                 <div className="w-full sm:w-48 space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                      Report Date <span className="text-rose-500">*</span>
+                      Report Date <span className="text-indigo-500">*</span>
                     </label>
                   </div>
                   <PremiumDatePicker
@@ -439,7 +403,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                 {showLocationSelection && (
                   <div className="w-full sm:w-36 space-y-3">
                     <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                      Location <span className="text-rose-500">*</span>
+                      Location <span className="text-indigo-500">*</span>
                     </label>
                     <div className="relative group">
                       <select
@@ -461,7 +425,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                 {/* Office Hours */}
                 <div className="w-full sm:w-48 space-y-3">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    Office Hours <span className="text-rose-500">*</span>
+                    Office Hours <span className="text-indigo-500">*</span>
                   </label>
                   <div className="relative group">
                     <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none" />
@@ -488,13 +452,13 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                   className={cn(
                     "w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
                     hasSubmitted
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 cursor-not-allowed"
+                      ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 cursor-not-allowed"
                       : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 disabled:opacity-50 disabled:pointer-events-none"
                   )}
                 >
                   {loading ? "Publishing..." : hasSubmitted ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <CheckCircle2 className="w-4 h-4 text-indigo-500" />
                       EOD Already Submitted
                     </>
                   ) : (

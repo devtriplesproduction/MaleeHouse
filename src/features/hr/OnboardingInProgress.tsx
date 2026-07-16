@@ -9,15 +9,21 @@ export function OnboardingInProgress({ data }: { data: any[] }) {
 
   return (
     <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col overflow-hidden">
-      <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/20">
-        <div className="flex items-center gap-2">
-          <UserPlus className="h-4.5 w-4.5 text-blue-500" />
-          <CardTitle className="text-base font-bold">Onboarding Progress</CardTitle>
-          <span className="ml-auto bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 text-xs py-0.5 px-2 rounded-full font-medium">
+      <CardHeader className="pb-4 pt-5 px-5 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-950/20 dark:to-transparent">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+              <UserPlus className="h-4 w-4 text-blue-500" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Onboarding</CardTitle>
+              <CardDescription className="text-xs font-medium mt-0.5">New hires pending setup</CardDescription>
+            </div>
+          </div>
+          <span className="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] uppercase font-bold tracking-wider py-1 px-2.5 rounded-md">
             {onboardings.length}
           </span>
         </div>
-        <CardDescription className="text-xs">New hires pending setup completion</CardDescription>
       </CardHeader>
       <CardContent className="p-0 flex-1 overflow-y-auto thin-scrollbar">
         {onboardings.length === 0 ? (

@@ -44,9 +44,10 @@ interface EODReviewProps {
   staff: any[];
   currentUserRole?: string;
   currentUserId?: string;
+  hideFilters?: boolean;
 }
 
-export function EODReview({ reports, staff, currentUserRole, currentUserId }: EODReviewProps) {
+export function EODReview({ reports, staff, currentUserRole, currentUserId, hideFilters }: EODReviewProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [employeeFilter, setEmployeeFilter] = useState("all");
   const [fromDate, setFromDate] = useState<string>("");
@@ -136,9 +137,10 @@ export function EODReview({ reports, staff, currentUserRole, currentUserId }: EO
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Premium Filter Bar - Exactly matching user image layout */}
-      <div className="relative z-50 flex flex-col md:flex-row items-end gap-4 glass-card p-6 border-white/5 shadow-2xl bg-[#0a0f1d]/40 backdrop-blur-xl">
-        {/* Search */}
-        <div className="flex-1 w-full space-y-2">
+      {!hideFilters && (
+        <div className="relative z-50 flex flex-col md:flex-row items-end gap-4 glass-card p-6 border-white/5 shadow-2xl bg-[#0a0f1d]/40 backdrop-blur-xl">
+          {/* Search */}
+          <div className="flex-1 w-full space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block ml-1">Search</label>
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-500 transition-colors" />
@@ -205,6 +207,7 @@ export function EODReview({ reports, staff, currentUserRole, currentUserId }: EO
           </button>
         </div>
       </div>
+      )}
 
       {/* Date-wise Groups */}
       <div className="space-y-8">
@@ -376,7 +379,7 @@ function ReportRow({
             {report.employee_name.charAt(0)}
           </div>
           <div>
-            <h4 className="font-bold text-slate-900 dark:text-[#f8fafc] text-sm">
+            <h4 className="font-medium text-slate-800 dark:text-[#f8fafc] text-sm">
               {report.employee_name}
             </h4>
             <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-widest uppercase mt-0.5">
@@ -385,28 +388,30 @@ function ReportRow({
           </div>
         </div>
 
-        {/* Right Side: Stats & Status */}
-        <div className="flex items-center gap-6 mt-4 md:mt-0">
-          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400/90 text-sm font-semibold">
-            <CheckCircle2 className="w-4 h-4" />
+        {/* Right Side: Stats & Status — fixed-width columns */}
+        <div className="flex items-center gap-4 mt-4 md:mt-0">
+          <div className="w-28 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400/90 text-sm font-medium">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{tasksCount} completed</span>
           </div>
-          <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300/90 text-sm font-semibold">
-            <Clock className="w-4 h-4" />
+          <div className="w-28 flex items-center gap-1.5 text-slate-600 dark:text-slate-300/90 text-sm font-medium">
+            <Clock className="w-4 h-4 shrink-0" />
             <span>{report.adjusted_hours ?? report.hours_spent}h logged</span>
           </div>
-          
-          {report.status === 'approved' ? (
-            <button className="px-4 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] tracking-widest font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              APPROVED
-            </button>
-          ) : (
-            <button className="px-4 py-1.5 rounded-full border border-indigo-200 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 text-[10px] tracking-widest font-bold flex items-center gap-1.5">
-              <Smile className="w-3.5 h-3.5" />
-              GOOD
-            </button>
-          )}
+
+          <div className="w-28 flex justify-center">
+            {report.status === 'approved' ? (
+              <button className="w-full px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] tracking-widest font-bold flex items-center justify-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                APPROVED
+              </button>
+            ) : (
+              <button className="w-full px-3 py-1.5 rounded-full border border-indigo-200 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 text-[10px] tracking-widest font-bold flex items-center justify-center gap-1.5">
+                <Smile className="w-3.5 h-3.5" />
+                GOOD
+              </button>
+            )}
+          </div>
 
           <ChevronDown className={cn("w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform", expanded && "rotate-180")} />
         </div>

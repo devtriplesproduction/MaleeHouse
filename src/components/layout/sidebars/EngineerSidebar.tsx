@@ -8,7 +8,7 @@ export function EngineerSidebar() {
     { title: "Dashboard", href: "/engineer", icon: LayoutDashboard },
     { title: "Projects", href: "/projects", icon: FileText },
     { title: "SOP Library", href: "/sop", icon: BookOpen },
-    { title: "Submit EOD", href: "/eod", icon: Clock },
+    { title: "EOD Reports", href: "/eod", icon: Clock },
     { title: "My Attendance", href: "/attendance", icon: Calendar },
     { title: "Apply Leave", href: "/leaves", icon: Calendar },
     { title: "Announcements", href: "/announcements", icon: Megaphone },

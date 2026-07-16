@@ -51,7 +51,7 @@ export function DashboardLayout({
           <AutoLogout>
             <Topbar />
             <BirthdayNotifier />
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-8">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-6 pt-2 lg:px-8 lg:pb-8 lg:pt-4">
               <div className="max-w-[1600px] w-full h-full">
                 {children}
               </div>
