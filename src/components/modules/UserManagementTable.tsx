@@ -663,14 +663,14 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                         </td>
 
                         <td className="px-6 py-4">
-                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold capitalize shadow-sm", getRoleBadgeStyles(user.designation?.replace("_", " ") || user.role))}>
+                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold capitalize shadow-sm whitespace-nowrap", getRoleBadgeStyles(user.designation?.replace("_", " ") || user.role))}>
                             {user.designation?.replace("_", " ") || user.role}
                           </span>
                         </td>
 
                         <td className="px-6 py-4">
                           <span className={cn(
-                            "px-2.5 py-1 rounded-full text-xs font-semibold capitalize inline-block",
+                            "px-2.5 py-1 rounded-full text-xs font-semibold capitalize inline-block whitespace-nowrap",
                             getDeptBadgeStyles(user.department)
                           )}>
                             {user.department || "General"}
@@ -678,7 +678,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                         </td>
 
                         <td className="px-6 py-4">
-                          <p className="text-sm font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                          <p className="text-sm font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5 whitespace-nowrap">
                             <Mail className="w-3.5 h-3.5 text-slate-400" />
                             {user.email}
                           </p>
@@ -1224,7 +1224,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                           </span>
                           <div className="flex items-center gap-2">
                             <span className={cn(
-                              "px-2.5 py-1 rounded-full text-xs font-semibold capitalize",
+                              "px-2.5 py-1 rounded-full text-xs font-semibold capitalize whitespace-nowrap",
                               getRoleBadgeStyles(user.designation?.replace("_", " ") || user.role)
                             )}>
                               {user.designation?.replace("_", " ") || user.role}
