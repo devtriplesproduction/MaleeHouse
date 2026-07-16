@@ -30,7 +30,7 @@ export default function ProjectOperationsTab({
   workflowHistory,
 }: ProjectOperationsTabProps) {
   // Determine if user is operational role
-  const isOperational = ['admin', 'engineer', 'cad', 'field', 'qc'].includes(userRole);
+  const isOperational = ['admin', 'engineer', 'cad', 'field'].includes(userRole);
   const isAssigned = userRole === 'admin' || teamMembers.some((m: any) => m.userId === currentUserId || m.user_id === currentUserId);
 
   return (

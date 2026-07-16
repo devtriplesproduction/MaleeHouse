@@ -23,9 +23,8 @@ const STAGE_CONFIG: Record<string, { label: string; color: string; bg: string; d
 const ROLE_COLOR: Record<string, string> = {
   engineer: "bg-amber-500",
   cad:      "bg-blue-500",
-  field:    "bg-emerald-500",
-  qc:       "bg-purple-500",
-  admin:    "bg-indigo-500",
+  field_engineer: "bg-orange-500",
+  employee: "bg-slate-500",
 };
 
 function ProjectQueueCard({ project }: { project: any }) {

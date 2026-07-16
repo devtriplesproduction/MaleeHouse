@@ -5,11 +5,12 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Trash2, Megaphone, BellRing, MessageSquare } from "lucide-react";
+import { Plus, Edit2, Trash2, Megaphone, BellRing, MessageSquare, Edit3, Folder, Users, Globe, Shield, UserCheck, BarChart, Code, MapPin, Settings, Calculator, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectItem } from "@/components/ui/select";
 import { createAnnouncementAction, updateAnnouncementAction, deleteAnnouncementAction } from "@/actions/announcement.actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -26,7 +27,7 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const CATEGORIES = ['ALL UPDATES', 'ANNOUNCEMENT', 'URGENT', 'SYSTEM'];
-  const [activeCategory, setActiveCategory] = useState('SYSTEM');
+  const [activeCategory, setActiveCategory] = useState('ALL UPDATES');
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -155,97 +156,140 @@ export function AnnouncementManager({ announcements, currentUserRole }: Announce
                 <Plus className="w-4 h-4" /> New Announcement
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden rounded-[20px] shadow-2xl border-border bg-background">
-              <div className="bg-muted/30 p-5 border-b border-border">
-                <DialogHeader className="mb-1">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center shadow-sm shadow-primary/20">
-                      <Megaphone className="w-4 h-4 text-primary-foreground" />
+            <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden rounded-[24px] shadow-2xl border-0 bg-white dark:bg-slate-950 flex flex-col max-h-[90vh]">
+              <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-white to-white dark:from-primary/20 dark:via-slate-950 dark:to-slate-950 px-8 py-6 sm:py-8 border-b border-primary/20 dark:border-primary/20 shrink-0">
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent dark:from-primary/10" />
+                <DialogHeader className="relative z-10 flex flex-row items-center gap-4 sm:gap-5 space-y-0">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-primary/20 rounded-full blur-md animate-pulse"></div>
+                    <div className="h-12 w-12 sm:h-14 sm:w-14 bg-gradient-to-tr from-primary to-primary/80 rounded-full flex items-center justify-center shadow-lg shadow-primary/30 text-white relative z-10 ring-4 ring-white dark:ring-slate-950">
+                      <Megaphone className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
-                    <div>
-                      <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-                        {editingId ? 'Edit Announcement' : 'New Announcement'}
-                      </DialogTitle>
-                      <DialogDescription className="text-muted-foreground text-xs mt-0.5">
-                        {editingId ? 'Update the details below.' : 'Broadcast a message to specific roles.'}
-                      </DialogDescription>
-                    </div>
+                    {/* Decorative dots */}
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary/40 rounded-full"></div>
+                    <div className="absolute top-2 -left-2 w-1.5 h-1.5 bg-primary/60 rounded-full"></div>
+                    <div className="absolute -bottom-1 right-2 w-1.5 h-1.5 bg-primary/50 rounded-full"></div>
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                      {editingId ? 'Edit Announcement' : 'New Announcement'}
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                      {editingId ? 'Update the details below.' : 'Broadcast a message to specific roles.'}
+                    </DialogDescription>
                   </div>
                 </DialogHeader>
               </div>
-              <form onSubmit={handleSubmit} className="space-y-4 p-5 pt-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold text-foreground ml-1">Title</Label>
-                  <Input 
-                    value={title} 
-                    onChange={e => setTitle(e.target.value)} 
-                    placeholder="E.g., Office Holiday Party" 
-                    className="bg-background border-input focus-visible:ring-primary text-sm shadow-sm transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold text-foreground ml-1">Category</Label>
-                  <select
-                    value={category}
-                    onChange={e => setCategory(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {CATEGORIES.filter(c => c !== 'ALL UPDATES').map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold text-foreground ml-1">Message Content</Label>
-                  <Textarea 
-                    value={content} 
-                    onChange={e => setContent(e.target.value)} 
-                    placeholder="Type your announcement here..." 
-                    rows={4} 
-                    className="bg-background border-input focus-visible:ring-primary resize-none text-sm p-3 shadow-sm transition-all"
-                  />
-                </div>
-                <div className="space-y-2 bg-muted/30 p-3 rounded-lg ring-1 ring-border">
-                  <Label className="text-xs font-semibold text-foreground ml-1">Target Audience</Label>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    <Badge 
-                      variant={targetRoles.includes('*') ? 'default' : 'outline'}
-                      className={cn(
-                        "cursor-pointer px-3 py-1 rounded-md text-xs font-medium transition-all duration-300",
-                        targetRoles.includes('*') 
-                          ? "bg-primary text-primary-foreground shadow-sm border-transparent hover:opacity-90"
-                          : "bg-background hover:bg-muted border-border text-muted-foreground"
-                      )}
-                      onClick={() => toggleRole('*')}
-                    >
-                      Everyone
-                    </Badge>
-                    {ROLES.map(role => (
-                      <Badge 
-                        key={role}
-                        variant={targetRoles.includes(role) ? 'default' : 'outline'}
-                        className={cn(
-                          "cursor-pointer px-3 py-1 rounded-md text-xs font-medium capitalize transition-all duration-300",
-                          targetRoles.includes(role)
-                            ? "bg-primary text-primary-foreground shadow-sm border-transparent hover:opacity-90"
-                            : "bg-background hover:bg-muted border-border text-muted-foreground"
-                        )}
-                        onClick={() => toggleRole(role)}
-                      >
-                        {role}
-                      </Badge>
-                    ))}
+              
+              <div className="overflow-y-auto overflow-x-hidden p-1">
+                <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6 px-7 sm:px-8 py-6 bg-slate-50/30 dark:bg-slate-900/20">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <Edit3 className="w-4 h-4 text-primary" />
+                      Title
+                    </Label>
+                    <Input 
+                      value={title} 
+                      onChange={e => setTitle(e.target.value)} 
+                      placeholder="E.g., Office Holiday Party" 
+                      className="h-11 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus-visible:ring-primary/30 focus-visible:border-primary transition-all rounded-xl"
+                    />
                   </div>
-                </div>
-                <div className="pt-2 sm:flex sm:justify-end gap-2 flex-col sm:flex-row">
-                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">
-                    Cancel
-                  </Button>
-                  <Button type="submit" variant="primary" disabled={isSubmitting} className="w-full sm:w-auto">
-                    {isSubmitting ? 'Saving...' : (editingId ? 'Save Changes' : 'Post Announcement')}
-                  </Button>
-                </div>
-              </form>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <Folder className="w-4 h-4 text-primary" />
+                      Category
+                    </Label>
+                    <Select
+                      value={category}
+                      onValueChange={setCategory}
+                      placeholder="Select a category"
+                      buttonClassName="h-11 rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-primary/30 focus-visible:border-primary bg-white dark:bg-slate-950"
+                    >
+                      {CATEGORIES.filter(c => c !== 'ALL UPDATES').map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2 relative">
+                    <Label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                      Message Content
+                    </Label>
+                    <Textarea 
+                      value={content} 
+                      onChange={e => setContent(e.target.value)} 
+                      placeholder="Type your announcement here..." 
+                      rows={4} 
+                      className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus-visible:ring-primary/30 focus-visible:border-primary resize-none text-sm p-3.5 pb-8 transition-all rounded-xl"
+                    />
+                    <div className="absolute bottom-3 right-3 text-xs text-slate-400 font-medium">
+                      {content.length} / 500
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 bg-white dark:bg-slate-950 p-4 rounded-xl ring-1 ring-slate-200/60 dark:ring-slate-800/60 shadow-sm">
+                    <Label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <Users className="w-4 h-4 text-primary" />
+                      Target Audience
+                    </Label>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Badge 
+                        variant="outline"
+                        className={cn(
+                          "cursor-pointer px-3 py-1.5 sm:px-3.5 rounded-lg text-[12px] sm:text-[13px] font-medium transition-all duration-300 flex items-center gap-1.5 border",
+                          targetRoles.includes('*') 
+                            ? "bg-primary/10 dark:bg-primary/10 text-primary dark:text-primary border-primary/30 shadow-sm"
+                            : "bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                        )}
+                        onClick={() => toggleRole('*')}
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        Everyone
+                      </Badge>
+                      {ROLES.map(role => {
+                        const iconMap: Record<string, React.ReactNode> = {
+                          admin: <Shield className="w-3.5 h-3.5" />,
+                          hr: <UserCheck className="w-3.5 h-3.5" />,
+                          sales: <BarChart className="w-3.5 h-3.5" />,
+                          engineer: <Code className="w-3.5 h-3.5" />,
+                          field: <MapPin className="w-3.5 h-3.5" />,
+                          operations: <Settings className="w-3.5 h-3.5" />,
+                          accountant: <Calculator className="w-3.5 h-3.5" />
+                        };
+                        return (
+                          <Badge 
+                            key={role}
+                            variant="outline"
+                            className={cn(
+                              "cursor-pointer px-3 py-1.5 sm:px-3.5 rounded-lg text-[12px] sm:text-[13px] font-medium capitalize transition-all duration-300 flex items-center gap-1.5 border",
+                              targetRoles.includes(role)
+                                ? "bg-primary/10 dark:bg-primary/10 text-primary dark:text-primary border-primary/30 shadow-sm"
+                                : "bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                            )}
+                            onClick={() => toggleRole(role)}
+                          >
+                            {iconMap[role]}
+                            {role}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-between sm:justify-end gap-3 flex-col-reverse sm:flex-row pb-2">
+                    <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="h-11 px-6 rounded-xl font-medium border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 w-full sm:w-auto hover:bg-slate-50 dark:hover:bg-slate-900">
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} className="h-11 px-6 rounded-xl font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 border-0 flex items-center justify-center gap-2 w-full sm:w-auto transition-colors">
+                      <Send className="w-4 h-4" />
+                      {isSubmitting ? 'Saving...' : (editingId ? 'Save Changes' : 'Post Announcement')}
+                    </Button>
+                  </div>
+                </form>
+              </div>
             </DialogContent>
           </Dialog>
         )}

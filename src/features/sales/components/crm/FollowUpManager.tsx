@@ -97,6 +97,7 @@ export function FollowUpManager({
   const totalFollowUps = followUpLogs.length;
 
   // Calendar Helpers
+  const isReschedule = pendingFollowUpTasks.length > 0;
   const MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -199,7 +200,7 @@ export function FollowUpManager({
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold h-9 px-4 shadow-sm shadow-indigo-500/10 transition-all active:scale-95 rounded-xl shrink-0"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            Follow Up
+            {isReschedule ? 'Reschedule' : 'Follow Up'}
           </button>
         )}
       </div>
@@ -216,7 +217,7 @@ export function FollowUpManager({
                   <Calendar className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold tracking-tight text-white">Schedule Follow Up</h3>
+                  <h3 className="text-xl font-bold tracking-tight text-white">{isReschedule ? 'Reschedule Follow Up' : 'Schedule Follow Up'}</h3>
                   <p className="text-sm text-indigo-100 font-medium mt-0.5">Record outcome & set your next check-in</p>
                 </div>
               </div>
@@ -380,7 +381,7 @@ export function FollowUpManager({
                     disabled={isSubmitting}
                     className="flex-1 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Follow Up"}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (isReschedule ? "Reschedule" : "Save Follow Up")}
                   </button>
                 </div>
 

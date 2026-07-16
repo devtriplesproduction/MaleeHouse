@@ -5,6 +5,7 @@ import { ActionResponse } from '@/actions/project.actions';
 import { getUserProfileAction } from '@/actions/auth.actions';
 import { createClient } from '@/lib/supabase/server';
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
+import { notifyFollowUpScheduledAction } from '@/actions/notification.actions';
 
 export async function getLeadsAction(): Promise<ActionResponse> {
   try {
@@ -140,16 +141,33 @@ export async function recordFollowUpAction(
     const taskId = `tsk-${crypto.randomUUID()}`;
     const commentId = `cmt-${crypto.randomUUID()}`;
 
-    // 1. Create a task for the next follow-up
-    const { error: taskError } = await supabase.from('tasks').insert({
-      id: taskId,
-      project_id: projectId,
-      assigned_to: profile.id,
-      title: `Follow-up: ${status}`,
-      due_date: nextDate,
-      status: 'pending'
-    });
-    if (taskError) console.error("Task Insert Error:", taskError);
+    // 1. Handle the task for the next follow-up
+    const { data: existingTasks } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('status', 'pending')
+      .like('title', 'Follow-up:%')
+      .limit(1);
+
+    if (existingTasks && existingTasks.length > 0) {
+      const { error: taskError } = await supabase.from('tasks').update({
+        assigned_to: profile.id,
+        title: `Follow-up: ${status}`,
+        due_date: nextDate
+      }).eq('id', existingTasks[0].id);
+      if (taskError) console.error("Task Update Error:", taskError);
+    } else {
+      const { error: taskError } = await supabase.from('tasks').insert({
+        id: taskId,
+        project_id: projectId,
+        assigned_to: profile.id,
+        title: `Follow-up: ${status}`,
+        due_date: nextDate,
+        status: 'pending'
+      });
+      if (taskError) console.error("Task Insert Error:", taskError);
+    }
 
     // 2. Record the outcome as a comment
     const { error: commentError } = await supabase.from('comments').insert({
@@ -169,6 +187,9 @@ export async function recordFollowUpAction(
       follow_up_date: nextDate,
       updated_at: new Date().toISOString()
     }).eq('id', projectId);
+
+    // 4. Send notification for the scheduled follow-up
+    await notifyFollowUpScheduledAction(projectId, nextDate, status, profile.id);
 
     await revalidateAccountsPaths(projectId);
     return { success: true };

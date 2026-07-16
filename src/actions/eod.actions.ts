@@ -65,6 +65,14 @@ export async function submitEODAction(payload: {
         isSubmittingForOther ? 'admin_override' : 'eod_submission',
         'Submitted via EOD form as Field assignment'
       )
+    } else {
+      await registerAttendanceSignalAction(
+        targetUserId,
+        payload.date,
+        'present',
+        isSubmittingForOther ? 'admin_override' : 'eod_submission',
+        'Submitted via EOD form'
+      )
     }
 
     revalidatePath('/eod')
@@ -117,14 +125,25 @@ export async function updateEODReportAction(id: string, updates: { adjusted_hour
     const profile: any = await getUserProfileAction()
     if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins or HR only.' }
 
-    const supabase: any = await createClient()
+    const supabaseAdmin = createAdminClient()
     
-    // Security check: HR cannot approve any EOD
-    if (profile?.role === 'hr') {
-      return { success: false, error: 'HR cannot approve or edit EODs. Only an Admin can do this.' }
+    // Fetch the report to check ownership for HR restriction
+    const { data: report, error: fetchError } = await supabaseAdmin
+      .from('eod_reports')
+      .select('user_id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !report) {
+      return { success: false, error: 'EOD report not found.' }
     }
 
-    const { data, error } = await supabase
+    // Security check: HR cannot approve or edit their own EOD
+    if (profile?.role === 'hr' && (report as any).user_id === profile.id) {
+      return { success: false, error: 'HR cannot approve or edit their own EODs.' }
+    }
+
+    const { data, error } = await (supabaseAdmin as any)
       .from('eod_reports')
       .update(updates)
       .eq('id', id)

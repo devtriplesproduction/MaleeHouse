@@ -33,19 +33,36 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
   const [mounted, setMounted] = React.useState(false);
   const [isSending, setIsSending] = useState(false);
   const [bank, setBank] = useState<any>(null);
+  const [banks, setBanks] = useState<any[]>([]);
+  const [isUpdatingBank, setIsUpdatingBank] = useState(false);
 
   React.useEffect(() => {
     setMounted(true);
-    if (invoice.bank_id) {
-      import('@/actions/bank.actions').then(m => {
-        m.getBankAccountsAction().then(res => {
-          if (res.success && res.data) {
+    import('@/actions/bank.actions').then(m => {
+      m.getBankAccountsAction().then(res => {
+        if (res.success && res.data) {
+          setBanks(res.data);
+          if (invoice.bank_id) {
             setBank(res.data.find((b: any) => b.id === invoice.bank_id) || null);
           }
-        });
+        }
       });
-    }
+    });
   }, [invoice.bank_id]);
+
+  const handleBankChange = async (bankId: string) => {
+    setIsUpdatingBank(true);
+    const { updateInvoiceBankAccountAction } = await import('@/actions/finance.actions');
+    const result = await updateInvoiceBankAccountAction(invoice.id, bankId);
+    if (result.success) {
+      toast.success('Bank account updated successfully');
+      setBank(banks.find(b => b.id === bankId) || null);
+      onRefresh();
+    } else {
+      toast.error('Failed to update bank account', { description: result.error });
+    }
+    setIsUpdatingBank(false);
+  };
 
   const invoiceLink = typeof window !== 'undefined' ? `${window.location.origin}/invoices/${invoice.id}` : '';
 
@@ -268,8 +285,41 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
               </div>
            </div>
 
-           {/* Totals panel located right below services */}
-           <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-end">
+           {/* Totals and Bank Details panel located right below services */}
+           <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-between items-start gap-8">
+              {/* Bank Details on the left */}
+              <div className="flex-1 max-w-sm">
+                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Payment Information</h3>
+                 {bank ? (
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-2 text-[11px] text-slate-700 font-medium">
+                       <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                          <span className="text-slate-500">Bank</span>
+                          <span className="font-semibold text-slate-900">{bank.bank_name}</span>
+                       </div>
+                       <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                          <span className="text-slate-500">Account Name</span>
+                          <span className="font-semibold text-slate-900">{bank.account_name}</span>
+                       </div>
+                       <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                          <span className="text-slate-500">Account No.</span>
+                          <span className="font-mono font-semibold text-slate-900">{bank.account_number}</span>
+                       </div>
+                       <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                          <span className="text-slate-500">IFSC Code</span>
+                          <span className="font-mono font-semibold text-slate-900">{bank.ifsc_code}</span>
+                       </div>
+                       <div className="flex justify-between">
+                          <span className="text-slate-500">Branch</span>
+                          <span className="font-semibold text-slate-900">{bank.branch_name}</span>
+                       </div>
+                    </div>
+                 ) : (
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-200/60 text-[11px] text-amber-700 font-medium flex items-center justify-center text-center">
+                       No bank account selected for this invoice. Please select one from the right panel.
+                    </div>
+                 )}
+              </div>
+
               <div className="w-full md:w-72 space-y-2.5">
                  <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
                     <span>Subtotal</span>
@@ -333,7 +383,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
               
               <div className="space-y-3">
                 <button 
-                  onClick={() => generateInvoicePDF(invoice, invoice.projects, companySettings)}
+                  onClick={() => generateInvoicePDF(invoice, invoice.projects, companySettings, bank)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
                 >
                   <Download className="w-4 h-4" /> Download PDF
@@ -387,6 +437,23 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                   <p className="text-[10px] text-indigo-700 mt-1 font-medium">Please include invoice number in payment reference.</p>
                 </div>
               </div>
+              {invoice.status === 'draft' ? (
+                <div className="mb-3 space-y-2">
+                  <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Select Bank Account</label>
+                  <select 
+                    value={bank?.id || ''}
+                    onChange={(e) => handleBankChange(e.target.value)}
+                    disabled={isUpdatingBank}
+                    className="w-full bg-white border border-indigo-200 rounded-lg p-2 text-xs font-semibold text-indigo-950 focus:ring-1 focus:ring-indigo-500 outline-none disabled:opacity-50"
+                  >
+                    <option value="">Select Bank...</option>
+                    {banks.map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.bank_name} - {b.account_number}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+
               {bank ? (
                 <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium">
                    <div className="flex justify-between">
@@ -412,7 +479,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                 </div>
               ) : (
                 <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium text-center">
-                   Please select a bank account when creating the invoice to display payment details.
+                   Please select a bank account to display payment details.
                 </div>
               )}
             </div>

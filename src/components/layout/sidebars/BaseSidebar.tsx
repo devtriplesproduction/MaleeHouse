@@ -133,7 +133,7 @@ export function BaseSidebar({ links }: BaseSidebarProps) {
             }
 
             // Normal links
-            const exactMatchRoutes = ["/admin", "/accounts", "/sales", "/engineering", "/field", "/cad"];
+            const exactMatchRoutes = ["/admin", "/accounts", "/sales", "/engineering", "/field", "/cad", "/hr"];
             const isActive = link.href && exactMatchRoutes.includes(link.href)
               ? pathname === link.href
               : link.href && (pathname === link.href || pathname.startsWith(link.href + "/"));

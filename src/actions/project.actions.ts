@@ -255,7 +255,7 @@ export async function getReviewProjectsAction(): Promise<ActionResponse> {
     if (auth.error) return { success: false, error: auth.error };
 
     const { userId, role } = auth;
-    if (role !== 'admin' && role !== 'qc' && role !== 'engineer') {
+    if (role !== 'admin' && role !== 'engineer') {
       return { success: false, error: 'Unauthorized access to Review center.' };
     }
 

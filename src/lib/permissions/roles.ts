@@ -1,4 +1,4 @@
-export type Role = "admin" | "sales" | "accountant" | "engineer" | "cad" | "field" | "field_engineer" | "qc" | "employee" | "hr";
+export type Role = "admin" | "sales" | "accountant" | "engineer" | "cad" | "field" | "field_engineer" | "employee" | "hr";
 
 export const ROLES = {
   ADMIN: "admin" as Role,
@@ -8,7 +8,6 @@ export const ROLES = {
   CAD: "cad" as Role,
   FIELD: "field" as Role,
   FIELD_ENGINEER: "field_engineer" as Role,
-  QC: "qc" as Role,
   EMPLOYEE: "employee" as Role,
   HR: "hr" as Role,
 };
@@ -22,7 +21,6 @@ export const ROLE_REDIRECTS: Record<Role, string> = {
   cad: "/cad",
   field: "/field",
   field_engineer: "/field",
-  qc: "/review",
   employee: "/eod", // Base employee landing
   hr: "/hr",
 };
@@ -34,15 +32,15 @@ export const PATH_PERMISSIONS: Record<string, Role[]> = {
   "/clients": ["admin", "sales"],
   "/accounts/audit": ["admin"],
   "/accounts": ["admin", "accountant", "sales"], // Sales can view accounts pipeline
-  "/operations": ["admin", "engineer", "cad", "field", "field_engineer", "qc"],
+  "/operations": ["admin", "engineer", "cad", "field", "field_engineer"],
   "/review": ["admin", "engineer"],
   "/engineer": ["admin", "engineer"],
   "/cad": ["admin", "cad"],
   "/field": ["admin", "field", "field_engineer"],
-  "/eod": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee", "hr"],
-  "/sop": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee", "hr"],
-  "/leaves": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee", "hr"],
-  "/projects": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "qc", "employee", "hr"],
+  "/eod": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "employee", "hr"],
+  "/sop": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "employee", "hr"],
+  "/leaves": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "employee", "hr"],
+  "/projects": ["admin", "sales", "accountant", "engineer", "cad", "field", "field_engineer", "employee", "hr"],
   "/hr": ["admin", "hr"],
 };
 

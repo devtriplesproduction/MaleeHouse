@@ -163,7 +163,6 @@ export function ProjectTeamManager({ projectId, initialTeam }: ProjectTeamManage
                 <SelectItem value="engineer">Engineer</SelectItem>
                 <SelectItem value="cad">CAD</SelectItem>
                 <SelectItem value="field">Field</SelectItem>
-                <SelectItem value="qc">Quality Reviewer</SelectItem>
                 <SelectItem value="sales_rep">Sales Rep</SelectItem>
               </Select>
             </div>

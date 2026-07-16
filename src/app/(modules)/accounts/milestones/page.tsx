@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import DashboardLoading from "@/app/(modules)/loading";
 import { motion, AnimatePresence } from "framer-motion";
 import { PremiumDatePicker } from "@/components/ui/PremiumDatePicker";
+import { Select, SelectItem } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -191,6 +192,7 @@ function ProjectMilestonesContent() {
         id: `temp-${Date.now()}`,
         title: "",
         amount: 0,
+        percentage: "",
         due_date: "",
         is_activation_gate: false,
         linked_stage: ""
@@ -206,7 +208,23 @@ function ProjectMilestonesContent() {
 
   const updateMilestone = (index: number, field: string, value: any) => {
     const updated = [...milestones];
-    updated[index] = { ...updated[index], [field]: value };
+    let m = { ...updated[index], [field]: value };
+    
+    const qTotal = selectedProject?.contract_value ? Number(selectedProject.contract_value) : 0;
+    
+    if (field === 'percentage' && qTotal > 0 && value !== "") {
+      const pct = parseFloat(value);
+      if (!isNaN(pct)) {
+        m.amount = (qTotal * (pct / 100)).toFixed(2);
+      }
+    } else if (field === 'amount' && qTotal > 0 && value !== "") {
+      const amt = parseFloat(value);
+      if (!isNaN(amt)) {
+        m.percentage = ((amt / qTotal) * 100).toFixed(2);
+      }
+    }
+
+    updated[index] = m;
     setMilestones(updated);
   };
 
@@ -221,6 +239,22 @@ function ProjectMilestonesContent() {
       }
       if (Number(m.amount) < 0) {
         toast.error("Milestone amounts cannot be negative.");
+        return;
+      }
+    }
+
+    const qTotal = selectedProject?.contract_value ? Number(selectedProject.contract_value) : 0;
+    const totalAmount = milestones.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0);
+    const totalPercentage = milestones.reduce((acc: number, curr: any) => acc + (Number(curr.percentage) || 0), 0);
+
+    if (qTotal > 0) {
+      // Adding a small margin (0.1) to account for JavaScript floating point precision issues
+      if (totalAmount > qTotal + 0.1) {
+        toast.error("Total milestone amount cannot exceed the quotation amount.");
+        return;
+      }
+      if (totalPercentage > 100.01) {
+        toast.error("Total milestone percentage cannot exceed 100%.");
         return;
       }
     }
@@ -655,16 +689,34 @@ function ProjectMilestonesContent() {
                                       />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-3 gap-4">
+                                      <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Percentage (%)</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          onKeyDown={(e) => {
+                                            if (e.key === '-') e.preventDefault();
+                                          }}
+                                          value={m.percentage || ""}
+                                          onChange={(e) => updateMilestone(idx, 'percentage', e.target.value)}
+                                          placeholder="%"
+                                          className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        />
+                                      </div>
                                       <div>
                                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Amount (₹)</label>
                                         <div className="relative">
                                           <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                                           <input
                                             type="number"
+                                            min="0"
+                                            onKeyDown={(e) => {
+                                              if (e.key === '-') e.preventDefault();
+                                            }}
                                             value={m.amount}
                                             onChange={(e) => updateMilestone(idx, 'amount', e.target.value)}
-                                            className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums"
+                                            className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                           />
                                         </div>
                                       </div>
@@ -680,47 +732,37 @@ function ProjectMilestonesContent() {
 
                                     <div>
                                       <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Linked Workflow Stage (Optional)</label>
-                                      <select
+                                      <Select
                                         value={m.linked_stage || ""}
-                                        onChange={(e) => updateMilestone(idx, 'linked_stage', e.target.value)}
-                                        className="w-full h-9 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                        onValueChange={(val) => updateMilestone(idx, 'linked_stage', val)}
+                                        placeholder="-- No linked stage --"
+                                        buttonClassName="h-9 w-full bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white"
                                       >
-                                        <option value="">-- No linked stage --</option>
-                                        <optgroup label="Field Visits">
-                                          {fieldVisits.map((v, vIdx) => (
-                                            <option key={v.id} value={`visit:${v.id}`}>
-                                              Visit #{vIdx + 1} ({format(new Date(v.visit_date), "MMM d, yyyy")})
-                                            </option>
-                                          ))}
-                                        </optgroup>
-                                        <optgroup label="Workflow Stages">
-                                          <option value="data_collection">Data Collection</option>
-                                          <option value="prototype">Prototype</option>
-                                          <option value="review">Review</option>
-                                          <option value="field_work">Field Work</option>
-                                          <option value="data_sync">Data Sync</option>
-                                          <option value="final_review">Final Review</option>
-                                          <option value="completed">Completed</option>
-                                        </optgroup>
-                                      </select>
+                                        <SelectItem value="">-- No linked stage --</SelectItem>
+                                        
+                                        {fieldVisits.length > 0 && (
+                                          <div className="px-3 py-1.5 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Field Visits</div>
+                                        )}
+                                        {fieldVisits.map((v, vIdx) => (
+                                          <SelectItem key={v.id} value={`visit:${v.id}`}>
+                                            Visit #{vIdx + 1} ({format(new Date(v.visit_date), "MMM d, yyyy")})
+                                          </SelectItem>
+                                        ))}
+
+                                        <div className="px-3 py-1.5 mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-t border-slate-100 dark:border-white/5 pt-2">Workflow Stages</div>
+                                        <SelectItem value="project_created">Project Created</SelectItem>
+                                        <SelectItem value="data_collection">Data Collection</SelectItem>
+                                        <SelectItem value="prototype">CAD Prototype</SelectItem>
+                                        <SelectItem value="review">CAD Review</SelectItem>
+                                        <SelectItem value="field_work">Field Team Assignment</SelectItem>
+                                        <SelectItem value="data_sync">Survey Collection</SelectItem>
+                                        <SelectItem value="post_processing">Survey Validation</SelectItem>
+                                        <SelectItem value="final_review">Final Deliverable</SelectItem>
+                                        <SelectItem value="delivery">Delivered</SelectItem>
+                                      </Select>
                                     </div>
 
-                                    <div className="pt-2">
-                                      <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                          type="checkbox"
-                                          checked={m.is_activation_gate || false}
-                                          onChange={(e) => updateMilestone(idx, 'is_activation_gate', e.target.checked)}
-                                          className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                          Make this an Activation Gate
-                                        </span>
-                                      </label>
-                                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 pl-6 leading-relaxed">
-                                        If enabled, operations cannot proceed to the linked stage until this payment is verified.
-                                      </p>
-                                    </div>
+
                                   </div>
                                 </motion.div>
                               ))}

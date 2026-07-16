@@ -17,8 +17,8 @@ export async function approveProjectAction(projectId: string): Promise<ReviewRes
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
 
-    if (auth.role !== 'admin' && auth.role !== 'qc' && auth.role !== 'engineer') {
-      return { success: false, error: 'Unauthorized. QC, Engineer, or Admin only.' };
+    if (auth.role !== 'admin' && auth.role !== 'engineer') {
+      return { success: false, error: 'Unauthorized. Engineer or Admin only.' };
     }
 
     // Check if at least one CAD engineer and one Field engineer are assigned
@@ -57,8 +57,8 @@ export async function rejectProjectAction(
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
 
-    if (auth.role !== 'admin' && auth.role !== 'qc' && auth.role !== 'engineer') {
-      return { success: false, error: 'Unauthorized. QC, Engineer, or Admin only.' };
+    if (auth.role !== 'admin' && auth.role !== 'engineer') {
+      return { success: false, error: 'Unauthorized. Engineer or Admin only.' };
     }
 
     // 1. Update Project Status using centralized workflow engine

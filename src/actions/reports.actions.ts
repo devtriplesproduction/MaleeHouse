@@ -426,8 +426,8 @@ export async function getAllProjectSummaryAction(start: string, end: string): Pr
     if (error) throw error;
 
     const mappedProjects = (projectsData || []).map((p: any) => ({
-      projectId: p.id.split('-')[0], // Short ID
-      quotationNo: 'QT-' + p.id.substring(0,4),
+      projectId: p.id,
+      quotationNo: p.id.startsWith('PRJ-') ? 'QT-' + p.id.substring(4) : 'QT-' + p.id,
       projectName: p.name || p.client_name,
       contactNo: p.client_contact || 'N/A',
       serviceType: p.services?.[0] || 'N/A',
@@ -458,6 +458,8 @@ export async function getProjectBudgetSheetAction(projectId: string): Promise<Re
       .eq('project_id', projectId);
 
     if (error) throw error;
+    
+    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
 
     // Fetch total quotation value for this project
     const { data: financesData } = await supabase
@@ -503,7 +505,9 @@ export async function getProjectBudgetSheetAction(projectId: string): Promise<Re
         sectionTotals,
         totalQuotationValue,
         totalProjectCosting,
-        netAmount
+        netAmount,
+        company,
+        project
       } 
     };
   } catch (error: any) {
@@ -561,6 +565,8 @@ export async function getProjectActualSheetAction(projectId: string): Promise<Re
       .from('expenses')
       .select('amount, category, description, expense_date')
       .eq('project_id', projectId);
+      
+    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
 
     const ledger: any[] = [];
     let totalCredit = 0;
@@ -595,7 +601,9 @@ export async function getProjectActualSheetAction(projectId: string): Promise<Re
       data: { 
         ledger,
         netProfitLoss: totalCredit - totalDebit,
-        total: totalCredit
+        total: totalCredit,
+        company,
+        project
       } 
     };
   } catch (error: any) {

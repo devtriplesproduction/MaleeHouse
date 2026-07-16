@@ -16,7 +16,7 @@ const MOCK_AUDIT_LOGS = [
   {
     id: "LOG-001",
     timestamp: "2026-07-01T10:15:30Z",
-    user: "Divya Katakkar",
+    user: "Accountant User",
     role: "Accountant",
     action: "UPDATE",
     resource: "Invoice #INV-2026-042",
@@ -36,7 +36,7 @@ const MOCK_AUDIT_LOGS = [
   {
     id: "LOG-003",
     timestamp: "2026-06-30T16:20:05Z",
-    user: "Yash Nikam",
+    user: "Sales User",
     role: "Sales",
     action: "DELETE",
     resource: "Expense Claim #EXP-089",
@@ -46,7 +46,7 @@ const MOCK_AUDIT_LOGS = [
   {
     id: "LOG-004",
     timestamp: "2026-06-30T14:10:00Z",
-    user: "Rajesh Sapakal",
+    user: "Engineer User",
     role: "Engineer",
     action: "FAILED_LOGIN",
     resource: "Authentication",

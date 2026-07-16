@@ -45,7 +45,6 @@ export function WorkflowStepper({ projectId, currentStatus, userRole }: Workflow
       'engineer': ['data_collection', 'prototype', 'field_work', 'data_sync'],
       'cad': ['prototype'],
       'field': ['field_work', 'data_sync'],
-      'qc': ['review', 'final_review', 'completed'],
     };
 
     return (permissionMatrix[userRole] || []).includes(nextStage.id);

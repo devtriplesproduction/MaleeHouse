@@ -11,6 +11,7 @@ import {
 } from "@/actions/hr.actions";
 
 import { CreateEmployeeButton } from "@/components/modules/CreateEmployeeButton";
+import { ApplyLeaveButton } from "@/components/modules/ApplyLeaveButton";
 import { requireRole } from "@/lib/auth-guard";
 
 // HR Feature Widgets
@@ -65,6 +66,7 @@ export default async function HRDashboard() {
           <p className="text-sm text-slate-500 mt-1">Overview of your team's pulse and tasks.</p>
         </div>
         <div className="flex gap-2">
+          <ApplyLeaveButton />
           <CreateEmployeeButton existingUsers={users} />
         </div>
       </div>

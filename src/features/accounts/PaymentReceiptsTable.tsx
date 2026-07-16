@@ -10,12 +10,15 @@ import {
   CheckCircle,
   Eye,
   Building,
-  X
+  X,
+  Link2,
+  Mail
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCompanySettingsAction, type CompanySettings } from '@/actions/settings.actions';
+import { toast } from 'sonner';
 
 export interface MilestonePayment {
   id: string;
@@ -132,6 +135,16 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const receiptLink = typeof window !== 'undefined' && selectedReceipt 
+    ? `${window.location.origin}/receipts/${selectedReceipt.original.id}?type=${selectedReceipt.type}` 
+    : '';
+
+  const copyReceiptLink = () => {
+    if (!receiptLink) return;
+    navigator.clipboard.writeText(receiptLink);
+    toast.success('Receipt link copied to clipboard');
   };
 
   return (
@@ -286,7 +299,38 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
                     className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all flex items-center"
                   >
                     <Printer className="w-3.5 h-3.5" />
-                    Print Receipt
+                    Print
+                  </button>
+                  <button 
+                    onClick={copyReceiptLink}
+                    className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all flex items-center"
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    Copy Link
+                  </button>
+                  <button 
+                    onClick={() => {
+                       if (selectedReceipt) {
+                         window.location.href = `mailto:?subject=Malee House - Payment Receipt ${selectedReceipt.id}&body=Dear Client,%0D%0A%0D%0APlease find your payment receipt ${selectedReceipt.id} here:%0D%0A${receiptLink}%0D%0A%0D%0ABest regards,%0D%0AMalee House Finance`;
+                       }
+                    }}
+                    className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all flex items-center"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    Email
+                  </button>
+                  <button 
+                    onClick={() => {
+                       if (selectedReceipt) {
+                         window.open(`https://wa.me/?text=Hi, please find the payment receipt ${selectedReceipt.id} from Malee House here: ${receiptLink}`, '_blank');
+                       }
+                    }}
+                    className="text-slate-300 hover:text-white hover:bg-emerald-500/20 hover:text-emerald-400 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all flex items-center"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.451 5.403.002 9.803-4.394 9.805-9.805.001-2.621-1.013-5.085-2.86-6.933-1.847-1.847-4.308-2.859-6.924-2.86-5.412 0-9.815 4.398-9.818 9.807-.001 1.536.417 3.033 1.21 4.385l-.995 3.636 3.733-.979zm11.105-6.857c-.247-.124-1.464-.722-1.692-.806-.228-.083-.393-.124-.559.124-.166.247-.641.806-.784.969-.143.163-.286.183-.534.059-.247-.124-1.043-.385-1.986-1.227-.733-.654-1.229-1.462-1.373-1.71-.143-.248-.015-.381.109-.504.111-.11.247-.286.371-.429.124-.143.165-.247.247-.412.082-.166.041-.309-.021-.433-.062-.124-.559-1.345-.765-1.838-.2-.486-.398-.419-.559-.427-.144-.008-.309-.009-.473-.009a.913.913 0 0 0-.66.309c-.228.247-.867.846-.867 2.062 0 1.216.883 2.39 1.007 2.556.124.165 1.737 2.654 4.209 3.717.588.253 1.047.404 1.405.518.59.187 1.127.161 1.551.098.473-.069 1.464-.598 1.67-.175.206.423.206.784.103.969-.103.186-.247.309-.494.186z" />
+                    </svg>
+                    WhatsApp
                   </button>
                   <div className="w-px h-5 bg-white/10 mx-1" />
                   <button 

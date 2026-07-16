@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  User, 
-  Phone, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+  Clock,
+  User,
+  Phone,
   ExternalLink,
   CalendarCheck,
   TrendingUp,
@@ -92,8 +92,8 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
       if (!l.follow_up_date) return false;
       const fDate = new Date(l.follow_up_date);
       return fDate.getDate() === date.getDate() &&
-             fDate.getMonth() === date.getMonth() &&
-             fDate.getFullYear() === date.getFullYear();
+        fDate.getMonth() === date.getMonth() &&
+        fDate.getFullYear() === date.getFullYear();
     }).sort((a: any, b: any) => {
       return new Date(a.follow_up_date!).getTime() - new Date(b.follow_up_date!).getTime();
     });
@@ -118,25 +118,25 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
   const isToday = (date: Date) => {
     const today = new Date();
     return date.getDate() === today.getDate() &&
-           date.getMonth() === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
   };
 
   const isSameDay = (d1: Date, d2: Date) => {
     return d1.getDate() === d2.getDate() &&
-           d1.getMonth() === d2.getMonth() &&
-           d1.getFullYear() === d2.getFullYear();
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear();
   };
 
   // Stats calculation
   const today = new Date();
-  
+
   const todayFollowUps = followUpLeads.filter((l: any) => {
     if (!l.follow_up_date) return false;
     const d = new Date(l.follow_up_date);
     return d.getDate() === today.getDate() &&
-           d.getMonth() === today.getMonth() &&
-           d.getFullYear() === today.getFullYear();
+      d.getMonth() === today.getMonth() &&
+      d.getFullYear() === today.getFullYear();
   });
 
   const overdueFollowUps = followUpLeads.filter((l: any) => {
@@ -156,7 +156,7 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[2.2fr_4.6fr_3.2fr] gap-5 items-start">
-      
+
       {/* ── Left Column: Metrics and Stats Summary ── */}
       <div className="space-y-6">
         <div className="glass-card p-5 space-y-5">
@@ -218,7 +218,7 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
 
       {/* ── Middle Column: Fully Redesigned Premium Calendar ── */}
       <div className="glass-card p-6 md:p-8 space-y-6">
-        
+
         {/* Calendar Header with DIRECT selectors for Month and Year */}
         <div className="flex flex-col gap-5 pb-5 border-b border-slate-200/60 dark:border-white/5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -230,7 +230,7 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                 Schedule Matrix
               </h3>
             </div>
-            
+
             {/* Total Follow-ups for the Selected Date */}
             <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50/80 dark:bg-indigo-500/10 px-3 py-1.5 rounded-md border border-indigo-100 dark:border-indigo-500/20">
               {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {selectedDateFollowUps.length} Follow up{selectedDateFollowUps.length !== 1 ? 's' : ''}
@@ -307,8 +307,8 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                 onClick={() => setSelectedDate(date)}
                 className={cn(
                   "aspect-square rounded-2xl border flex flex-col justify-between p-2 md:p-3 transition-all duration-300 relative group outline-none overflow-hidden",
-                  isSel 
-                    ? "bg-indigo-600 border-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] z-10 scale-[1.02]" 
+                  isSel
+                    ? "bg-indigo-600 border-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] z-10 scale-[1.02]"
                     : isTod
                       ? "bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-400 ring-2 ring-indigo-400/50 ring-offset-2 dark:ring-offset-slate-900 animate-pulse-slow"
                       : "bg-white/50 dark:bg-white/[0.01] border-slate-200 dark:border-white/5 hover:border-indigo-400 hover:shadow-lg text-slate-700 dark:text-slate-300 hover:-translate-y-0.5"
@@ -325,12 +325,12 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                 {/* Highly Stylized Micro-tickets inside the Cell on Medium/Large screens */}
                 <div className="w-full space-y-1 mt-1 z-10">
                   {dayFollowUps.slice(0, 2).map((lead) => (
-                    <div 
+                    <div
                       key={lead.id}
                       className={cn(
                         "hidden md:flex items-center gap-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded truncate w-full border transition-colors",
-                        isSel 
-                          ? "bg-white/20 text-white border-white/20 shadow-sm" 
+                        isSel
+                          ? "bg-white/20 text-white border-white/20 shadow-sm"
                           : "bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300 border-slate-200 dark:border-white/10 group-hover:border-indigo-200 dark:group-hover:border-indigo-500/30"
                       )}
                     >
@@ -397,7 +397,7 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
               </div>
             ) : (
               selectedDateFollowUps.map((lead: any) => (
-                <div 
+                <div
                   key={lead.id}
                   className="bg-slate-50 dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 rounded-2xl p-4 space-y-3 hover:border-indigo-400 transition-all duration-200"
                 >
@@ -428,13 +428,13 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                   )}
 
                   <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-white/5">
-                    <Link
+                    {/* <Link
                       href={`/projects/${lead.id}`}
                       className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 outline-none"
                     >
                       View Details
                       <ExternalLink className="w-3 h-3" />
-                    </Link>
+                    </Link> */}
                   </div>
                 </div>
               ))

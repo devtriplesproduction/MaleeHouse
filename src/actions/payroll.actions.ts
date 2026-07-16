@@ -69,8 +69,11 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     const attRes = await getAttendanceLogsAction(undefined, month, year);
     const attendanceLogs = attRes.success && attRes.data ? attRes.data : [];
 
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin = createAdminClient();
+
     // Check if cycle is already locked
-    const { data: cycles, error: cyclesError } = await supabase
+    const { data: cycles, error: cyclesError } = await supabaseAdmin
       .from('payroll_cycles')
       .select('*')
       .eq('month', month)
@@ -82,8 +85,6 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-    const { createAdminClient } = await import("@/lib/supabase/admin");
-    const supabaseAdmin = createAdminClient();
     const { data: eodLogs, error: eodError } = await supabaseAdmin
       .from('eod_reports')
       .select('user_id, date')
@@ -102,12 +103,12 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     if (holidayError) throw holidayError;
     const standardHolidaysCount = holidays ? holidays.filter((h: any) => !h.is_optional).length : 0;
 
-    const existing = cycles && cycles.length > 0 ? cycles[0] : null;
+    const existing: any = cycles && cycles.length > 0 ? cycles[0] : null;
     const isLocked = existing?.status === "locked";
 
     if (isLocked) {
       // Return immutable snapshots!
-      const { data: cycleSnapshots, error: snapshotsError } = await supabase
+      const { data: cycleSnapshots, error: snapshotsError } = await supabaseAdmin
         .from('payroll_snapshots')
         .select('*')
         .eq('cycle_id', existing.id);
@@ -196,6 +197,8 @@ export async function lockPayrollCycleAction(month: number, year: number) {
 
   try {
     const supabase: any = await createClient();
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
 
     const { data: cycles, error: cycleFetchError } = await supabase
       .from('payroll_cycles')
@@ -213,8 +216,14 @@ export async function lockPayrollCycleAction(month: number, year: number) {
 
     const cycleId = existing?.id || randomUUID();
     
+    // 1. Fetch the draft computations to freeze them (must happen BEFORE upserting lock)
+    const draftRes = await calculateMonthlyPayrollAction(month, year);
+    if (!draftRes.success || !draftRes.data) {
+      return { success: false, error: "Failed to generate payroll calculation for freeze." };
+    }
+
     // Upsert the cycle
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await supabaseAdmin
       .from('payroll_cycles')
       .upsert({
         id: cycleId,
@@ -227,12 +236,6 @@ export async function lockPayrollCycleAction(month: number, year: number) {
 
     if (upsertError) throw upsertError;
 
-    // 2. Fetch the draft computations to freeze them
-    const draftRes = await calculateMonthlyPayrollAction(month, year);
-    if (!draftRes.success || !draftRes.data) {
-      return { success: false, error: "Failed to generate payroll calculation for freeze." };
-    }
-
     const frozenSnapshots: PayrollSnapshot[] = draftRes.data.map((draft: any) => ({
       ...draft,
       id: randomUUID(),
@@ -241,7 +244,7 @@ export async function lockPayrollCycleAction(month: number, year: number) {
     }));
 
     // 3. Write snapshot
-    const { error: snapshotsInsertError } = await supabase
+    const { error: snapshotsInsertError } = await supabaseAdmin
       .from('payroll_snapshots')
       .insert(frozenSnapshots);
 
@@ -256,6 +259,65 @@ export async function lockPayrollCycleAction(month: number, year: number) {
 
     revalidatePath("/admin/payroll");
     return { success: true, message: `Payroll cycle for ${month}/${year} locked successfully.` };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * unlockPayrollCycleAction
+ * Removes the frozen snapshot and reverts the payroll cycle back to draft mode.
+ */
+export async function unlockPayrollCycleAction(month: number, year: number) {
+  const profile: any = await getUserProfileAction();
+  if (profile?.role !== "admin" && profile?.role !== "hr") {
+    return { success: false, error: "Only System Administrators or HR can unlock payroll cycles." };
+  }
+
+  try {
+    const supabase: any = await createClient();
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
+
+    const { data: cycles, error: cycleFetchError } = await supabaseAdmin
+      .from('payroll_cycles')
+      .select('*')
+      .eq('month', month)
+      .eq('year', year);
+
+    if (cycleFetchError) throw cycleFetchError;
+
+    const existing = cycles && cycles.length > 0 ? cycles[0] : null;
+
+    if (!existing || existing.status !== "locked") {
+      return { success: false, error: "This payroll cycle is not locked." };
+    }
+
+    // 1. Delete snapshots
+    const { error: snapshotsDeleteError } = await supabaseAdmin
+      .from('payroll_snapshots')
+      .delete()
+      .eq('cycle_id', existing.id);
+
+    if (snapshotsDeleteError) throw snapshotsDeleteError;
+
+    // 2. Delete the cycle record (this returns it to draft implicitly)
+    const { error: cycleDeleteError } = await supabaseAdmin
+      .from('payroll_cycles')
+      .delete()
+      .eq('id', existing.id);
+
+    if (cycleDeleteError) throw cycleDeleteError;
+
+    // 3. Admin Audit Logging
+    await logAdminAuditAction({
+      action: "PAYROLL_CYCLE_UNLOCKED",
+      details: { month, year },
+      severity: "critical"
+    });
+
+    revalidatePath("/admin/payroll");
+    return { success: true, message: `Payroll cycle for ${month}/${year} unlocked successfully.` };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

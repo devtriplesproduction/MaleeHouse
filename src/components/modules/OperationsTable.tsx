@@ -123,7 +123,6 @@ export function OperationsTable({ initialProjects }: OperationsTableProps) {
                 <th className="px-6 py-6 text-center">Engineering</th>
                 <th className="px-6 py-6 text-center">CAD / Drafting</th>
                 <th className="px-6 py-6 text-center">Field Ops</th>
-                <th className="px-6 py-6 text-center">Quality QC</th>
                 <th className="px-6 py-6 text-right">Action</th>
               </tr>
             </thead>
@@ -145,7 +144,6 @@ export function OperationsTable({ initialProjects }: OperationsTableProps) {
                   const engineer = getAssignment(project, 'engineer');
                   const cad = getAssignment(project, 'cad');
                   const field = getAssignment(project, 'field');
-                  const qc = getAssignment(project, 'qc');
 
                   return (
                     <tr 
@@ -228,24 +226,6 @@ export function OperationsTable({ initialProjects }: OperationsTableProps) {
                            ) : (
                              <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-300">
                                <MapPin className="w-4 h-4" />
-                             </div>
-                           )}
-                        </div>
-                      </td>
-
-                      {/* QC Column */}
-                      <td className="px-6 py-6">
-                        <div className="flex flex-col items-center gap-2">
-                           {qc ? (
-                             <>
-                               <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-                                 <span className="text-xs font-bold text-orange-600">{qc.profiles.first_name[0]}{qc.profiles.last_name[0]}</span>
-                               </div>
-                               <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{qc.profiles.first_name}</span>
-                             </>
-                           ) : (
-                             <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-300">
-                               <ClipboardCheck className="w-4 h-4" />
                              </div>
                            )}
                         </div>

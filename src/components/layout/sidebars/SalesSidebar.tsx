@@ -9,6 +9,7 @@ const salesLinks = [
   { title: "All Projects", href: "/projects", icon: FileText },
   { title: "Client Directory", href: "/clients", icon: Building },
   { title: "Submit EOD", href: "/eod", icon: Clock },
+  { title: "My Attendance", href: "/attendance", icon: Calendar },
   { title: "Apply Leave", href: "/leaves", icon: Calendar },
   { title: "Announcements", href: "/announcements", icon: Megaphone },
 ];

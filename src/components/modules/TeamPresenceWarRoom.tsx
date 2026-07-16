@@ -22,7 +22,6 @@ const ROLE_COLORS: Record<string, { border: string, bg: string, text: string, do
   engineer:   { border: "border-amber-500",  bg: "bg-amber-500/10",  text: "text-amber-600",  dot: "bg-amber-500" },
   cad:        { border: "border-purple-500", bg: "bg-purple-500/10", text: "text-purple-600", dot: "bg-purple-500" },
   field:      { border: "border-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600", dot: "bg-emerald-500" },
-  qc:         { border: "border-rose-500",    bg: "bg-rose-500/10",    text: "text-rose-600",    dot: "bg-rose-500" },
   accountant: { border: "border-slate-500",  bg: "bg-slate-500/10",  text: "text-slate-600",  dot: "bg-slate-500" },
 };
 

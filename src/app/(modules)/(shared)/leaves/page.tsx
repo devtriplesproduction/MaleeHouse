@@ -18,8 +18,13 @@ export default async function LeavesPage() {
   if (!profile) redirect('/login');
 
   const isManager = profile.role === 'admin' || profile.role === 'hr';
-  const response = isManager ? await getAllLeavesAction() : await getMyLeavesAction();
-  const leaves = response.success ? response.data : [];
+  
+  // For managers, we need both all leaves (for approvals) and their own leaves (for their dashboard)
+  const allLeavesRes = isManager ? await getAllLeavesAction() : { success: false, data: [] };
+  const allLeaves = allLeavesRes.success ? allLeavesRes.data : [];
+  
+  const myLeavesRes = await getMyLeavesAction();
+  const myLeaves = myLeavesRes.success ? myLeavesRes.data : [];
 
   const balanceRes = await getLeaveBalanceAction(profile.id);
   const leaveBalance = balanceRes.success ? (balanceRes.data || 0) : 0;
@@ -43,13 +48,11 @@ export default async function LeavesPage() {
         </div>
       )}
 
-      {/* ── Leave Metrics Dashboard (Employee Only, Top Section) ── */}
-      {!isManager && (
-        <LeaveMetrics leaves={leaves} profile={profile} leaveBalance={leaveBalance} />
-      )}
+      {/* ── Personal Leave Metrics Dashboard ── */}
+      <LeaveMetrics leaves={myLeaves} profile={profile} leaveBalance={leaveBalance} />
 
       {isManager ? (
-        <AdminLeaveDashboard initialLeaves={leaves} currentUserRole={profile.role} currentUserId={profile.id} />
+        <AdminLeaveDashboard initialLeaves={allLeaves} currentUserRole={profile.role} currentUserId={profile.id} />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Form (Widened) */}
@@ -61,7 +64,7 @@ export default async function LeavesPage() {
 
           {/* Right Column: History */}
           <section className="lg:col-span-5 w-full flex flex-col space-y-6">
-            <LeaveHistory leaves={leaves} profile={profile} />
+            <LeaveHistory leaves={myLeaves} profile={profile} />
           </section>
         </div>
       )}

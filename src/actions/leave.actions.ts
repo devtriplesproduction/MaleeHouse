@@ -17,12 +17,26 @@ export async function applyLeaveAction(payload: {
 
     const supabase: any = await createClient()
 
-    // Check if the selected date range overlaps with any holidays
+    const startObj = new Date(payload.start_date)
+    const endObj = new Date(payload.end_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    startObj.setHours(0, 0, 0, 0)
+    endObj.setHours(0, 0, 0, 0)
+    
+    if (startObj < today) {
+      return { success: false, error: 'You cannot apply for leave on past dates.' }
+    }
+    
+    if (startObj.getDay() === 0 || endObj.getDay() === 0) {
+      return { success: false, error: 'Leave cannot start or end on a Sunday.' }
+    }
+
+    // Check if the selected start or end date is a holiday
     const { data: holidaysData, error: holidaysError } = await supabase
       .from('holidays')
       .select('date, name')
-      .gte('date', payload.start_date)
-      .lte('date', payload.end_date)
+      .in('date', [payload.start_date, payload.end_date])
 
     if (holidaysError) {
       return { success: false, error: holidaysError.message }
@@ -32,7 +46,7 @@ export async function applyLeaveAction(payload: {
       const holidayNames = holidaysData.map((h: any) => h.name).join(', ')
       return { 
         success: false, 
-        error: `Cannot apply for leave on holidays: ${holidayNames}. Please adjust your dates.` 
+        error: `Leave cannot start or end on a recognized holiday: ${holidayNames}.` 
       }
     }
 
@@ -121,7 +135,7 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
   }
 }
 
-export async function updateLeaveStatusAction(id: string, status: 'approved' | 'rejected' | 'pending'): Promise<ActionResponse> {
+export async function updateLeaveStatusAction(id: string, status: 'approved' | 'rejected' | 'pending', rejection_reason?: string): Promise<ActionResponse> {
   try {
     const profile: any = await getUserProfileAction()
     if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins and HR only.' }
@@ -141,9 +155,14 @@ export async function updateLeaveStatusAction(id: string, status: 'approved' | '
       return { success: false, error: 'You cannot approve or reject your own leave request.' }
     }
 
+    const updateData: any = { status, updated_at: new Date().toISOString(), approved_by: profile.id, approved_at: status === 'approved' ? new Date().toISOString() : null }
+    if (status === 'rejected' && rejection_reason) {
+      updateData.rejection_reason = rejection_reason
+    }
+
     const { data, error } = await supabase
       .from('leaves')
-      .update({ status, updated_at: new Date().toISOString(), approved_by: profile.id, approved_at: status === 'approved' ? new Date().toISOString() : null })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
@@ -161,11 +180,25 @@ export async function updateLeaveStatusAction(id: string, status: 'approved' | '
 
         const startDate = new Date(leaveData.start_date)
         const endDate = new Date(leaveData.end_date)
-        let dayCount = 0
+        
+        // Need to fetch holidays for this range to skip them
+        const { data: rangeHolidays } = await supabase
+           .from('holidays')
+           .select('date')
+           .gte('date', leaveData.start_date)
+           .lte('date', leaveData.end_date)
+           
+        const holidayDates = rangeHolidays ? rangeHolidays.map((h: any) => h.date) : []
 
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0]
           
+          // Skip Sundays for payroll calculation
+          if (d.getDay() === 0) continue;
+          
+          // Skip holidays for payroll calculation
+          if (holidayDates.includes(dateStr)) continue;
+
           let attendanceStatus: 'unpaid_leave' | 'paid_leave' = 'unpaid_leave'
           if (remainingBalance > 0) {
             attendanceStatus = 'paid_leave'
@@ -173,7 +206,6 @@ export async function updateLeaveStatusAction(id: string, status: 'approved' | '
           }
 
           await registerAttendanceSignalAction(leaveData.user_id, dateStr, attendanceStatus, 'admin_override', `Auto-generated for approved leave ${id}`)
-          dayCount++
         }
       } catch (attError) {
         console.error("Failed to auto-generate attendance for leave:", attError)

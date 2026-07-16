@@ -84,7 +84,7 @@ const FOLDERS: FolderConfig[] = [
     id: 'qc_reports',
     name: 'QC Reports',
     description: 'Quality checklists, validation logs, field audits, and QC audit reports.',
-    allowedRoles: ['admin', 'qc'],
+    allowedRoles: ['admin', 'engineer'],
     categories: ['qc_report'],
     defaultCategory: 'qc_report'
   },
@@ -92,7 +92,7 @@ const FOLDERS: FolderConfig[] = [
     id: 'final_deliverables',
     name: 'Final Deliverables',
     description: 'Final signed blueprints, verified client-ready drawings, and finalized layouts.',
-    allowedRoles: ['admin', 'qc', 'engineer'],
+    allowedRoles: ['admin', 'engineer'],
     categories: ['final_file'],
     defaultCategory: 'final_file'
   },

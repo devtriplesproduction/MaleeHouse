@@ -16,6 +16,7 @@ interface SearchableSelectProps {
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function SearchableSelect({ 
@@ -24,7 +25,8 @@ export function SearchableSelect({
   options, 
   placeholder = "Select...", 
   searchPlaceholder = "Search...",
-  className 
+  className,
+  disabled = false
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -47,13 +49,16 @@ export function SearchableSelect({
     <div ref={containerRef} className={cn("relative w-full", className)}>
       <button
         type="button"
+        disabled={disabled}
         onClick={() => {
+          if (disabled) return;
           setOpen(!open);
           if (!open) setSearch(""); // Reset search on open
         }}
         className={cn(
           "w-full flex items-center justify-between px-3 h-10 rounded-xl text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white hover:border-indigo-400 dark:hover:border-indigo-500/50 transition-all duration-200 outline-none select-none",
-          open && "ring-2 ring-indigo-500/20 border-indigo-400 dark:border-indigo-500"
+          open && "ring-2 ring-indigo-500/20 border-indigo-400 dark:border-indigo-500",
+          disabled && "opacity-50 cursor-not-allowed pointer-events-none"
         )}
       >
         <span className={cn("truncate", !selectedOption && "text-slate-400 dark:text-slate-500")}>

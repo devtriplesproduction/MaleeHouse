@@ -524,12 +524,12 @@ export function QuotationBuilderEngine({
                     </div>
 
                     <div className="col-span-2">
-                      <input type="number" min={1} value={item.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
-                        className="flat-input h-9 text-xs font-medium text-center no-spin" />
+                      <input type="number" min={1} value={item.quantity === 0 ? '' : item.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
+                        placeholder="1" className="flat-input h-9 text-xs font-medium text-center no-spin" />
                     </div>
 
                     <div className="col-span-2">
-                      <input type="number" min={0} value={item.unit_price} onChange={e => updateItem(idx, 'unit_price', Number(e.target.value))}
+                      <input type="number" min={0} value={item.unit_price === 0 ? '' : item.unit_price} onChange={e => updateItem(idx, 'unit_price', Number(e.target.value))}
                         placeholder="0" className="flat-input h-9 text-xs font-medium no-spin" />
                     </div>
 

@@ -57,70 +57,60 @@ export function LeaveApprovalQueue({ leaves }: { leaves: any[] }) {
         ) : (
           <div className="p-4 flex flex-col gap-4">
             {pendingLeaves.map((leave) => (
-              <div key={leave.id} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-white/10 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-500/40 transition-all duration-300 group">
-                <div className="flex flex-col md:flex-row gap-5 items-start">
+              <div key={leave.id} className="group bg-white dark:bg-slate-900/40 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-0 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800/60 transition-all duration-300 overflow-hidden flex flex-col">
+                <div className="p-5 pb-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <Avatar 
+                    src={leave.profiles?.avatar_url} 
+                    fallback={`${leave.profiles?.first_name?.[0] || ""}${leave.profiles?.last_name?.[0] || ""}`}
+                    className="h-12 w-12 rounded-full ring-2 ring-slate-50 dark:ring-slate-800 shadow-sm object-cover"
+                  />
                   
-                  {/* Avatar and Info */}
-                  <div className="flex gap-4 flex-1 w-full overflow-hidden">
-                    <Avatar 
-                      src={leave.profiles?.avatar_url} 
-                      fallback={`${leave.profiles?.first_name?.[0] || ""}${leave.profiles?.last_name?.[0] || ""}`}
-                      className="h-12 w-12 rounded-2xl ring-2 ring-slate-50 dark:ring-slate-950 shadow-sm object-cover"
-                    />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <h4 className="font-semibold text-base text-slate-900 dark:text-white truncate">
+                        {leave.profiles?.first_name} {leave.profiles?.last_name}
+                      </h4>
+                      <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-semibold py-0.5 h-5 px-2.5 bg-indigo-50 text-indigo-700 border-0 dark:bg-indigo-500/10 dark:text-indigo-300">
+                        {leave.leave_type}
+                      </Badge>
+                    </div>
                     
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-bold text-base text-slate-900 dark:text-white truncate">
-                            {leave.profiles?.first_name} {leave.profiles?.last_name}
-                          </h4>
-                          <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-bold py-0.5 h-5 px-2 bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20">
-                            {leave.leave_type}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      {/* Dates */}
-                      <div className="inline-flex items-center gap-2 text-xs font-semibold bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 rounded-lg py-1.5 px-3 mb-3 w-fit">
-                        <CalendarDays className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
-                        <span>{format(new Date(leave.start_date), "MMM d, yyyy")}</span>
-                        <ArrowRight className="h-3 w-3 text-slate-400" />
-                        <span>{format(new Date(leave.end_date), "MMM d, yyyy")}</span>
-                      </div>
-                      
-                      {/* Reason */}
-                      {leave.reason && (
-                        <div className="relative bg-amber-50/80 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200/90 p-3.5 pl-4 rounded-xl border border-amber-200/50 dark:border-amber-900/50 text-sm overflow-hidden">
-                          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-amber-500 dark:from-amber-500/60 dark:to-amber-600/60"></div>
-                          <div className="flex gap-2.5">
-                            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-500 dark:text-amber-400" />
-                            <p className="leading-relaxed font-medium break-words whitespace-pre-wrap overflow-hidden">{leave.reason}</p>
-                          </div>
-                        </div>
-                      )}
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      <span>{format(new Date(leave.start_date), "MMM d, yyyy")}</span>
+                      <ArrowRight className="h-3 w-3 opacity-50" />
+                      <span>{format(new Date(leave.end_date), "MMM d, yyyy")}</span>
                     </div>
                   </div>
-                  
-                  {/* Actions */}
-                  <div className="flex md:flex-col gap-2.5 shrink-0 md:opacity-50 group-hover:opacity-100 transition-opacity duration-300 justify-end md:justify-start w-full md:w-auto pt-4 md:pt-0 border-t border-slate-100 dark:border-white/5 md:border-0 mt-2 md:mt-0">
-                    <Button 
-                      size="sm" 
-                      className="h-10 px-5 text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 transition-all flex-1 md:flex-none rounded-xl"
-                      disabled={isUpdating === leave.id}
-                      onClick={() => handleUpdate(leave.id, "approved")}
-                    >
-                      <Check className="h-4 w-4 mr-1.5" /> Approve
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="h-10 px-5 text-sm font-semibold border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-all flex-1 md:flex-none rounded-xl shadow-sm bg-white dark:bg-slate-900"
-                      disabled={isUpdating === leave.id}
-                      onClick={() => handleUpdate(leave.id, "rejected")}
-                    >
-                      <X className="h-4 w-4 mr-1.5" /> Reject
-                    </Button>
+                </div>
+                
+                {leave.reason && (
+                  <div className="px-5 pb-5">
+                    <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-3.5 text-sm text-slate-700 dark:text-slate-300 flex gap-3 border border-slate-100 dark:border-slate-700/50 shadow-inner">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-slate-400 mt-0.5" />
+                      <p className="leading-relaxed break-words whitespace-pre-wrap">{leave.reason}</p>
+                    </div>
                   </div>
+                )}
+                
+                <div className="px-5 py-3.5 bg-slate-50/50 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 mt-auto">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="h-9 px-4 text-xs font-semibold border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-all rounded-lg"
+                    disabled={isUpdating === leave.id}
+                    onClick={() => handleUpdate(leave.id, "rejected")}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1.5" /> Reject
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="h-9 px-4 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-all rounded-lg"
+                    disabled={isUpdating === leave.id}
+                    onClick={() => handleUpdate(leave.id, "approved")}
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1.5" /> Approve
+                  </Button>
                 </div>
               </div>
             ))}

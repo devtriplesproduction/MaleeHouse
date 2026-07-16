@@ -24,6 +24,8 @@ export function LeaveForm() {
     leave_type: 'casual' as 'casual' | 'sick' | 'earned' | 'maternity' | 'paternity' | 'other' | 'unpaid'
   });
   const [leaveBalance, setLeaveBalance] = useState<number | null>(null);
+  const [baseBalance, setBaseBalance] = useState<number | null>(null);
+  const [myLeaves, setMyLeaves] = useState<any[]>([]);
 
   // Fetch holidays on mount
   // import('react').then(React => {
@@ -44,34 +46,39 @@ export function LeaveForm() {
     });
     Promise.all([getLeaveBalanceAction(), getMyLeavesAction()]).then(([balanceRes, leavesRes]) => {
       if (balanceRes.success && balanceRes.data !== undefined) {
-        let effectiveBalance = balanceRes.data;
-        
-        // If they already have a pending or approved leave this month, effectively their balance for new applications is 0
-        if (leavesRes.success && leavesRes.data) {
-          const now = new Date();
-          const currentMonth = now.getMonth();
-          const currentYear = now.getFullYear();
-          
-          const hasAppliedThisMonth = leavesRes.data.some((l: any) => {
-            if (l.status === 'rejected') return false;
-            const lDate = new Date(l.start_date);
-            return lDate.getMonth() === currentMonth && lDate.getFullYear() === currentYear;
-          });
-          
-          if (hasAppliedThisMonth) {
-            effectiveBalance = 0;
-          }
-        }
-
-        setLeaveBalance(effectiveBalance);
-        if (effectiveBalance === 0) {
-          setFormData(prev => ({ ...prev, leave_type: 'unpaid' }));
-        }
+        setBaseBalance(balanceRes.data);
+      }
+      if (leavesRes.success && leavesRes.data) {
+        setMyLeaves(leavesRes.data);
       }
     });
   }, []);
 
-  // Check for adjacent or overlapping holidays
+  useEffect(() => {
+    if (baseBalance !== null) {
+      let effectiveBalance = baseBalance;
+      const targetDate = formData.start_date ? new Date(formData.start_date) : new Date();
+      const targetMonth = targetDate.getMonth();
+      const targetYear = targetDate.getFullYear();
+      
+      const hasAppliedForTargetMonth = myLeaves.some((l: any) => {
+        if (l.status === 'rejected') return false;
+        const lDate = new Date(l.start_date);
+        return lDate.getMonth() === targetMonth && lDate.getFullYear() === targetYear;
+      });
+      
+      if (hasAppliedForTargetMonth) {
+        effectiveBalance = 0;
+      }
+
+      setLeaveBalance(effectiveBalance);
+      if (effectiveBalance === 0 && formData.leave_type !== 'unpaid') {
+        setFormData(prev => ({ ...prev, leave_type: 'unpaid' }));
+      }
+    }
+  }, [baseBalance, myLeaves, formData.start_date]);
+
+  // Check for overlapping holidays
   const conflictingHolidays = holidays.filter(h => {
     if (!formData.start_date || !formData.end_date) return false;
 
@@ -86,11 +93,6 @@ export function LeaveForm() {
 
     // Check if holiday is inside the leave period
     if (hDate >= start.getTime() && hDate <= end.getTime()) return true;
-
-    // Check adjacency (1 day before start or 1 day after end)
-    const oneDay = 24 * 60 * 60 * 1000;
-    if (hDate === start.getTime() - oneDay) return true;
-    if (hDate === end.getTime() + oneDay) return true;
 
     return false;
   });
@@ -107,10 +109,50 @@ export function LeaveForm() {
     }
 
     // Verify dates order
-    if (new Date(formData.start_date) > new Date(formData.end_date)) {
+    const startDate = new Date(formData.start_date);
+    const endDate = new Date(formData.end_date);
+    
+    if (startDate > endDate) {
       toast({
         title: 'Check Your Dates',
         description: 'Your end date cannot be earlier than your start date.',
+        variant: 'error'
+      });
+      return;
+    }
+
+    // 1. Block past dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    
+    if (startDate < today) {
+      toast({
+        title: 'Invalid Date',
+        description: 'You cannot apply for leave in the past.',
+        variant: 'error'
+      });
+      return;
+    }
+
+    // 2. Block Sunday as start or end date
+    if (startDate.getDay() === 0 || endDate.getDay() === 0) {
+      toast({
+        title: 'Invalid Date',
+        description: 'Leave cannot start or end on a Sunday.',
+        variant: 'error'
+      });
+      return;
+    }
+
+    // 3. Block Holiday as start or end date
+    const isStartHoliday = holidays.find(h => new Date(h.date).setHours(0,0,0,0) === startDate.getTime());
+    const isEndHoliday = holidays.find(h => new Date(h.date).setHours(0,0,0,0) === endDate.getTime());
+    if (isStartHoliday || isEndHoliday) {
+      toast({
+        title: 'Invalid Date',
+        description: 'Leave cannot start or end on a recognized holiday.',
         variant: 'error'
       });
       return;
@@ -171,7 +213,7 @@ export function LeaveForm() {
             <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Submit a new leave request for verification.</p>
             {leaveBalance !== null && (
               <p className="text-xs mt-1 font-bold text-indigo-600 dark:text-indigo-400">
-                Available Paid Leaves this month: {leaveBalance}
+                Available Paid Leaves for {formData.start_date ? new Date(formData.start_date).toLocaleString('default', { month: 'long' }) : 'this month'}: {leaveBalance}
               </p>
             )}
           </div>
@@ -216,15 +258,13 @@ export function LeaveForm() {
               onValueChange={(val) => setFormData({ ...formData, leave_type: val as any })}
               placeholder="Select Category"
             >
-              {leaveBalance === 0 ? (
-                <SelectItem value="unpaid">Unpaid Leave</SelectItem>
-              ) : (
-                <>
-                  <SelectItem value="casual">Casual Leave (Paid)</SelectItem>
-                  <SelectItem value="sick">Sick/Medical Leave (Paid)</SelectItem>
-                  <SelectItem value="earned">Vacation / Annual Leave (Paid)</SelectItem>
-                </>
-              )}
+              {leaveBalance === 0 ? [
+                <SelectItem key="unpaid" value="unpaid">Unpaid Leave</SelectItem>
+              ] : [
+                <SelectItem key="casual" value="casual">Casual Leave (Paid)</SelectItem>,
+                <SelectItem key="sick" value="sick">Sick/Medical Leave (Paid)</SelectItem>,
+                <SelectItem key="earned" value="earned">Vacation / Annual Leave (Paid)</SelectItem>
+              ]}
             </Select>
           </div>
 
@@ -247,7 +287,7 @@ export function LeaveForm() {
               <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="text-sm text-amber-800 dark:text-amber-200 font-medium">
                 <span className="block font-bold mb-1">Holiday Alert</span>
-                Your selected leave dates are adjacent to or overlap with the following holidays:
+                Your selected leave dates overlap with the following holidays:
                 <ul className="list-disc pl-5 mt-1 space-y-0.5">
                   {conflictingHolidays.map((h, i) => (
                     <li key={i}>{h.name} ({new Date(h.date).toLocaleDateString()}) - {h.is_optional ? 'Optional' : 'Public'}</li>

@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
-import { LogPaymentModal } from './LogPaymentModal';
 import { CreateInvoiceModal } from './CreateInvoiceModal';
 import {
   updateMilestoneStatusAction,
@@ -122,8 +121,6 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
   const [submittingHold, setSubmittingHold] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPaymentMilestone, setSelectedPaymentMilestone] = useState<MilestonePayment | null>(null);
 
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedInvoiceMilestone, setSelectedInvoiceMilestone] = useState<MilestonePayment | null>(null);
@@ -202,10 +199,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
     }
   };
 
-  const handleMarkAsPaid = async (m: MilestonePayment) => {
-    setSelectedPaymentMilestone(m);
-    setPaymentModalOpen(true);
-  };
+
 
   const handleHoldPayment = async (m: MilestonePayment) => {
     try {
@@ -486,22 +480,6 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                                 </button>
                               )
                             )}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkAsPaid(m);
-                              }}
-                              disabled={isProjectFrozen}
-                              title={isProjectFrozen ? "Project is frozen. Resume project to log payment." : "Log Payment"}
-                              className={cn(
-                                "h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
-                                isProjectFrozen && "opacity-50 cursor-not-allowed active:scale-100 bg-slate-400 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-700"
-                              )}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Log Payment
-                            </button>
                           </>
                         )}
 
@@ -813,18 +791,6 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
         document.body
       )}
 
-      <LogPaymentModal
-        isOpen={paymentModalOpen}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedPaymentMilestone(null);
-        }}
-        milestoneId={selectedPaymentMilestone?.id || ''}
-        projectId={selectedPaymentMilestone?.project_id || ''}
-        milestoneTitle={selectedPaymentMilestone?.title || ''}
-        amount={selectedPaymentMilestone?.amount || 0}
-        onSuccess={() => onRefresh()}
-      />
 
       <CreateInvoiceModal
         isOpen={invoiceModalOpen}

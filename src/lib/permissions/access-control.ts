@@ -12,7 +12,7 @@ export async function requireAuthContext(): Promise<AuthContext> {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    return { userId: '', role: 'employee' as Role, error: 'Unauthorized access. Please log in.' }
+    return { userId: '', role: 'field' as Role, error: 'Unauthorized access. Please log in.' }
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -22,7 +22,7 @@ export async function requireAuthContext(): Promise<AuthContext> {
     .single()
 
   if (profileError || !profile) {
-    return { userId: user.id, role: 'employee' as Role, error: 'Profile not found.' }
+    return { userId: user.id, role: 'field' as Role, error: 'Profile not found.' }
   }
 
   if (!profile.is_active) {

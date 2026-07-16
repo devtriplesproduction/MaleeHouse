@@ -37,7 +37,6 @@ const ROLES = [
   { label: 'Engineer', value: 'engineer' },
   { label: 'CAD', value: 'cad' },
   { label: 'Field', value: 'field' },
-  { label: 'QC', value: 'qc' },
 ];
 
 export function SOPModal({ isOpen, onClose, sop }: SOPModalProps) {

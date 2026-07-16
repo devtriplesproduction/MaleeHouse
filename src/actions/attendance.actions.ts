@@ -163,10 +163,19 @@ export async function overrideAttendanceAction(
  */
 export async function getAttendanceLogsAction(employeeId?: string, month?: number, year?: number) {
   try {
-    const supabase: any = await createClient();
-    let query = supabase.from('attendance_logs').select('*');
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized" };
 
-    if (employeeId) {
+    const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
+    let query = supabaseAdmin.from('attendance_logs').select('*');
+
+    const isPrivileged = profile.role === 'admin' || profile.role === 'hr';
+
+    if (!isPrivileged) {
+      // Normal users can only see their own attendance logs
+      query = query.eq('employee_id', profile.id);
+    } else if (employeeId) {
+      // HR/Admin can query a specific employee
       query = query.eq('employee_id', employeeId);
     }
 

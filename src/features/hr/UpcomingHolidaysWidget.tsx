@@ -5,7 +5,14 @@ import { CalendarHeart } from "lucide-react";
 import { format } from "date-fns";
 
 export function UpcomingHolidaysWidget({ holidays }: { holidays: any[] }) {
-  const upcoming = holidays || [];
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+
+  const upcoming = (holidays || []).filter(holiday => {
+    const holidayDate = new Date(holiday.date);
+    // You can also add condition for upcoming: holidayDate >= new Date(new Date().setHours(0,0,0,0))
+    return holidayDate.getMonth() === currentMonth && holidayDate.getFullYear() === currentYear;
+  });
 
   return (
     <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col">
@@ -16,11 +23,11 @@ export function UpcomingHolidaysWidget({ holidays }: { holidays: any[] }) {
         </div>
         <CardDescription className="text-xs">Next official days off</CardDescription>
       </CardHeader>
-      <CardContent className="p-0 flex-1 flex flex-col">
+      <CardContent className="p-0 flex-1 overflow-auto max-h-[300px]">
         {upcoming.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="p-8 text-center flex flex-col items-center justify-center">
             <CalendarHeart className="h-8 w-8 text-slate-200 dark:text-slate-700 mb-2" />
-            <p className="text-sm text-slate-500">No upcoming holidays scheduled soon.</p>
+            <p className="text-sm text-slate-500">No upcoming holidays this month.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/5">

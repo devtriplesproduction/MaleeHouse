@@ -107,8 +107,8 @@ export default function ClientPortalPage() {
     e.preventDefault();
     if (!quotation) return;
     const phone = approverPhone.trim();
-    if (!phone || phone.length < 7) {
-      toast({ title: "Validation Error", description: "Please enter a valid mobile number to confirm approval.", variant: "error" });
+    if (!phone || phone.length < 10) {
+      toast({ title: "Validation Error", description: "Please enter a valid 10-digit mobile number to confirm approval.", variant: "error" });
       return;
     }
     try {
@@ -663,9 +663,13 @@ export default function ClientPortalPage() {
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Mobile Number</label>
                     <input
                       type="tel"
+                      maxLength={10}
                       value={approverPhone}
-                      onChange={(e) => setApproverPhone(e.target.value)}
-                      placeholder="e.g. +91 98765 43210"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setApproverPhone(val);
+                      }}
+                      placeholder="e.g. 9876543210"
                       className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-emerald-400 transition-colors font-mono"
                       autoFocus
                     />

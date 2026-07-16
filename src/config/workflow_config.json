@@ -38,7 +38,7 @@
     },
     "data_sync": {
       "display_name": "Review Submission & Validation",
-      "allowed_roles": ["admin", "engineer", "qc"],
+      "allowed_roles": ["admin", "engineer"],
       "allow_rollback": true,
       "transitions_to": ["review"],
       "task_generation": ["tsk_compile_dossier", "tsk_pre_qc_check"],
@@ -47,7 +47,7 @@
     },
     "review": {
       "display_name": "QC Board & Final Sign-Off",
-      "allowed_roles": ["admin", "qc"],
+      "allowed_roles": ["admin"],
       "allow_rollback": true,
       "transitions_to": ["completed"],
       "task_generation": ["tsk_final_qc_signoff"],

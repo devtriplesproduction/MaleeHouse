@@ -1,6 +1,6 @@
 "use server";
 
-import { LOCAL_USERS } from "@/lib/local-db";
+import { createClient } from "@/lib/supabase/server";
 
 export interface TeamMemberSummary {
   id: string;
@@ -12,7 +12,12 @@ export interface TeamMemberSummary {
 
 export async function getTeamPresenceSummaryAction() {
   try {
-    const summary: TeamMemberSummary[] = LOCAL_USERS.map((p) => ({
+    const supabase = await createClient();
+    const { data: profiles } = await supabase.from('profiles').select('*');
+    
+    if (!profiles) return [];
+    
+    const summary: TeamMemberSummary[] = profiles.map((p: any) => ({
       id: p.id,
       firstName: p.first_name,
       lastName: p.last_name,

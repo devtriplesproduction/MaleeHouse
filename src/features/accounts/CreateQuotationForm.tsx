@@ -38,7 +38,7 @@ interface CreateQuotationFormProps {
 export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuotationFormProps) {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<any[]>([
-    { service_name: '', description: '', quantity: 1, unit_price: 0, total: 0 }
+    { service_name: '', description: '', quantity: 1, unit_price: '', total: 0 }
   ]);
   const [notes, setNotes] = useState('');
   const [internalNotes, setInternalNotes] = useState({
@@ -52,6 +52,43 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
   const [banks, setBanks] = useState<any[]>([]);
   const [selectedBank, setSelectedBank] = useState<string>('');
 
+  const STORAGE_KEY = `quotation_draft_${project?.id}`;
+
+  // Load saved draft on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedDraft = localStorage.getItem(STORAGE_KEY);
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed.items) setItems(parsed.items);
+          if (parsed.notes !== undefined) setNotes(parsed.notes);
+          if (parsed.internalNotes) setInternalNotes(parsed.internalNotes);
+          if (parsed.assignedTo !== undefined) setAssignedTo(parsed.assignedTo);
+          if (parsed.gstType) setGstType(parsed.gstType);
+          if (parsed.selectedBank) setSelectedBank(parsed.selectedBank);
+        } catch (e) {
+          console.error('Failed to parse saved quotation draft', e);
+        }
+      }
+    }
+  }, [STORAGE_KEY]);
+
+  // Save draft whenever form values change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const draft = {
+        items,
+        notes,
+        internalNotes,
+        assignedTo,
+        gstType,
+        selectedBank
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+    }
+  }, [items, notes, internalNotes, assignedTo, gstType, selectedBank, STORAGE_KEY]);
+
   useEffect(() => {
     getStaffMembersAction().then(res => {
       if (res) {
@@ -62,13 +99,16 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
       if (res.success && res.data) {
         setBanks(res.data);
         const defaultBank = (res.data as any[]).find((b: any) => b.is_default);
-        if (defaultBank) setSelectedBank(defaultBank.id);
+        // Only set default bank if we don't have one loaded from the draft
+        if (defaultBank && !selectedBank && !localStorage.getItem(STORAGE_KEY)?.includes('selectedBank')) {
+          setSelectedBank(defaultBank.id);
+        }
       }
     });
-  }, []);
+  }, [STORAGE_KEY, selectedBank]);
 
   const addItem = () => {
-    setItems([...items, { service_name: '', description: '', quantity: 1, unit_price: 0, total: 0 }]);
+    setItems([...items, { service_name: '', description: '', quantity: 1, unit_price: '', total: 0 }]);
   };
 
   const removeItem = (index: number) => {
@@ -105,7 +145,7 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
       const result = await createQuotationAction({
         project_id: project.id,
         quotation_number: `QTN-${Date.now().toString().slice(-6)}`,
-        items: items.map((i: any) => ({ ...i, total: Number(i.total) })),
+        items: items.map((i: any) => ({ ...i, quantity: Number(i.quantity) || 0, unit_price: Number(i.unit_price) || 0, total: Number(i.total) })),
         subtotal,
         gst_rate: gstRate,
         gst_amount: gstAmount,
@@ -122,6 +162,7 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
       });
 
       if (result.success) {
+        localStorage.removeItem(STORAGE_KEY);
         toast.success('Quotation Synchronized', {
           description: 'The financial draft has been successfully archived in the project ledger.'
         });
@@ -203,18 +244,22 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
                       <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Qty</label>
                       <input 
                         type="number"
+                        min="0"
+                        placeholder="0"
                         value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                        className="glass-input h-12 text-center text-sm font-bold"
+                        onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                        className="glass-input h-12 text-center text-sm font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                     <div className="col-span-2 space-y-2">
                       <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Unit Rate (INR)</label>
                       <input 
                         type="number"
+                        min="0"
+                        placeholder="0"
                         value={item.unit_price}
-                        onChange={(e) => updateItem(index, 'unit_price', Number(e.target.value))}
-                        className="glass-input h-12 text-sm font-bold"
+                        onChange={(e) => updateItem(index, 'unit_price', e.target.value)}
+                        className="glass-input h-12 text-sm font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                     <div className="col-span-2 space-y-2 text-right">

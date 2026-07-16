@@ -59,6 +59,7 @@ import { ProjectDetailTabs } from "@/components/modules/ProjectDetailTabs";
 import { ProjectFinanceTabContent } from "@/components/modules/ProjectFinanceTabContent";
 import { SalesProjectPortal } from "@/features/sales/components/SalesProjectPortal";
 import { verifyProjectAccess } from "@/lib/permissions/permissions";
+import { ProjectDeleteButton } from "@/components/modules/ProjectDeleteButton";
 
 const ROLE_THEME: Record<string, { primary: string; hover: string; text: string; bg: string; border: string; glow: string }> = {
   admin:      { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
@@ -68,7 +69,6 @@ const ROLE_THEME: Record<string, { primary: string; hover: string; text: string;
   cad:        { primary: "blue-600",    hover: "hover:text-blue-600 dark:hover:text-blue-400",    text: "text-blue-500",    bg: "bg-blue-500/10",    border: "border-blue-500/20",    glow: "bg-indigo-600/10" },
   field:      { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-indigo-600/10" },
   field_engineer: { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-indigo-600/10" },
-  qc:         { primary: "purple-600",  hover: "hover:text-purple-600 dark:hover:text-purple-400",  text: "text-purple-500",  bg: "bg-purple-500/10",  border: "border-purple-500/20",  glow: "bg-purple-600/10" },
 };
 
 const ROLE_REDIRECTS: Record<string, string> = {
@@ -79,7 +79,6 @@ const ROLE_REDIRECTS: Record<string, string> = {
   cad: "/cad",
   field: "/field",
   field_engineer: "/field",
-  qc: "/review",
 };
 
 const getNextRequiredAction = (status: string, files: any[], assignments: any[], activityLogs: any[]) => {
@@ -242,7 +241,7 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
   const activeQuotation = quotations.find((q: any) => q.status === 'Sent' || q.status === 'Viewed' || q.status === 'Approved' || q.status === 'Draft');
 
   // Fetch operational data from local DB for technical roles
-  const isOperationalRole = ['admin', 'engineer', 'cad', 'field', 'field_engineer', 'qc'].includes(profile?.role || '');
+  const isOperationalRole = ['admin', 'engineer', 'cad', 'field', 'field_engineer'].includes(profile?.role || '');
   const [cadResult, fieldResult, checklistResult, localAssignmentsResult] = isOperationalRole
     ? await Promise.all([
         getCADRevisionsAction(params.id),
@@ -456,6 +455,9 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2.5">
+                {(role === 'admin' || role === 'accountant') && (
+                  <ProjectDeleteButton projectId={project.id} />
+                )}
               </div>
             </div>
           </div>

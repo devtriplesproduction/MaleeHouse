@@ -486,8 +486,8 @@ function ReportRow({
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={handleApprove}
-                          disabled={isUpdating || report.status === 'approved' || currentUserRole === 'hr'}
-                          title={currentUserRole === 'hr' ? "Only Admins can approve EODs" : ""}
+                          disabled={isUpdating || report.status === 'approved' || (currentUserRole === 'hr' && report.user_id === currentUserId)}
+                          title={currentUserRole === 'hr' && report.user_id === currentUserId ? "You cannot approve your own EOD" : ""}
                           className="h-9 px-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
                           {isUpdating ? 'Saving...' : report.status === 'approved' ? 'Approved' : 'Approve'}
                         </button>

@@ -4,8 +4,8 @@ import { getUserProfileAction } from './auth.actions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAllLeavesAction } from './leave.actions'
 import { getAttendanceLogsAction } from './attendance.actions'
-// import { getHolidaysAction } from './holiday.actions'
-// import { getAnnouncementsAction } from './announcement.actions'
+import { getHolidaysAction } from './holiday.actions'
+import { getAnnouncementsAction } from './announcement.actions'
 
 export async function getHRDashboardStatsAction() {
   try {
@@ -27,7 +27,7 @@ export async function getHRDashboardStatsAction() {
     const pendingLeavesCount = leavesRes.success ? (leavesRes.data || []).filter((l: any) => l.status === 'pending').length : 0
 
     // 3. Today's attendance summary
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
     const attendanceRes = await getAttendanceLogsAction()
     let presentCount = 0
     let absentCount = 0
@@ -88,7 +88,7 @@ export async function getTodayAttendanceSummaryAction() {
     return { success: false, error: 'Unauthorized' }
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   const attendanceRes = await getAttendanceLogsAction()
   if (!attendanceRes.success) return attendanceRes
 
@@ -115,13 +115,11 @@ export async function getTodayAttendanceSummaryAction() {
 }
 
 export async function getUpcomingHolidaysAction() {
-  // Stub until Step 5
-  return { success: true, data: [] }
+  return await getHolidaysAction()
 }
 
 export async function getRecentAnnouncementsAction() {
-  // Stub until Step 5
-  return { success: true, data: [] }
+  return await getAnnouncementsAction()
 }
 
 export async function getOnboardingInProgressAction() {

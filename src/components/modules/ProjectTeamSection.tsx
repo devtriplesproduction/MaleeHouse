@@ -27,9 +27,8 @@ const ASSIGNMENT_ROLES = [
 
 const ROLE_COLORS: Record<string, string> = {
   engineer: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  cad: 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400',
-  qc: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  sales_rep: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  field_engineer: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  employee: 'bg-slate-50 dark:bg-slate-500/10 text-slate-600 dark:text-slate-400',
   field: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400',
 };
 
@@ -203,8 +202,6 @@ export function ProjectTeamSection({ projectId, assignments, staff, canAssign }:
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0 ${colorClass}`}>
                   {roleKey}
                 </span>
-
-                {a.role === 'qc' && <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
 
                 {canAssign && (
                   <button

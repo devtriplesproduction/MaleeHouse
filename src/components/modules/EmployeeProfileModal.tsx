@@ -1114,8 +1114,8 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     <SelectItem value="accountant">Accountant</SelectItem>
                     <SelectItem value="engineer">Technical Engineer</SelectItem>
                     <SelectItem value="cad">CAD Operator</SelectItem>
-                    <SelectItem value="field">Field Surveyor</SelectItem>
-                    <SelectItem value="qc">QC Inspector</SelectItem>
+                    <SelectItem value="field_engineer">Field Engineer</SelectItem>
+                    <SelectItem value="hr">HR</SelectItem>
                     <SelectItem value="employee">Standard Staff</SelectItem>
                   </Select>
                 </div>

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createProjectSchema, type CreateProjectInput } from './validations'
 import { revalidatePath } from 'next/cache'
+import { notifyNewProjectAction } from '@/actions/notification.actions'
 
 export async function createProject(input: CreateProjectInput) {
   const supabase: any = await createClient()
@@ -51,6 +52,9 @@ export async function createProject(input: CreateProjectInput) {
       changed_by: user.id,
       comment: 'Project initialized'
     })
+
+    // 6. Notify admins and accountants
+    await notifyNewProjectAction(nextId, validated.data.name)
 
     revalidatePath('/sales')
     return { data: project }

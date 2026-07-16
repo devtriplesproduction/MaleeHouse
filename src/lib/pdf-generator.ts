@@ -737,187 +737,221 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
   }
 
   const issueDate = new Date(invoice.created_at);
-  const dueDate = invoice.due_date ? new Date(invoice.due_date) : new Date(issueDate.getTime() + 15 * 24 * 60 * 60 * 1000);
+  const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
+  
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
+
   const verifiedPayments = (invoice.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid');
   const amountPaid = verifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
   const totalAmount = Number(invoice.total_amount);
   const remainingAmount = Math.max(0, totalAmount - amountPaid);
+
+  const projectBudget = Number(project?.budget) || 0;
+  const projectPayments = project?.payments || [];
+  const projectVerifiedPayments = projectPayments.filter((p: any) => p.status === 'verified' || p.status === 'paid');
+  const projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const projectAmountRemaining = Math.max(0, projectBudget - projectAmountPaid);
 
   const htmlContent = `
     <!DOCTYPE html>
     <html>
       <head>
         <title>Invoice - ${invoice.invoice_number}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
-          
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+          body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #f1f5f9; }
           @page { size: A4 portrait; margin: 0; }
-          body { font-family: 'Inter', sans-serif; color: #1e293b; margin: 0; padding: 0; background-color: #f1f5f9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .page { width: 210mm; height: 297mm; padding: 20mm; margin: 10px auto; background-color: #ffffff; display: flex; flex-direction: column; position: relative; }
-          
-          .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
-          .company-details { font-size: 10px; color: #64748b; line-height: 1.5; margin-top: 10px; }
-          .document-type { text-align: right; }
-          .doc-title { font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: -0.02em; margin: 0 0 5px 0; }
-          .doc-number { font-size: 12px; font-weight: 700; color: #4f46e5; font-family: monospace; }
-          
-          .info-grid { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
-          .info-block { flex: 1; }
-          .info-label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
-          .info-value { font-size: 12px; font-weight: 600; color: #0f172a; }
-          
-          table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-          th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; }
-          td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
-          
-          .totals-box { width: 300px; margin-left: auto; margin-bottom: 30px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
-          .total-row { display: flex; justify-content: space-between; padding: 10px 15px; font-size: 11px; font-weight: 600; color: #475569; border-bottom: 1px solid #f1f5f9; }
-          .total-row.grand { background: #0f172a; color: #ffffff; font-size: 14px; font-weight: 700; border-bottom: none; }
-          .total-row.paid { background: #f8fafc; color: #64748b; font-size: 12px; }
-          
-          .footer-section { position: absolute; bottom: 20mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 8px; color: #94a3b8; font-weight: 500; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+          @media print {
+            body { background-color: white !important; margin: 0; padding: 0; }
+            .page-container { box-shadow: none !important; border: none !important; min-height: auto !important; margin: 0 !important; padding: 15mm !important; width: 100% !important; max-width: none !important; }
+            .no-print { display: none !important; }
+          }
         </style>
       </head>
-      <body>
-        <div class="page">
-          <div>
-            <div class="header">
-              <div>
-                <div style="font-family: 'Outfit'; font-weight: 900; font-size: 24px; color: #0f172a; letter-spacing: -1px;">MALEE HOUSE</div>
-                <div class="company-details">
-                  ${companySettings?.address || '123 Business Rd, City'}<br/>
-                  GSTIN: ${companySettings?.gst_number || '27XXXXX1234X1ZX'}<br/>
-                  ${companySettings?.email || 'contact@example.com'} | ${companySettings?.phone || '+91 9876543210'}
-                </div>
-              </div>
-              <div class="document-type">
-                <h1 class="doc-title">TAX INVOICE</h1>
-                <div class="doc-number">INV #${invoice.invoice_number}</div>
-              </div>
-            </div>
-            
-            <div class="info-grid">
-              <div class="info-block">
-                <div class="info-label">Billed To</div>
-                <div class="info-value" style="font-family: Outfit; font-size: 14px;">${project?.client_name || 'Client Name'}</div>
-                <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Project: ${project?.name || 'Project Name'}</div>
-              </div>
-              <div class="info-block" style="text-align: right;">
-                <div class="info-label">Issue Date</div>
-                <div class="info-value" style="margin-bottom: 8px;">${issueDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-                <div class="info-label">Due Date</div>
-                <div class="info-value">${dueDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-              </div>
-            </div>
-            
-            <table>
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th style="text-align: right;">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <div style="font-weight: 700; color: #0f172a;">Professional Services</div>
-                    <div style="color: #64748b; font-size: 10px; margin-top: 3px;">As per project milestone ${invoice.milestone_id ? 'or visit completion.' : 'agreement.'}</div>
-                  </td>
-                  <td style="text-align: right; font-weight: 600; font-family: monospace;">INR ${Number(invoice.amount).toLocaleString('en-IN')}</td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <div class="totals-box">
-              <div class="total-row">
-                <span>Subtotal</span>
-                <span style="font-family: monospace;">INR ${Number(invoice.amount).toLocaleString('en-IN')}</span>
-              </div>
-              <div class="total-row">
-                <span>CGST (${Number(invoice.gst_rate)/2}%)</span>
-                <span style="font-family: monospace;">INR ${(Number(invoice.gst_amount)/2).toLocaleString('en-IN')}</span>
-              </div>
-              <div class="total-row">
-                <span>SGST (${Number(invoice.gst_rate)/2}%)</span>
-                <span style="font-family: monospace;">INR ${(Number(invoice.gst_amount)/2).toLocaleString('en-IN')}</span>
-              </div>
-              <div class="total-row grand">
-                <span>Total Due</span>
-                <span style="font-family: monospace;">INR ${totalAmount.toLocaleString('en-IN')}</span>
-              </div>
-              <div class="total-row paid">
-                <span>Amount Paid</span>
-                <span style="font-family: monospace;">INR ${amountPaid.toLocaleString('en-IN')}</span>
-              </div>
-              <div class="total-row grand" style="background: ${remainingAmount > 0 ? '#ef4444' : '#22c55e'}; margin-top: 1px;">
-                <span>Balance Remaining</span>
-                <span style="font-family: monospace;">INR ${remainingAmount.toLocaleString('en-IN')}</span>
-              </div>
-            </div>
+      <body class="p-8 flex justify-center">
+        <div class="page-container bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-10 relative w-full max-w-4xl min-h-[1050px] justify-between mx-auto">
+           <div class="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of 1</div>
 
-            </div>
+           <div class="space-y-8 flex-1">
+              <!-- Document Header with Full Malee House Details -->
+              <div class="flex justify-between items-start border-b border-slate-100 pb-6">
+                 <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                       <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
+                       <div class="space-y-0.5">
+                          <h1 class="text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h1>
+                          <p class="text-[9px] text-indigo-600 font-semibold uppercase tracking-wider">Engineering & Survey Services</p>
+                       </div>
+                    </div>
+                    
+                    <div class="text-[11px] text-slate-500 leading-relaxed font-medium">
+                       <p class="font-semibold text-slate-800">${companySettings?.name || 'Malee House Head Office'}</p>
+                       <p>${companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
+                       <p>${companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
+                       <p class="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: ${companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: ${companySettings?.telephone || '+91 80 4987 6543'}</p>
+                    </div>
+                 </div>
 
-            ${bankDetails ? `
-            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;">
-              <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 10px;">Payment Details</div>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 600; color: #64748b; width: 120px;">Bank Name:</td>
-                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 700; color: #0f172a;">${bankDetails.bank_name}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 600; color: #64748b;">Account Name:</td>
-                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 700; color: #0f172a;">${bankDetails.account_name}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 600; color: #64748b;">Account Number:</td>
-                  <td style="padding: 4px 0; border: none; font-size: 12px; font-weight: 700; color: #0f172a; font-family: monospace;">${bankDetails.account_number}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 0; border: none; font-size: 11px; font-weight: 600; color: #64748b;">IFSC Code:</td>
-                  <td style="padding: 4px 0; border: none; font-size: 12px; font-weight: 700; color: #0f172a; font-family: monospace;">${bankDetails.ifsc_code}</td>
-                </tr>
-              </table>
-              <div style="font-size: 9px; color: #94a3b8; margin-top: 8px;">Please include invoice number in payment reference.</div>
-            </div>
-            ` : ''}
-
-            ${(project?.budget > 0) ? `
-            <div style="margin-left: auto; width: 300px; margin-top: 20px;">
-              <div style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Project Financial Summary</div>
-              <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #f8fafc;">
-                <div style="display: flex; justify-content: space-between; padding: 8px 15px; font-size: 10px; font-weight: 600; color: #475569; border-bottom: 1px solid #e2e8f0;">
-                  <span>Total Cost of Project</span>
-                  <span style="font-family: monospace;">INR ${(Number(project.budget) || 0).toLocaleString('en-IN')}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 8px 15px; font-size: 10px; font-weight: 600; color: #475569; border-bottom: 1px solid #e2e8f0;">
-                  <span>Total Project Paid</span>
-                  <span style="font-family: monospace;">
-                    INR ${(
-                      (project.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid')
-                        .reduce((sum: number, p: any) => sum + Number(p.amount), 0)
-                    ).toLocaleString('en-IN')}
-                  </span>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 8px 15px; font-size: 11px; font-weight: 700; color: #0f172a; background: #e2e8f0;">
-                  <span>Project Balance Remaining</span>
-                  <span style="font-family: monospace;">
-                    INR ${Math.max(0, (Number(project.budget) || 0) - (project.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid').reduce((sum: number, p: any) => sum + Number(p.amount), 0)).toLocaleString('en-IN')}
-                  </span>
-                </div>
+                 <div class="text-right space-y-4">
+                    <h1 class="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">Invoice</h1>
+                    
+                    <div class="space-y-2 text-xs">
+                       <div class="flex flex-col items-end">
+                          <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Invoice Number</p>
+                          <p class="font-semibold text-slate-800 nums">#${invoice.invoice_number}</p>
+                       </div>
+                       <div class="flex flex-col items-end">
+                          <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Date Issued</p>
+                          <p class="font-semibold text-slate-800">${formatDate(issueDate)}</p>
+                       </div>
+                       <div class="flex flex-col items-end">
+                          <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Due Date</p>
+                          <p class="font-semibold text-slate-800">
+                              ${dueDate ? formatDate(dueDate) : 'Upon Receipt'}
+                          </p>
+                       </div>
+                    </div>
+                 </div>
               </div>
-            </div>
-            ` : ''}
-          </div>
-          
-          <div class="footer-section">
-            <span>Malee House Surveying OS &middot; Secure invoice record</span>
-            <span>Page 1 of 1</span>
-          </div>
+
+              <!-- Client Bill To & Project info -->
+              <div class="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
+                 <div>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
+                    <h2 class="text-sm font-semibold text-slate-800 leading-tight">${project?.client_name || 'Client Name'}</h2>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">${project?.client_contact || 'Authorized project engagement'}</p>
+                 </div>
+                 <div>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>
+                    <h2 class="text-sm font-semibold text-slate-800 leading-tight">${project?.name || 'Project Name'}</h2>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">Location: ${project?.site_details?.address || 'Site Technical Survey'}</p>
+                 </div>
+              </div>
+
+              <!-- Services Table -->
+              <div class="space-y-4">
+                 <table class="w-full border-collapse">
+                    <thead>
+                       <tr class="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                          <th class="py-2.5 text-left w-12">#</th>
+                          <th class="py-2.5 text-left">Service Description</th>
+                          <th class="py-2.5 text-center w-20">Qty</th>
+                          <th class="py-2.5 text-right w-36">Unit Price</th>
+                          <th class="py-2.5 text-right w-36">Total</th>
+                       </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                       <tr class="align-top">
+                          <td class="py-4 text-xs font-semibold text-slate-400">1</td>
+                          <td class="py-4">
+                             <p class="text-xs font-semibold text-slate-900 uppercase tracking-tight">Professional Services</p>
+                             <p class="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">As per project milestone agreement.</p>
+                          </td>
+                          <td class="py-4 text-center text-xs font-semibold text-slate-800">1</td>
+                          <td class="py-4 text-right text-xs font-medium text-slate-800 nums">INR ${Number(invoice.amount).toLocaleString('en-IN')}</td>
+                          <td class="py-4 text-right text-xs font-semibold text-slate-900 nums">INR ${Number(invoice.amount).toLocaleString('en-IN')}</td>
+                       </tr>
+                    </tbody>
+                 </table>
+              </div>
+           </div>
+
+           <!-- Totals and Bank Details panel located right below services -->
+           <div class="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-between items-start gap-8">
+              <!-- Bank Details on the left -->
+              <div class="flex-1 max-w-sm">
+                 <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Payment Information</h3>
+                 ${bankDetails ? `
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-2 text-[11px] text-slate-700 font-medium">
+                       <div class="flex justify-between border-b border-slate-200 pb-1.5">
+                          <span class="text-slate-500">Bank</span>
+                          <span class="font-semibold text-slate-900">${bankDetails.bank_name}</span>
+                       </div>
+                       <div class="flex justify-between border-b border-slate-200 pb-1.5">
+                          <span class="text-slate-500">Account Name</span>
+                          <span class="font-semibold text-slate-900">${bankDetails.account_name}</span>
+                       </div>
+                       <div class="flex justify-between border-b border-slate-200 pb-1.5">
+                          <span class="text-slate-500">Account No.</span>
+                          <span class="font-mono font-semibold text-slate-900">${bankDetails.account_number}</span>
+                       </div>
+                       <div class="flex justify-between border-b border-slate-200 pb-1.5">
+                          <span class="text-slate-500">IFSC Code</span>
+                          <span class="font-mono font-semibold text-slate-900">${bankDetails.ifsc_code}</span>
+                       </div>
+                       <div class="flex justify-between">
+                          <span class="text-slate-500">Branch</span>
+                          <span class="font-semibold text-slate-900">${bankDetails.branch_name}</span>
+                       </div>
+                    </div>
+                 ` : `
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200/60 text-[11px] text-amber-700 font-medium flex items-center justify-center text-center">
+                       No bank account selected for this invoice.
+                    </div>
+                 `}
+              </div>
+
+              <div class="w-full md:w-72 space-y-2.5">
+                 <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                    <span>Subtotal</span>
+                    <span>INR ${Number(invoice.amount).toLocaleString('en-IN')}</span>
+                 </div>
+
+                 <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                    <span>CGST (${Number(invoice.gst_rate) / 2}%)</span>
+                    <span>INR ${(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
+                 </div>
+
+                 <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                    <span>SGST (${Number(invoice.gst_rate) / 2}%)</span>
+                    <span>INR ${(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
+                 </div>
+
+                 <div class="pt-3 border-t border-slate-200 flex justify-between items-end">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>
+                    <p class="text-xl font-bold text-slate-900 tracking-tight nums">INR ${Number(invoice.total_amount).toLocaleString('en-IN')}</p>
+                 </div>
+
+                 <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums pt-2 border-t border-slate-100">
+                    <span>Amount Paid</span>
+                    <span>INR ${amountPaid.toLocaleString('en-IN')}</span>
+                 </div>
+
+                 <div class="flex justify-between items-end p-2 rounded-lg ${remainingAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}">
+                    <p class="text-[11px] font-bold uppercase tracking-wider">Invoice Balance</p>
+                    <p class="text-lg font-bold tracking-tight nums">INR ${remainingAmount.toLocaleString('en-IN')}</p>
+                 </div>
+
+                 <!-- Project Totals -->
+                 ${projectBudget > 0 ? `
+                   <div class="pt-4 mt-2 border-t border-slate-200">
+                     <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-2">Project Financial Summary</p>
+                     <div class="space-y-1.5">
+                       <div class="flex justify-between text-[10px] font-semibold text-slate-500 uppercase tracking-wider nums">
+                          <span>Total Cost of Project</span>
+                          <span>INR ${projectBudget.toLocaleString('en-IN')}</span>
+                       </div>
+                       <div class="flex justify-between text-[10px] font-semibold text-slate-500 uppercase tracking-wider nums">
+                          <span>Total Project Paid</span>
+                          <span>INR ${projectAmountPaid.toLocaleString('en-IN')}</span>
+                       </div>
+                       <div class="flex justify-between text-[10px] font-semibold text-slate-600 uppercase tracking-wider nums bg-slate-100 p-1.5 rounded">
+                          <span>Project Balance Remaining</span>
+                          <span class="font-bold">INR ${projectAmountRemaining.toLocaleString('en-IN')}</span>
+                       </div>
+                     </div>
+                   </div>
+                 ` : ''}
+              </div>
+           </div>
         </div>
+
         <script>
           window.onload = function() {
-            setTimeout(() => { window.print(); }, 500);
+            setTimeout(() => { window.print(); window.close(); }, 1200);
           };
         </script>
       </body>

@@ -9,6 +9,7 @@ import { uploadEODPhotoAction } from '@/actions/storage.actions';
 import { Send, Clock, AlertCircle, Flame, CheckCircle2, Calendar, Camera, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface EODReport {
   id: string;
@@ -16,6 +17,7 @@ interface EODReport {
   tasks_completed: string;
   hours_spent: number;
   blockers: string | null;
+  work_location?: 'office' | 'field';
 }
 
 interface EODFormProps {
@@ -28,38 +30,51 @@ interface EODFormProps {
 }
 
 // Dynamic Streak Calculation
-function calculateStreak(reports: EODReport[]) {
+function calculateStreak(reports: any[]) {
   if (!reports || reports.length === 0) return 0;
-  
-  // Sort reports by date ascending to make calculations easy
+
+  // Extract just the YYYY-MM-DD part and sort
   const sorted = [...reports]
-    .map((r: any) => new Date(r.date))
-    .sort((a: any, b: any) => a.getTime() - b.getTime());
-    
+    .map((r: any) => r.date.split('T')[0])
+    .sort((a: string, b: string) => a.localeCompare(b));
+
   // Get unique dates (in case of duplicates)
-  const uniqueDates = Array.from(new Set(sorted.map((d: any) => d.toISOString().split('T')[0])));
+  const uniqueDates = Array.from(new Set(sorted));
+
+  // Helper to get local date string YYYY-MM-DD
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const getLocalStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  const now = new Date();
+  const todayStr = getLocalStr(now);
   
-  const todayStr = new Date().toISOString().split('T')[0];
-  const yesterday = new Date();
+  const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
-  
+  const yesterdayStr = getLocalStr(yesterday);
+
+  // Also account for "tomorrow" in case local time is behind DB time
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = getLocalStr(tomorrow);
+
   const lastIndex = uniqueDates.length - 1;
   const lastReportDateStr = uniqueDates[lastIndex];
-  
-  // If the last report is neither today nor yesterday, the streak is broken
-  if (lastReportDateStr !== todayStr && lastReportDateStr !== yesterdayStr) {
+
+  // If the last report is neither today, yesterday, nor tomorrow, the streak is broken
+  if (lastReportDateStr !== todayStr && lastReportDateStr !== yesterdayStr && lastReportDateStr !== tomorrowStr) {
     return 0;
   }
-  
+
   let streak = 0;
-  let checkDate = new Date(lastReportDateStr);
-  
+  // Parse last report date in local time to avoid timezone shifts
+  const [y, m, d] = lastReportDateStr.split('-').map(Number);
+  let checkDate = new Date(y, m - 1, d);
+
   // Go backwards and count consecutive days
   for (let i = lastIndex; i >= 0; i--) {
     const currentReportStr = uniqueDates[i];
-    const expectedStr = checkDate.toISOString().split('T')[0];
-    
+    const expectedStr = getLocalStr(checkDate);
+
     if (currentReportStr === expectedStr) {
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);
@@ -67,7 +82,7 @@ function calculateStreak(reports: EODReport[]) {
       break;
     }
   }
-  
+
   return streak;
 }
 
@@ -75,12 +90,24 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>('myself');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  // Fix: Use local time for dates to avoid UTC off-by-one errors
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const getLocalStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalStr(new Date()));
   const [photo, setPhoto] = useState<File | null>(null);
-  
+
   const isSubmittingForOther = selectedUser !== 'myself';
   const canSelectDate = currentUserRole === 'admin' || currentUserRole === 'hr';
-  
+  let showLocationSelection = false;
+  if (isSubmittingForOther) {
+    const targetStaff = staff?.find((s: any) => s.id === selectedUser);
+    const targetRole = (targetStaff?.department || targetStaff?.role || '').toLowerCase();
+    showLocationSelection = ['field', 'field_engineer', 'engineer'].includes(targetRole);
+  } else {
+    showLocationSelection = ['hr', 'field', 'field_engineer', 'engineer'].includes(currentUserRole?.toLowerCase() || '');
+  }
+
   let targetReport = null;
   if (isSubmittingForOther) {
     targetReport = allReports.find((r: any) => r.date === selectedDate && r.user_id === selectedUser);
@@ -98,19 +125,43 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
     work_location: 'office' as 'office' | 'field'
   });
 
+  // Update form data when target report changes
   useEffect(() => {
-    setFormData({
-      tasks_completed: targetReport?.tasks_completed || '',
-      hours_spent: targetReport?.hours_spent?.toString() || '8.5',
-      blockers: targetReport?.blockers || '',
-      work_location: 'office'
-    });
-  }, [selectedDate, selectedUser, targetReport]);
+    if (targetReport) {
+      setFormData({
+        tasks_completed: targetReport.tasks_completed || '',
+        hours_spent: targetReport.hours_spent?.toString() || '8.5',
+        blockers: targetReport.blockers || '',
+        work_location: targetReport.work_location || 'office'
+      });
+    } else {
+      setFormData({
+        tasks_completed: '',
+        hours_spent: '8.5',
+        blockers: '',
+        work_location: 'office'
+      });
+    }
+  }, [targetReport]);
+
+  const pastDates = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    return {
+      value: getLocalStr(d),
+      label: d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    };
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.tasks_completed.trim() || !formData.hours_spent) {
       toast.error('Please fill in completed tasks and office hours');
+      return;
+    }
+
+    if (parseFloat(formData.hours_spent) > 10) {
+      toast.error('Office hours cannot exceed 10');
       return;
     }
 
@@ -149,7 +200,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
         });
         setPhoto(null);
         if (onSuccess) onSuccess();
-        router.refresh();
+        window.location.reload();
       } else {
         toast.error(response.error || 'Failed to submit report');
       }
@@ -189,7 +240,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
 
       {/* ── Form Card or Already Submitted Card ── */}
       {/* ── Form Card ── */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -206,20 +257,20 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
               <label className="text-xs font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-400 flex items-center gap-1.5 mb-3">
                 Submitting On Behalf Of
               </label>
-              <select
+              <SearchableSelect
                 value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full md:w-80 h-11 bg-white dark:bg-[#070b14]/50 border border-slate-200 dark:border-white/10 rounded-xl px-4 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all cursor-pointer font-medium shadow-sm"
-              >
-                <option value="myself">Myself (Submit my own EOD)</option>
-                {staff
-                  .filter((s: any) => s.id !== currentUserId && !(s.first_name === 'Admin' && s.last_name === 'System'))
-                  .map((s: any) => (
-                    <option key={s.id} value={s.id}>
-                      {s.first_name} {s.last_name} ({s.department || s.role})
-                    </option>
-                  ))}
-              </select>
+                onValueChange={(val) => setSelectedUser(val)}
+                options={[
+                  { label: "Myself (Submit my own EOD)", value: "myself" },
+                  ...staff
+                    .filter((s: any) => s.id !== currentUserId && !(s.first_name === 'Admin' && s.last_name === 'System'))
+                    .map((s: any) => ({
+                      label: `${s.first_name} ${s.last_name} (${s.department || s.role})`,
+                      value: s.id
+                    }))
+                ]}
+                className="w-full md:w-80 h-11"
+              />
             </div>
           )}
 
@@ -231,9 +282,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                   <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     Tasks Accomplished Today <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                    {hasSubmitted ? "Submission logged" : "Enter one task per line"}
-                  </span>
+
                 </div>
                 {hasSubmitted ? (
                   <div className="w-full h-32 overflow-y-auto rounded-2xl bg-slate-100 dark:bg-[#070b14]/50 border border-slate-200 dark:border-white/5 p-4 text-sm text-slate-900 dark:text-slate-100 opacity-75 cursor-not-allowed shadow-inner whitespace-pre-wrap leading-relaxed">
@@ -267,9 +316,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                   <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     Blockers / Impediments
                   </label>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                    Anything slowing you down?
-                  </span>
+
                 </div>
                 <div className="relative h-32">
                   <AlertCircle className="absolute left-4 top-4 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -290,20 +337,20 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                   Field Photo Attachment
                 </label>
                 {!photo ? (
-                  <div 
+                  <div
                     onClick={() => !hasSubmitted && document.getElementById('field-photo-upload')?.click()}
                     className={cn(
                       "w-full border-2 border-dashed rounded-2xl flex flex-col items-center justify-center py-8 transition-all relative overflow-hidden",
-                      hasSubmitted 
-                        ? "border-slate-200 dark:border-white/5 opacity-50 cursor-not-allowed bg-slate-50 dark:bg-[#070b14]/20" 
+                      hasSubmitted
+                        ? "border-slate-200 dark:border-white/5 opacity-50 cursor-not-allowed bg-slate-50 dark:bg-[#070b14]/20"
                         : "border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 cursor-pointer group"
                     )}
                   >
-                    <input 
-                      id="field-photo-upload" 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
+                    <input
+                      id="field-photo-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) setPhoto(file);
@@ -340,9 +387,9 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                       </div>
                     </div>
                     {!hasSubmitted && !loading && (
-                      <button 
+                      <button
                         type="button"
-                        onClick={() => setPhoto(null)} 
+                        onClick={() => setPhoto(null)}
                         className="p-2 bg-white dark:bg-[#070b14]/50 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-slate-200 dark:border-white/5 rounded-full text-slate-400 hover:text-rose-500 transition-colors shrink-0 shadow-sm"
                       >
                         <X className="w-4 h-4" />
@@ -355,7 +402,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
 
             {/* Bottom Row */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-5 border-t border-slate-200/60 dark:border-white/5">
-              
+
               <div className="flex flex-col sm:flex-row gap-6 w-full md:w-auto">
                 {/* Date Selection */}
                 <div className="w-full sm:w-48 space-y-3">
@@ -364,8 +411,8 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                       Report Date <span className="text-rose-500">*</span>
                     </label>
                   </div>
-                  <PremiumDatePicker 
-                    value={selectedDate} 
+                  <PremiumDatePicker
+                    value={selectedDate}
                     onChange={setSelectedDate}
                     className="h-11"
                     disabled={!canSelectDate}
@@ -373,20 +420,23 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                 </div>
 
                 {/* Work Location */}
-                <div className="w-full sm:w-36 space-y-3">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    Location <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={formData.work_location}
-                    onChange={(e) => setFormData({ ...formData, work_location: e.target.value as 'office' | 'field' })}
-                    disabled={hasSubmitted}
-                    className="w-full h-11 bg-slate-100 dark:bg-[#070b14]/50 border border-slate-200 dark:border-white/5 rounded-xl px-4 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all cursor-pointer font-semibold shadow-inner disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    <option value="office">Office</option>
-                    <option value="field">Field</option>
-                  </select>
-                </div>
+                {showLocationSelection && (
+                  <div className="w-full sm:w-36 space-y-3">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      Location <span className="text-rose-500">*</span>
+                    </label>
+                    <SearchableSelect
+                      value={formData.work_location}
+                      onValueChange={(val) => setFormData({ ...formData, work_location: val as 'office' | 'field' })}
+                      disabled={hasSubmitted}
+                      options={[
+                        { label: "Office", value: "office" },
+                        { label: "Field", value: "field" }
+                      ]}
+                      className="w-full h-11"
+                    />
+                  </div>
+                )}
 
                 {/* Office Hours */}
                 <div className="w-full sm:w-48 space-y-3">
@@ -398,6 +448,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                     <input
                       type="number"
                       step="0.5"
+                      max="10"
                       placeholder="e.g. 8.5"
                       value={formData.hours_spent}
                       onChange={(e) => setFormData({ ...formData, hours_spent: e.target.value })}
@@ -416,8 +467,8 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                   disabled={loading || hasSubmitted}
                   className={cn(
                     "w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
-                    hasSubmitted 
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 cursor-not-allowed" 
+                    hasSubmitted
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 cursor-not-allowed"
                       : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 disabled:opacity-50 disabled:pointer-events-none"
                   )}
                 >

@@ -5,16 +5,16 @@ import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
-import { 
-  Dialog, 
-  DialogContent, 
+import {
+  Dialog,
+  DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectItem } from "@/components/ui/select";
-import { 
-  Building2, 
-  MapPin, 
-  Phone, 
+import {
+  Building2,
+  MapPin,
+  Phone,
   Mail,
   Layers,
   Plus,
@@ -187,10 +187,10 @@ export function ProjectCreationWizard() {
       }
     }}>
       <DialogTrigger asChild>
-        <button 
+        <button
           id="btn-establish-project"
           className={cn(
-            "flex items-center gap-2 px-6 py-2.5 text-white rounded-2xl font-bold uppercase tracking-wider text-sm transition-all shadow-lg active:scale-95 group",
+            "flex items-center gap-2 px-6 py-2.5 text-white rounded-2xl font-bold  tracking-wider text-sm transition-all shadow-lg active:scale-95 group",
             c.bg, c.hoverBg, c.shadow
           )}
         >
@@ -198,16 +198,16 @@ export function ProjectCreationWizard() {
           Add Project
         </button>
       </DialogTrigger>
-      
+
       <DialogContent className="max-w-5xl h-[85vh] !p-0 !overflow-hidden !border-none !bg-transparent !shadow-none sm:!rounded-none [&>button]:hidden">
         <div className="w-full h-full flex bg-white/95 dark:bg-[#0c101f]/95 backdrop-blur-2xl rounded-[3rem] border border-slate-200/80 dark:border-white/10 overflow-hidden relative shadow-2xl font-sans">
-          
+
           {/* ── Left Sidebar Flow ── */}
           <div className="w-96 bg-slate-50/50 dark:bg-[#080b14]/50 border-r border-slate-200/80 dark:border-white/5 flex flex-col justify-between p-10 shrink-0 relative overflow-hidden">
             {/* Ambient Background Glow */}
             <div className={cn("absolute -top-24 -left-24 w-48 h-48 blur-[60px] rounded-full pointer-events-none", c.glow)} />
             <div className={cn("absolute -bottom-24 -right-24 w-48 h-48 blur-[60px] rounded-full pointer-events-none", c.glow)} />
-            
+
             <div className="space-y-10 relative z-10">
               {/* Header Title */}
               <div className="space-y-4">
@@ -229,8 +229,8 @@ export function ProjectCreationWizard() {
                       <div className={cn(
                         "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300 border shrink-0",
                         isActive ? c.stepActive :
-                        isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-indigo-500/20" : 
-                        "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500"
+                          isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-indigo-500/20" :
+                            "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500"
                       )}>
                         {isCompleted ? <CheckCircle2 className="w-5 h-5 text-white" /> : <span>0{s.id}</span>}
                       </div>
@@ -253,13 +253,13 @@ export function ProjectCreationWizard() {
 
           {/* ── Right Content Area ── */}
           <div className="flex-1 flex flex-col overflow-hidden bg-white/50 dark:bg-[#0c101f]/50">
-            
+
             {/* Form Fields */}
             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
               <FormProvider {...methods}>
-                <form 
-                  id="wizard-form" 
-                  onSubmit={handleSubmit(onSubmit)} 
+                <form
+                  id="wizard-form"
+                  onSubmit={handleSubmit(onSubmit)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
                       e.preventDefault();
@@ -268,7 +268,7 @@ export function ProjectCreationWizard() {
                   className="max-w-2xl mx-auto space-y-8"
                 >
                   <AnimatePresence mode="wait">
-                    <motion.div 
+                    <motion.div
                       key={step}
                       initial={{ opacity: 0, x: 10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -296,7 +296,7 @@ export function ProjectCreationWizard() {
                       {/* STEP 1: Customer & Site Details */}
                       {step === 1 && (
                         <div className="space-y-6">
-                          
+
                           {/* Project Name & Client Entity */}
                           <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
@@ -305,11 +305,11 @@ export function ProjectCreationWizard() {
                               </label>
                               <div className="relative group">
                                 <Building2 className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
-                                <input 
+                                <input
                                   id="input-name"
-                                  {...methods.register('name')} 
-                                  placeholder="e.g. Pune Highway Survey" 
-                                  className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)} 
+                                  {...methods.register('name')}
+                                  placeholder="e.g. Pune Highway Survey"
+                                  className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
                                 />
                               </div>
                               {errors.name && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.name.message}</p>}
@@ -320,13 +320,13 @@ export function ProjectCreationWizard() {
                                 Client / Company Name
                               </label>
                               <div className="relative group">
-                                 <Globe className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
-                                 <input 
-                                   id="input-client"
-                                   {...methods.register('client_name')} 
-                                   placeholder="Individual or Company" 
-                                   className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)} 
-                                 />
+                                <Globe className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
+                                <input
+                                  id="input-client"
+                                  {...methods.register('client_name')}
+                                  placeholder="Individual or Company"
+                                  className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                                />
                               </div>
                               {errors.client_name && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.client_name.message}</p>}
                             </div>
@@ -339,25 +339,25 @@ export function ProjectCreationWizard() {
                                 Primary Contact (Phone)
                               </label>
                               <div className={cn("relative group phone-input-container glass-input h-14 !p-0 flex items-center transition-all focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 dark:focus-within:ring-indigo-500/5")}>
-                                 <Phone className={cn("absolute left-4 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0 group-focus-within:text-indigo-500")} />
-                                 <Controller
-                                   name="phone"
-                                   control={methods.control}
-                                   render={({ field }) => (
-                                     <PhoneInput
-                                       {...field}
-                                       id="input-phone"
-                                       placeholder="+91 98765 43210"
-                                       defaultCountry="IN"
-                                       international
-                                       countryCallingCodeEditable={false}
-                                       limitMaxLength={true}
-                                       maxLength={15}
-                                       className="w-full h-full font-bold text-sm"
-                                     />
-                                   )}
-                                 />
-                                 <style jsx global>{`
+                                <Phone className={cn("absolute left-4 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0 group-focus-within:text-indigo-500")} />
+                                <Controller
+                                  name="phone"
+                                  control={methods.control}
+                                  render={({ field }) => (
+                                    <PhoneInput
+                                      {...field}
+                                      id="input-phone"
+                                      placeholder="+91 98765 43210"
+                                      defaultCountry="IN"
+                                      international
+                                      countryCallingCodeEditable={false}
+                                      limitMaxLength={true}
+                                      maxLength={15}
+                                      className="w-full h-full font-bold text-sm"
+                                    />
+                                  )}
+                                />
+                                <style jsx global>{`
                                    .phone-input-container .PhoneInput {
                                      display: flex;
                                      align-items: center;
@@ -396,13 +396,13 @@ export function ProjectCreationWizard() {
                                 Email Address
                               </label>
                               <div className="relative group">
-                                 <Mail className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
-                                 <input 
-                                   id="input-email"
-                                   {...methods.register('email')} 
-                                   placeholder="client@example.com" 
-                                   className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)} 
-                                 />
+                                <Mail className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
+                                <input
+                                  id="input-email"
+                                  {...methods.register('email')}
+                                  placeholder="client@example.com"
+                                  className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                                />
                               </div>
                               {errors.email && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.email.message}</p>}
                             </div>
@@ -417,8 +417,8 @@ export function ProjectCreationWizard() {
                               name="site_type"
                               control={methods.control}
                               render={({ field }) => (
-                                <Select 
-                                  value={field.value} 
+                                <Select
+                                  value={field.value}
                                   onValueChange={field.onChange}
                                   className={cn("glass-input h-14 p-0 m-0 flex items-center", c.focusBorder, c.focusRing)}
                                   buttonClassName="w-full h-full bg-transparent border-0 hover:bg-transparent hover:border-0 dark:hover:bg-transparent text-sm font-bold shadow-none text-slate-800 dark:text-white"
@@ -440,13 +440,13 @@ export function ProjectCreationWizard() {
                               Site Address
                             </label>
                             <div className="relative group">
-                                <MapPin className={cn("absolute left-4 top-5 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
-                                <textarea 
-                                  id="textarea-address"
-                                  {...methods.register('client_address')} 
-                                  placeholder="Enter the complete site location address..." 
-                                  className={cn("glass-input min-h-[90px] py-4 !pl-12 resize-none font-bold text-sm leading-relaxed placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)} 
-                                />
+                              <MapPin className={cn("absolute left-4 top-5 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
+                              <textarea
+                                id="textarea-address"
+                                {...methods.register('client_address')}
+                                placeholder="Enter the complete site location address..."
+                                className={cn("glass-input min-h-[90px] py-4 !pl-12 resize-none font-bold text-sm leading-relaxed placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                              />
                             </div>
                             {errors.client_address && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.client_address.message}</p>}
                           </div>
@@ -456,10 +456,10 @@ export function ProjectCreationWizard() {
                             <label htmlFor="textarea-reqs" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
                               Technical Scope Requirements
                             </label>
-                            <textarea 
+                            <textarea
                               id="textarea-reqs"
                               {...methods.register('survey_requirements')}
-                              rows={4} 
+                              rows={4}
                               placeholder="Detail critical survey requirements, specific limits, or land conditions..."
                               className={cn("glass-input py-4 px-5 min-h-[100px] text-sm leading-relaxed resize-none font-bold placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
                             />
@@ -486,8 +486,8 @@ export function ProjectCreationWizard() {
                                     onClick={() => setActiveCategory(cat)}
                                     className={cn(
                                       "w-full text-left px-4 py-3.5 rounded-xl text-xs font-bold tracking-tight transition-all flex items-center justify-between group",
-                                      isCurrent 
-                                        ? cn(c.bg, "text-white shadow-md", c.shadowMd) 
+                                      isCurrent
+                                        ? cn(c.bg, "text-white shadow-md", c.shadowMd)
                                         : "hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-450"
                                     )}
                                   >
@@ -510,7 +510,7 @@ export function ProjectCreationWizard() {
                               <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">
                                 {activeCategory} Services
                               </h4>
-                              
+
                               <div className="grid grid-cols-1 gap-3">
                                 {SERVICES_BY_CATEGORY[activeCategory].map((subCat) => {
                                   const isSelected = selectedServices.includes(subCat);
@@ -527,8 +527,8 @@ export function ProjectCreationWizard() {
                                       }}
                                       className={cn(
                                         "w-full flex items-center justify-between p-4 rounded-xl border text-xs font-bold text-left transition-all duration-200 group relative",
-                                        isSelected 
-                                          ? cn(c.bg, "border-transparent text-white shadow-md", c.shadowMd) 
+                                        isSelected
+                                          ? cn(c.bg, "border-transparent text-white shadow-md", c.shadowMd)
                                           : cn("bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-350", "hover:border-indigo-500/40")
                                       )}
                                     >
@@ -541,11 +541,11 @@ export function ProjectCreationWizard() {
                                         </div>
                                         <span className="tracking-tight leading-snug">{subCat}</span>
                                       </div>
-                                      
+
                                       <div className={cn(
                                         "w-5 h-5 rounded-full border flex items-center justify-center transition-all shrink-0",
-                                        isSelected 
-                                          ? "bg-white border-white text-indigo-600 scale-105" 
+                                        isSelected
+                                          ? "bg-white border-white text-indigo-600 scale-105"
                                           : "border-slate-300 dark:border-white/20 group-hover:scale-105"
                                       )}>
                                         {isSelected && <CheckCircle2 className={cn("w-3.5 h-3.5 fill-white", c.text)} />}
@@ -564,14 +564,14 @@ export function ProjectCreationWizard() {
                       {/* STEP 3: Review & Finalize */}
                       {step === 3 && (
                         <div className="space-y-6">
-                          
+
                           {/* Premium Recap Card in Liquid Glass theme */}
                           <div className="glass-card bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-3xl p-8 space-y-6 relative overflow-hidden shadow-xl">
                             <div className={cn("absolute top-0 right-0 w-48 h-48 blur-[80px] rounded-full pointer-events-none", c.glow)} />
-                            
+
                             <div className="border-b border-slate-200/60 dark:border-white/5 pb-5">
-                               <p className={cn("text-xs font-bold uppercase tracking-widest mb-1", c.text)}>Project Name</p>
-                               <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">{watch('name')}</h4>
+                              <p className={cn("text-xs font-bold uppercase tracking-widest mb-1", c.text)}>Project Name</p>
+                              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">{watch('name')}</h4>
                             </div>
 
                             <div className="grid grid-cols-2 gap-6 text-slate-600 dark:text-slate-300">
@@ -668,7 +668,7 @@ export function ProjectCreationWizard() {
                   id="btn-wizard-submit"
                   disabled={isSubmitting}
                   className={cn(
-                    "flex items-center gap-3 px-8 py-3 text-white rounded-xl text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97] transition-all group outline-none",
+                    "flex items-center gap-3 px-8 py-3 text-white rounded-xl text-xs font-bold   tracking-wider disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97] transition-all group outline-none",
                     c.bg, c.hoverBg, c.shadow
                   )}
                 >

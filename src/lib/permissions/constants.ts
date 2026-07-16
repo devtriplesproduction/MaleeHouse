@@ -24,7 +24,6 @@ export const PERMISSIONS = {
     cad: ["prototype", "cad_revision", "cad_submitted", "data_sync", "review", "field_assigned", "field_work", "completed", "cad_finalization"],
     field: ["field_work", "field_assigned", "field_in_progress", "field_completed", "data_sync"],
     field_engineer: ["field_work", "field_assigned", "field_in_progress", "field_completed", "data_sync"],
-    qc: [],
     employee: [],
     hr: [],
   } as Record<Role, string[]>,
@@ -38,7 +37,6 @@ export const PERMISSIONS = {
     cad: ["prototype", "cad_drawing", "final_file"],
     field: ["survey_data", "site_photo", "field_report"],
     field_engineer: ["survey_data", "site_photo", "field_report"],
-    qc: [],
     employee: [],
     hr: [],
   } as Record<Role, string[]>

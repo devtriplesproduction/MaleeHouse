@@ -32,7 +32,6 @@ export async function revalidateAccountsPaths(projectId?: string) {
     revalidatePath('/engineer');
     revalidatePath('/cad');
     revalidatePath('/field');
-    revalidatePath('/qc');
     
     // Force revalidation of route group layouts
     revalidatePath('/(modules)/accounts', 'layout');

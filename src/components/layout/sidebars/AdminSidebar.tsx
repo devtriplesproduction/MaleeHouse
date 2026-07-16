@@ -10,17 +10,18 @@ const adminLinks = [
   { title: "All Projects", href: "/projects", icon: FileText },
   { title: "Procedures (SOP)", href: "/sop", icon: BookOpen },
   { title: "Submit / Review EOD", href: "/eod", icon: Clock },
+  { title: "My Attendance", href: "/attendance", icon: Calendar },
   { title: "Announcements", href: "/announcements", icon: Megaphone },
   { title: "Apply / Manage Leaves", href: "/leaves", icon: Calendar },
-  {
-    title: "Company Settings",
+  { title: "Salary Records", href: "/hr/payroll", icon: DollarSign },
+  { 
+    title: "Company Settings", 
     icon: Building2,
     subLinks: [
-      { title: "Company Account", href: "/settings/account", icon: Landmark },
       { title: "Company Details", href: "/settings/details", icon: Building2 },
+      { title: "Company Accounts", href: "/settings/account", icon: Landmark },
     ]
   },
-  { title: "Salary Records", href: "/hr/payroll", icon: DollarSign },
 ];
 
 export function AdminSidebar() {

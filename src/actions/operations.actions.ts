@@ -119,7 +119,7 @@ export async function getOpsTeamMembersAction() {
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('id, first_name, last_name, email, role')
-      .in('role', ['cad', 'field', 'qc', 'engineer', 'field_engineer'])
+      .in('role', ['cad', 'field', 'engineer', 'field_engineer'])
       .order('first_name');
 
     if (error) throw error;
@@ -221,7 +221,7 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
     const lockCheck = await verifyProjectNotLocked(projectId);
     if (!lockCheck.success) return lockCheck;
 
-    const allowedRoles = ["engineer", "cad", "field", "field_engineer", "qc", "admin"];
+    const allowedRoles = ["engineer", "cad", "field", "field_engineer", "admin"];
     if (!allowedRoles.includes(profile.role)) {
        return { success: false, error: "Role not authorized to claim projects." };
     }
@@ -772,7 +772,7 @@ export async function submitFieldSurveyAction(
     const res = await submitFieldReportAction(projectId, "completion", description, locationNotes);
     if (!res.success) return { success: false, error: res.error };
 
-    await updateProjectStageAction(projectId, "field_work", "Field Survey completed. Awaiting CAD synchronization/review.");
+    await updateProjectStageAction(projectId, "data_sync", "Field Survey completed. Awaiting CAD synchronization/review.");
 
     const profile: any = await getUserProfileAction();
     await logActivity(projectId, profile?.id || "sys", "FIELD_SURVEY_SUBMITTED", { description });

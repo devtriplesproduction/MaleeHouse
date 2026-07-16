@@ -500,8 +500,9 @@ export async function createMilestonesAction(
     }
 
     if (totalQuotedAmount > 0) {
-      if (Math.abs(sum - totalQuotedAmount) > 0.01) {
-        return { success: false, error: `Sum of milestones (${sum}) does not match the total project cost (${totalQuotedAmount}).` };
+      const diff = Math.abs(sum - totalQuotedAmount);
+      if (diff > 0.02) { // Allow up to 2 cents difference for rounding and floating point errors
+        return { success: false, error: `Sum of milestones (${sum.toFixed(2)}) does not match the total project cost (${totalQuotedAmount.toFixed(2)}).` };
       }
     }
 
@@ -1461,3 +1462,26 @@ export async function getProjectBillingSummaryAction(): Promise<ActionResponse> 
   }
 }
 
+
+export async function updateInvoiceBankAccountAction(invoiceId: string, bankId: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied' };
+    }
+
+    const supabase: any = await createClient();
+    const { error } = await supabase
+      .from('invoices')
+      .update({ bank_id: bankId })
+      .eq('id', invoiceId)
+      .eq('status', 'draft');
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

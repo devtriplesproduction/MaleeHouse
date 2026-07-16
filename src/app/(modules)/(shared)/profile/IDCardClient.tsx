@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Download, MapPin, Phone, Mail, Globe, Users, FileText, Home, User as UserIcon, Edit2, Check } from "lucide-react";
+import { Download, MapPin, Phone, Mail, Globe, Users, FileText, Home, User as UserIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export default function IDCardClient({ profile: initialProfile, companySettings }: { profile: any, companySettings: any }) {
    const [profile, setProfile] = useState(initialProfile);
-   const [isEditing, setIsEditing] = useState(false);
    const frontCardRef = useRef<HTMLDivElement>(null);
    const backCardRef = useRef<HTMLDivElement>(null);
    const [isDownloading, setIsDownloading] = useState(false);
@@ -33,9 +32,10 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       designation: profile.designation?.replace('_', ' ') || profile.role || "N/A",
       department: profile.department || "N/A",
       dob: formatDate(profile.dob),
-      bloodGroup: profile.blood_group || "O+",
       joiningDate: formatDate(profile.joining_date),
       validity: calculateValidity(profile.joining_date),
+      contactNo: profile.phone_number || profile.mobile || "N/A",
+      email: profile.personal_email || profile.email || "N/A",
       emergencyName: profile.emergency_contact?.split('-')?.[0]?.trim() || "Kiran Kirdat",
       emergencyRelation: profile.emergency_contact?.split('-')?.[1]?.trim() || "Family",
       emergencyMobile: profile.emergency_contact?.split('-')?.[2]?.trim() || profile.emergency_contact || "+91 98221 12345",
@@ -72,15 +72,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
          <span className="font-bold text-gray-500 text-[10.5px] uppercase tracking-wide">{label}</span>
          <span className="font-bold text-gray-400 text-[10.5px]">:</span>
-         {isEditing ? (
-            <input
-               value={editData[valueKey]}
-               onChange={e => setEditData({ ...editData, [valueKey]: e.target.value })}
-               className="text-[#102b4e] font-bold bg-white border border-gray-200 px-1 py-0 h-5 rounded text-[11px] w-full focus:outline-none focus:border-[#f16821]"
-            />
-         ) : (
-            <span className="text-[#102b4e] font-bold text-[11px] truncate">{editData[valueKey]}</span>
-         )}
+         <span className="text-[#102b4e] font-bold text-[11px] truncate">{editData[valueKey]}</span>
       </div>
    );
 
@@ -88,30 +80,13 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       <div className="grid grid-cols-[60px_10px_1fr] gap-0 text-[10px] ml-9 mb-0.5">
          <span className="font-semibold text-gray-600">{label}</span>
          <span className="font-semibold text-gray-400">:</span>
-         {isEditing ? (
-            <input
-               value={editData[valueKey]}
-               onChange={e => setEditData({ ...editData, [valueKey]: e.target.value })}
-               className="text-[#102b4e] font-bold bg-white border border-gray-200 px-1 py-0 h-4 rounded w-[90%] focus:outline-none focus:border-[#f16821]"
-            />
-         ) : (
-            <span className="text-[#102b4e] font-bold">{editData[valueKey]}</span>
-         )}
+         <span className="text-[#102b4e] font-bold">{editData[valueKey]}</span>
       </div>
    );
 
    return (
       <div className="flex flex-col items-center w-full pb-10">
          <div className="w-full flex justify-end gap-3 mb-6 max-w-[720px]">
-            {isEditing ? (
-               <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-2 shadow-sm">
-                  <Check className="w-3.5 h-3.5" /> Done Editing
-               </button>
-            ) : (
-               <button onClick={() => setIsEditing(true)} className="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shadow-sm">
-                  <Edit2 className="w-3.5 h-3.5" /> Edit Fields
-               </button>
-            )}
 
             <button onClick={handleDownload} disabled={isDownloading} className="px-4 py-1.5 bg-gradient-to-r from-[#102b4e] to-[#0a1b32] hover:opacity-90 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-2 shadow-sm">
                {isDownloading ? <span className="animate-spin text-lg border-2 border-white border-t-transparent rounded-full w-4 h-4"></span> : <Download className="w-4 h-4" />}
@@ -162,22 +137,11 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
 
                         {/* Top Details */}
                         <div className="flex flex-col justify-center text-[11px] w-full pr-1">
-                           {isEditing ? (
-                              <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
-                                 <span className="font-bold text-gray-500 text-[10.5px] uppercase tracking-wide">Name</span>
-                                 <span className="font-bold text-gray-400 text-[10.5px]">:</span>
-                                 <div className="flex flex-col gap-1">
-                                    <input value={editData.firstName} onChange={e => setEditData({ ...editData, firstName: e.target.value })} className="text-[#102b4e] font-bold bg-white border border-gray-200 px-1 py-0 h-5 rounded text-[11px] w-full focus:outline-none focus:border-[#f16821]" />
-                                    <input value={editData.lastName} onChange={e => setEditData({ ...editData, lastName: e.target.value })} className="text-[#102b4e] font-bold bg-white border border-gray-200 px-1 py-0 h-5 rounded text-[11px] w-full focus:outline-none focus:border-[#f16821]" />
-                                 </div>
-                              </div>
-                           ) : (
-                              <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
-                                 <span className="font-bold text-gray-500 text-[10.5px] uppercase tracking-wide">Name</span>
-                                 <span className="font-bold text-gray-400 text-[10.5px]">:</span>
-                                 <span className="text-[#102b4e] font-black text-[12px] leading-tight">{editData.firstName} {editData.lastName}</span>
-                              </div>
-                           )}
+                           <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
+                              <span className="font-bold text-gray-500 text-[10.5px] uppercase tracking-wide">Name</span>
+                              <span className="font-bold text-gray-400 text-[10.5px]">:</span>
+                              <span className="text-[#102b4e] font-black text-[12px] leading-tight">{editData.firstName} {editData.lastName}</span>
+                           </div>
                            {renderField("Employee ID", "employeeId")}
                            {renderField("Designation", "designation")}
                            {renderField("Department", "department")}
@@ -187,9 +151,10 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                      {/* Bottom Details - spans full width below photo */}
                      <div className="flex flex-col bg-slate-50/50 rounded-xl p-3 border border-slate-100 shadow-sm">
                         {renderField("D.O.B.", "dob")}
-                        {renderField("Blood Group", "bloodGroup")}
                         {renderField("Joined Date", "joiningDate")}
                         {renderField("Validity", "validity")}
+                        {renderField("Contact No.", "contactNo")}
+                        {renderField("Email", "email")}
                      </div>
                   </div>
 
@@ -250,30 +215,14 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                         <div className="text-white bg-[#f16821] p-1 rounded-full mt-0.5 shadow-sm"><Phone className="w-3.5 h-3.5" /></div>
                         <div className="w-full pr-4">
                            <p className="font-bold text-[#102b4e] text-[11px] mb-0.5 uppercase tracking-wide">Contact</p>
-                           {isEditing ? (
-                              <input
-                                 value={editData.companyContact}
-                                 onChange={e => setEditData({ ...editData, companyContact: e.target.value })}
-                                 className="text-[10.5px] text-[#102b4e] font-bold bg-white border border-gray-200 px-1 py-0 h-5 rounded w-full focus:outline-none focus:border-[#f16821]"
-                              />
-                           ) : (
-                              <p className="text-[10.5px] text-[#102b4e] font-bold">{editData.companyContact}</p>
-                           )}
+                           <p className="text-[10.5px] text-[#102b4e] font-bold">{editData.companyContact}</p>
                         </div>
                      </div>
                      <div className="flex gap-3.5 items-start">
                         <div className="text-white bg-[#f16821] p-1 rounded-full mt-0.5 shadow-sm"><Mail className="w-3.5 h-3.5" /></div>
                         <div className="w-full pr-4">
                            <p className="font-bold text-[#102b4e] text-[11px] mb-0.5 uppercase tracking-wide">Email</p>
-                           {isEditing ? (
-                              <input
-                                 value={editData.companyEmail}
-                                 onChange={e => setEditData({ ...editData, companyEmail: e.target.value })}
-                                 className="text-[10.5px] text-[#102b4e] font-bold bg-white border border-gray-200 px-1 py-0 h-5 rounded w-full focus:outline-none focus:border-[#f16821]"
-                              />
-                           ) : (
-                              <p className="text-[10.5px] text-[#102b4e] font-bold">{editData.companyEmail}</p>
-                           )}
+                           <p className="text-[10.5px] text-[#102b4e] font-bold">{editData.companyEmail}</p>
                         </div>
                      </div>
                      <div className="flex gap-3.5 items-start">

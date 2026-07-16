@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 interface LogPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  milestoneId: string;
+  milestoneId?: string;
   projectId: string;
   milestoneTitle: string;
   amount: number;

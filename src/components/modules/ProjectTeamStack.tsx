@@ -38,7 +38,6 @@ export async function ProjectTeamStack({ projectId }: ProjectTeamStackProps) {
     engineer: DraftingCompass,
     cad: DraftingCompass,
     field: MapIcon,
-    qc: ShieldCheck,
   };
 
   return (

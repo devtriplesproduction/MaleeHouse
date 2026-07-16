@@ -157,6 +157,7 @@ export function ProjectFinanceTabContent({
     {
       title: "Advance Staking Payment",
       description: "50% initial mobilization fee",
+      percentage: "50",
       amount: "",
       due_date: "",
       linked_stage: "project_created",
@@ -281,6 +282,7 @@ export function ProjectFinanceTabContent({
       {
         title: "",
         description: "",
+        percentage: "",
         amount: "",
         due_date: "",
         linked_stage: "",
@@ -295,12 +297,46 @@ export function ProjectFinanceTabContent({
 
   const handleMilestoneFieldChange = (idx: number, field: string, val: any) => {
     const updated = [...milestoneItems];
-    updated[idx] = { ...updated[idx], [field]: val };
+    let item = { ...updated[idx], [field]: val };
+
+    const qTotal = quotation && quotation.status === 'Approved' 
+        ? Number(quotation.total_amount || 0) 
+        : (quotation ? Number(quotation.total_amount || 0) : 0);
+
+    if (field === 'percentage' && qTotal > 0 && val !== "") {
+      const pct = parseFloat(val);
+      if (!isNaN(pct)) {
+        item.amount = (qTotal * (pct / 100)).toFixed(2);
+      }
+    } else if (field === 'amount' && qTotal > 0 && val !== "") {
+      const amt = parseFloat(val);
+      if (!isNaN(amt)) {
+        item.percentage = ((amt / qTotal) * 100).toFixed(2);
+      }
+    }
+
+    updated[idx] = item;
     setMilestoneItems(updated);
   };
 
   const handleMilestoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const qTotal = quotation ? Number(quotation.total_amount || 0) : 0;
+    const totalAmount = milestoneItems.reduce((acc: number, curr: any) => acc + (parseFloat(curr.amount) || 0), 0);
+    const totalPercentage = milestoneItems.reduce((acc: number, curr: any) => acc + (parseFloat(curr.percentage) || 0), 0);
+    
+    if (qTotal > 0) {
+      // Adding a small margin (0.1) to account for JavaScript floating point precision issues
+      if (totalAmount > qTotal + 0.1) {
+        toast.error("Validation Failed", { description: "Total milestone amount cannot exceed quotation amount." });
+        return;
+      }
+      if (totalPercentage > 100.01) {
+        toast.error("Validation Failed", { description: "Total milestone percentage cannot exceed 100%." });
+        return;
+      }
+    }
 
     // Validate amount sum maps to quote total if required
     const payload = milestoneItems.map((item: any) => ({
@@ -577,7 +613,7 @@ export function ProjectFinanceTabContent({
               {milestoneItems.map((item, idx) => (
                 <div
                   key={idx}
-                  className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end p-4 bg-slate-900/40 rounded-2xl border border-slate-850"
+                  className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end p-4 bg-slate-900/40 rounded-2xl border border-slate-850"
                 >
                   <div className="md:col-span-2 space-y-1">
                     <label className="text-xs font-bold text-slate-500">
@@ -591,6 +627,24 @@ export function ProjectFinanceTabContent({
                         handleMilestoneFieldChange(idx, "title", e.target.value)
                       }
                       placeholder="e.g., CAD Prototype Approval"
+                      className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500">
+                      Percentage (%)
+                    </label>
+                    <input
+                      type="number"
+                      value={item.percentage || ""}
+                      onChange={(e) =>
+                        handleMilestoneFieldChange(
+                          idx,
+                          "percentage",
+                          e.target.value,
+                        )
+                      }
+                      placeholder="%"
                       className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
                     />
                   </div>

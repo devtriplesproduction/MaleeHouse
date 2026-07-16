@@ -9,6 +9,7 @@ import { useUser } from "@/hooks/useUser";
 const accountsLinks: SidebarLink[] = [
   { title: "Accounts Overview", href: "/accounts", icon: Calculator },
   { title: "Submit EOD", href: "/eod", icon: Clock },
+  { title: "My Attendance", href: "/attendance", icon: Calendar },
   { title: "Apply Leave", href: "/leaves", icon: Calendar },
   {
     title: "Quotations Workflow",
@@ -32,7 +33,7 @@ const accountsLinks: SidebarLink[] = [
   { title: "Billing & Collections", href: "/accounts/billing", icon: DollarSign },
   { title: "Outstanding Payments", href: "/accounts/outstanding", icon: AlertCircle },
   { title: "T&C Templates", href: "/accounts/templates", icon: Scroll },
-  { title: "Bank Details", href: "/accounts/banks", icon: Landmark },
+  // { title: "Bank Details", href: "/accounts/banks", icon: Landmark },
   { title: "Financial Reports", href: "/accounts/reports", icon: BarChart2 },
   { title: "Audit Logs", href: "/accounts/audit", icon: ShieldAlert },
   { title: "Announcements", href: "/announcements", icon: Megaphone },
@@ -40,8 +41,8 @@ const accountsLinks: SidebarLink[] = [
     title: "Company Settings",
     icon: Building2,
     subLinks: [
-      { title: "Company Account", href: "/settings/account", icon: Landmark },
       { title: "Company Details", href: "/settings/details", icon: Building2 },
+      { title: "Company Accounts", href: "/settings/account", icon: Landmark },
     ]
   },
 ];

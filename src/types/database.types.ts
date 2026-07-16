@@ -19,7 +19,7 @@ export interface Database {
       quotation_status: 'Draft' | 'Pending' | 'Sent' | 'Viewed' | 'Approved' | 'Rejected' | 'Revision Requested' | 'Expired'
       site_type: 'residential' | 'commercial' | 'industrial' | 'infrastructure' | 'agricultural' | 'other'
       task_status: 'pending' | 'in_progress' | 'submitted' | 'completed' | 'overdue' | 'cancelled'
-      user_role: 'admin' | 'sales' | 'accountant' | 'engineer' | 'cad' | 'field' | 'field_engineer' | 'qc' | 'hr' | 'employee'
+      user_role: 'admin' | 'sales' | 'accountant' | 'engineer' | 'cad' | 'field' | 'field_engineer' | 'hr'
       visit_status: 'scheduled' | 'completed' | 'cancelled' | 'paid'
     }
     Tables: {

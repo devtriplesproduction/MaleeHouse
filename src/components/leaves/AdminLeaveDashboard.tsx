@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectItem } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { updateLeaveStatusAction } from '@/actions/leave.actions';
 import { useRouter } from 'next/navigation';
-import { LOCAL_USERS } from '@/lib/local-db';
+// Removed local-db import
 import { 
   Check, 
   X, 
@@ -31,6 +33,7 @@ import {
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+const LOCAL_USERS: any[] = [];
 const MONTHS = [
   { value: 'all', label: 'All Months' },
   { value: '1', label: 'January' },
@@ -71,6 +74,8 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [rejectingLeaveId, setRejectingLeaveId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
@@ -84,10 +89,10 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
     setLeaves(initialLeaves);
   }
 
-  const handleStatusUpdate = async (id: string, newStatus: 'approved' | 'rejected' | 'pending') => {
+  const handleStatusUpdate = async (id: string, newStatus: 'approved' | 'rejected' | 'pending', reason?: string) => {
     setProcessingId(id);
     try {
-      const response = await updateLeaveStatusAction(id, newStatus);
+      const response = await updateLeaveStatusAction(id, newStatus, reason);
       if (response.success) {
         toast.success(`Leave request ${newStatus}`, {
           description: `The request status has been updated to ${newStatus} in local database.`
@@ -499,38 +504,43 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
                       {/* Vertical Divider */}
                       <div className="hidden md:block w-px h-8 bg-slate-200 dark:bg-white/10 shrink-0" />
 
-                      {/* Custom Dropdown Choice */}
-                      <div className="w-36 shrink-0 z-20">
-                        <Select
-                          value={leave.status?.toLowerCase()}
-                          disabled={!isPending}
-                          onValueChange={(val) => {
-                            if (val === 'approved' || val === 'rejected' || val === 'pending') {
-                              handleStatusUpdate(leave.id, val as any);
-                            }
-                          }}
-                          className="w-36"
-                          buttonClassName="h-9 px-3.5 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-900/50 shadow-sm text-sm font-medium text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                        >
-                          <SelectItem value="pending" className="font-medium text-sm text-slate-800 dark:text-slate-200">
-                            <div className="flex items-center">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)] shrink-0 mr-2 animate-pulse" />
-                              Pending
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="approved" className="font-medium text-sm text-slate-800 dark:text-slate-200">
-                            <div className="flex items-center">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0 mr-2" />
-                              Approved
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="rejected" className="font-medium text-sm text-slate-800 dark:text-slate-200">
-                            <div className="flex items-center">
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(239,68,68,0.5)] shrink-0 mr-2" />
-                              Rejected
-                            </div>
-                          </SelectItem>
-                        </Select>
+                      <div className="flex items-center gap-2 z-20">
+                        {isPending ? (
+                          <>
+                            <Button
+                              size="sm"
+                              className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-9 px-4 shadow-sm"
+                              disabled={isProcessing}
+                              onClick={() => handleStatusUpdate(leave.id, 'approved')}
+                            >
+                              <Check className="w-4 h-4 mr-1.5" /> Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/50 rounded-xl h-9 px-4 shadow-sm bg-white dark:bg-slate-900"
+                              disabled={isProcessing}
+                              onClick={() => {
+                                setRejectingLeaveId(leave.id);
+                                setRejectionReason('');
+                              }}
+                            >
+                              <X className="w-4 h-4 mr-1.5" /> Reject
+                            </Button>
+                          </>
+                        ) : (
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "px-3 py-1.5 rounded-xl border text-xs font-semibold uppercase tracking-wider",
+                              leave.status?.toLowerCase() === 'approved' 
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                                : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/50 dark:bg-rose-500/10 dark:text-rose-400'
+                            )}
+                          >
+                            {leave.status}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
@@ -570,6 +580,75 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
           </div>
         </div>
       )}
+
+      {/* Rejection Dialog */}
+      <Dialog open={!!rejectingLeaveId} onOpenChange={(open) => {
+        if (!open) {
+          setRejectingLeaveId(null);
+          setRejectionReason('');
+        }
+      }}>
+        <DialogContent className="p-0 overflow-hidden border-slate-200/60 dark:border-white/10 shadow-2xl shadow-rose-500/5 sm:max-w-md sm:rounded-[2rem]">
+          <div className="px-6 pt-8 pb-6 bg-gradient-to-b from-rose-50/50 to-white dark:from-rose-950/20 dark:to-slate-900 border-b border-slate-100 dark:border-white/5">
+            <DialogHeader>
+              <DialogTitle className="text-xl text-slate-900 dark:text-white flex items-center gap-2.5 font-bold">
+                <div className="p-2 bg-rose-100 dark:bg-rose-500/20 rounded-xl">
+                  <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                </div>
+                Reject Leave Request
+              </DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400 pt-2 font-medium">
+                Please provide a reason for rejecting this leave request. This will be visible to the employee.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6 bg-white dark:bg-slate-900">
+            <Textarea
+              placeholder="Enter reason for rejection..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="min-h-[120px] resize-none rounded-xl border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-950/50 focus-visible:ring-4 focus-visible:ring-rose-500/10 focus-visible:border-rose-500 dark:focus-visible:border-rose-500 transition-all text-sm"
+            />
+          </div>
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-white/5 sm:justify-between items-center flex-row">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setRejectingLeaveId(null);
+                setRejectionReason('');
+              }}
+              className="rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-white/5"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-lg shadow-rose-500/25 transition-all px-6"
+              onClick={() => {
+                if (rejectionReason.trim() === '') {
+                  toast.error("Rejection reason is required");
+                  return;
+                }
+                if (rejectingLeaveId) {
+                  handleStatusUpdate(rejectingLeaveId, 'rejected', rejectionReason);
+                  setRejectingLeaveId(null);
+                  setRejectionReason('');
+                }
+              }}
+              disabled={!!processingId}
+            >
+              {processingId ? (
+                <>
+                  <div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Rejecting...
+                </>
+              ) : (
+                'Confirm Rejection'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

@@ -89,7 +89,6 @@ export default function ProjectOverviewTab({
   const isAccountant = userRole === 'accountant';
   const isEngineer = userRole === 'engineer';
   const isCad = userRole === 'cad';
-  const isQc = userRole === 'qc';
   const isSales = userRole === 'sales';
 
   const isSalesAndHandedOver = project.status !== 'lead_created' && project.status !== 'quotation_requested';
@@ -176,7 +175,7 @@ export default function ProjectOverviewTab({
 
   const isField = userRole === 'field' || userRole === 'field_engineer';
 
-  const hasAccessToOps = isAdmin || isClaimedByMe || ((isEngineer || isCad || isField || isQc) && !isProjectClosed);
+  const hasAccessToOps = isAdmin || isClaimedByMe || ((isEngineer || isCad || isField) && !isProjectClosed);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 pb-10">

@@ -226,7 +226,7 @@ export default async function QCReviewPage() {
           <FileText className="w-4 h-4 text-indigo-500" />
           <h2 className="text-lg font-bold text-slate-700 dark:text-gray-200">QC Protocols</h2>
         </div>
-        <SOPList sops={sops} isAdmin={false} currentRole="qc" />
+        <SOPList sops={sops} isAdmin={false} currentRole="engineer" />
       </section>
     </div>
   );

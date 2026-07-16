@@ -21,7 +21,7 @@ const users = [
   { email: 'admin@maleehouse.com', password: 'password123', role: 'admin', first: 'System', last: 'Administrator' },
   { email: 'sales@maleehouse.com', password: 'password123', role: 'sales', first: 'Sales', last: 'Director' },
   { email: 'engineer@maleehouse.com', password: 'password123', role: 'engineer', first: 'Lead Field', last: 'Engineer' },
-  { email: 'accounts@maleehouse.com', password: 'password123', role: 'accountant', first: 'Head of', last: 'Accounts' },
+  { email: 'divya.katakar@maleehouse.com', password: 'Password@123!', role: 'accountant', first: 'Divya', last: 'Katakkar' },
   { email: 'qc@maleehouse.com', password: 'password123', role: 'qc', first: 'Quality Control', last: 'Lead' },
   { email: 'hr@maleehouse.com', password: 'password123', role: 'hr', first: 'Human', last: 'Resources' },
   { email: 'yash.nikam@maleehouse.com', password: 'password123', role: 'sales', first: 'Yash', last: 'Nikam' }

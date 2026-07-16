@@ -6,14 +6,13 @@ import {
   getSalesStatsAction, 
   getEngineerStatsAction,
   getAccountantStatsAction,
-  getQCStatsAction,
   getOperationsStatsAction,
   type StatItem 
 } from '@/actions/stats.actions';
 import { TrendingUp, Activity, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface RealtimeStatsGridProps {
-  type: 'admin' | 'sales' | 'engineer' | 'accountant' | 'qc' | 'field' | 'cad' | 'operations' | 'hr';
+  type: 'admin' | 'sales' | 'engineer' | 'accountant' | 'field' | 'cad' | 'operations' | 'hr';
 }
 
 export function RealtimeStatsGrid({ type }: RealtimeStatsGridProps) {
@@ -33,8 +32,6 @@ export function RealtimeStatsGrid({ type }: RealtimeStatsGridProps) {
           result = await getSalesStatsAction();
         } else if (type === 'accountant') {
           result = await getAccountantStatsAction();
-        } else if (type === 'qc') {
-          result = await getQCStatsAction();
         } else if (type === 'operations') {
           result = await getOperationsStatsAction();
         } else {

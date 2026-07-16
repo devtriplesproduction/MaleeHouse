@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useState, useTransition, useMemo, useEffect } from "react";
-import { 
+import {
   Users, UserPlus, Mail, Power, Search, Filter, SlidersHorizontal,
   LayoutGrid, Table, Calendar, MapPin, Key, Eye, Edit3,
   Building2, BadgeInfo, CheckCircle2, AlertCircle, RefreshCw, ChevronDown,
   CreditCard, Shield, ShieldCheck, Lock, Unlock, Wallet, Check, Loader2, FileText, Activity,
   EyeOff, ChevronLeft, ChevronRight, UserX, Trash2, MoreVertical, ArrowUpRight, Gift
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
-import { 
-  toggleUserActiveAction, 
+import {
+  toggleUserActiveAction,
   updateEmployeeProfileAction,
   overrideUserCredentialsAction,
   offboardEmployeeAction,
@@ -18,9 +19,10 @@ import {
   getAdminAuditLogsAction,
   getAllUsersAction
 } from "@/actions/admin.actions";
-import { 
-  calculateMonthlyPayrollAction, 
-  lockPayrollCycleAction 
+import {
+  calculateMonthlyPayrollAction,
+  lockPayrollCycleAction,
+  unlockPayrollCycleAction
 } from "@/actions/payroll.actions";
 import { OnboardUserModal } from "@/components/modules/OnboardUserModal";
 import { EmployeeProfileModal } from "@/components/modules/EmployeeProfileModal";
@@ -87,7 +89,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
   const [users, setUsers] = useState<UserProfile[]>(initialUsers);
   const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security" | "birthdays">(mode === "payroll-only" ? "payroll" : "directory");
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
-  
+
   // Filtering & Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDept, setSelectedDept] = useState("all");
@@ -112,6 +114,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
   const [isPayrollLocked, setIsPayrollLocked] = useState(false);
   const [isPayrollLoading, setIsPayrollLoading] = useState(false);
   const [isLockingPayroll, setIsLockingPayroll] = useState(false);
+  const [isUnlockingPayroll, setIsUnlockingPayroll] = useState(false);
   const [payrollSearch, setPayrollSearch] = useState("");
 
   // Security state
@@ -189,6 +192,24 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
     }
   };
 
+  const handleUnlockPayroll = async () => {
+    if (!confirm(`Are you absolutely sure you want to UNLOCK payroll for ${payrollMonth}/${payrollYear}? This will delete the frozen snapshot and allow dynamic recalculation.`)) return;
+    setIsUnlockingPayroll(true);
+    try {
+      const res = await unlockPayrollCycleAction(payrollMonth, payrollYear);
+      if (res?.success) {
+        toast({ title: "Payroll Unlocked", description: res.message, variant: "success" });
+        fetchPayroll(payrollMonth, payrollYear);
+      } else {
+        toast({ title: "Unlock Failed", description: res?.error, variant: "error" });
+      }
+    } catch (err) {
+      toast({ title: "Unlock failed", variant: "error" });
+    } finally {
+      setIsUnlockingPayroll(false);
+    }
+  };
+
   // Status mapping colors
   const getStatusBadgeStyles = (status?: string) => {
     switch (status) {
@@ -241,7 +262,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
       const email = (u.email || "").toLowerCase();
       const employeeId = (u.employee_id || "").toLowerCase();
       const search = searchTerm.toLowerCase();
-      
+
       const matchesSearch = fullName.includes(search) || email.includes(search) || employeeId.includes(search);
       const matchesDept = selectedDept === "all" || u.department === selectedDept;
       const matchesRole = selectedRole === "all" || u.designation === selectedRole;
@@ -333,10 +354,10 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ 
-      title: "Credential Copied", 
+    toast({
+      title: "Credential Copied",
       description: "Temporary key copied safely to clipboard buffer.",
-      variant: "success" 
+      variant: "success"
     });
   };
 
@@ -350,7 +371,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
       });
       return;
     }
-    
+
     setIsOverriding(prev => ({ ...prev, [userId]: true }));
     try {
       const res = await overrideUserCredentialsAction(userId, pwd);
@@ -384,7 +405,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
   const filteredPayrollData = useMemo(() => {
     if (!payrollSearch.trim()) return payrollData;
     const query = payrollSearch.toLowerCase().trim();
-    return payrollData.filter((item: any) => 
+    return payrollData.filter((item: any) =>
       item.employee_name?.toLowerCase().includes(query) ||
       item.employee_id_external?.toLowerCase().includes(query) ||
       item.department?.toLowerCase().includes(query) ||
@@ -441,7 +462,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
   return (
     <div className="space-y-6 font-sans">
-      
+
       {/* Global Title & Stats Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -459,10 +480,10 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
         {mode !== "payroll-only" && (
           <div className="flex items-center gap-3">
-            <Button 
+            <Button
               onClick={() => setIsNewUserModalOpen(true)}
               variant="premium"
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider h-10 px-4"
+              className="flex items-center gap-2 text-xs font-bold  tracking-wider h-10 px-4"
             >
               <UserPlus className="w-4 h-4" />
               Onboard Employee
@@ -537,7 +558,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
             )}
           </button>
-          
+
           <button
             onClick={() => setActiveTab("payroll")}
             className={cn(
@@ -553,7 +574,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
             )}
           </button>
-          
+
           <button
             onClick={() => setActiveTab("security")}
             className={cn(
@@ -569,7 +590,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
             )}
           </button>
-          
+
           <button
             onClick={() => setActiveTab("birthdays")}
             className={cn(
@@ -593,7 +614,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
       {/* ========================================================================= */}
       {activeTab === "directory" && (
         <div className="space-y-6 font-sans">
-          
+
           <div className="glass-card overflow-hidden">
             {/* ── Toolbar ── */}
             <div className="sticky top-0 z-10 backdrop-blur-xl px-6 py-4 border-b border-slate-200/60 dark:border-white/5 flex flex-col lg:flex-row gap-3 lg:items-center justify-between bg-white/60 dark:bg-[#0c101b]/60">
@@ -611,11 +632,9 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
               {/* Select filters */}
               <div className="flex flex-wrap items-center gap-2.5">
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                </div>
 
-                <Select 
+
+                <Select
                   value={selectedDept}
                   onValueChange={(val) => {
                     setSelectedDept(val);
@@ -631,7 +650,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                   ))}
                 </Select>
 
-                <Select 
+                <Select
                   value={selectedStatus}
                   onValueChange={(val) => setSelectedStatus(val)}
                   placeholder="All Statuses"
@@ -683,15 +702,15 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                     </tr>
                   ) : (
                     paginatedUsers.map((user) => (
-                      <tr 
-                        key={user.id} 
+                      <tr
+                        key={user.id}
                         onClick={() => setSelectedEmployee(user)}
                         className="group bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.04] hover:-translate-y-0.5 hover:shadow-md hover:shadow-indigo-500/5 transition-all duration-300 cursor-pointer [&>td:first-child]:rounded-l-2xl [&>td:last-child]:rounded-r-2xl"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2.5">
                             <div className="relative shrink-0">
-                              <img 
+                              <img
                                 src={user.profile_photo || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"}
                                 alt={`${user.first_name} avatar`}
                                 className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
@@ -769,9 +788,9 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                             {activeMenuUserId === user.id && (
                               <>
                                 {/* Overlay/Backdrop to close dropdown when clicked outside */}
-                                <div 
-                                  className="fixed inset-0 z-40" 
-                                  onClick={() => setActiveMenuUserId(null)} 
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setActiveMenuUserId(null)}
                                 />
                                 <div className="absolute right-6 top-12 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
                                   <button
@@ -862,8 +881,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                         key={page}
                         onClick={() => setCurrentPage(page)}
                         className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${page === safeCurrentPage
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
-                            : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
+                          : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
                           }`}
                       >
                         {page}
@@ -890,7 +909,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
       {/* ========================================================================= */}
       {activeTab === "payroll" && (
         <div className="space-y-6 font-sans">
-          
+
           {/* Quick Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1: Net Payout Sum */}
@@ -901,19 +920,19 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
               </p>
               <div className="flex items-center gap-1.5 mt-3">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-wider">
                   Cycle: {new Date(2026, payrollMonth - 1).toLocaleString('default', { month: 'long' })} {payrollYear}
                 </span>
               </div>
             </div>
-            
+
             {/* Card 2: Attendance Adjustments */}
             <div className="glass-card p-6 relative overflow-hidden bg-white/50 dark:bg-white/[0.02]">
               <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-bl-full pointer-events-none" />
               <p className="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-white">
                 ₹{(totalBaseSalary - totalNetPayable).toLocaleString('en-IN')}
               </p>
-              <p className="text-sm font-bold text-rose-500 dark:text-rose-400/80 mt-3 uppercase tracking-wider">
+              <p className="text-sm font-bold text-rose-500 dark:text-rose-400/80 mt-3 tracking-wider">
                 Attendance-based adjustments
               </p>
             </div>
@@ -924,7 +943,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
               <p className="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-white">
                 {zeroAbsenceCount}/{payrollData.length || 0}
               </p>
-              <p className="text-sm font-bold text-blue-500 dark:text-blue-400/80 mt-3 uppercase tracking-wider">
+              <p className="text-sm font-bold text-blue-500 dark:text-blue-400/80 mt-3 rcase tracking-wider">
                 Employees with zero absences
               </p>
             </div>
@@ -971,6 +990,32 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                 </div>
 
                 <Button
+                  onClick={() => {
+                    if (filteredPayrollData.length === 0) {
+                      toast({ title: "No data", description: "No payroll records to export.", variant: "error" });
+                      return;
+                    }
+                    const headers = ["Identity", "Department", "Designation", "Base Salary", "Attendance", "Deductions", "Net Payout"];
+                    const rows = filteredPayrollData.map((item: any) => {
+                      const totalDays = 26;
+                      const earnedDays = item.days_present + item.days_field + item.days_paid_leave;
+                      const deductions = item.base_salary - item.net_payable;
+                      return [
+                        item.employee_name || '',
+                        item.department || '',
+                        item.designation || '',
+                        item.base_salary || 0,
+                        `${earnedDays}D / ${totalDays}D`,
+                        deductions,
+                        item.net_payable || 0
+                      ];
+                    });
+
+                    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Payroll Report");
+                    XLSX.writeFile(workbook, `Payroll_Report_${monthNames[payrollMonth - 1]}_${payrollYear}.xlsx`);
+                  }}
                   variant="outline"
                   className="h-9 px-3.5 flex items-center gap-2 border-slate-200 dark:border-white/8 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-xs font-bold"
                 >
@@ -983,7 +1028,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                   disabled={isPayrollLocked || isLockingPayroll || payrollData.length === 0}
                   className={cn(
                     "h-9 px-4 flex items-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all",
-                    isPayrollLocked 
+                    isPayrollLocked
                       ? "bg-emerald-600/10 text-emerald-500 border border-emerald-500/25 cursor-default hover:bg-emerald-600/10"
                       : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 border-none"
                   )}
@@ -997,6 +1042,21 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                   )}
                   {isPayrollLocked ? "Locked" : "Lock Cycle"}
                 </Button>
+
+                {isPayrollLocked && (
+                  <Button
+                    onClick={handleUnlockPayroll}
+                    disabled={isUnlockingPayroll}
+                    className="h-9 px-4 flex items-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/20 border-none"
+                  >
+                    {isUnlockingPayroll ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Unlock className="w-3.5 h-3.5" />
+                    )}
+                    Unlock
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -1053,10 +1113,10 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                       const totalDays = 26;
                       const earnedDays = item.days_present + item.days_field + item.days_paid_leave;
                       const deductions = item.base_salary - item.net_payable;
-                      
+
                       return (
-                        <tr 
-                          key={item.id} 
+                        <tr
+                          key={item.id}
                           className="group hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors duration-150"
                         >
                           {/* Identity */}
@@ -1098,8 +1158,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                                 {earnedDays}D / {totalDays}D
                               </div>
                               <div className="w-16 h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden shrink-0">
-                                <div 
-                                  className="h-full bg-indigo-500 rounded-full" 
+                                <div
+                                  className="h-full bg-indigo-500 rounded-full"
                                   style={{ width: `${Math.min(100, (earnedDays / totalDays) * 100)}%` }}
                                 />
                               </div>
@@ -1174,8 +1234,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                         key={page}
                         onClick={() => setCurrentPayrollPage(page)}
                         className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${page === safeCurrentPayrollPage
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
-                            : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
+                          : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
                           }`}
                       >
                         {page}
@@ -1206,7 +1266,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
       {/* ========================================================================= */}
       {activeTab === "security" && (
         <div className="space-y-6 animate-in fade-in duration-300 font-sans">
-          
+
           {/* Security Protocol Banner */}
           <div className="glass-card p-5 border-indigo-500/20 bg-gradient-to-r from-indigo-500/5 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -1274,8 +1334,8 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                             </span>
                             <span className={cn(
                               "px-2 py-0.5 rounded text-xs font-bold uppercase tracking-widest border",
-                              user.is_active 
-                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                              user.is_active
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                                 : "bg-slate-500/10 text-slate-500 border-slate-500/20"
                             )}>
                               {user.is_active ? "ACTIVE" : "INACTIVE"}
@@ -1363,7 +1423,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                     const dateA = new Date(a.dob);
                     const dateB = new Date(b.dob);
                     const today = new Date();
-                    today.setHours(0,0,0,0);
+                    today.setHours(0, 0, 0, 0);
                     let nextA = new Date(today.getFullYear(), dateA.getMonth(), dateA.getDate());
                     if (nextA < today) nextA.setFullYear(today.getFullYear() + 1);
                     let nextB = new Date(today.getFullYear(), dateB.getMonth(), dateB.getDate());
@@ -1394,7 +1454,7 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
                         <td className="px-6 py-4 rounded-l-2xl">
                           <div className="flex items-center gap-2.5">
                             <div className="relative shrink-0">
-                              <img 
+                              <img
                                 src={user.profile_photo || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"}
                                 alt={`${user.first_name} avatar`}
                                 className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
@@ -1440,15 +1500,15 @@ export function UserManagementTable({ initialUsers, mode = "full" }: UserManagem
 
 
       {/* Onboard Wizard Dialog */}
-      <OnboardUserModal 
-        isOpen={isNewUserModalOpen} 
+      <OnboardUserModal
+        isOpen={isNewUserModalOpen}
         onClose={() => setIsNewUserModalOpen(false)}
         existingUsers={users}
         onSuccess={handleRefreshData}
       />
 
       {/* Profile Detail Dialog */}
-      <EmployeeProfileModal 
+      <EmployeeProfileModal
         isOpen={selectedEmployee !== null}
         onClose={() => setSelectedEmployee(null)}
         employee={selectedEmployee}

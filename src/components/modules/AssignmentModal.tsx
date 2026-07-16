@@ -6,16 +6,16 @@ import {
   Shield, PenTool, MapPin, Eye, User, AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LOCAL_USERS } from "@/lib/local-db";
+// Removed local-db import
 import { assignTeamMemberAction, removeTeamMemberAction } from "@/actions/operations.actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+const LOCAL_USERS: any[] = [];
 const ROLE_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   engineer: { label: "Engineer",    color: "text-amber-500",   bg: "bg-amber-500/10",   icon: Shield },
   cad:      { label: "CAD",         color: "text-blue-500",    bg: "bg-blue-500/10",    icon: PenTool },
   field:    { label: "Field",       color: "text-emerald-500", bg: "bg-emerald-500/10", icon: MapPin },
-  qc:       { label: "QC/Review",   color: "text-purple-500",  bg: "bg-purple-500/10",  icon: Eye },
 };
 
 const OPERATIONAL_ROLES = ["engineer", "cad", "field"];

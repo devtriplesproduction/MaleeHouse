@@ -90,12 +90,12 @@ export function ProjectDetailTabs({
       icon: GitBranch,
       description: 'Track workflow progression and phase changes.'
     },
-    {
+    ...(userRole !== 'accountant' ? [{
       id: 'communications',
       label: 'Communications',
       icon: MessageSquare,
       description: 'Project discussions, updates, and communication logs.'
-    },
+    }] : []),
     ...(showFinanceTab ? [{
       id: 'billing',
       label: 'Billing',

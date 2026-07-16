@@ -44,8 +44,8 @@ export function LeaveMetrics({ leaves, profile, leaveBalance = 0 }: LeaveMetrics
   const approvedPaidDays = Math.min(earnedPaidLeaves, totalApprovedDaysThisMonth);
   const approvedUnpaidDays = Math.max(0, totalApprovedDaysThisMonth - earnedPaidLeaves);
 
-  // Remaining Balance (from server)
-  const remainingPaidBalance = leaveBalance;
+  // Remaining Balance
+  const remainingPaidBalance = Math.max(0, earnedPaidLeaves - approvedPaidDays);
 
   return (
     <div className="space-y-4 font-sans animate-in fade-in slide-in-from-top-4 duration-500">

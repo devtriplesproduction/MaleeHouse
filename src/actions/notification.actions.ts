@@ -127,7 +127,7 @@ export async function notifyPaymentAction(projectId: string) {
   const { data: project } = await supabase.from('projects').select('name, client_name, created_by').eq('id', projectId).single()
   if (!project) return { success: false, error: 'Project not found' }
 
-  const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
+  const { data: admins } = await supabase.from('profiles').select('id').in('role', ['admin', 'accountant'])
   const recipientIds = new Set<string>([
     ...(admins || []).map((a: any) => a.id),
     ...(project.created_by ? [project.created_by] : []),
@@ -139,6 +139,27 @@ export async function notifyPaymentAction(projectId: string) {
         userId,
         title: 'Payment Received',
         message: `Final payment for "${project.name}" (${project.client_name}) has been recorded.`,
+        type: 'system',
+        relatedProjectId: projectId,
+      })
+    )
+  )
+  return { success: true }
+}
+
+export async function notifyNewProjectAction(projectId: string, projectName: string) {
+  const supabase: any = createAdminClient()
+  
+  const { data: admins } = await supabase.from('profiles').select('id').in('role', ['admin', 'accountant']).eq('is_active', true)
+  
+  if (!admins || admins.length === 0) return { success: true }
+
+  await Promise.all(
+    admins.map((admin: any) =>
+      insertNotification({
+        userId: admin.id,
+        title: 'New Project Created',
+        message: `A new project "${projectName}" has been created.`,
         type: 'system',
         relatedProjectId: projectId,
       })
@@ -231,7 +252,7 @@ export async function notifyStageUpdateAction(projectId: string, fromStage: stri
     .select('user_id, role, profiles(role)')
     .eq('project_id', projectId)
 
-  const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
+  const { data: admins } = await supabase.from('profiles').select('id').in('role', ['admin', 'accountant'])
   const adminIds = (admins || []).map((a: any) => a.id)
 
   const getAssignedByRole = (role: string) =>
@@ -381,6 +402,12 @@ export async function notifySupplementalUploadAction(projectId: string) {
       recipients = Array.from(new Set((assignments || []).map((a: any) => a.user_id)))
     }
 
+    // Add accountants to recipients
+    const { data: accountants } = await supabase.from('profiles').select('id').eq('role', 'accountant')
+    if (accountants) {
+      recipients.push(...accountants.map((a: any) => a.id))
+    }
+
     // Remove the uploader themselves
     recipients = recipients.filter((id) => id !== profile.id)
 
@@ -480,5 +507,23 @@ export async function notifyUpcomingHolidaysAction(cronSecret?: string) {
     console.error('[notification] notifyUpcomingHolidays error:', error.message)
     return { success: false, error: error.message }
   }
+}
+
+export async function notifyFollowUpScheduledAction(projectId: string, nextDate: string, status: string, userId: string) {
+  const supabase: any = createAdminClient()
+  const { data: project } = await supabase.from('projects').select('name, client_name').eq('id', projectId).single()
+  if (!project) return { success: false }
+
+  const formattedDate = new Date(nextDate).toLocaleDateString(undefined, { 
+    weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
+
+  return insertNotification({
+    userId,
+    title: 'Follow-up Scheduled',
+    message: `Follow-up for "${project.name}" (${project.client_name}) scheduled on ${formattedDate}. Status: ${status}`,
+    type: 'system',
+    relatedProjectId: projectId,
+  })
 }
 

@@ -88,11 +88,11 @@ export function ReportsGenerator() {
   };
 
   const handleGenerate = async () => {
-    if (reportType === 'project_statement' && !selectedProjectId) {
-      toast.error('Project Required', { description: 'Please select a specific project to generate a Project Statement.' });
+    if (['project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && !selectedProjectId) {
+      toast.error('Project Required', { description: 'Please select a specific project for this report.' });
       return;
     }
-    if (reportType !== 'project_statement' && (!dateTo || (reportType !== 'balance_sheet' && !dateFrom))) {
+    if (!['project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (!dateTo || (reportType !== 'balance_sheet' && !dateFrom))) {
       toast.error('Invalid Date', { description: 'Please select a valid date range.' });
       return;
     }
@@ -593,6 +593,186 @@ export function ReportsGenerator() {
       );
     }
     
+    if (type === 'all_project_summary') {
+      return (
+        <div className="space-y-6">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-max">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-border">
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">SR NO</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Project ID</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Quotation No</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Project/Client Name</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Contact No</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Service Type</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Location</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Total Invoice Value</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Budget Expenses</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Total Expenses</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Total Received</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Total Pending</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Total Profit/Loss</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(reportData.projects || []).map((p: any, idx: number) => (
+                  <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground font-medium">{idx + 1}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{p.projectId}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{p.quotationNo}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{p.projectName}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground whitespace-nowrap">{p.contactNo}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{p.serviceType}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{p.location}</td>
+                    <td className="py-4 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{p.totalInvoiceValue}</td>
+                    <td className="py-4 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{p.budgetExpences}</td>
+                    <td className="py-4 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{p.totalExpences}</td>
+                    <td className="py-4 px-4 text-sm tabular-nums text-right text-emerald-600 dark:text-emerald-400">{p.totalReceived}</td>
+                    <td className="py-4 px-4 text-sm tabular-nums text-right text-rose-600 dark:text-rose-400">{p.totalPending}</td>
+                    <td className="py-4 px-4 text-sm font-semibold tabular-nums text-right text-slate-900 dark:text-foreground">{p.totalProfitLoss}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+    
+    if (type === 'project_budget_sheet') {
+      return (
+        <div className="space-y-6">
+          {UniversalHeader}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-max">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-border">
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Sr No</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Particulars</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Qty</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Rate</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Days</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(reportData.budgetDetails || {}).map(([section, items]: [string, any], sectionIdx: number) => (
+                  <React.Fragment key={`section-${sectionIdx}`}>
+                    <tr className="bg-slate-100/50 dark:bg-slate-800/50">
+                      <td colSpan={6} className="py-2 px-4 text-sm font-bold text-indigo-700 dark:text-indigo-400">{section}</td>
+                    </tr>
+                    {items.map((item: any, itemIdx: number) => (
+                      <tr key={`item-${sectionIdx}-${itemIdx}`} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                        <td className="py-3 px-4 text-sm text-slate-900 dark:text-foreground">{itemIdx + 1}</td>
+                        <td className="py-3 px-4 text-sm text-slate-900 dark:text-foreground">{item.particulars}</td>
+                        <td className="py-3 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{item.qty}</td>
+                        <td className="py-3 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{item.rate}</td>
+                        <td className="py-3 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{item.days}</td>
+                        <td className="py-3 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{item.amount}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-slate-50/80 dark:bg-slate-900/40 border-b-2 border-slate-200 dark:border-slate-800">
+                      <td colSpan={5} className="py-3 px-4 text-sm text-slate-900 dark:text-foreground font-bold text-right">Total {section}</td>
+                      <td className="py-3 px-4 text-sm font-bold tabular-nums text-right text-indigo-600 dark:text-indigo-400">{reportData.sectionTotals?.[section] || 0}</td>
+                    </tr>
+                  </React.Fragment>
+                ))}
+                <tr className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/[0.02]">
+                  <td colSpan={5} className="py-3 px-4 text-sm font-bold text-right text-slate-900 dark:text-foreground">Total Quotation Value</td>
+                  <td className="py-3 px-4 text-sm font-bold tabular-nums text-right text-slate-900 dark:text-foreground">{reportData.totalQuotationValue || 0}</td>
+                </tr>
+                <tr className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/[0.02]">
+                  <td colSpan={5} className="py-3 px-4 text-sm font-bold text-right text-slate-900 dark:text-foreground">Total Project Costing</td>
+                  <td className="py-3 px-4 text-sm font-bold tabular-nums text-right text-slate-900 dark:text-foreground">{reportData.totalProjectCosting || 0}</td>
+                </tr>
+                <tr className="border-y-2 border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-white/[0.05]">
+                  <td colSpan={5} className="py-3 px-4 text-sm font-black text-right text-slate-900 dark:text-foreground">Net Amount</td>
+                  <td className="py-3 px-4 text-sm font-black tabular-nums text-right text-slate-900 dark:text-foreground">{reportData.netAmount || 0}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+    
+    if (type === 'expenses_fund_allocation') {
+      return (
+        <div className="space-y-6">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-max">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-border">
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">SR NO</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Bank Name</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Service / Divide</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Day</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Amount</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(reportData.fundAllocations || []).map((a: any, idx: number) => (
+                  <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground font-medium">{idx + 1}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{a.bankName}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{a.serviceDivide}</td>
+                    <td className="py-4 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{a.day}</td>
+                    <td className="py-4 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{formatCurrency(a.amount)}</td>
+                    <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{a.remark || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+    
+    if (type === 'project_actual_sheet') {
+      return (
+        <div className="space-y-6">
+          {UniversalHeader}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-max">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/60 dark:border-border">
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Date</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400">Particulars</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Debit</th>
+                  <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Credit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(reportData.ledger || []).map((l: any, idx: number) => {
+                  const dateStr = l.date ? format(new Date(l.date), 'dd-MM-yyyy') : '-';
+                  return (
+                    <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                      <td className="py-3 px-4 text-sm text-slate-900 dark:text-foreground">{dateStr}</td>
+                      <td className="py-3 px-4 text-sm text-slate-900 dark:text-foreground">{l.particulars}</td>
+                      <td className="py-3 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{l.debit ? l.debit : ''}</td>
+                      <td className="py-3 px-4 text-sm tabular-nums text-right text-slate-900 dark:text-foreground">{l.credit ? l.credit : ''}</td>
+                    </tr>
+                  );
+                })}
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-white/[0.02]">
+                  <td colSpan={2} className="py-3 px-4 text-sm font-bold text-right text-slate-900 dark:text-foreground">Net Profit/Loss</td>
+                  <td className="py-3 px-4 text-sm font-bold tabular-nums text-right text-slate-900 dark:text-foreground">{reportData.netProfitLoss}</td>
+                  <td className="py-3 px-4"></td>
+                </tr>
+                <tr className="border-b-2 border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-white/[0.05]">
+                  <td colSpan={2} className="py-3 px-4 text-sm font-black text-right text-slate-900 dark:text-foreground">Total</td>
+                  <td className="py-3 px-4 text-sm font-black tabular-nums text-right text-slate-900 dark:text-foreground">{reportData.total}</td>
+                  <td className="py-3 px-4 text-sm font-black tabular-nums text-right text-slate-900 dark:text-foreground">{reportData.total}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+    
     // Fallback for expense
     const items = reportData.expensesByCategory;
     const total = reportData.totalExpenses;
@@ -661,7 +841,7 @@ export function ReportsGenerator() {
             ))}
           </select>
 
-          {reportType !== 'balance_sheet' && reportType !== 'project_statement' && (
+          {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
             <select
               value={datePreset}
               onChange={(e) => handleDatePresetChange(e.target.value as DateRangePreset)}
@@ -678,7 +858,7 @@ export function ReportsGenerator() {
           )}
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {reportType !== 'balance_sheet' && reportType !== 'project_statement' && (
+            {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
               <>
                 <input
                   type="date"
@@ -689,7 +869,7 @@ export function ReportsGenerator() {
                 <span className="text-slate-400 text-sm font-medium">to</span>
               </>
             )}
-            {reportType !== 'project_statement' && (
+            {!['project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
               <input
                 type="date"
                 value={dateTo}
@@ -741,6 +921,10 @@ export function ReportsGenerator() {
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
               {generatedConfig.type === 'project_statement' 
                 ? 'Client Statement of Account & Payment Timeline'
+                : generatedConfig.type === 'project_budget_sheet'
+                ? 'Project Budget Sheet Overview'
+                : generatedConfig.type === 'project_actual_sheet'
+                ? 'Project Actual Revenue vs Expenditure'
                 : generatedConfig.type === 'balance_sheet' 
                 ? `As of ${format(new Date(generatedConfig.to), 'MMMM d, yyyy')}`
                 : `For the period ${format(new Date(generatedConfig.from), 'MMM d, yyyy')} to ${format(new Date(generatedConfig.to), 'MMM d, yyyy')}`

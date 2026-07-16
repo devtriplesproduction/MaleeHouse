@@ -12,7 +12,6 @@ export type Capability =
   | "ops:escalate_revisions"
   | "cad:upload" 
   | "field:report" 
-  | "qc:verify" 
   | "vault:overwrite";
 
 const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
@@ -20,7 +19,7 @@ const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
     "project:create", "project:delete", "project:archive",
     "finance:invoice", "finance:verify_payment", "finance:unfreeze",
     "ops:assign_cad", "ops:schedule_visit", "ops:escalate_revisions",
-    "cad:upload", "field:report", "qc:verify", "vault:overwrite"
+    "cad:upload", "field:report", "vault:overwrite"
   ],
   sales: ["project:create", "ops:assign_cad"],
   accountant: ["project:create", "finance:invoice", "finance:verify_payment", "finance:unfreeze"],
@@ -28,7 +27,6 @@ const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   cad: ["cad:upload"],
   field: ["field:report"],
   field_engineer: ["field:report"],
-  qc: ["qc:verify"],
   employee: [],
   hr: [],
 };

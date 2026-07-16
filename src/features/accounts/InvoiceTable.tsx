@@ -13,11 +13,13 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
+import { LogPaymentModal } from './LogPaymentModal';
 import { getCompanySettingsAction } from '@/actions/settings.actions';
 
 interface Invoice {
   id: string;
   invoice_number: string;
+  project_id: string;
   amount: number;
   total_amount: number;
   status: 'draft' | 'sent' | 'paid' | 'cancelled';
@@ -44,6 +46,8 @@ const statusConfig: Record<string, { label: string; className: string; icon: any
 
 export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceTableProps) {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPaymentInvoice, setSelectedPaymentInvoice] = useState<Invoice | null>(null);
   const [companySettings, setCompanySettings] = useState<any>(null);
 
   useEffect(() => {
@@ -134,7 +138,19 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
               </div>
 
               {/* Section 3: Action Button (25%) */}
-              <div className="w-full md:w-[25%] flex-shrink-0 flex items-center md:justify-end md:border-l border-slate-100 dark:border-white/5 md:pl-4">
+              <div className="w-full md:w-[25%] flex-shrink-0 flex items-center gap-2 md:justify-end md:border-l border-slate-100 dark:border-white/5 md:pl-4">
+                {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                  <button 
+                    onClick={() => {
+                      setSelectedPaymentInvoice(invoice);
+                      setPaymentModalOpen(true);
+                    }}
+                    className="h-8 px-3 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Log Payment
+                  </button>
+                )}
                 <button 
                   onClick={() => setSelectedInvoice(invoice)}
                   className="h-8 px-4 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap"
@@ -158,6 +174,21 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
           }}
         />
       )}
+
+      <LogPaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedPaymentInvoice(null);
+        }}
+        projectId={selectedPaymentInvoice?.project_id || ''}
+        invoiceId={selectedPaymentInvoice?.id || ''}
+        milestoneTitle={selectedPaymentInvoice?.invoice_number || ''}
+        amount={selectedPaymentInvoice?.total_amount || 0}
+        onSuccess={() => {
+          if (onRefresh) onRefresh();
+        }}
+      />
     </div>
   );
 }

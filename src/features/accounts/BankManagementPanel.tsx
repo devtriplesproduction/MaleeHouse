@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, Save, X, Loader2, Landmark } from "lucide-react";
+import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, Save, X, Loader2, Landmark, CreditCard, Building2, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -73,21 +73,23 @@ export function BankManagementPanel() {
   if (loading && banks.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Landmark className="w-5 h-5 text-blue-500" />
+          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20">
+              <Landmark className="w-4 h-4" />
+            </div>
             Bank Accounts
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Manage bank accounts that can be selected in quotations and invoices.
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+            Manage your company's bank accounts for quotations and invoicing
           </p>
         </div>
         {!editingBank && (
@@ -95,10 +97,11 @@ export function BankManagementPanel() {
             onClick={() => setEditingBank({ 
               bank_name: "", account_name: "", account_number: "", ifsc_code: "", branch_name: "", is_default: false 
             })}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="group relative flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 overflow-hidden"
           >
-            <Plus className="w-4 h-4" />
-            Add Bank Account
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+            <Plus className="w-4 h-4 relative z-10" />
+            <span className="relative z-10">Add Bank Account</span>
           </button>
         )}
       </div>
@@ -106,102 +109,125 @@ export function BankManagementPanel() {
       <AnimatePresence mode="wait">
         {editingBank ? (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 rounded-xl p-6"
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/40 dark:bg-[#0c1222]/80 backdrop-blur-2xl shadow-2xl p-8"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 opacity-50 pointer-events-none" />
+            
+            <div className="relative z-10 flex items-center justify-between mb-8 pb-6 border-b border-slate-200/50 dark:border-white/10">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
                 {editingBank.id ? "Edit Bank Account" : "New Bank Account"}
               </h3>
               <button
                 onClick={() => setEditingBank(null)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-xl transition-colors text-slate-500 hover:text-slate-700 dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Bank Name *</label>
+            <form onSubmit={handleSave} className="relative z-10 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <div className="space-y-2.5">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <Landmark className="h-3.5 w-3.5 text-indigo-500" /> Bank Name *
+                  </label>
                   <input
                     type="text"
                     value={editingBank.bank_name || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, bank_name: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:border-blue-500"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
                     placeholder="e.g. HDFC Bank"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Account Name *</label>
+                
+                <div className="space-y-2.5">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <CreditCard className="h-3.5 w-3.5 text-indigo-500" /> Account Name *
+                  </label>
                   <input
                     type="text"
                     value={editingBank.account_name || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, account_name: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:border-blue-500"
-                    placeholder="e.g. Morya Enterprises"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
+                    placeholder="e.g. Malee House"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Account Number *</label>
+
+                <div className="space-y-2.5">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <Hash className="h-3.5 w-3.5 text-indigo-500" /> Account Number *
+                  </label>
                   <input
                     type="text"
                     value={editingBank.account_number || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, account_number: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:border-blue-500"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm tracking-widest"
                     placeholder="e.g. 50200000000000"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">IFSC Code *</label>
+
+                <div className="space-y-2.5">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <Hash className="h-3.5 w-3.5 text-indigo-500" /> IFSC Code *
+                  </label>
                   <input
                     type="text"
                     value={editingBank.ifsc_code || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, ifsc_code: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:border-blue-500"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm uppercase placeholder:normal-case"
                     placeholder="e.g. HDFC0001234"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Branch Name *</label>
+
+                <div className="space-y-2.5 md:col-span-2">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-indigo-500" /> Branch Name *
+                  </label>
                   <input
                     type="text"
                     value={editingBank.branch_name || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, branch_name: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:border-blue-500"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
                     placeholder="e.g. MG Road Branch"
                   />
                 </div>
-                <div className="space-y-2 flex items-center pt-8">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={editingBank.is_default || false}
-                      onChange={(e) => setEditingBank({ ...editingBank, is_default: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
-                    />
-                    <span className="text-sm font-medium">Set as Default Bank Account</span>
+
+                <div className="space-y-2.5 flex items-center md:col-span-2 pt-2">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative flex items-center justify-center w-5 h-5">
+                      <input
+                        type="checkbox"
+                        checked={editingBank.is_default || false}
+                        onChange={(e) => setEditingBank({ ...editingBank, is_default: e.target.checked })}
+                        className="peer appearance-none w-5 h-5 rounded border-2 border-slate-300 dark:border-slate-600 checked:border-indigo-600 checked:bg-indigo-600 transition-all cursor-pointer"
+                      />
+                      <CheckCircle2 className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                      Set as Default Bank Account
+                    </span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800 mt-6">
+              <div className="flex justify-end gap-3 pt-8 mt-8 border-t border-slate-200/50 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setEditingBank(null)}
-                  className="px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="group relative flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 overflow-hidden"
                 >
-                  <Save className="w-4 h-4" />
-                  Save Bank Account
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                  <Save className="w-4 h-4 relative z-10" />
+                  <span className="relative z-10">Save Bank Account</span>
                 </button>
               </div>
             </form>
@@ -217,95 +243,109 @@ export function BankManagementPanel() {
               <div
                 key={bank.id}
                 className={cn(
-                  "bg-white dark:bg-[#0c1222] border rounded-xl p-6 transition-all",
+                  "relative group overflow-hidden rounded-3xl border transition-all duration-300 p-6 md:p-8",
                   bank.is_default 
-                    ? "border-blue-500 dark:border-blue-500/50 shadow-md shadow-blue-500/5" 
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                    ? "border-indigo-500/50 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 shadow-xl shadow-indigo-500/10" 
+                    : "border-slate-200 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl hover:shadow-lg hover:border-slate-300 dark:hover:border-white/20"
                 )}
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "p-2 rounded-lg",
-                      bank.is_default ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                    )}>
-                      <Landmark className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{bank.bank_name}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {bank.branch_name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {!bank.is_default && (
-                      <button
-                        onClick={() => handleSetDefault(bank.id)}
-                        className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
-                        title="Set as Default"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setEditingBank(bank)}
-                      className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(bank.id)}
-                      className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mt-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Account Name:</span>
-                    <span className="font-medium">{bank.account_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">A/C No:</span>
-                    <span className="font-medium">{bank.account_number}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">IFSC:</span>
-                    <span className="font-medium">{bank.ifsc_code}</span>
-                  </div>
-                </div>
-
                 {bank.is_default && (
-                  <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Default Bank Account
-                  </div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
                 )}
+
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm",
+                        bank.is_default 
+                          ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-500/20" 
+                          : "bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300"
+                      )}>
+                        <Landmark className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{bank.bank_name}</h3>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5" />
+                          {bank.branch_name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!bank.is_default && (
+                        <button
+                          onClick={() => handleSetDefault(bank.id)}
+                          className="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 rounded-xl text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          title="Set as Default"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setEditingBank(bank)}
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(bank.id)}
+                        className="p-2 hover:bg-rose-50 dark:hover:bg-rose-500/20 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto space-y-3 bg-white/50 dark:bg-black/20 rounded-2xl p-5 border border-slate-100 dark:border-white/5 backdrop-blur-md">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Account Name</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{bank.account_name}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Account No</span>
+                      <span className="font-black font-mono tracking-wider text-slate-900 dark:text-white">{bank.account_number}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">IFSC</span>
+                      <span className="font-bold font-mono tracking-wider text-slate-900 dark:text-white">{bank.ifsc_code}</span>
+                    </div>
+                  </div>
+
+                  {bank.is_default && (
+                    <div className="mt-6 flex items-center justify-center gap-2 py-2 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl border border-indigo-500/20">
+                      <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <span className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                        Default Account
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
 
             {banks.length === 0 && (
-              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                  <Landmark className="w-8 h-8 text-slate-400" />
+              <div className="col-span-full flex flex-col items-center justify-center py-20 text-center rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+                <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-2xl shadow-sm flex items-center justify-center mb-6 transform -rotate-6">
+                  <Landmark className="w-10 h-10 text-indigo-500" />
                 </div>
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">
-                  No Bank Accounts
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+                  No Bank Accounts Found
                 </h3>
-                <p className="text-slate-500 max-w-sm">
-                  Add a bank account to display your payment details on quotations and invoices.
+                <p className="text-sm font-medium text-slate-500 max-w-sm mb-8">
+                  Add your first bank account to display payment details clearly on your quotations and invoices.
                 </p>
                 <button
                   onClick={() => setEditingBank({ 
                     bank_name: "", account_name: "", account_number: "", ifsc_code: "", branch_name: "", is_default: true 
                   })}
-                  className="mt-6 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="group relative flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 overflow-hidden"
                 >
-                  <Plus className="w-4 h-4" />
-                  Add First Bank
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                  <Plus className="w-4 h-4 relative z-10" />
+                  <span className="relative z-10">Add First Bank Account</span>
                 </button>
               </div>
             )}

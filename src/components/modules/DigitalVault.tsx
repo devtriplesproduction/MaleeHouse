@@ -70,7 +70,6 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
   const isEngineer = userRole === 'engineer';
   const isField = userRole === 'field';
   const isCAD = userRole === 'cad';
-  const isQC = userRole === 'qc';
   const isSales = userRole === 'sales';
 
   // Role check for uploads
@@ -80,7 +79,6 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
     if (tab === 'field') return isField;
     if (tab === 'prototype') return isCAD;
     if (tab === 'cad') return isCAD;
-    if (tab === 'submission') return isQC;
     return false;
   };
 
