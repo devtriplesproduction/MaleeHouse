@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 interface Props {
   initialSettings: CompanySettings;
   canEdit?: boolean;
+  activeTab?: string;
 }
 
-export function CompanySettingsForm({ initialSettings, canEdit = true }: Props) {
+export function CompanySettingsForm({ initialSettings, canEdit = true, activeTab }: Props) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<CompanySettings>(initialSettings);
