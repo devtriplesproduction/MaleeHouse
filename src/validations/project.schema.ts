@@ -32,6 +32,7 @@ export const createProjectSchema = z.object({
   }, { message: 'Please provide a valid, non-temporary business or personal email.' }),
   client_contact: z.string().optional(),
   client_address: z.string().min(10, { message: 'Full address is required.' }),
+  state_code: z.string().min(2).max(2, { message: 'State code must be exactly 2 letters (e.g., TX, NY).' }).toUpperCase(),
   site_coordinates: z.string().optional(),
   site_type: z.enum(['residential', 'commercial', 'industrial', 'infrastructure', 'other']),
   survey_requirements: z.string().min(10, { message: 'Please provide more details on requirements.' }),

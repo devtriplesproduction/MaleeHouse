@@ -22,9 +22,9 @@ export function LeaveMetrics({ leaves, profile, leaveBalance = 0 }: LeaveMetrics
   };
 
   const now = new Date();
-  // Filter approved leaves for the current month
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const currentMonthPrefix = `${year}-${month}`;
 
   // 1 paid leave per month, no carry forward
   const earnedPaidLeaves = 1;
@@ -33,7 +33,7 @@ export function LeaveMetrics({ leaves, profile, leaveBalance = 0 }: LeaveMetrics
   const approvedLeaves = leaves.filter((l: any) => l.status?.toLowerCase() === 'approved');
 
   const approvedLeavesThisMonth = approvedLeaves.filter((l: any) => {
-    return l.start_date >= currentMonthStart.split('T')[0] && l.start_date <= currentMonthEnd.split('T')[0];
+    return l.start_date?.startsWith(currentMonthPrefix);
   });
 
   // Calculate total days applied for approved leaves this month
@@ -44,8 +44,11 @@ export function LeaveMetrics({ leaves, profile, leaveBalance = 0 }: LeaveMetrics
   const approvedPaidDays = Math.min(earnedPaidLeaves, totalApprovedDaysThisMonth);
   const approvedUnpaidDays = Math.max(0, totalApprovedDaysThisMonth - earnedPaidLeaves);
 
-  // Remaining Balance
-  const remainingPaidBalance = Math.max(0, earnedPaidLeaves - approvedPaidDays);
+  // Remaining Balance (consider pending leaves as using balance to align with LeaveForm)
+  const hasAppliedThisMonth = leaves.some((l: any) => 
+    l.status !== 'rejected' && l.start_date?.startsWith(currentMonthPrefix)
+  );
+  const remainingPaidBalance = hasAppliedThisMonth ? 0 : earnedPaidLeaves;
 
   return (
     <div className="space-y-4 font-sans animate-in fade-in slide-in-from-top-4 duration-500">

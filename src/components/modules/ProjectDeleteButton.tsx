@@ -6,12 +6,15 @@ import { deleteProjectAction } from '@/actions/project.actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProjectDeleteButtonProps {
   projectId: string;
+  iconOnly?: boolean;
+  disabled?: boolean;
 }
 
-export function ProjectDeleteButton({ projectId }: ProjectDeleteButtonProps) {
+export function ProjectDeleteButton({ projectId, iconOnly, disabled }: ProjectDeleteButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -31,13 +34,42 @@ export function ProjectDeleteButton({ projectId }: ProjectDeleteButtonProps) {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="group px-4 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-500/20 transition-all duration-300 text-sm font-semibold flex items-center gap-2"
-      >
-        <Trash2 className="w-4 h-4 transition-transform group-hover:scale-110" />
-        Delete Project
-      </button>
+      {iconOnly ? (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            if (!disabled) setIsOpen(true); 
+          }}
+          className={cn(
+            "inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all",
+            disabled 
+              ? "text-slate-200 dark:text-slate-700 opacity-50 cursor-not-allowed"
+              : "text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+          )}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            if (!disabled) setIsOpen(true); 
+          }}
+          className={cn(
+            "group px-4 py-2 rounded-xl border text-sm font-semibold flex items-center gap-2 transition-all duration-300",
+            disabled
+              ? "bg-slate-50 text-slate-400 border-slate-200 dark:bg-white/5 dark:text-slate-600 dark:border-white/10 opacity-50 cursor-not-allowed"
+              : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-500/20"
+          )}
+        >
+          <Trash2 className={cn("w-4 h-4", !disabled && "transition-transform group-hover:scale-110")} />
+          Delete Project
+        </button>
+      )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-md p-0 overflow-hidden border-white/10 shadow-2xl bg-white dark:bg-[#111111] rounded-2xl">

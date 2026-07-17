@@ -41,6 +41,47 @@ const STEPS = [
   { id: 3, title: 'Review & Create', icon: ShieldCheck },
 ];
 
+import { SearchableSelect } from '@/components/ui/searchable-select';
+
+const STATE_OPTIONS = [
+  { value: 'AP', label: 'Andhra Pradesh' },
+  { value: 'AR', label: 'Arunachal Pradesh' },
+  { value: 'AS', label: 'Assam' },
+  { value: 'BR', label: 'Bihar' },
+  { value: 'CG', label: 'Chhattisgarh' },
+  { value: 'GA', label: 'Goa' },
+  { value: 'GJ', label: 'Gujarat' },
+  { value: 'HR', label: 'Haryana' },
+  { value: 'HP', label: 'Himachal Pradesh' },
+  { value: 'JH', label: 'Jharkhand' },
+  { value: 'KA', label: 'Karnataka' },
+  { value: 'KL', label: 'Kerala' },
+  { value: 'MP', label: 'Madhya Pradesh' },
+  { value: 'MH', label: 'Maharashtra' },
+  { value: 'MN', label: 'Manipur' },
+  { value: 'ML', label: 'Meghalaya' },
+  { value: 'MZ', label: 'Mizoram' },
+  { value: 'NL', label: 'Nagaland' },
+  { value: 'OR', label: 'Odisha' },
+  { value: 'PB', label: 'Punjab' },
+  { value: 'RJ', label: 'Rajasthan' },
+  { value: 'SK', label: 'Sikkim' },
+  { value: 'TN', label: 'Tamil Nadu' },
+  { value: 'TG', label: 'Telangana' },
+  { value: 'TR', label: 'Tripura' },
+  { value: 'UP', label: 'Uttar Pradesh' },
+  { value: 'UK', label: 'Uttarakhand' },
+  { value: 'WB', label: 'West Bengal' },
+  { value: 'AN', label: 'Andaman and Nicobar Islands' },
+  { value: 'CH', label: 'Chandigarh' },
+  { value: 'DN', label: 'Dadra and Nagar Haveli and Daman and Diu' },
+  { value: 'DL', label: 'Delhi' },
+  { value: 'JK', label: 'Jammu and Kashmir' },
+  { value: 'LA', label: 'Ladakh' },
+  { value: 'LD', label: 'Lakshadweep' },
+  { value: 'PY', label: 'Puducherry' },
+];
+
 const SERVICES_BY_CATEGORY: Record<string, string[]> = {
   "Plot measurement": [
     "Farm measurement",
@@ -126,6 +167,7 @@ export function ProjectCreationWizard() {
       phone: '',
       email: '',
       client_address: '',
+      state_code: 'MH',
       site_type: 'residential',
       survey_requirements: '',
       services: [],
@@ -140,7 +182,7 @@ export function ProjectCreationWizard() {
   const handleNext = async () => {
     let fieldsToValidate: (keyof ProjectFormValues)[] = [];
     if (step === 1) {
-      fieldsToValidate = ['name', 'client_name', 'phone', 'email', 'client_address', 'site_type', 'survey_requirements'];
+      fieldsToValidate = ['name', 'client_name', 'phone', 'email', 'client_address', 'state_code', 'site_type', 'survey_requirements'];
     } else if (step === 2) {
       fieldsToValidate = ['services'];
     }
@@ -409,34 +451,59 @@ export function ProjectCreationWizard() {
                             </div>
                           </div>
 
-                          {/* Site Typology Redesigned Dropdown */}
-                          <div className="space-y-2">
-                            <label htmlFor="input-site-type" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-50 block px-1">
-                              Site Typology
-                            </label>
-                            <Controller
-                              name="site_type"
-                              control={methods.control}
-                              render={({ field }) => (
-                                <Select
-                                  value={field.value}
-                                  onValueChange={field.onChange}
-                                  buttonClassName={cn("glass-input h-14 w-full font-medium text-sm text-slate-800 dark:text-white", c.focusBorder, c.focusRing)}
-                                >
-                                  <SelectItem value="residential">Residential Site Selection</SelectItem>
-                                  <SelectItem value="commercial">Commercial Development Site</SelectItem>
-                                  <SelectItem value="industrial">Industrial Complex Site</SelectItem>
-                                  <SelectItem value="infrastructure">Infrastructure Route / Utility Site</SelectItem>
-                                  <SelectItem value="other">Other / Custom Survey Land</SelectItem>
-                                </Select>
-                              )}
-                            />
-                            {errors.site_type && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.site_type.message}</p>}
+                          {/* Site Typology & State Code */}
+                          <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <label htmlFor="input-site-type" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                                Site Typology
+                              </label>
+                              <Controller
+                                name="site_type"
+                                control={methods.control}
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    buttonClassName={cn("glass-input h-14 w-full font-medium text-sm text-slate-800 dark:text-white", c.focusBorder, c.focusRing)}
+                                  >
+                                    <SelectItem value="residential">Residential Site Selection</SelectItem>
+                                    <SelectItem value="commercial">Commercial Development Site</SelectItem>
+                                    <SelectItem value="industrial">Industrial Complex Site</SelectItem>
+                                    <SelectItem value="infrastructure">Infrastructure Route / Utility Site</SelectItem>
+                                    <SelectItem value="other">Other / Custom Survey Land</SelectItem>
+                                  </Select>
+                                )}
+                              />
+                              {errors.site_type && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.site_type.message}</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                              <label htmlFor="input-state" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                                State Code
+                              </label>
+                              <div className="relative group">
+                                <Controller
+                                  name="state_code"
+                                  control={methods.control}
+                                  render={({ field }) => (
+                                    <SearchableSelect
+                                      value={field.value}
+                                      onValueChange={field.onChange}
+                                      options={STATE_OPTIONS}
+                                      placeholder="Select state..."
+                                      searchPlaceholder="Search state..."
+                                      buttonClassName={cn("glass-input h-14 w-full font-medium text-sm text-slate-800 dark:text-white", c.focusBorder, c.focusRing)}
+                                    />
+                                  )}
+                                />
+                              </div>
+                              {errors.state_code && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.state_code.message}</p>}
+                            </div>
                           </div>
 
                           {/* Site/Office Address */}
                           <div className="space-y-2">
-                            <label htmlFor="textarea-address" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-550 block px-1">
+                            <label htmlFor="textarea-address" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
                               Site Address
                             </label>
                             <div className="relative group">

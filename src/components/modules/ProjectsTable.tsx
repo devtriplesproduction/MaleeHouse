@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectItem } from '@/components/ui/select';
+import { ProjectDeleteButton } from './ProjectDeleteButton';
 
 export interface Project {
   id: string;
@@ -96,31 +97,33 @@ export function ProjectsTable({ initialProjects, userRole = 'admin' }: ProjectsT
 
   const exportToExcel = async () => {
     try {
-      const exportData = filteredProjects.map((p: any) => ({
-        'Project ID': p.id,
-        'Project Name': p.name,
-        'Client Name': p.client_name,
-        'Client Contact': p.client_contact || '',
-        'Client Address': p.client_address || '',
-        'Status': p.status,
-        'Priority': p.priority || '',
-        'Target Completion': p.target_completion_date ? new Date(p.target_completion_date).toLocaleString() : '',
-        'Site Type': p.site_type || '',
-        'Site Coordinates': p.site_coordinates || '',
-        'Services': Array.isArray(p.services) ? p.services.join(', ') : p.services || '',
-        'Survey Requirements': p.survey_requirements || '',
-        'Description': p.description || '',
-        'Is Frozen': p.is_frozen ? 'Yes' : 'No',
-        'Freeze Reason': p.freeze_reason || '',
-        'Created By': p.created_by || '',
-        'Created At': p.created_at ? new Date(p.created_at).toLocaleString() : '',
-        'Updated At': p.updated_at ? new Date(p.updated_at).toLocaleString() : '',
-        'Follow Up Date': p.follow_up_date ? new Date(p.follow_up_date).toLocaleString() : '',
-        'Satisfaction Score': p.satisfaction_score || '',
-        'Archival Note': p.archival_note || '',
-        'Requirement Checklist': p.requirement_checklist ? JSON.stringify(p.requirement_checklist) : '',
-        'Bypass Active': p.bypass_active ? 'Yes' : 'No'
-      }));
+      const exportData = filteredProjects.map((p: any) => {
+        let phone = '';
+        let email = '';
+        if (p.client_contact) {
+          const phoneMatch = p.client_contact.match(/Phone:\s*([^,]+)/i);
+          const emailMatch = p.client_contact.match(/Email:\s*(.+)/i);
+          if (phoneMatch) phone = phoneMatch[1].trim();
+          if (emailMatch) email = emailMatch[1].trim();
+          if (!phoneMatch && !emailMatch) {
+            phone = p.client_contact; // Fallback if format is unexpected
+          }
+        }
+
+        return {
+          'Project ID': p.id,
+          'Project Name': p.name,
+          'Client Name': p.client_name,
+          'Client Phone': phone,
+          'Client Email': email,
+          'Client Address': p.client_address || '',
+          'Status': p.status,
+          'Site Type': p.site_type || '',
+          'Services': Array.isArray(p.services) ? p.services.join(', ') : p.services || '',
+          'Created By': p.creator ? `${p.creator.first_name} ${p.creator.last_name}` : 'Unknown',
+          'Created At': p.created_at ? new Date(p.created_at).toLocaleString() : '',
+        };
+      });
 
       const XLSX = await import('xlsx');
       const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -256,8 +259,14 @@ export function ProjectsTable({ initialProjects, userRole = 'admin' }: ProjectsT
                 return (
                   <tr
                     key={project.id}
-                    onClick={() => router.push(`/projects/${project.id}`)}
-                    className="group cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-colors duration-150"
+                    onClick={() => {
+                      if (userRole === 'sales') return;
+                      router.push(`/projects/${project.id}`);
+                    }}
+                    className={cn(
+                      "group border-b border-slate-50 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors",
+                      userRole === 'sales' ? "" : "cursor-pointer"
+                    )}
                   >
                     {/* Project name + ID */}
                     <td className="px-6 py-3.5">
@@ -342,11 +351,15 @@ export function ProjectsTable({ initialProjects, userRole = 'admin' }: ProjectsT
                       </span>
                     </td>
 
-                    {/* Arrow */}
+                    {/* Actions */}
                     <td className="px-4 py-4 text-right">
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-all">
-                        <ChevronRight className="w-4 h-4" />
-                      </span>
+                      <div className="flex justify-end">
+                        <ProjectDeleteButton 
+                          projectId={project.id} 
+                          iconOnly 
+                          disabled={!['lead_created', 'requirement_gathering'].includes(project.status)}
+                        />
+                      </div>
                     </td>
                   </tr>
                 );

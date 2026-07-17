@@ -112,36 +112,40 @@ export default function DashboardNotificationCenter() {
               const t = title.toLowerCase();
               const m = message.toLowerCase();
 
-              // 0. Material Requests
-              if (t.includes('material request') || m.includes('material request')) {
+              // 0. Follow Up Notifications
+              if (t.includes('follow-up') || m.includes('follow-up') || t.includes('follow up') || m.includes('follow up')) {
                 return 0;
               }
-              // 1. CAD Prototype Submitted
-              if (t.includes('cad prototype submitted') || m.includes('cad prototype submitted') || t.includes('cad prototype uploaded') || m.includes('cad prototype uploaded')) {
+              // 1. Material Requests
+              if (t.includes('material request') || m.includes('material request')) {
                 return 1;
               }
-              // 2. QC Returned Project
-              if (type === 'rejection' || t.includes('qc rejected') || m.includes('qc rejected') || t.includes('qc returned') || m.includes('qc returned')) {
+              // 2. CAD Prototype Submitted
+              if (t.includes('cad prototype submitted') || m.includes('cad prototype submitted') || t.includes('cad prototype uploaded') || m.includes('cad prototype uploaded')) {
                 return 2;
               }
-              // 3. Survey Data Uploaded
-              if (t.includes('survey data') || m.includes('survey data') || t.includes('raw data') || m.includes('raw data') || t.includes('control point') || m.includes('control point')) {
+              // 3. QC Returned Project
+              if (type === 'rejection' || t.includes('qc rejected') || m.includes('qc rejected') || t.includes('qc returned') || m.includes('qc returned')) {
                 return 3;
               }
-              // 4. Deliverables Ready
-              if (t.includes('qc approved') || m.includes('qc approved') || t.includes('passed qc') || m.includes('passed qc') || t.includes('deliverable') || m.includes('deliverable')) {
+              // 4. Survey Data Uploaded
+              if (t.includes('survey data') || m.includes('survey data') || t.includes('raw data') || m.includes('raw data') || t.includes('control point') || m.includes('control point')) {
                 return 4;
               }
-              // 5. Client Documents Uploaded
-              if (t.includes('client documents') || m.includes('client documents') || t.includes('intake document') || m.includes('intake document')) {
+              // 5. Deliverables Ready
+              if (t.includes('qc approved') || m.includes('qc approved') || t.includes('passed qc') || m.includes('passed qc') || t.includes('deliverable') || m.includes('deliverable')) {
                 return 5;
               }
-              // 6. Project Assignment
-              if (type === 'assignment' || t.includes('assigned') || m.includes('assigned')) {
+              // 6. Client Documents Uploaded
+              if (t.includes('client documents') || m.includes('client documents') || t.includes('intake document') || m.includes('intake document')) {
                 return 6;
               }
+              // 7. Project Assignment
+              if (type === 'assignment' || t.includes('assigned') || m.includes('assigned')) {
+                return 7;
+              }
               
-              return 7;
+              return 8;
             };
 
             const sortedNotifications = [...notifications].sort((a: any, b: any) => {

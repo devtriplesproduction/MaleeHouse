@@ -10,6 +10,7 @@ import { verifyProjectAccess, requireAuthContext, getAssignedProjectIds, type Ro
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
 import { generateSequentialCode } from '@/lib/id-generator';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { randomUUID } from 'crypto';
 
 export type ActionResponse<T = any> = {
@@ -29,7 +30,7 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
       };
     }
 
-    const { name, client_name, target_completion_date, phone, email } = validatedFields.data;
+    const { name, client_name, target_completion_date, phone, email, state_code } = validatedFields.data;
 
     const contactInfo = validatedFields.data.client_contact ||
       `Phone: ${phone}${email ? `, Email: ${email}` : ''}`;
@@ -45,20 +46,18 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
 
     const supabase: any = await createClient();
 
-    const date = new Date();
-    const yy = date.getFullYear().toString().slice(-2);
-    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
-    const searchPrefix = `PRJ-${yy}${mm}-`;
+    // Use PRJ-MH(State Code)-XXX format
+    const explicitPrefix = `PRJ-MH${state_code}-`;
 
     const { data: existingProjects, error: fetchError } = await supabase
       .from('projects')
       .select('id')
-      .ilike('id', `${searchPrefix}%`);
+      .ilike('id', `${explicitPrefix}%`);
 
     if (fetchError) throw fetchError;
 
     const existingIds = (existingProjects || []).map((p: any) => p.id);
-    const projectId = generateSequentialCode('PRJ', existingIds);
+    const projectId = generateSequentialCode('PRJ', existingIds, undefined, explicitPrefix);
 
     const initialStatus = profile.role === 'accountant' ? 'quotation_requested' : 'lead_created';
 
@@ -163,16 +162,33 @@ export async function deleteProjectAction(projectId: string): Promise<ActionResp
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
 
-    if (profile.role !== 'admin') {
-      return { success: false, error: 'Only administrators can delete projects.' };
+    if (profile.role !== 'admin' && profile.role !== 'sales') {
+      return { success: false, error: 'Only administrators or sales can delete projects.' };
     }
 
     const supabase: any = await createClient();
+
+    if (profile.role === 'sales') {
+      const { data: project, error: projError } = await supabase
+        .from('projects')
+        .select('created_by, status')
+        .eq('id', projectId)
+        .single();
+        
+      if (projError || !project) return { success: false, error: 'Project not found' };
+      
+      if (project.created_by !== profile.id) {
+        return { success: false, error: 'Sales can only delete their own projects.' };
+      }
+      
+      if (project.status !== 'lead_created' && project.status !== 'requirement_gathering') {
+        return { success: false, error: 'Cannot delete project because it has been pushed forward.' };
+      }
+    }
     const { data: updated, error } = await supabase
       .from('projects')
       .update({
-        deleted_at: new Date().toISOString(),
-        deleted_by: profile.id
+        deleted_at: new Date().toISOString()
       })
       .eq('id', projectId)
       .select()
@@ -347,7 +363,7 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
     if (isGlobalRole) {
       const { data: activeProjects, error } = await supabase
         .from('projects')
-        .select('*')
+        .select('*, creator:profiles!projects_created_by_fkey(first_name, last_name)')
         .neq('status', 'archived')
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
@@ -370,7 +386,7 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
 
       const { data: assignedProjects, error: pError } = await supabase
         .from('projects')
-        .select('*')
+        .select('*, creator:profiles!projects_created_by_fkey(first_name, last_name)')
         .in('id', userProjectIds)
         .neq('status', 'archived')
         .is('deleted_at', null)
@@ -400,6 +416,132 @@ export async function getProjectByIdAction(projectId: string): Promise<ActionRes
     if (error || !project) return { success: false, error: 'Project not found' };
 
     return { success: true, data: project };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function adminHardDeleteProjectAction(projectId: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile || profile.role !== 'admin') {
+      return { success: false, error: 'Unauthorized. Only administrators can delete projects.' };
+    }
+
+    const supabaseAdmin: any = await createAdminClient();
+
+    // 1. Delete files from Supabase Storage
+    const { data: files } = await supabaseAdmin
+      .from('files')
+      .select('file_url')
+      .eq('project_id', projectId);
+
+    if (files && files.length > 0) {
+      const pathsToDelete: string[] = [];
+      for (const file of files) {
+        if (file.file_url) {
+          let cleanUrl = file.file_url.split('?')[0];
+          const bucketIdx = cleanUrl.indexOf('/project-assets/');
+          if (bucketIdx !== -1) {
+            pathsToDelete.push(decodeURIComponent(cleanUrl.substring(bucketIdx + 16)));
+          } else if (!cleanUrl.startsWith('http')) {
+            pathsToDelete.push(decodeURIComponent(cleanUrl));
+          }
+        }
+      }
+      if (pathsToDelete.length > 0) {
+        const { error: storageError } = await supabaseAdmin.storage
+          .from("project-assets")
+          .remove(pathsToDelete);
+        if (storageError) {
+          console.error("Storage files cleanup failed:", storageError);
+        }
+      }
+    }
+
+    // 2. Delete database records in order
+    const { data: quotations } = await supabaseAdmin
+      .from('quotations')
+      .select('id')
+      .eq('project_id', projectId);
+    
+    if (quotations && quotations.length > 0) {
+      const quoteIds = quotations.map((q: any) => q.id);
+      await supabaseAdmin.from('quotation_versions').delete().in('quotation_id', quoteIds);
+    }
+
+    const tables = [
+      'workflow_history',
+      'activity_logs',
+      'tasks',
+      'files',
+      'quotations',
+      'invoices',
+      'project_milestones',
+      'payments',
+      'project_finances',
+      'project_assignments',
+      'project_accounts_owners',
+      'cad_revisions',
+      'field_reports',
+      'project_visits',
+      'delivery_checklist',
+      'issues',
+      'comments',
+      'notifications'
+    ];
+
+    for (const table of tables) {
+      const { error: tblErr } = await supabaseAdmin.from(table).delete().eq('project_id', projectId);
+      if (tblErr) {
+        console.error(`Failed to delete from ${table}:`, tblErr.message);
+      }
+    }
+
+    try {
+      await supabaseAdmin.from('audit_logs').delete().eq('project_id', projectId);
+    } catch (_) {}
+
+    // 3. Finally, delete the project
+    const { error: projErr } = await supabaseAdmin
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    if (projErr) throw projErr;
+
+    await revalidateAccountsPaths(projectId);
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function adminHardDeleteClientAction(clientName: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile || profile.role !== 'admin') {
+      return { success: false, error: 'Unauthorized. Only administrators can delete clients.' };
+    }
+
+    const supabaseAdmin: any = await createAdminClient();
+    
+    // Find all projects for this client
+    const { data: projects, error } = await supabaseAdmin
+      .from('projects')
+      .select('id')
+      .eq('client_name', clientName);
+      
+    if (error) return { success: false, error: error.message };
+    
+    if (projects && projects.length > 0) {
+      for (const project of projects) {
+        await adminHardDeleteProjectAction(project.id);
+      }
+    }
+    
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

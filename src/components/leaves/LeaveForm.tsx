@@ -55,28 +55,27 @@ export function LeaveForm() {
   }, []);
 
   useEffect(() => {
-    if (baseBalance !== null) {
-      let effectiveBalance = baseBalance;
-      const targetDate = formData.start_date ? new Date(formData.start_date) : new Date();
-      const targetMonth = targetDate.getMonth();
-      const targetYear = targetDate.getFullYear();
-      
-      const hasAppliedForTargetMonth = myLeaves.some((l: any) => {
-        if (l.status === 'rejected') return false;
-        const lDate = new Date(l.start_date);
-        return lDate.getMonth() === targetMonth && lDate.getFullYear() === targetYear;
-      });
-      
-      if (hasAppliedForTargetMonth) {
-        effectiveBalance = 0;
-      }
-
-      setLeaveBalance(effectiveBalance);
-      if (effectiveBalance === 0 && formData.leave_type !== 'unpaid') {
-        setFormData(prev => ({ ...prev, leave_type: 'unpaid' }));
-      }
+    // 1 paid leave per month logic
+    let effectiveBalance = 1;
+    const targetDate = formData.start_date ? new Date(formData.start_date) : new Date();
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+    const targetMonthPrefix = `${targetYear}-${targetMonth}`;
+    
+    const hasAppliedForTargetMonth = myLeaves.some((l: any) => {
+      if (l.status === 'rejected') return false;
+      return l.start_date?.startsWith(targetMonthPrefix);
+    });
+    
+    if (hasAppliedForTargetMonth) {
+      effectiveBalance = 0;
     }
-  }, [baseBalance, myLeaves, formData.start_date]);
+
+    setLeaveBalance(effectiveBalance);
+    if (effectiveBalance === 0 && formData.leave_type !== 'unpaid') {
+      setFormData(prev => ({ ...prev, leave_type: 'unpaid' }));
+    }
+  }, [myLeaves, formData.start_date]);
 
   // Check for overlapping holidays
   const conflictingHolidays = holidays.filter(h => {

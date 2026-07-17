@@ -51,12 +51,15 @@ export function AlertDialogContent({
   if (!mounted || !context?.open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-      {/* Overlay — NOT dismissible on click for alert dialogs */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" />
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+      {/* Overlay — dismissible on click */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+        onClick={() => context?.onOpenChange?.(false)}
+      />
       <div
         className={cn(
-          "glass-card relative z-50 w-full max-w-md animate-in zoom-in-95 fade-in duration-300 border-white/10 shadow-2xl",
+          "glass-card relative z-[201] w-full max-w-md animate-in zoom-in-95 fade-in duration-300 border-white/10 shadow-2xl",
           className
         )}
       >

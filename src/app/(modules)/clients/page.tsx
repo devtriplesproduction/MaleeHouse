@@ -58,7 +58,7 @@ export default async function ClientsPage() {
       {/* Main Content */}
       <div className="min-h-[500px]">
         <Suspense fallback={<div className="h-48 rounded-[2rem] bg-slate-50/30 dark:bg-[#0c101f]/30 border border-slate-200/60 dark:border-white/5 animate-pulse" />}>
-          <ClientDirectory clients={clients} />
+          <ClientDirectory clients={clients} userRole={profile.role} />
         </Suspense>
       </div>
     </div>

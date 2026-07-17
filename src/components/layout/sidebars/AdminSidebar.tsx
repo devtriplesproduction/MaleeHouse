@@ -8,6 +8,7 @@ const adminLinks = [
   { title: "Team Management", href: "/admin/users", icon: Users },
   { title: "Project Milestones", href: "/admin/milestones", icon: Target },
   { title: "All Projects", href: "/projects", icon: FileText },
+  { title: "Client Directory", href: "/clients", icon: Building2 },
   { title: "Procedures (SOP)", href: "/sop", icon: BookOpen },
   { title: "EOD Reports", href: "/eod", icon: Clock },
   { title: "My Attendance", href: "/attendance", icon: CalendarCheck },
