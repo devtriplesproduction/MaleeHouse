@@ -21,7 +21,8 @@ import {
   deleteEmployeeAction,
   addSalaryIncrementAction,
   getLastSalaryIncrementAction,
-  getSalaryIncrementHistoryAction
+  getSalaryIncrementHistoryAction,
+  resetEmployeePasswordAction
 } from "@/actions/admin.actions";
 import { DEPARTMENTS, getDesignationsForDepartment, getSystemRoleForDesignation } from "@/config/departments";
 
@@ -52,6 +53,11 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
   const [isOffboarding, setIsOffboarding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isAddingIncrement, setIsAddingIncrement] = useState(false);
   const [showInlineHikeForm, setShowInlineHikeForm] = useState(false);
   const [incrementInput, setIncrementInput] = useState("");
@@ -1175,6 +1181,86 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     </Select>
                   </div>
                 </div>
+              </div>
+
+              {/* Change Password Section */}
+              <div className="p-6 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-2xl">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white">Reset Password</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Set a new login password for this employee.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Min. 6 characters"
+                        className="w-full h-11 px-4 pr-11 bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-rose-500 outline-none transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(p => !p)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Confirm Password</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Re-enter new password"
+                        className="w-full h-11 px-4 pr-11 bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-rose-500 outline-none transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(p => !p)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {confirmPassword && newPassword !== confirmPassword && (
+                  <p className="text-xs text-rose-500 font-semibold mt-2">Passwords do not match.</p>
+                )}
+
+                <Button
+                  variant="hr"
+                  size="sm"
+                  className="mt-5 gap-2 bg-rose-600 hover:bg-rose-700"
+                  disabled={isResettingPassword || !newPassword || newPassword !== confirmPassword || newPassword.length < 6}
+                  onClick={async () => {
+                    setIsResettingPassword(true);
+                    const result = await resetEmployeePasswordAction(employee.id, newPassword);
+                    setIsResettingPassword(false);
+                    if (result?.success) {
+                      toast({ title: "Password Updated", description: "The employee's password has been reset successfully.", variant: "success" });
+                      setNewPassword("");
+                      setConfirmPassword("");
+                    } else {
+                      toast({ title: "Reset Failed", description: result?.error || "Could not reset password.", variant: "error" });
+                    }
+                  }}
+                >
+                  {isResettingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                  Reset Password
+                </Button>
               </div>
             </div>
           )}

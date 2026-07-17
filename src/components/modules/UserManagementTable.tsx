@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Users, UserPlus, Mail, Power, Search, Filter, SlidersHorizontal,
   LayoutGrid, Table, Calendar, MapPin, Key, Eye, Edit3,
@@ -101,6 +102,10 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
   // Security state
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLogsLoading, setIsLogsLoading] = useState(false);
+  const [overridePasswords, setOverridePasswords] = useState<Record<string, string>>({});
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [isOverriding, setIsOverriding] = useState<Record<string, boolean>>({});
+  const [oneTimePassModal, setOneTimePassModal] = useState<string | null>(null);
 
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -127,6 +132,38 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
       toast({ title: "Failed to compute payroll", variant: "error" });
     } finally {
       setIsPayrollLoading(false);
+    }
+  };
+
+  const generateRandomPasswordForUser = (userId: string) => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let pwd = "";
+    for (let i = 0; i < 12; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setOverridePasswords((prev) => ({ ...prev, [userId]: pwd }));
+    setVisiblePasswords((prev) => ({ ...prev, [userId]: true }));
+  };
+
+  const handleManualOverride = async (userId: string, email: string) => {
+    const pwd = overridePasswords[userId];
+    if (!pwd || pwd.length < 6) {
+      toast({ title: "Invalid", description: "Password must be at least 6 characters.", variant: "error" });
+      return;
+    }
+    setIsOverriding((prev) => ({ ...prev, [userId]: true }));
+    const { resetEmployeePasswordAction } = await import("@/actions/admin.actions");
+    const result = await resetEmployeePasswordAction(userId, pwd);
+    setIsOverriding((prev) => ({ ...prev, [userId]: false }));
+    if (result.success) {
+      setOverridePasswords((prev) => {
+        const copy = { ...prev };
+        delete copy[userId];
+        return copy;
+      });
+      setOneTimePassModal(pwd);
+    } else {
+      toast({ title: "Error", description: result.error || "Failed to update.", variant: "error" });
     }
   };
 
@@ -1147,6 +1184,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                   <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-[#0a0d16]/30">
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-400">Employee Identity</th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-400">Access Level</th>
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest text-slate-400">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -1205,6 +1243,55 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                             </span>
                           </div>
                         </div>
+                      </td>
+
+                      {/* Credential Override */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <input
+                              type={visiblePasswords[user.id] ? "text" : "password"}
+                              placeholder="Set new credentials..."
+                              value={overridePasswords[user.id] || ""}
+                              onChange={(e) => setOverridePasswords(prev => ({ ...prev, [user.id]: e.target.value }))}
+                              className="w-full h-9 pl-3 pr-10 bg-slate-50 dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-lg text-xs font-semibold focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setVisiblePasswords(prev => ({ ...prev, [user.id]: !prev[user.id] }))}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                            >
+                              {visiblePasswords[user.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => generateRandomPasswordForUser(user.id)}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400 hover:text-indigo-500 transition-colors shrink-0"
+                            title="Generate Random Password"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-6 py-4 text-right">
+                        <Button
+                          onClick={() => handleManualOverride(user.id, user.email)}
+                          disabled={isOverriding[user.id] || !(overridePasswords[user.id]?.length >= 6)}
+                          variant="premium"
+                          className="h-9 px-4 text-sm font-bold tracking-wider rounded-lg disabled:opacity-50"
+                        >
+                          {isOverriding[user.id] ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <Key className="w-3 h-3 mr-1.5" />
+                              Update
+                            </>
+                          )}
+                        </Button>
                       </td>
                       </tr>
                   ))}
@@ -1324,6 +1411,52 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
         </div>
       )}
 
+
+      {/* ONE-TIME PASSWORD DIALOG OVERLAY */}
+      {oneTimePassModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setOneTimePassModal(null)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-[#080b14] rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/20 text-indigo-500">
+              <Key className="w-6 h-6" />
+            </div>
+
+            <h4 className="text-lg font-bold text-slate-900 dark:text-white">Temporary Key Generated</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold max-w-xs mx-auto mt-1.5 leading-relaxed">
+              Temporary access key refreshed. Securely transfer this password to the employee immediately.
+            </p>
+
+            <div className="my-5 p-4 rounded-2xl bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
+              <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-lg tracking-wider">
+                {oneTimePassModal}
+              </span>
+              <Button 
+                onClick={() => copyToClipboard(oneTimePassModal)}
+                variant="outline"
+                className="h-9 w-9 p-0 rounded-xl"
+                title="Copy password key"
+              >
+                <Key className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              </Button>
+            </div>
+
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-2.5 text-left mb-6">
+              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-bold leading-normal">
+                SECURITY WARNING: Visible ONLY ONCE. The password will be salted and hashed immediately upon closing.
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => setOneTimePassModal(null)}
+              className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider"
+            >
+              Acknowledge & Close
+            </Button>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Onboard Wizard Dialog */}
       <OnboardUserModal

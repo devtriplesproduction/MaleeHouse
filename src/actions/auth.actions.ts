@@ -223,13 +223,10 @@ export async function getTodayBirthdaysAction() {
         const isToday = dobMonth === todayMonth && dobDate === todayDate
         const isTomorrow = dobMonth === tomorrowMonth && dobDate === tomorrowDate
 
-        if (isToday || isTomorrow) {
-          if (isHrOrAdmin || profile.id === user.id) {
-            bdays.push({
-              user,
-              type: isToday ? 'today' : 'tomorrow'
-            })
-          }
+        if (isToday) {
+          bdays.push({ user, type: 'today' })
+        } else if (isTomorrow && isHrOrAdmin) {
+          bdays.push({ user, type: 'tomorrow' })
         }
       }
     })
