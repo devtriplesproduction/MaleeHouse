@@ -562,6 +562,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     value={formData.dob}
                     onChange={(val) => setFormData({ ...formData, dob: val })}
                     disabled={!isEditing}
+                    side="right"
                   />
                 </div>
                 <div className="space-y-1">
@@ -709,7 +710,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     value={formData.joining_date}
                     onChange={(val) => setFormData({ ...formData, joining_date: val })}
                     disabled={!isEditing}
-                    align="right"
+                    side="right"
                   />
                 </div>
               </div>
@@ -961,6 +962,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                       <DatePicker
                         value={incrementEffectiveDate}
                         onChange={(val) => setIncrementEffectiveDate(val)}
+                        side="right"
                       />
                       <p className="text-[11px] text-slate-400 mt-1">Leave blank to default to the 1st of next month</p>
                     </div>
