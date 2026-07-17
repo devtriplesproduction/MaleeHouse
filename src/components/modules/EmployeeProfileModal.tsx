@@ -56,6 +56,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   const [showInlineHikeForm, setShowInlineHikeForm] = useState(false);
   const [incrementInput, setIncrementInput] = useState("");
   const [incrementEffectiveDate, setIncrementEffectiveDate] = useState("");
+  const [pendingHike, setPendingHike] = useState<{ newSalary: number; previousSalary: number; effectiveDate: string } | null>(null);
   const [lastIncrement, setLastIncrement] = useState<any>(null);
   const [incrementHistory, setIncrementHistory] = useState<any[]>([]);
   const [isLoadingIncrement, setIsLoadingIncrement] = useState(false);
@@ -215,6 +216,21 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
+      // If there's a staged hike, commit it to DB first
+      if (pendingHike) {
+        const hikeRes = await addSalaryIncrementAction(
+          employee.id,
+          pendingHike.newSalary,
+          pendingHike.effectiveDate || undefined
+        );
+        if (!hikeRes.success) {
+          toast({ title: "Hike Failed", description: hikeRes.error || "Failed to apply salary increment", variant: "error" });
+          setIsSubmitting(false);
+          return;
+        }
+        setPendingHike(null);
+      }
+
       const { ...restFormData } = formData;
       const payload = {
         ...restFormData,
@@ -807,6 +823,21 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
           {/* TAB 4: SALARY & HIKE */}
           {activeTab === "salary" && (
             <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Pending hike notice */}
+              {pendingHike && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex-1">
+                    Hike of ₹{pendingHike.newSalary.toLocaleString('en-IN')} is staged but <strong>not saved yet</strong>. Click <strong>Save Changes</strong> below to commit.
+                  </p>
+                  <button
+                    onClick={() => { setPendingHike(null); setFormData((prev: any) => ({...prev, salary: pendingHike.previousSalary})); }}
+                    className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline shrink-0"
+                  >
+                    Undo
+                  </button>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white">Salary & Hike Management</h4>
@@ -885,33 +916,25 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                       
                       return (
                         <Button
-                          onClick={async () => {
+                          onClick={() => {
                             if (!isValid) return;
-                            setIsAddingIncrement(true);
-                            const res = await addSalaryIncrementAction(employee.id, newSalaryInput, incrementEffectiveDate || undefined);
-                            setIsAddingIncrement(false);
-                            if (res.success) {
-                              toast({ title: "Hike Applied!", description: `Salary updated to ₹${newSalaryInput.toLocaleString('en-IN')}.`, variant: "success" });
-                              setShowInlineHikeForm(false);
-                              if (onSuccess) onSuccess();
-                              
-                              const [lastRes, histRes] = await Promise.all([
-                                getLastSalaryIncrementAction(employee.id),
-                                getSalaryIncrementHistoryAction(employee.id)
-                              ]);
-                              if (lastRes.success) setLastIncrement(lastRes.data);
-                              if (histRes.success) setIncrementHistory(histRes.data || []);
-                              
-                              setFormData((prev: any) => ({...prev, salary: newSalaryInput}));
-                            } else {
-                              toast({ title: "Error", description: res.error || "Failed to add increment", variant: "error" });
-                            }
+                            // Stage the hike locally — only committed when Save Changes is clicked
+                            setPendingHike({
+                              newSalary: newSalaryInput,
+                              previousSalary: currentSalary,
+                              effectiveDate: incrementEffectiveDate
+                            });
+                            setFormData((prev: any) => ({...prev, salary: newSalaryInput}));
+                            setShowInlineHikeForm(false);
+                            setIncrementInput("");
+                            setIncrementEffectiveDate("");
+                            toast({ title: "Hike Staged", description: `Salary updated to ₹${newSalaryInput.toLocaleString('en-IN')}. Click Save Changes to commit.`, variant: "success" });
                           }}
                           disabled={!isValid || isAddingIncrement}
                           className="w-full h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 mb-[18px]"
                         >
-                          {isAddingIncrement ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
-                          {isAddingIncrement ? "Applying..." : "Confirm Hike"}
+                          <TrendingUp className="w-4 h-4" />
+                          Confirm Hike
                         </Button>
                       );
                     })()}
@@ -1150,7 +1173,14 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               <Button variant="outline" className="flex-1" onClick={() => setShowCloseConfirm(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" className="flex-1 bg-amber-500 hover:bg-amber-600 border-none text-white" onClick={onClose}>
+              <Button variant="primary" className="flex-1 bg-amber-500 hover:bg-amber-600 border-none text-white" onClick={() => {
+                // Reset form back to original, clear any staged hike
+                if (initialFormData) setFormData({...initialFormData});
+                setPendingHike(null);
+                setShowInlineHikeForm(false);
+                setShowCloseConfirm(false);
+                onClose();
+              }}>
                 Discard Changes
               </Button>
             </div>
