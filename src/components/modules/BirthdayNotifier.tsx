@@ -127,12 +127,13 @@ export function BirthdayNotifier() {
     setMounted(true);
     if (!currentUser || !role) return;
 
-    const hasSeenBirthdays = sessionStorage.getItem("hasSeenBirthdays_v10");
+    const hasSeenBirthdays = sessionStorage.getItem("hasSeenBirthdays_v11");
     if (hasSeenBirthdays) return;
 
     async function checkBirthdays() {
       try {
         const { success, data } = await getTodayBirthdaysAction();
+        console.log("Birthday Data:", data); // Helpful for debugging
         if (success && data && data.length > 0) {
           setNotifications(data);
         }
@@ -145,7 +146,7 @@ export function BirthdayNotifier() {
   }, [currentUser, role]);
 
   const handleAcknowledge = () => {
-    sessionStorage.setItem("hasSeenBirthdays_v10", "true");
+    sessionStorage.setItem("hasSeenBirthdays_v11", "true");
     setNotifications([]);
   };
 
