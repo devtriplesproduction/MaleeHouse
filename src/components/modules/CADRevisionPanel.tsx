@@ -247,13 +247,13 @@ export function CADRevisionPanel({
                           {rev.status === "approved" ? "Final Approved" : cfg.label}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-400 mt-0.5">{rev.file_name}</p>
+                      <p className="text-sm text-slate-400 mt-0.5">{rev.files?.[0]?.name || 'Prototype Document'}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-slate-500 hidden sm:block">
-                      {formatDistanceToNow(new Date(rev.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(rev.submitted_at || rev.updated_at || new Date()), { addSuffix: true })}
                     </span>
                     {isExpanded ? (
                       <ChevronUp className="w-4 h-4 text-slate-400" />
@@ -294,7 +294,7 @@ export function CADRevisionPanel({
                         Revision Notes
                       </p>
                       <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-white/5 p-3 rounded-xl border border-slate-100 dark:border-white/5">
-                        {rev.revision_notes}
+                        {rev.description || 'No notes provided.'}
                       </p>
                     </div>
 

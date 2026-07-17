@@ -162,6 +162,7 @@ export function ProjectDetailTabs({
                   teamMembers={teamMembers}
                   allUsers={allUsers}
                   files={files}
+                  cadRevisions={cadRevisions}
                 />
               </div>
             )}

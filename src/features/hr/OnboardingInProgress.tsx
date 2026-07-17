@@ -7,6 +7,28 @@ import { Badge } from "@/components/ui/badge";
 export function OnboardingInProgress({ data }: { data: any[] }) {
   const onboardings = data || [];
 
+  const calculateProgress = (user: any) => {
+    const fieldsToCheck = [
+      'first_name', 'last_name', 'phone_number', 'dob', 'gender',
+      'personal_email', 'emergency_contact', 'address', 'profile_photo'
+    ];
+    let filled = 0;
+    fieldsToCheck.forEach(field => {
+      if (user[field]) filled++;
+    });
+    
+    // also check documents
+    let docsCount = 0;
+    if (user.documents && typeof user.documents === 'object') {
+       docsCount = Object.keys(user.documents).length;
+    }
+    
+    const totalWeight = fieldsToCheck.length + 3; // documents have weight of 3
+    const score = filled + Math.min(docsCount, 3);
+    
+    return Math.round((score / totalWeight) * 100);
+  };
+
   return (
     <Card className="shadow-sm border-slate-200 dark:border-white/10 h-full flex flex-col overflow-hidden">
       <CardHeader className="pb-4 pt-5 px-5 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-950/20 dark:to-transparent">
@@ -33,29 +55,39 @@ export function OnboardingInProgress({ data }: { data: any[] }) {
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/5">
-            {onboardings.map((user) => (
-              <div key={user.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-semibold text-sm text-slate-900 dark:text-white">
-                      {user.first_name} {user.last_name}
+            {onboardings.map((user) => {
+              const progress = calculateProgress(user);
+              const isDocsPending = !user.documents || Object.keys(user.documents).length === 0;
+              
+              return (
+                <div key={user.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-semibold text-sm text-slate-900 dark:text-white">
+                        {user.first_name || "Unknown"} {user.last_name || ""}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {user.email}
+                      </div>
                     </div>
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      {user.email}
+                    <Badge variant="outline" className="text-xs bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30">
+                      {user.status === 'invited' ? 'Invited' : user.status}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
+                    <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <div className="text-[10px] text-slate-500 font-medium">
+                      {progress}%
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      {isDocsPending ? "Documents Pending" : "Profile Incomplete"}
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-xs bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30">
-                    Invited
-                  </Badge>
                 </div>
-                <div className="mt-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
-                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '20%' }}></div>
-                </div>
-                <div className="text-[10px] text-right mt-1 text-slate-400 font-medium">
-                  Documents Pending
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

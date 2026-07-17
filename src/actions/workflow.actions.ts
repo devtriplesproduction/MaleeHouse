@@ -448,18 +448,20 @@ export async function transitionWorkflowAction(
       }
     }
 
-    // 4. Update Project Status
-    const { error: updateError, data: updatedProject } = await supabase.from("projects").update({
+    // 4. Update Project Status using Admin Client (Bypass RLS after application-level verification)
+    const adminClient = createAdminClient();
+    const { error: updateError, data: updatedProject } = await adminClient.from("projects").update({
       status: newStage,
       updated_at: new Date().toISOString()
     }).eq("id", projectId).select();
 
     if (updateError || !updatedProject || updatedProject.length === 0) {
-      return { success: false, error: "Project not found or update failed (RLS or Admin Error)" };
+      console.error("Project update failed. updateError:", updateError, "updatedProject:", updatedProject);
+      return { success: false, error: `Project not found or update failed (RLS or Admin Error). DB Error: ${updateError?.message || 'None'}` };
     }
 
     // 5. Log in Workflow History (audit trail)
-    await supabase.from("workflow_history").insert({
+    await adminClient.from("workflow_history").insert({
       id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: projectId,
       from_stage: fromStage,
@@ -470,7 +472,7 @@ export async function transitionWorkflowAction(
     });
 
     // 6. Log in Activity Logs
-    await supabase.from("activity_logs").insert({
+    await adminClient.from("activity_logs").insert({
       project_id: projectId,
       user_id: profile.id,
       action: "STAGE_UPDATE",
@@ -480,7 +482,7 @@ export async function transitionWorkflowAction(
 
     // 6b. Consume override if it was used
     if (project?.dispatch_override_approved && role !== "admin") {
-      await supabase.from("projects").update({ dispatch_override_approved: false }).eq("id", projectId);
+      await adminClient.from("projects").update({ dispatch_override_approved: false }).eq("id", projectId);
     }
 
     // 7. Trigger notifications for assigned team members
