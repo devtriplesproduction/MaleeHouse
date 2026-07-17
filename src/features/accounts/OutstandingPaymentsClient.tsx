@@ -113,7 +113,7 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
       </div>
 
       {/* Filter and Search */}
-      <div className="flex justify-between items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-3 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-4 shadow-sm">
         <div className="relative w-full max-w-md">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -125,24 +125,25 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
             placeholder="Search projects..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="block w-full pl-11 pr-4 py-2.5 border border-slate-200 dark:border-slate-700/60 rounded-2xl leading-5 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
+            className="block w-full pl-11 pr-4 py-3 border border-slate-200 dark:border-slate-700/60 rounded-2xl leading-5 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
           />
         </div>
       </div>
 
       {/* Master List */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50/80 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-800/80 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-              <th className="p-5 w-12"></th>
-              <th className="p-5">Project Name</th>
-              <th className="p-5">Total Billed</th>
-              <th className="p-5">Outstanding</th>
-              <th className="p-5">Net Profit</th>
-              <th className="p-5 text-right">Actions</th>
-            </tr>
-          </thead>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-slate-50/80 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-800/80 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                <th className="p-5 w-12"></th>
+                <th className="p-5">Project Name</th>
+                <th className="p-5">Total Billed</th>
+                <th className="p-5">Outstanding</th>
+                <th className="p-5">Status</th>
+                <th className="p-5 text-right">Actions</th>
+              </tr>
+            </thead>
           <tbody>
             {paginatedProjects.map((project) => (
               <React.Fragment key={project.id}>
@@ -162,22 +163,37 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
                   <td className="p-5 font-semibold text-slate-600 dark:text-slate-300 nums">
                     {formatRupee(project.totalBilled)}
                   </td>
-                  <td className="p-5 font-bold text-rose-500 dark:text-rose-400 nums">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20">
+                  <td className="p-5 font-bold nums">
+                    <div className={cn(
+                      "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm text-sm",
+                      project.outstanding > 0 
+                        ? "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-400 font-bold" 
+                        : "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+                    )}>
                       {formatRupee(project.outstanding)}
                     </div>
                   </td>
-                  <td className={cn("p-5 font-bold nums", project.currentProfit >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400")}>
-                    {formatRupee(project.currentProfit)}
+                  <td className="p-5">
+                    {project.outstanding > 0 ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20 text-xs font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        Pending Collection
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/20 text-xs font-semibold">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Settled
+                      </span>
+                    )}
                   </td>
                   <td className="p-5 text-right">
                     <Link 
                       href={`/projects/${project.id}?tab=finance`}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold rounded-xl text-xs transition-all border border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 shadow-sm"
+                      className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50/50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 font-bold rounded-xl text-xs transition-all shadow-sm"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <FileText className="w-4 h-4" />
-                      Open Finance Tab
+                      View Finance
                     </Link>
                   </td>
                 </tr>
@@ -263,7 +279,7 @@ export function OutstandingPaymentsClient({ initialProjects }: { initialProjects
             )}
           </tbody>
         </table>
-        
+        </div>
         {/* Pagination Controls */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">

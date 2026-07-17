@@ -10,7 +10,7 @@ CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
 
 -- Tasks Table
 CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assignedTo);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 
 -- Files Table

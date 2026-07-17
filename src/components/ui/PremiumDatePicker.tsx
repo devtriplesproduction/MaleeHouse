@@ -257,13 +257,13 @@ export function PremiumDatePicker({ value, onChange, className, align = 'left', 
       <div
         onClick={toggleOpen}
         className={cn(
-          "w-full h-11 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-3 flex items-center gap-2.5 transition-all",
+          "w-full h-11 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-3 flex items-center gap-2.5 transition-all text-sm",
           disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer group hover:border-indigo-500/50",
           triggerClassName
         )}
       >
         <CalendarIcon className="w-4 h-4 text-slate-500 group-hover:text-indigo-500 transition-colors" />
-        <span className={cn("flex-1 text-sm font-medium", !value ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-200")}>
+        <span className={cn("flex-1 font-medium", !value ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-200")}>
           {value ? format(new Date(value), "PPP") : "Select Date"}
         </span>
         <ChevronDown className="w-4 h-4 text-slate-500" />

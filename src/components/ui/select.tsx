@@ -5,6 +5,8 @@ import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { createPortal } from "react-dom";
+
 export interface SelectProps {
   value?: string;
   onValueChange: (value: string) => void;
@@ -26,11 +28,39 @@ const SelectContext = React.createContext<{
 
 export function Select({ value, onValueChange, placeholder, children, className, buttonClassName, disabled, align = "left", id }: SelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+  const [coords, setCoords] = React.useState({ top: 0, left: 0, width: 0 });
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateCoords = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  };
+
+  const handleToggle = () => {
+    if (disabled) return;
+    updateCoords();
+    setOpen(!open);
+  };
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        // Also check if clicked inside the portal
+        const portalEl = document.getElementById("select-portal-container");
+        if (portalEl && portalEl.contains(event.target as Node)) {
+          return;
+        }
         setOpen(false);
       }
     };
@@ -38,16 +68,65 @@ export function Select({ value, onValueChange, placeholder, children, className,
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  React.useEffect(() => {
+    if (!open) return;
+    const handleScrollOrResize = () => {
+      updateCoords();
+    };
+    window.addEventListener("scroll", handleScrollOrResize, { capture: true });
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, { capture: true });
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [open]);
+
   const selectedChild = React.Children.toArray(children).find(
     (child) => React.isValidElement(child) && child.props.value === value
   ) as React.ReactElement;
+
+  const dropdown = (
+    <AnimatePresence>
+      {open && (
+        <motion.div 
+          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          style={{
+            position: "absolute",
+            top: coords.top,
+            left: coords.left,
+            width: coords.width,
+          }}
+          id="select-portal-container"
+          className={cn(
+            "z-[999] rounded-xl overflow-hidden",
+            "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl",
+            "border border-slate-200/80 dark:border-white/10",
+            "shadow-xl shadow-slate-200/50 dark:shadow-black/50"
+          )}
+        >
+          <div className="p-1.5 max-h-64 overflow-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10 scrollbar-track-transparent">
+            {React.Children.count(children) > 0 ? (
+              children
+            ) : (
+              <div className="px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                No options available
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 
   return (
     <SelectContext.Provider value={{ value, onValueChange, open, setOpen }}>
       <div ref={containerRef} className={cn("relative w-full", className)} id={id}>
         <button
           type="button"
-          onClick={() => !disabled && setOpen(!open)}
+          onClick={handleToggle}
           disabled={disabled}
           className={cn(
             "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 outline-none select-none",
@@ -66,33 +145,7 @@ export function Select({ value, onValueChange, placeholder, children, className,
           <ChevronDown className={cn("h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform duration-300 flex-shrink-0 ml-2", open && "rotate-180 text-indigo-500")} />
         </button>
         
-        <AnimatePresence>
-          {open && (
-            <motion.div 
-              initial={{ opacity: 0, y: -8, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.98 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className={cn(
-                "absolute top-full z-50 mt-2 min-w-full rounded-xl overflow-hidden",
-                "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl",
-                "border border-slate-200/80 dark:border-white/10",
-                "shadow-xl shadow-slate-200/50 dark:shadow-black/50",
-                align === "right" ? "right-0" : "left-0"
-              )}
-            >
-              <div className="p-1.5 max-h-64 overflow-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10 scrollbar-track-transparent">
-                {React.Children.count(children) > 0 ? (
-                  children
-                ) : (
-                  <div className="px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                    No options available
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {mounted && createPortal(dropdown, document.body)}
       </div>
     </SelectContext.Provider>
   );

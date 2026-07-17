@@ -52,6 +52,15 @@ export async function createExpenseAction(payload: CreateExpenseInput): Promise<
 
     if (error) return { success: false, error: error.message };
 
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: payload.project_id || null,
+      user_id: profile.id,
+      action: 'EXPENSE_CREATED',
+      details: { expense_id: data.id, amount: data.amount, description: data.description },
+      created_at: new Date().toISOString()
+    });
+
     await revalidateAccountsPaths(payload.project_id || undefined);
 
     return { success: true, data };
@@ -162,6 +171,15 @@ export async function updateExpenseAction(payload: UpdateExpenseInput): Promise<
 
     if (updateErr) return { success: false, error: updateErr.message };
 
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: updatedExpense.project_id || null,
+      user_id: profile.id,
+      action: 'EXPENSE_UPDATED',
+      details: { expense_id: id, ...updateData },
+      created_at: new Date().toISOString()
+    });
+
     if (existing.project_id) await revalidateAccountsPaths(existing.project_id);
     if (updatedExpense.project_id && updatedExpense.project_id !== existing.project_id) {
       await revalidateAccountsPaths(updatedExpense.project_id);
@@ -211,6 +229,15 @@ export async function deleteExpenseAction(id: string): Promise<ActionResponse> {
 
     if (deleteErr) return { success: false, error: deleteErr.message };
 
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: existing.project_id || null,
+      user_id: profile.id,
+      action: 'EXPENSE_DELETED',
+      details: { expense_id: id, amount: existing.amount, description: existing.description },
+      created_at: new Date().toISOString()
+    });
+
     await revalidateAccountsPaths(existing.project_id || undefined);
 
     return { success: true };
@@ -250,6 +277,15 @@ export async function createProjectBudgetItemAction(payload: CreateProjectBudget
     if (error) {
       return { success: false, error: error.message };
     }
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: payload.project_id || null,
+      user_id: profile.id,
+      action: 'BUDGET_ITEM_CREATED',
+      details: { item_id: data.id, amount: data.amount, category: data.category },
+      created_at: new Date().toISOString()
+    });
 
     await revalidateAccountsPaths(payload.project_id || undefined);
 

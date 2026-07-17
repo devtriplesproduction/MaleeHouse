@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 import { RealtimeStatsGrid } from "@/components/modules/RealtimeStatsGrid";
-import { TrendingUp, AlertCircle, FileText, Zap, ChevronDown, IndianRupee, ArrowUpRight, ArrowDownRight, Wallet, Clock, CheckSquare } from "lucide-react";
+import { TrendingUp, AlertCircle, FileText, Zap, ChevronDown, IndianRupee, ArrowUpRight, ArrowDownRight, Wallet, Clock, CheckSquare, Target } from "lucide-react";
 import Link from "next/link";
 import { getQuotationIntakeQueueAction } from "@/actions/quotation.actions";
 import { createClient } from "@/lib/supabase/server";
@@ -12,18 +12,20 @@ import { UpcomingMilestonesWidget } from "@/features/accounts/UpcomingMilestones
 import { getAllMilestonesAction, getFinancialOverviewAction, getProjectProfitabilityAction } from "@/actions/finance.actions";
 import { ExpenseEntryTrigger } from "@/features/accounts/ExpenseEntryTrigger";
 import { FinanceChart } from "@/features/accounts/FinanceChart";
-import { ProjectCreationWizard } from "@/components/modules/ProjectCreationWizard";
+import { getMyEODReportsAction } from "@/actions/eod.actions";
+import { EODFormModal } from "@/components/eod/EODFormModal";
 
 export default async function AccountantDashboardPage() {
   const supabase: any = await createClient();
   // Fetch real database queue & quotations
-  const [intakeRes, quotationsRes, projectsRes, milestonesRes, overviewRes, profitRes] = await Promise.all([
+  const [intakeRes, quotationsRes, projectsRes, milestonesRes, overviewRes, profitRes, eodRes] = await Promise.all([
     getQuotationIntakeQueueAction(),
-    supabase.from('quotations').select('*'),
-    supabase.from('projects').select('*'),
+    supabase.from('quotations').select('id, status, created_at, updated_at, total_amount'),
+    supabase.from('projects').select('id, status, created_at, deleted_at'),
     getAllMilestonesAction(),
     getFinancialOverviewAction(),
     getProjectProfitabilityAction(),
+    getMyEODReportsAction(),
   ]);
 
   const quotations = quotationsRes.data || [];
@@ -34,26 +36,26 @@ export default async function AccountantDashboardPage() {
     totalIncome: 0, totalExpenses: 0, monthlyProfit: 0, accountsReceivable: 0, accountsPayable: 0, monthlyCashFlow: [], expenseByCategory: []
   };
   const profitData = profitRes.success ? profitRes.data : [];
+  const eodReports = eodRes.success ? eodRes.data : [];
 
-  // Calculate the 4 requested metrics
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  // Calculate the new KPI metrics
+  const monthlyRevenue = overview.totalIncome || 0;
+  
+  const activeProjects = projects.filter((p: any) => 
+    p.status !== 'Completed' && p.status !== 'Archived' && p.status !== 'cancelled' && p.status !== 'completed'
+  ).length;
 
-  const monthlyProjectsCount = projects.filter((p: any) => {
-    if (!p.created_at) return false;
-    const d = new Date(p.created_at);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-  }).length;
+  const pendingQuoteRequests = intakeRes.success && intakeRes.data ? intakeRes.data.length : 0;
+  
+  const waitingClientApproval = quotations.filter((q: any) => 
+    q.status === 'Sent' || q.status === 'Pending Approval' || q.status === 'Review'
+  ).length;
 
-  const verifiedQuotations = quotations.filter((q: any) => q.status === 'Approved' || q.status === 'Paid');
-  const monthlyRevenue = verifiedQuotations.filter((q: any) => {
-    const d = new Date(q.updated_at || q.created_at);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-  }).reduce((sum: number, q: any) => sum + Number(q.total_amount || 0), 0);
+  const milestonesPending = milestones.filter((m: any) => 
+    m.status !== 'paid' && m.status !== 'completed'
+  ).length;
 
-  const activeProjectsCount = projects.filter((p: any) => !p.deleted_at && p.status !== 'completed' && p.status !== 'archived').length;
-  const totalQuotationsCount = quotations.length;
+  const outstandingCollections = overview.outstandingPayments || 0;
 
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
@@ -67,28 +69,14 @@ export default async function AccountantDashboardPage() {
             Financial KPIs and pipeline at a glance.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <ProjectCreationWizard />
+        <div className="flex gap-2">
+          <EODFormModal reports={eodReports} roleColor="indigo" />
           <ExpenseEntryTrigger projects={projects} />
         </div>
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
-          <div className="w-12 h-12 shrink-0 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-            <Zap className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Monthly Projects
-            </p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              {monthlyProjectsCount}
-            </p>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 !mt-5">
         <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
           <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <IndianRupee className="w-5 h-5" />
@@ -104,85 +92,15 @@ export default async function AccountantDashboardPage() {
         </div>
 
         <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
-          <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <ArrowUpRight className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Total Income
-            </p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              ₹{(overview.totalIncome / 100000).toFixed(1)}L
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
-          <div className="w-12 h-12 shrink-0 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            <ArrowDownRight className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Total Expenses
-            </p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              ₹{(overview.totalExpenses / 100000).toFixed(1)}L
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
-          <div className="w-12 h-12 shrink-0 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400 border border-sky-500/20">
-            <Wallet className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Monthly Profit
-            </p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              ₹{(overview.monthlyProfit / 100000).toFixed(1)}L
-            </p>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
-          <div className="w-12 h-12 shrink-0 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Accounts Receivable
-            </p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              ₹{(overview.accountsReceivable / 100000).toFixed(1)}L
-            </p>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
-          <div className="w-12 h-12 shrink-0 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            <CheckSquare className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Accounts Payable
-            </p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              ₹{(overview.accountsPayable / 100000).toFixed(1)}L
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
           <div className="w-12 h-12 shrink-0 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-400 border border-orange-500/20">
-            <AlertCircle className="w-5 h-5" />
+            <Zap className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Outstanding Payments
+              Active Projects
             </p>
             <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              ₹{(overview.outstandingPayments / 100000).toFixed(1)}L
+              {activeProjects}
             </p>
           </div>
         </div>
@@ -193,24 +111,52 @@ export default async function AccountantDashboardPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Total Quotations
+              Pending Quotes
             </p>
             <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              {totalQuotationsCount}
+              {pendingQuoteRequests}
             </p>
           </div>
         </div>
 
         <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
           <div className="w-12 h-12 shrink-0 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <TrendingUp className="w-5 h-5" />
+            <Clock className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-              Active Projects
+              Awaiting Approval
             </p>
             <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
-              {activeProjectsCount}
+              {waitingClientApproval}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <Target className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Milestones Pending
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {milestonesPending}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Outstanding
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              ₹{(outstandingCollections / 100000).toFixed(1)}L
             </p>
           </div>
         </div>

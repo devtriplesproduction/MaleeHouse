@@ -11,62 +11,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-const MOCK_AUDIT_LOGS = [
-  {
-    id: "LOG-001",
-    timestamp: "2026-07-01T10:15:30Z",
-    user: "Accountant User",
-    role: "Accountant",
-    action: "UPDATE",
-    resource: "Invoice #INV-2026-042",
-    details: "Changed status from Pending to Paid",
-    status: "success",
-  },
-  {
-    id: "LOG-002",
-    timestamp: "2026-07-01T09:42:10Z",
-    user: "System",
-    role: "System",
-    action: "CREATE",
-    resource: "Monthly Report",
-    details: "Generated June 2026 Financial Report",
-    status: "success",
-  },
-  {
-    id: "LOG-003",
-    timestamp: "2026-06-30T16:20:05Z",
-    user: "Sales User",
-    role: "Sales",
-    action: "DELETE",
-    resource: "Expense Claim #EXP-089",
-    details: "Removed duplicate expense entry",
-    status: "warning",
-  },
-  {
-    id: "LOG-004",
-    timestamp: "2026-06-30T14:10:00Z",
-    user: "Engineer User",
-    role: "Engineer",
-    action: "FAILED_LOGIN",
-    resource: "Authentication",
-    details: "Invalid password attempt",
-    status: "error",
-  },
-  {
-    id: "LOG-005",
-    timestamp: "2026-06-30T11:05:22Z",
-    user: "Admin User",
-    role: "Admin",
-    action: "UPDATE",
-    resource: "User Permissions",
-    details: "Granted 'View Reports' to Developer Role",
-    status: "success",
-  }
-];
+import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/modules/PageHeader";
 
 const getStatusColor = (status: string) => {
-  switch (status) {
+  switch (status?.toLowerCase()) {
     case "success": return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
     case "warning": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
     case "error": return "bg-red-500/10 text-red-500 border-red-500/20";
@@ -75,28 +24,39 @@ const getStatusColor = (status: string) => {
 };
 
 const getActionColor = (action: string) => {
-  switch (action) {
-    case "CREATE": return "text-blue-500 dark:text-blue-400";
-    case "UPDATE": return "text-amber-500 dark:text-amber-400";
-    case "DELETE": return "text-red-500 dark:text-red-400";
-    default: return "text-slate-500 dark:text-slate-400";
-  }
+  if (action?.includes("CREATE")) return "text-blue-500 dark:text-blue-400";
+  if (action?.includes("UPDATE")) return "text-amber-500 dark:text-amber-400";
+  if (action?.includes("DELETE")) return "text-red-500 dark:text-red-400";
+  return "text-slate-500 dark:text-slate-400";
 };
 
-export default function AuditPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AuditPage() {
+  const supabase: any = await createClient();
+  const { data: logs } = await supabase
+    .from("activity_logs")
+    .select("*, profiles!activity_logs_user_id_fkey(first_name, last_name, role)")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  const displayLogs = (logs || []).map((log: any) => ({
+    id: log.id,
+    timestamp: log.created_at,
+    user: log.profiles ? `${log.profiles.first_name} ${log.profiles.last_name}` : "System",
+    role: log.profiles?.role || "System",
+    action: log.action,
+    resource: log.project_id ? `Project ${log.project_id.substring(0, 8)}` : "System",
+    details: log.details?.comment || log.details?.reason || JSON.stringify(log.details) || "No details",
+    status: log.details?.status || "success",
+  }));
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <ShieldAlert className="w-6 h-6 text-indigo-500" />
-            Audit Logs
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Immutable trail of all system and financial actions.
-          </p>
-        </div>
-      </div>
+      <PageHeader 
+        title="Audit Logs"
+        subtitle="Immutable trail of all system and financial actions."
+        icon={ShieldAlert}
+      />
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="relative flex-1 w-full">
@@ -125,7 +85,7 @@ export default function AuditPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {MOCK_AUDIT_LOGS.map((log) => (
+            {displayLogs.map((log: any) => (
               <TableRow key={log.id} className="border-slate-200 dark:border-white/5 group">
                 <TableCell className="text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap">
                   {new Date(log.timestamp).toLocaleString()}

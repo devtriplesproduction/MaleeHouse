@@ -57,6 +57,15 @@ export async function submitEODAction(payload: {
 
     if (error) return { success: false, error: error.message }
 
+    await clientToUse.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      user_id: profile.id,
+      target_user_id: targetUserId !== profile.id ? targetUserId : null,
+      action: 'EOD_SUBMITTED',
+      details: { tasks: payload.tasks_completed, hours: payload.hours_spent, blockers: payload.blockers },
+      created_at: new Date().toISOString()
+    })
+
     if (payload.work_location === 'field') {
       await registerAttendanceSignalAction(
         targetUserId,
@@ -125,7 +134,7 @@ export async function updateEODReportAction(id: string, updates: { adjusted_hour
     const profile: any = await getUserProfileAction()
     if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins or HR only.' }
 
-    const supabase = await createClient()
+    const supabase: any = await createClient()
     
     // Fetch the report to check ownership for HR restriction
     const { data: report, error: fetchError } = await supabase
@@ -151,6 +160,15 @@ export async function updateEODReportAction(id: string, updates: { adjusted_hour
       .single()
 
     if (error) return { success: false, error: error.message }
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      user_id: profile.id,
+      target_user_id: (report as any).user_id !== profile.id ? (report as any).user_id : null,
+      action: 'EOD_UPDATED',
+      details: updates,
+      created_at: new Date().toISOString()
+    })
 
     revalidatePath('/eod')
     return { success: true, data }

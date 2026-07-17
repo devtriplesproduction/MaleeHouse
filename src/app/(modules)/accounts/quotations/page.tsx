@@ -83,12 +83,6 @@ function QuotationWorkspaceContent() {
   if (scratchMode) {
     return (
       <div className="space-y-6 pb-20 animate-in fade-in duration-300">
-        <button
-          onClick={() => setScratchMode(false)}
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Workspace
-        </button>
         <QuotationBuilderEngine
           project={null}
           existingQuotation={typeof scratchMode === 'object' ? scratchMode : undefined}
@@ -106,12 +100,6 @@ function QuotationWorkspaceContent() {
   if (projectId && mode === "create" && project) {
     return (
       <div className="space-y-6 pb-20 animate-in fade-in duration-300">
-        <button
-          onClick={() => router.push("/accounts/quotations")}
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Workspace
-        </button>
         <QuotationBuilderEngine
           project={project}
           onCancel={() => router.push("/accounts/quotations")}
@@ -127,19 +115,21 @@ function QuotationWorkspaceContent() {
   if ((projectId || quotationId) && mode === "manage" && project) {
     return (
       <div className="space-y-6 pb-20 animate-in fade-in duration-300">
-        <button
-          onClick={() => router.push("/accounts/quotations")}
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Workspace
-        </button>
-        <div className="border-b border-slate-200/60 dark:border-white/5 pb-4">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            {project.name}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {project.client_name}
-          </p>
+        <div className="border-b border-slate-200/60 dark:border-white/5 pb-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              {project.name}
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              {project.client_name}
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/accounts/quotations")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Workspace
+          </button>
         </div>
         <QuotationManagementPanel
           project={project}

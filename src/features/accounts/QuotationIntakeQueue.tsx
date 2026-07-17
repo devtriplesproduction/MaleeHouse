@@ -187,7 +187,7 @@ export function QuotationIntakeQueue({
                             <Building2 className="w-3 h-3" />
                             {project.client_name}
                           </span>
-                          {project.target_completion_date && (
+                          {project.target_completion_date ? (
                             <span
                               className={cn(
                                 'flex items-center gap-1 text-xs font-medium',
@@ -197,6 +197,11 @@ export function QuotationIntakeQueue({
                               <Calendar className="w-3 h-3" />
                               {format(new Date(project.target_completion_date), 'MMM d')}
                               {project.daysLeft !== null && ` (${project.daysLeft}d)`}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                              <Clock className="w-3 h-3" />
+                              Updated {format(new Date(project.updated_at), 'MMM d, yyyy')}
                             </span>
                           )}
                           {reqFiles.length > 0 && (
@@ -260,7 +265,7 @@ export function QuotationIntakeQueue({
                               <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-medium">Sales Account</p>
                               <p className="text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1">
                                 <UserCheck className="w-3 h-3" />
-                                {project.creator?.first_name} {project.creator?.last_name}
+                                {Array.isArray(project.creator) ? project.creator[0]?.first_name : project.creator?.first_name} {Array.isArray(project.creator) ? project.creator[0]?.last_name : project.creator?.last_name}
                               </p>
                             </div>
                             {project.site_type && (

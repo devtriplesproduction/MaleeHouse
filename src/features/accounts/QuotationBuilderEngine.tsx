@@ -159,7 +159,7 @@ export function QuotationBuilderEngine({
   }, [existingQuotation]);
 
   // ── Templates ───────────────────────────────────────────────────────────────
-  const handleTemplateChange = (templateId: string) => {
+  const handleTemplateChange = (templateId: string, append = false) => {
     if (!templateId) return;
     const tpl = templates.find((t: any) => t.id === templateId);
     if (tpl) {
@@ -167,8 +167,13 @@ export function QuotationBuilderEngine({
         ...c,
         id: `cls-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
       }));
-      setActiveClauses(prev => [...prev, ...newClauses]);
-      toast.success(`Appended ${tpl.name} clauses`);
+      if (append) {
+        setActiveClauses(prev => [...prev, ...newClauses]);
+        toast.success(`Appended ${tpl.name} clauses`);
+      } else {
+        setActiveClauses(newClauses);
+        toast.success(`Loaded ${tpl.name} template`);
+      }
     }
     // Reset selection so another template can be chosen
     setSelectedTemplateId('');
@@ -349,8 +354,11 @@ export function QuotationBuilderEngine({
             </p>
           </div>
         </div>
-        <button onClick={onCancel} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 hover:text-slate-600 transition-all">
-          <X className="w-4 h-4" />
+        <button
+          onClick={onCancel}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
+        >
+          <X className="w-3.5 h-3.5" /> Back to Workspace
         </button>
       </div>
 
@@ -599,16 +607,31 @@ export function QuotationBuilderEngine({
                             <div className="px-3 py-2 text-xs text-slate-400 text-center">No templates</div>
                           ) : (
                             templates.map((t: any) => (
-                              <button
+                              <div
                                 key={t.id}
-                                onClick={() => {
-                                  handleTemplateChange(t.id);
-                                  setDropdownOpen(false);
-                                }}
-                                className="w-full text-left px-3 py-2 text-xs rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                className="flex items-center justify-between px-1 hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg group/item transition-colors"
                               >
-                                {t.name}
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    handleTemplateChange(t.id, false);
+                                    setDropdownOpen(false);
+                                  }}
+                                  className="flex-1 text-left px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 truncate"
+                                >
+                                  {t.name}
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTemplateChange(t.id, true);
+                                    setDropdownOpen(false);
+                                  }}
+                                  title="Append to existing clauses"
+                                  className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 opacity-0 group-hover/item:opacity-100 transition-all shrink-0 mr-1"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             ))
                           )}
                         </div>

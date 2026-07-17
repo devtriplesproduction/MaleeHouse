@@ -162,7 +162,20 @@ function ProjectMilestonesContent() {
       ]);
 
       if (msRes?.success && msRes.data) {
-        setMilestones(msRes.data);
+        const loadedMilestones = msRes.data.map((m: any) => {
+          const qTotal = project.contract_value || 0;
+          if (qTotal > 0 && m.amount) {
+            m.percentage = ((Number(m.amount) / qTotal) * 100).toFixed(2);
+            // strip trailing '.00' if it's a whole number for cleaner UI
+            if (m.percentage.endsWith('.00')) {
+              m.percentage = m.percentage.slice(0, -3);
+            }
+          } else {
+            m.percentage = "";
+          }
+          return m;
+        });
+        setMilestones(loadedMilestones);
       } else {
         toast.error("Could not fetch existing milestones.");
       }
@@ -658,7 +671,7 @@ function ProjectMilestonesContent() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">No milestones configured yet.</p>
                           </div>
                         ) : (
-                          <div className="space-y-4">
+                          <div className="space-y-4 pb-36">
                             <AnimatePresence mode="popLayout">
                               {milestones.map((m, idx) => (
                                 <motion.div
@@ -726,6 +739,7 @@ function ProjectMilestonesContent() {
                                           value={m.due_date?.split('T')[0] || ""}
                                           onChange={(date) => updateMilestone(idx, 'due_date', date)}
                                           side="right"
+                                          triggerClassName="h-9 rounded-lg bg-slate-50 dark:bg-white/5 text-xs"
                                         />
                                       </div>
                                     </div>
@@ -738,27 +752,26 @@ function ProjectMilestonesContent() {
                                         placeholder="-- No linked stage --"
                                         buttonClassName="h-9 w-full bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white"
                                       >
-                                        <SelectItem value="">-- No linked stage --</SelectItem>
+                                        <SelectItem value="" className="text-xs py-2">-- No linked stage --</SelectItem>
                                         
                                         {fieldVisits.length > 0 && (
                                           <div className="px-3 py-1.5 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Field Visits</div>
                                         )}
                                         {fieldVisits.map((v, vIdx) => (
-                                          <SelectItem key={v.id} value={`visit:${v.id}`}>
+                                          <SelectItem key={v.id} value={`visit:${v.id}`} className="text-xs py-2">
                                             Visit #{vIdx + 1} ({format(new Date(v.visit_date), "MMM d, yyyy")})
                                           </SelectItem>
                                         ))}
 
                                         <div className="px-3 py-1.5 mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-t border-slate-100 dark:border-white/5 pt-2">Workflow Stages</div>
-                                        <SelectItem value="project_created">Project Created</SelectItem>
-                                        <SelectItem value="data_collection">Data Collection</SelectItem>
-                                        <SelectItem value="prototype">CAD Prototype</SelectItem>
-                                        <SelectItem value="review">CAD Review</SelectItem>
-                                        <SelectItem value="field_work">Field Team Assignment</SelectItem>
-                                        <SelectItem value="data_sync">Survey Collection</SelectItem>
-                                        <SelectItem value="post_processing">Survey Validation</SelectItem>
-                                        <SelectItem value="final_review">Final Deliverable</SelectItem>
-                                        <SelectItem value="delivery">Delivered</SelectItem>
+                                        <SelectItem value="data_collection" className="text-xs py-2">Data Collection</SelectItem>
+                                        <SelectItem value="prototype" className="text-xs py-2">CAD Prototype</SelectItem>
+                                        <SelectItem value="review" className="text-xs py-2">CAD Review</SelectItem>
+                                        <SelectItem value="field_work" className="text-xs py-2">Field Team Assignment</SelectItem>
+                                        <SelectItem value="data_sync" className="text-xs py-2">Survey Collection</SelectItem>
+                                        <SelectItem value="post_processing" className="text-xs py-2">Survey Validation</SelectItem>
+                                        <SelectItem value="final_review" className="text-xs py-2">Final Deliverable</SelectItem>
+                                        <SelectItem value="delivery" className="text-xs py-2">Delivered</SelectItem>
                                       </Select>
                                     </div>
 
@@ -789,6 +802,7 @@ function ProjectMilestonesContent() {
                                 value={newVisitDate ? format(newVisitDate, "yyyy-MM-dd") : ""}
                                 onChange={(dateStr) => setNewVisitDate(dateStr ? new Date(dateStr) : undefined)}
                                 side="right"
+                                triggerClassName="h-9 rounded-lg bg-slate-50 dark:bg-white/5 text-xs"
                               />
                             </div>
                             <div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   FileText, Clock, Send, CheckCircle2, XCircle, AlertCircle, Eye,
   RefreshCw, History, Plus, Loader2, GitBranch, Download, Trash2,
@@ -27,7 +28,7 @@ interface QuotationManagementPanelProps {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; bg: string }> = {
-  Draft: { label: 'Draft', icon: <Clock className="w-3.5 h-3.5" />, bg: 'bg-slate-500/10 text-slate-500 border-slate-500/20' },
+  Draft: { label: 'Created', icon: <Clock className="w-3.5 h-3.5" />, bg: 'bg-slate-500/10 text-slate-500 border-slate-500/20' },
   Sent: { label: 'Sent to Client', icon: <Send className="w-3.5 h-3.5" />, bg: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
   Viewed: { label: 'Viewed by Client', icon: <Eye className="w-3.5 h-3.5" />, bg: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20' },
   Approved: { label: 'Approved', icon: <CheckCircle2 className="w-3.5 h-3.5" />, bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
@@ -55,6 +56,7 @@ function copyClientLink(clientToken: string) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function QuotationManagementPanel({ project, userRole, onRefresh }: QuotationManagementPanelProps) {
+  const searchParams = useSearchParams();
   const [quotations, setQuotations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('list');
@@ -69,10 +71,19 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
     const res = await getProjectQuotationsAction(project.id, Date.now());
     if (res.success) setQuotations(res.data || []);
     if (showLoading) setLoading(false);
+    return res.data;
   };
 
   useEffect(() => { 
-    fetchQuotations(true); 
+    fetchQuotations(true).then((data) => {
+      if (searchParams.get('action') === 'edit' && data) {
+        const draft = data.find((q: any) => q.status === 'Draft' || q.status === 'Revision Requested');
+        if (draft) {
+          setSelected(draft);
+          setView('edit');
+        }
+      }
+    }); 
 
     const { createClient } = require('@/lib/supabase/client');
     const supabase = createClient();

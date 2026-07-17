@@ -128,7 +128,7 @@ export default function ClientApprovalsPage() {
           duration: 3000
         });
         console.log("Executing redirect to:", `/accounts/milestones?project=${quotation.project_id}&plan=true`);
-        window.location.href = `/accounts/milestones?project=${quotation.project_id}&plan=true`;
+        router.push(`/accounts/milestones?project=${quotation.project_id}&plan=true`);
         return;
       }
 
@@ -222,9 +222,6 @@ export default function ClientApprovalsPage() {
       {/* Dynamic Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-6">
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">
-            Accounts Registry
-          </p>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Client <span className="text-indigo-600 dark:text-indigo-400">Approvals</span>
           </h1>
@@ -530,18 +527,62 @@ export default function ClientApprovalsPage() {
                           }
 
 
+                          const hasMilestones = q.project?.project_milestones && q.project.project_milestones.length > 0;
+
                           return (
                             <button
                               onClick={() => handleSendToEngineering(q)}
                               disabled={isDispatching}
-                              className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-emerald-500 text-white transition-all disabled:opacity-60 active:scale-95"
+                              className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-all disabled:opacity-60 active:scale-95"
                             >
                               {isDispatching ? (
                                 <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                               ) : (
                                 <Hammer className="w-3 h-3" />
                               )}
-                              {isDispatching ? "Dispatching…" : "create Milestones"}
+                              {isDispatching ? "Dispatching…" : hasMilestones ? "Dispatch" : "Create Milestones"}
+                            </button>
+                          );
+                        })()}
+
+                        {/* Non-approved actions */}
+                        {!isApproved && (() => {
+                          const isRevisionRequested = q.status === "Revision Requested";
+
+                          if (isRevisionRequested) {
+                            return (
+                              <button
+                                onClick={async () => {
+                                  setLoading(true);
+                                  const { updateQuotationStatusAction } = await import("@/actions/quotation.actions");
+                                  const res = await updateQuotationStatusAction({ id: q.id, status: 'Draft' });
+                                  if (res.success) {
+                                    toast.success("Quotation status reset to Created");
+                                    fetchData();
+                                  } else {
+                                    toast.error(res.error || "Failed to update status");
+                                  }
+                                  setLoading(false);
+                                }}
+                                className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-all disabled:opacity-50"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5" /> Re-draft
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <button
+                              onClick={() => {
+                                if (q.project?.id) {
+                                  router.push(`/accounts/quotations?project=${q.project.id}&mode=manage`);
+                                } else {
+                                  router.push(`/accounts/quotations?quotation=${q.id}&mode=manage`);
+                                }
+                              }}
+                              className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 transition-all"
+                            >
+                              <ArrowRight className="w-3.5 h-3.5" /> Manage Quote
                             </button>
                           );
                         })()}
@@ -761,7 +802,7 @@ export default function ClientApprovalsPage() {
                           setSelectedQuote(null);
                         }}
                         disabled={dispatching === selectedQuote.id}
-                        className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-emerald-500 text-white font-semibold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 transition-all active:scale-95"
+                        className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 transition-all active:scale-95"
                       >
                         <Hammer className="w-4 h-4" />
                         Dispatch to Survey Ops

@@ -1,7 +1,6 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { notifyPaymentAction } from '@/actions/notification.actions';
 import { updateProjectStageAction } from '@/actions/workflow.actions';
@@ -196,7 +195,7 @@ export async function updateProjectBudgetAction(projectId: string, budget: numbe
       project_id: projectId,
       action: 'PROJECT_UPDATED',
       details: { comment: `Project budget updated to ${budget}.` },
-      created_by: profile.id
+      user_id: profile.id
     });
 
     return { success: true };
@@ -241,6 +240,15 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
 
       if (payment.invoice_id) {
         await supabase.from('invoices').update({ status: 'paid' }).eq('id', payment.invoice_id);
+
+        await supabase.from('activity_logs').insert({
+          id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          project_id: payment.project_id,
+          action: 'RECEIPT_GENERATED',
+          details: { invoice_id: payment.invoice_id, amount: payment.amount, comment: "Payment verified. Receipt generated." },
+          user_id: profile.id,
+          created_at: new Date().toISOString()
+        });
 
         const { data: invoice } = await supabase.from('invoices').select('milestone_id, visit_id').eq('id', payment.invoice_id).single();
         if (invoice) {
@@ -505,10 +513,14 @@ export async function createMilestonesAction(
       }
     }
 
+    if (milestones.length === 0) {
+      return { success: false, error: 'At least 1 milestone is required.' };
+    }
+
     if (totalQuotedAmount > 0) {
-      const diff = Math.abs(sum - totalQuotedAmount);
+      const diff = sum - totalQuotedAmount;
       if (diff > 0.02) { // Allow up to 2 cents difference for rounding and floating point errors
-        return { success: false, error: `Sum of milestones (${sum.toFixed(2)}) does not match the total project cost (${totalQuotedAmount.toFixed(2)}).` };
+        return { success: false, error: `Sum of milestones (${sum.toFixed(2)}) exceeds the total project cost (${totalQuotedAmount.toFixed(2)}).` };
       }
     }
 
@@ -959,6 +971,7 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
       }
 
       invoicePayloads.push({
+        id: `inv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         project_id: m.project_id,
         milestone_id: m.id,
         invoice_number: invoiceNumber,
@@ -1485,6 +1498,74 @@ export async function getProjectBillingSummaryAction(): Promise<ActionResponse> 
   }
 }
 
+
+export async function getOutstandingBalancesAction(): Promise<ActionResponse> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+
+    // Fetch projects
+    const { data: projects, error: projectsErr } = await supabase
+      .from("projects")
+      .select("id, name, client_name, status, budget");
+      
+    if (projectsErr) return { success: false, error: projectsErr.message };
+    if (!projects || projects.length === 0) return { success: true, data: [] };
+    
+    const projectIds = projects.map((p: any) => p.id);
+
+    const [invoicesRes, expensesRes, quotationsRes, visitsRes] = await Promise.all([
+      supabase.from("invoices").select("project_id, status, total_amount").in("project_id", projectIds),
+      supabase.from("expenses").select("project_id, amount").in("project_id", projectIds),
+      supabase.from("quotations").select("project_id, status, total_amount").in("project_id", projectIds).eq("status", "Approved"),
+      supabase.from("project_visits").select("project_id, is_billable, visit_cost").in("project_id", projectIds).eq("is_billable", true)
+    ]);
+
+    const invoices = invoicesRes.data || [];
+    const expenses = expensesRes.data || [];
+    const quotations = quotationsRes.data || [];
+    const visits = visitsRes.data || [];
+
+    const projectSummaries = projects.map((p: any) => {
+      const projectQuotations = quotations.filter((q: any) => q.project_id === p.id);
+      const quotationTotal = projectQuotations.reduce((sum: number, q: any) => sum + Number(q.total_amount || 0), 0);
+      
+      const projectVisits = visits.filter((v: any) => v.project_id === p.id);
+      const visitsTotal = projectVisits.reduce((sum: number, v: any) => sum + Number(v.visit_cost || 0), 0);
+      
+      const totalBilled = quotationTotal + visitsTotal;
+
+      const projectInvoices = invoices.filter((i: any) => i.project_id === p.id && i.status === 'paid');
+      const totalPaid = projectInvoices.reduce((sum: number, i: any) => sum + Number(i.total_amount || 0), 0);
+
+      const outstanding = totalBilled - totalPaid;
+
+      const projectExpenses = expenses.filter((e: any) => e.project_id === p.id);
+      const totalExpenses = projectExpenses.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0);
+
+      const currentProfit = totalBilled - totalExpenses;
+
+      return {
+        ...p,
+        totalBilled,
+        totalPaid,
+        outstanding,
+        totalExpenses,
+        currentProfit
+      };
+    });
+
+    const outstandingProjects = projectSummaries.filter((p: any) => p.outstanding > 0 || p.status !== 'completed');
+
+    return { success: true, data: outstandingProjects };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
 
 export async function updateInvoiceBankAccountAction(invoiceId: string, bankId: string): Promise<ActionResponse> {
   try {

@@ -300,7 +300,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
             break-after: page;
           }
           
-          .page:last-child {
+          .page:last-of-type {
             page-break-after: avoid;
             break-after: avoid;
           }

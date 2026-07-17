@@ -45,7 +45,7 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
   const discountPercentage = quotation.discount_percentage || 0;
   const clauses = quotation.clauses || [];
   
-  if (!mounted) return null;
+  if (!mounted || !companySettings) return null;
   
   return createPortal(
     <div className="fixed inset-0 z-[100] overflow-y-auto p-6 md:p-12 flex justify-center items-start animate-in fade-in duration-300">

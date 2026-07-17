@@ -400,6 +400,8 @@ export async function clientUpdateQuotationStatusAction(
 
 export async function getQuotationIntakeQueueAction(): Promise<ActionResponse> {
   try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore(); // Disable Next.js aggressive caching for this fetch
     const auth = await requireAuthContext();
     if (auth.error) return { success: false, error: auth.error };
 
@@ -410,7 +412,7 @@ export async function getQuotationIntakeQueueAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: intakeProjects } = await supabase
       .from('projects')
-      .select('*, creator:profiles!created_by(*), files(*)')
+      .select('*, creator:profiles!projects_created_by_fkey(*), files(*)')
       .in('status', ['quotation_requested', 'lead_created'])
       .is('deleted_at', null)
       .order('updated_at', { ascending: false });
@@ -491,7 +493,7 @@ export async function getAllQuotationsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: sorted } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status)')
+      .select('*, project:projects(id, name, client_name, status, project_milestones(id))')
       .order('created_at', { ascending: false });
 
     return { success: true, data: sorted || [] };

@@ -809,105 +809,107 @@ export function ReportsGenerator() {
   return (
     <div className="space-y-6">
       {/* Controls Header */}
-      <div className="bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-slate-200/60 dark:border-border shadow-sm flex flex-col gap-4 sticky top-4 z-10 backdrop-blur-md">
+      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col gap-5 sticky top-4 z-10">
         
-        <div className="flex flex-wrap items-center gap-4">
-          <select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value as ReportType)}
-            className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground appearance-none cursor-pointer"
-          >
-            <option value="profit_loss">Profit & Loss Statement</option>
-            <option value="income">Income Statement</option>
-            <option value="expense">Expense Statement</option>
-            <option value="cash_flow">Cash Flow Statement</option>
-            <option value="balance_sheet">Balance Sheet</option>
-            <option value="project_statement">Project Statement (Client Copy)</option>
-            <option disabled>──────────</option>
-            <option value="all_project_summary">All Project Summary</option>
-            <option value="project_budget_sheet">Project Budget Sheet</option>
-            <option value="expenses_fund_allocation">Total Expences Fund Allocation</option>
-            <option value="project_actual_sheet">Project Actual Sheet</option>
-          </select>
-
-          <select
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground appearance-none cursor-pointer"
-          >
-            <option value="">All Projects (Company-wide)</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-
-          {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <select
-              value={datePreset}
-              onChange={(e) => handleDatePresetChange(e.target.value as DateRangePreset)}
-              className="w-full sm:w-auto h-11 px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground appearance-none cursor-pointer"
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value as ReportType)}
+              className="w-full sm:w-auto h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 appearance-none cursor-pointer shadow-sm"
             >
-              <option value="today">Daily (Today)</option>
-              <option value="yesterday">Daily (Yesterday)</option>
-              <option value="this_week">Weekly (This Week)</option>
-              <option value="last_week">Weekly (Last Week)</option>
-              <option value="this_month">Monthly (This Month)</option>
-              <option value="last_month">Monthly (Last Month)</option>
-              <option value="custom">Custom Date Range</option>
+              <option value="profit_loss">Profit & Loss Statement</option>
+              <option value="income">Income Statement</option>
+              <option value="expense">Expense Statement</option>
+              <option value="cash_flow">Cash Flow Statement</option>
+              <option value="balance_sheet">Balance Sheet</option>
+              <option value="project_statement">Project Statement (Client Copy)</option>
+              <option disabled>──────────</option>
+              <option value="all_project_summary">All Project Summary</option>
+              <option value="project_budget_sheet">Project Budget Sheet</option>
+              <option value="expenses_fund_allocation">Total Expences Fund Allocation</option>
+              <option value="project_actual_sheet">Project Actual Sheet</option>
             </select>
-          )}
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="w-full sm:w-auto h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 appearance-none cursor-pointer shadow-sm"
+            >
+              <option value="">All Projects (Company-wide)</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+
             {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
-              <>
+              <select
+                value={datePreset}
+                onChange={(e) => handleDatePresetChange(e.target.value as DateRangePreset)}
+                className="w-full sm:w-auto h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="today">Daily (Today)</option>
+                <option value="yesterday">Daily (Yesterday)</option>
+                <option value="this_week">Weekly (This Week)</option>
+                <option value="last_week">Weekly (Last Week)</option>
+                <option value="this_month">Monthly (This Month)</option>
+                <option value="last_month">Monthly (Last Month)</option>
+                <option value="custom">Custom Date Range</option>
+              </select>
+            )}
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
+                <>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => { setDateFrom(e.target.value); setDatePreset('custom'); }}
+                    className="w-full sm:w-36 h-11 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 shadow-sm"
+                  />
+                  <span className="text-slate-400 text-sm font-medium">to</span>
+                </>
+              )}
+              {!['project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
                 <input
                   type="date"
-                  value={dateFrom}
-                  onChange={(e) => { setDateFrom(e.target.value); setDatePreset('custom'); }}
-                  className="w-full sm:w-36 h-11 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground"
+                  value={dateTo}
+                  onChange={(e) => { setDateTo(e.target.value); if (reportType !== 'balance_sheet') setDatePreset('custom'); }}
+                  className="w-full sm:w-36 h-11 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 shadow-sm"
                 />
-                <span className="text-slate-400 text-sm font-medium">to</span>
-              </>
-            )}
-            {!['project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => { setDateTo(e.target.value); if (reportType !== 'balance_sheet') setDatePreset('custom'); }}
-                className="w-full sm:w-36 h-11 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-foreground"
-              />
-            )}
+              )}
+            </div>
+
+            <button
+              onClick={handleGenerate}
+              disabled={isLoading}
+              className="w-full sm:w-auto h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              Generate
+            </button>
           </div>
 
-          <button
-            onClick={handleGenerate}
-            disabled={isLoading}
-            className="w-full sm:w-auto h-11 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ml-auto"
-          >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-            Generate
-          </button>
+          {/* Exports only visible if report generated */}
+          {reportData && generatedConfig && (
+            <div className="flex items-center justify-start lg:justify-end gap-3 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-200/60 dark:border-slate-800/60">
+              <button
+                onClick={exportExcel}
+                className="h-11 px-5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Export Excel
+              </button>
+              <button
+                onClick={exportPDF}
+                className="h-11 px-5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                Export PDF
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Exports only visible if report generated */}
-        {reportData && generatedConfig && (
-          <div className="flex items-center justify-end gap-3 shrink-0 pt-3 border-t border-slate-100 dark:border-border">
-            <button
-              onClick={exportExcel}
-              className="h-10 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-border text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              Export Excel
-            </button>
-            <button
-              onClick={exportPDF}
-              className="h-10 px-4 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-border text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
-            >
-              <FileText className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-              Export PDF
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Report Output */}
