@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -23,21 +22,48 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(COUNTDOWN_DURATION);
   const router = useRouter();
-  const supabase: any = createClient();
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const showWarningRef = useRef(false);
+
+  // Sync ref with state
+  useEffect(() => {
+    showWarningRef.current = showWarning;
+  }, [showWarning]);
 
   const handleLogout = useCallback(async () => {
     try {
       await signOutAction();
     } catch (err) {
       // Fallback if server action fails or throws redirect error
-      await supabase.auth.signOut();
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.error("Client signout failed:", e);
+      }
       router.refresh();
       router.push("/login");
     }
-  }, [supabase, router]);
+  }, [router]);
+
+  const startCountdown = useCallback(() => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    setCountdown(COUNTDOWN_DURATION);
+
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          handleLogout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [handleLogout]);
 
   const resetTimers = useCallback(() => {
     // Clear existing timers
@@ -50,26 +76,16 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
     // Set new inactivity timeout
     timeoutRef.current = setTimeout(() => {
       setShowWarning(true);
-
-      // Start countdown
-      countdownRef.current = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            handleLogout();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      startCountdown();
     }, INACTIVITY_TIMEOUT - (COUNTDOWN_DURATION * 1000));
-  }, [handleLogout]);
+  }, [startCountdown]);
 
   useEffect(() => {
     // Events to monitor for activity
     const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
 
     const handleActivity = () => {
-      if (!showWarning) {
+      if (!showWarningRef.current) {
         resetTimers();
       }
     };
@@ -85,7 +101,7 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [resetTimers, showWarning]);
+  }, [resetTimers]);
 
   return (
     <>

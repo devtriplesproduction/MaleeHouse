@@ -130,7 +130,8 @@ export async function recordFollowUpAction(
   projectId: string, 
   nextDate: string, 
   status: string, 
-  outcome: string
+  outcome: string,
+  userTimezone?: string
 ): Promise<ActionResponse> {
   try {
     const profile = await getUserProfileAction();
@@ -189,7 +190,7 @@ export async function recordFollowUpAction(
     }).eq('id', projectId);
 
     // 4. Send notification for the scheduled follow-up
-    await notifyFollowUpScheduledAction(projectId, nextDate, status, profile.id);
+    await notifyFollowUpScheduledAction(projectId, nextDate, status, profile.id, userTimezone);
 
     await revalidateAccountsPaths(projectId);
     return { success: true };

@@ -36,9 +36,9 @@ import { useUser } from '@/hooks/useUser';
 type ProjectFormValues = CreateProjectInput;
 
 const STEPS = [
-  { id: 1, title: 'Customer & Site', description: 'Core details & location', icon: Building2 },
-  { id: 2, title: 'Survey Services', description: 'Select services & categories', icon: Layers },
-  { id: 3, title: 'Review & Create', description: 'Confirm & save project', icon: ShieldCheck },
+  { id: 1, title: 'Customer & Site', icon: Building2 },
+  { id: 2, title: 'Survey Services', icon: Layers },
+  { id: 3, title: 'Review & Create', icon: ShieldCheck },
 ];
 
 const SERVICES_BY_CATEGORY: Record<string, string[]> = {
@@ -157,7 +157,9 @@ export function ProjectCreationWizard() {
     setIsSubmitting(true);
     try {
       const result = await createProjectAction(data);
-      if (result?.success) {
+      if (!result) return; // Action was intercepted (e.g., session expired -> redirect to login)
+      
+      if (result.success) {
         toast.success('Project Created Successfully', {
           description: 'The new project record and survey workflow have been initialized.',
         });
@@ -166,7 +168,7 @@ export function ProjectCreationWizard() {
         methods.reset();
       } else {
         toast.error('Unable to Create Project', {
-          description: result?.error || 'The system was unable to save the new project.',
+          description: result.error || 'The system was unable to save the new project.',
         });
       }
     } catch (err) {
@@ -190,7 +192,7 @@ export function ProjectCreationWizard() {
         <button
           id="btn-establish-project"
           className={cn(
-            "flex items-center gap-2 px-6 py-2.5 text-white rounded-2xl font-bold  tracking-wider text-sm transition-all shadow-lg active:scale-95 group",
+            "flex items-center gap-2 px-6 py-2.5 text-white rounded-2xl font-medium  tracking-wider text-sm transition-all shadow-lg active:scale-95 group",
             c.bg, c.hoverBg, c.shadow
           )}
         >
@@ -200,7 +202,7 @@ export function ProjectCreationWizard() {
       </DialogTrigger>
 
       <DialogContent className="max-w-5xl h-[85vh] !p-0 !overflow-hidden !border-none !bg-transparent !shadow-none sm:!rounded-none [&>button]:hidden">
-        <div className="w-full h-full flex bg-white/95 dark:bg-[#0c101f]/95 backdrop-blur-2xl rounded-[3rem] border border-slate-200/80 dark:border-white/10 overflow-hidden relative shadow-2xl font-sans">
+        <div className="w-full h-full flex bg-white/95 dark:bg-[#0c101f]/95 backdrop-blur-2xl rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden relative shadow-2xl font-sans">
 
           {/* ── Left Sidebar Flow ── */}
           <div className="w-96 bg-slate-50/50 dark:bg-[#080b14]/50 border-r border-slate-200/80 dark:border-white/5 flex flex-col justify-between p-10 shrink-0 relative overflow-hidden">
@@ -213,9 +215,9 @@ export function ProjectCreationWizard() {
               <div className="space-y-4">
                 <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl border w-max", c.bgLight, c.border)}>
                   <Building2 className={cn("w-4 h-4", c.text)} />
-                  <span className={cn("text-sm font-bold uppercase tracking-widest", c.text)}>Setup Wizard</span>
+                  <span className={cn("text-sm font-medium uppercase tracking-widest", c.text)}>Setup Wizard</span>
                 </div>
-                <h4 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight leading-tight">New Project</h4>
+                <h4 className="text-3xl font-medium text-slate-800 dark:text-white tracking-tight leading-tight">New Project</h4>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Setup customer details, site category, and required field services.</p>
               </div>
 
@@ -227,7 +229,7 @@ export function ProjectCreationWizard() {
                   return (
                     <div key={s.id} className="flex items-start gap-5">
                       <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300 border shrink-0",
+                        "w-12 h-12 rounded-xl flex items-center justify-center font-medium text-sm transition-all duration-300 border shrink-0",
                         isActive ? c.stepActive :
                           isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-indigo-500/20" :
                             "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500"
@@ -236,11 +238,10 @@ export function ProjectCreationWizard() {
                       </div>
                       <div className="pt-0.5">
                         <p className={cn(
-                          "text-sm font-bold uppercase tracking-widest leading-none mb-1.5",
+                          "text-sm font-medium uppercase tracking-widest leading-none mb-1.5",
                           isActive ? c.text : isCompleted ? "text-emerald-500 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"
                         )}>Step {s.id}</p>
-                        <p className={cn("text-base font-bold transition-colors", isActive ? "text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400")}>{s.title}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-tight">{s.description}</p>
+                        <p className={cn("text-base font-medium transition-colors", isActive ? "text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400")}>{s.title}</p>
                       </div>
                     </div>
                   );
@@ -279,15 +280,15 @@ export function ProjectCreationWizard() {
                       {/* Step Header */}
                       <div className="flex items-end justify-between">
                         <div className="space-y-1">
-                          <span className={cn("text-sm font-bold px-3 py-1.5 rounded-full uppercase tracking-wider", c.bgLight, c.text)}>
+                          <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full uppercase tracking-wider", c.bgLight, c.text)}>
                             Step {step} of 3
                           </span>
-                          <h3 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight pt-2 leading-none">
+                          <h3 className="text-3xl font-medium text-slate-800 dark:text-white tracking-tight pt-2 leading-none">
                             {STEPS.find((s: any) => s.id === step)?.title}
                           </h3>
                         </div>
                         {step === 2 && (
-                          <span className={cn("text-sm font-bold px-3 py-1.5 rounded-full shrink-0 mb-1", c.bgLight, c.text)}>
+                          <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full shrink-0 mb-1", c.bgLight, c.text)}>
                             {selectedServices.length} Selected
                           </span>
                         )}
@@ -300,7 +301,7 @@ export function ProjectCreationWizard() {
                           {/* Project Name & Client Entity */}
                           <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                              <label htmlFor="input-name" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                              <label htmlFor="input-name" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
                                 Project Name
                               </label>
                               <div className="relative group">
@@ -309,14 +310,14 @@ export function ProjectCreationWizard() {
                                   id="input-name"
                                   {...methods.register('name')}
                                   placeholder="e.g. Pune Highway Survey"
-                                  className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                                  className={cn("glass-input h-14 !pl-12 font-medium text-sm placeholder:font-normal placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
                                 />
                               </div>
-                              {errors.name && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.name.message}</p>}
+                              {errors.name && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.name.message}</p>}
                             </div>
 
                             <div className="space-y-2">
-                              <label htmlFor="input-client" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                              <label htmlFor="input-client" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
                                 Client / Company Name
                               </label>
                               <div className="relative group">
@@ -325,17 +326,17 @@ export function ProjectCreationWizard() {
                                   id="input-client"
                                   {...methods.register('client_name')}
                                   placeholder="Individual or Company"
-                                  className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                                  className={cn("glass-input h-14 !pl-12 font-medium text-sm placeholder:font-normal placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
                                 />
                               </div>
-                              {errors.client_name && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.client_name.message}</p>}
+                              {errors.client_name && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.client_name.message}</p>}
                             </div>
                           </div>
 
                           {/* Contact Phone & Email */}
                           <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                              <label htmlFor="input-phone" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                              <label htmlFor="input-phone" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
                                 Primary Contact (Phone)
                               </label>
                               <div className={cn("relative group phone-input-container glass-input h-14 !p-0 flex items-center transition-all focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 dark:focus-within:ring-indigo-500/5")}>
@@ -353,7 +354,7 @@ export function ProjectCreationWizard() {
                                       countryCallingCodeEditable={false}
                                       limitMaxLength={true}
                                       maxLength={15}
-                                      className="w-full h-full font-bold text-sm"
+                                      className="w-full h-full font-medium text-sm"
                                     />
                                   )}
                                 />
@@ -368,7 +369,7 @@ export function ProjectCreationWizard() {
                                      background: transparent;
                                      border: none;
                                      outline: none;
-                                     font-weight: bold;
+                                     font-weight: 500;
                                      font-size: 0.875rem;
                                      color: inherit;
                                      width: 100%;
@@ -376,7 +377,7 @@ export function ProjectCreationWizard() {
                                      padding-right: 1rem;
                                    }
                                    .phone-input-container .PhoneInputInput::placeholder {
-                                     font-weight: 500;
+                                     font-weight: 400;
                                      color: rgb(148 163 184 / 0.7);
                                    }
                                    .phone-input-container .PhoneInputCountry {
@@ -388,11 +389,11 @@ export function ProjectCreationWizard() {
                                    }
                                  `}</style>
                               </div>
-                              {errors.phone && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.phone.message}</p>}
+                              {errors.phone && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.phone.message}</p>}
                             </div>
 
                             <div className="space-y-2">
-                              <label htmlFor="input-email" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                              <label htmlFor="input-email" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
                                 Email Address
                               </label>
                               <div className="relative group">
@@ -401,16 +402,16 @@ export function ProjectCreationWizard() {
                                   id="input-email"
                                   {...methods.register('email')}
                                   placeholder="client@example.com"
-                                  className={cn("glass-input h-14 !pl-12 font-bold text-sm placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                                  className={cn("glass-input h-14 !pl-12 font-medium text-sm placeholder:font-normal placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
                                 />
                               </div>
-                              {errors.email && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.email.message}</p>}
+                              {errors.email && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.email.message}</p>}
                             </div>
                           </div>
 
                           {/* Site Typology Redesigned Dropdown */}
                           <div className="space-y-2">
-                            <label htmlFor="input-site-type" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-50 block px-1">
+                            <label htmlFor="input-site-type" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-50 block px-1">
                               Site Typology
                             </label>
                             <Controller
@@ -420,8 +421,7 @@ export function ProjectCreationWizard() {
                                 <Select
                                   value={field.value}
                                   onValueChange={field.onChange}
-                                  className={cn("glass-input h-14 p-0 m-0 flex items-center", c.focusBorder, c.focusRing)}
-                                  buttonClassName="w-full h-full bg-transparent border-0 hover:bg-transparent hover:border-0 dark:hover:bg-transparent text-sm font-bold shadow-none text-slate-800 dark:text-white"
+                                  buttonClassName={cn("glass-input h-14 w-full font-medium text-sm text-slate-800 dark:text-white", c.focusBorder, c.focusRing)}
                                 >
                                   <SelectItem value="residential">Residential Site Selection</SelectItem>
                                   <SelectItem value="commercial">Commercial Development Site</SelectItem>
@@ -431,12 +431,12 @@ export function ProjectCreationWizard() {
                                 </Select>
                               )}
                             />
-                            {errors.site_type && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.site_type.message}</p>}
+                            {errors.site_type && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.site_type.message}</p>}
                           </div>
 
                           {/* Site/Office Address */}
                           <div className="space-y-2">
-                            <label htmlFor="textarea-address" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-550 block px-1">
+                            <label htmlFor="textarea-address" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-550 block px-1">
                               Site Address
                             </label>
                             <div className="relative group">
@@ -445,15 +445,15 @@ export function ProjectCreationWizard() {
                                 id="textarea-address"
                                 {...methods.register('client_address')}
                                 placeholder="Enter the complete site location address..."
-                                className={cn("glass-input min-h-[90px] py-4 !pl-12 resize-none font-bold text-sm leading-relaxed placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                                className={cn("glass-input min-h-[90px] py-4 !pl-12 resize-none font-medium text-sm leading-relaxed placeholder:font-normal placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
                               />
                             </div>
-                            {errors.client_address && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.client_address.message}</p>}
+                            {errors.client_address && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.client_address.message}</p>}
                           </div>
 
                           {/* Technical Scope Requirements */}
                           <div className="space-y-2">
-                            <label htmlFor="textarea-reqs" className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                            <label htmlFor="textarea-reqs" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
                               Technical Scope Requirements
                             </label>
                             <textarea
@@ -461,9 +461,9 @@ export function ProjectCreationWizard() {
                               {...methods.register('survey_requirements')}
                               rows={4}
                               placeholder="Detail critical survey requirements, specific limits, or land conditions..."
-                              className={cn("glass-input py-4 px-5 min-h-[100px] text-sm leading-relaxed resize-none font-bold placeholder:font-medium placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                              className={cn("glass-input py-4 px-5 min-h-[100px] text-sm leading-relaxed resize-none font-medium placeholder:font-normal placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
                             />
-                            {errors.survey_requirements && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.survey_requirements.message}</p>}
+                            {errors.survey_requirements && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.survey_requirements.message}</p>}
                           </div>
 
                         </div>
@@ -485,7 +485,7 @@ export function ProjectCreationWizard() {
                                     type="button"
                                     onClick={() => setActiveCategory(cat)}
                                     className={cn(
-                                      "w-full text-left px-4 py-3.5 rounded-xl text-xs font-bold tracking-tight transition-all flex items-center justify-between group",
+                                      "w-full text-left px-4 py-3.5 rounded-xl text-xs font-medium tracking-tight transition-all flex items-center justify-between group",
                                       isCurrent
                                         ? cn(c.bg, "text-white shadow-md", c.shadowMd)
                                         : "hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-450"
@@ -494,7 +494,7 @@ export function ProjectCreationWizard() {
                                     <span className="truncate pr-1">{cat}</span>
                                     {countInCat > 0 && (
                                       <span className={cn(
-                                        "text-xs font-bold px-2 py-0.5 rounded-full shrink-0",
+                                        "text-xs font-medium px-2 py-0.5 rounded-full shrink-0",
                                         isCurrent ? "bg-white text-indigo-600" : cn(c.bgLight, c.text)
                                       )}>
                                         {countInCat}
@@ -507,7 +507,7 @@ export function ProjectCreationWizard() {
 
                             {/* Sub-categories Grid (Right) */}
                             <div className="flex-1 overflow-y-auto pl-2 pr-1 custom-scrollbar space-y-4">
-                              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                              <h4 className="text-xs font-medium uppercase tracking-widest text-slate-400">
                                 {activeCategory} Services
                               </h4>
 
@@ -526,7 +526,7 @@ export function ProjectCreationWizard() {
                                         setValue('services', next, { shouldValidate: true });
                                       }}
                                       className={cn(
-                                        "w-full flex items-center justify-between p-4 rounded-xl border text-xs font-bold text-left transition-all duration-200 group relative",
+                                        "w-full flex items-center justify-between p-4 rounded-xl border text-xs font-medium text-left transition-all duration-200 group relative",
                                         isSelected
                                           ? cn(c.bg, "border-transparent text-white shadow-md", c.shadowMd)
                                           : cn("bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-350", "hover:border-indigo-500/40")
@@ -557,7 +557,7 @@ export function ProjectCreationWizard() {
                             </div>
                           </div>
 
-                          {errors.services && <p className="text-xs font-bold text-rose-500 uppercase tracking-wide px-1">{errors.services.message}</p>}
+                          {errors.services && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.services.message}</p>}
                         </div>
                       )}
 
@@ -566,46 +566,46 @@ export function ProjectCreationWizard() {
                         <div className="space-y-6">
 
                           {/* Premium Recap Card in Liquid Glass theme */}
-                          <div className="glass-card bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-3xl p-8 space-y-6 relative overflow-hidden shadow-xl">
+                          <div className="glass-card bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-8 space-y-6 relative overflow-hidden shadow-xl">
                             <div className={cn("absolute top-0 right-0 w-48 h-48 blur-[80px] rounded-full pointer-events-none", c.glow)} />
 
                             <div className="border-b border-slate-200/60 dark:border-white/5 pb-5">
-                              <p className={cn("text-xs font-bold uppercase tracking-widest mb-1", c.text)}>Project Name</p>
-                              <h4 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">{watch('name')}</h4>
+                              <p className={cn("text-xs font-medium uppercase tracking-widest mb-1", c.text)}>Project Name</p>
+                              <h4 className="text-2xl font-medium tracking-tight text-slate-800 dark:text-white">{watch('name')}</h4>
                             </div>
 
                             <div className="grid grid-cols-2 gap-6 text-slate-600 dark:text-slate-300">
                               <div className="space-y-1">
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">Client Name</p>
-                                <p className="text-sm font-bold text-slate-800 dark:text-white">{watch('client_name')}</p>
+                                <p className="text-xs font-medium text-slate-400 dark:text-slate-550 uppercase tracking-widest">Client Name</p>
+                                <p className="text-sm font-medium text-slate-800 dark:text-white">{watch('client_name')}</p>
                               </div>
 
                               <div className="space-y-1">
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">Contact Phone</p>
-                                <p className="text-sm font-bold text-slate-800 dark:text-white">{watch('phone')}</p>
+                                <p className="text-xs font-medium text-slate-400 dark:text-slate-550 uppercase tracking-widest">Contact Phone</p>
+                                <p className="text-sm font-medium text-slate-800 dark:text-white">{watch('phone')}</p>
                               </div>
 
                               <div className="space-y-1">
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">Email Address</p>
-                                <p className="text-sm font-bold text-slate-800 dark:text-white">{watch('email') || 'Not provided'}</p>
+                                <p className="text-xs font-medium text-slate-400 dark:text-slate-550 uppercase tracking-widest">Email Address</p>
+                                <p className="text-sm font-medium text-slate-800 dark:text-white">{watch('email') || 'Not provided'}</p>
                               </div>
 
                               <div className="space-y-1">
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">Site Type</p>
-                                <p className="text-sm font-bold text-slate-800 dark:text-white capitalize">{watch('site_type')}</p>
+                                <p className="text-xs font-medium text-slate-400 dark:text-slate-550 uppercase tracking-widest">Site Type</p>
+                                <p className="text-sm font-medium text-slate-800 dark:text-white capitalize">{watch('site_type')}</p>
                               </div>
                             </div>
 
                             <div className="border-t border-slate-200/60 dark:border-white/5 pt-4 space-y-1">
-                              <p className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">Site Location Address</p>
+                              <p className="text-xs font-medium text-slate-400 dark:text-slate-550 uppercase tracking-widest">Site Location Address</p>
                               <p className="text-xs font-semibold leading-relaxed text-slate-700 dark:text-slate-200">{watch('client_address')}</p>
                             </div>
 
                             <div className="border-t border-slate-200/60 dark:border-white/5 pt-4 space-y-2">
-                              <p className="text-xs font-bold text-slate-400 dark:text-slate-555 uppercase tracking-widest">Selected Services ({selectedServices.length})</p>
+                              <p className="text-xs font-medium text-slate-400 dark:text-slate-555 uppercase tracking-widest">Selected Services ({selectedServices.length})</p>
                               <div className="flex flex-wrap gap-2 max-h-[100px] overflow-y-auto custom-scrollbar">
                                 {selectedServices.map((srv) => (
-                                  <span key={srv} className="text-xs font-bold bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-lg text-slate-850 dark:text-white">
+                                  <span key={srv} className="text-xs font-medium bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-lg text-slate-850 dark:text-white">
                                     {srv}
                                   </span>
                                 ))}
@@ -619,7 +619,7 @@ export function ProjectCreationWizard() {
                                 <CheckCircle2 className="w-5 h-5" />
                               </div>
                               <div>
-                                <p className="text-xs font-bold text-slate-900 dark:text-white">Everything is Set</p>
+                                <p className="text-xs font-medium text-slate-900 dark:text-white">Everything is Set</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Please review all values. Clicking below will initialize the project record.</p>
                               </div>
                             </div>
@@ -640,7 +640,7 @@ export function ProjectCreationWizard() {
                 type="button"
                 id="btn-wizard-back"
                 onClick={step === 1 ? () => setOpen(false) : handleBack}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-all outline-none"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-all outline-none"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 {step === 1 ? 'Cancel' : 'Back'}
@@ -653,7 +653,7 @@ export function ProjectCreationWizard() {
                   id="btn-wizard-next"
                   onClick={handleNext}
                   className={cn(
-                    "flex items-center gap-3 px-8 py-3 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:shadow-lg active:scale-[0.97] transition-all group outline-none",
+                    "flex items-center gap-3 px-8 py-3 text-white rounded-xl text-xs font-medium uppercase tracking-wider hover:shadow-lg active:scale-[0.97] transition-all group outline-none",
                     c.bg, c.hoverBg, c.shadow
                   )}
                 >
@@ -668,7 +668,7 @@ export function ProjectCreationWizard() {
                   id="btn-wizard-submit"
                   disabled={isSubmitting}
                   className={cn(
-                    "flex items-center gap-3 px-8 py-3 text-white rounded-xl text-xs font-bold   tracking-wider disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97] transition-all group outline-none",
+                    "flex items-center gap-3 px-8 py-3 text-white rounded-xl text-xs font-medium   tracking-wider disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97] transition-all group outline-none",
                     c.bg, c.hoverBg, c.shadow
                   )}
                 >

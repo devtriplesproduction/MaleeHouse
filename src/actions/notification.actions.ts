@@ -507,13 +507,14 @@ export async function notifyUpcomingHolidaysAction(cronSecret?: string) {
   }
 }
 
-export async function notifyFollowUpScheduledAction(projectId: string, nextDate: string, status: string, userId: string) {
+export async function notifyFollowUpScheduledAction(projectId: string, nextDate: string, status: string, userId: string, userTimezone?: string) {
   const supabase: any = await createClient()
   const { data: project } = await supabase.from('projects').select('name, client_name').eq('id', projectId).single()
   if (!project) return { success: false }
 
-  const formattedDate = new Date(nextDate).toLocaleDateString(undefined, { 
-    weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  const formattedDate = new Date(nextDate).toLocaleString('en-US', { 
+    weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+    timeZone: userTimezone
   })
 
   return insertNotification({

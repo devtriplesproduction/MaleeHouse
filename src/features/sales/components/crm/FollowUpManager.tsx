@@ -78,12 +78,12 @@ export function FollowUpManager({
 
   const pendingFollowUpTasks = tasks
     .filter((t: any) => t.status === 'pending' && t.title.startsWith('Follow-up'))
-    .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    .sort((a: any, b: any) => new Date(a.due_date || a.dueDate).getTime() - new Date(b.due_date || b.dueDate).getTime());
 
   let nextActionDate = "None Scheduled";
   if (pendingFollowUpTasks.length > 0) {
     try {
-      const d = new Date(pendingFollowUpTasks[0].dueDate);
+      const d = new Date(pendingFollowUpTasks[0].due_date || pendingFollowUpTasks[0].dueDate);
       nextActionDate = d.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -163,7 +163,8 @@ export function FollowUpManager({
       const finalDate = new Date(selectedDate);
       finalDate.setHours(finalHour, parseInt(selectedMinute), 0, 0);
 
-      const result = await recordFollowUpAction(projectId, finalDate.toISOString(), status, outcome);
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const result = await recordFollowUpAction(projectId, finalDate.toISOString(), status, outcome, userTimezone);
       if (result.success) {
         toast.success("Follow-up Logged", { description: "Reminders and history updated." });
         setIsRecording(false);
@@ -464,6 +465,27 @@ export function FollowUpManager({
                 }
               }
 
+              let displayNextCheckIn = "";
+              if (nextCheckIn) {
+                try {
+                  const parsedDate = new Date(nextCheckIn);
+                  if (!isNaN(parsedDate.getTime())) {
+                    displayNextCheckIn = parsedDate.toLocaleString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true
+                    });
+                  } else {
+                    displayNextCheckIn = nextCheckIn;
+                  }
+                } catch (e) {
+                  displayNextCheckIn = nextCheckIn;
+                }
+              }
+
               return (
                 <div 
                   key={log.id}
@@ -482,10 +504,10 @@ export function FollowUpManager({
                     {outcomeText}
                   </p>
 
-                  {nextCheckIn && (
+                  {displayNextCheckIn && (
                     <div className="flex items-center gap-1.5 text-[9px] text-amber-600 dark:text-amber-500/80 font-black uppercase tracking-wider mt-1">
                       <Clock className="w-3.5 h-3.5" />
-                      <span>Next Check-In Scheduled: {nextCheckIn}</span>
+                      <span>Next Check-In Scheduled: {displayNextCheckIn}</span>
                     </div>
                   )}
                 </div>
