@@ -272,9 +272,9 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
 
       const { data: project } = await supabase.from('projects').select('*').eq('id', payment.project_id).single();
 
-      if (isActivationGatePaid || !project || project.status === 'lead_created' || project.status === 'quotation_sent' || project.status === 'payment_pending') {
-        await updateProjectStageAction(payment.project_id, 'project_created', 'Payment verified. Project officially activated.');
-      } else if (milestoneLinkedStage) {
+      if (isActivationGatePaid || !project || ['lead_created', 'quotation_sent', 'payment_pending', 'payment_done'].includes(project.status)) {
+        await updateProjectStageAction(payment.project_id, 'ready_for_dispatch', 'Payment verified. Project ready for dispatch.');
+      } else if (milestoneLinkedStage && !['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'ready_for_dispatch'].includes(project.status)) {
         await updateProjectStageAction(payment.project_id, milestoneLinkedStage, `Payment verified. Stage unlocked.`);
       }
 
@@ -794,9 +794,9 @@ export async function updateMilestoneStatusAction(
         .eq('id', milestone.project_id)
         .single();
 
-      if (milestone.is_activation_gate || !project || ['lead_created', 'quotation_sent', 'payment_pending'].includes(project.status)) {
-        await updateProjectStageAction(milestone.project_id, 'project_created', comment || 'Activation gate milestone marked as paid.');
-      } else if (milestone.linked_stage) {
+      if (milestone.is_activation_gate || !project || ['lead_created', 'quotation_sent', 'payment_pending', 'payment_done'].includes(project.status)) {
+        await updateProjectStageAction(milestone.project_id, 'ready_for_dispatch', comment || 'Activation gate milestone marked as paid. Project ready for dispatch.');
+      } else if (milestone.linked_stage && !['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'ready_for_dispatch'].includes(project.status)) {
         await updateProjectStageAction(milestone.project_id, milestone.linked_stage, comment || `Linked milestone "${milestone.title}" marked as paid.`);
       }
     }

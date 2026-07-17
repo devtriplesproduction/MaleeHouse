@@ -306,19 +306,19 @@ function ProjectMilestonesContent() {
         toast.success("Milestones saved successfully.");
 
         if (planParam === "true") {
-          toast.info("Dispatching project to Survey Operations...");
+          toast.info("Awaiting payment. Project set to Payment Pending stage.");
           const dispatchRes = await transitionWorkflowAction(
             selectedProject.id,
-            "project_created",
-            "Milestones configured. Project dispatched to Engineering survey department."
+            "payment_pending",
+            "Milestones configured. Project awaiting initial milestone payment."
           );
           if (dispatchRes?.success) {
-            toast.success("Project successfully dispatched to Survey Operations.");
+            toast.success("Project set to Payment Pending.");
             setTimeout(() => {
               router.push("/accounts/approvals");
             }, 1000);
           } else {
-            toast.error(dispatchRes?.error || "Failed to dispatch to Survey.");
+            toast.error(dispatchRes?.error || "Failed to update project status.");
           }
         } else {
           // Fetch the updated milestones immediately to show them in the panel

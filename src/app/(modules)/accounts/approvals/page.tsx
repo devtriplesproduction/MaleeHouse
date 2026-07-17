@@ -132,19 +132,7 @@ export default function ClientApprovalsPage() {
         return;
       }
 
-      // Payment Compulsion Check
-      const isPaymentPending = ["lead", "quotation_requested", "quotation_sent", "payment_pending"].includes(quotation.project?.status || "payment_pending");
-      
-      if (isPaymentPending) {
-        const userProfile = await getUserProfileAction();
-        if (userProfile?.role !== "admin") {
-          toast.error("Payment log is incomplete. Admin permission required to dispatch without payment.");
-          setDispatching(null);
-          return;
-        } else {
-          toast.warning("Bypassing payment check via Admin override.");
-        }
-      }
+
 
       const res = await transitionWorkflowAction(
         quotation.project_id,
@@ -513,10 +501,9 @@ export default function ClientApprovalsPage() {
 
                         {/* Approved actions */}
                         {isApproved && (() => {
-                          const isDispatched = q.project?.status && !["lead", "quotation_requested", "quotation_sent", "payment_pending", "payment_done"].includes(q.project.status);
-                          const isPaymentPending = ["lead", "quotation_requested", "quotation_sent", "payment_pending"].includes(q.project?.status || "payment_pending");
+                          const isDispatched = q.project?.status && !["lead", "quotation_requested", "quotation_sent", "payment_pending", "payment_done", "ready_for_dispatch"].includes(q.project.status);
+                          const isReadyForDispatch = q.project?.status === "ready_for_dispatch";
                           const isDispatching = dispatching === q.id;
-                          const isOverriding = overriding === q.id;
 
                           if (isDispatched) {
                             return (
@@ -526,22 +513,42 @@ export default function ClientApprovalsPage() {
                             );
                           }
 
-
                           const hasMilestones = q.project?.project_milestones && q.project.project_milestones.length > 0;
 
+                          if (!hasMilestones) {
+                            return (
+                              <button
+                                onClick={() => {
+                                  router.push(`/accounts/milestones?project=${q.project_id}&plan=true`);
+                                }}
+                                className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-all active:scale-95"
+                              >
+                                <Hammer className="w-3 h-3" /> Create Milestones
+                              </button>
+                            );
+                          }
+
+                          if (isReadyForDispatch) {
+                            return (
+                              <button
+                                onClick={() => handleSendToEngineering(q)}
+                                disabled={isDispatching}
+                                className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-all disabled:opacity-60 active:scale-95"
+                              >
+                                {isDispatching ? (
+                                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                  <Hammer className="w-3 h-3" />
+                                )}
+                                {isDispatching ? "Dispatching…" : "Dispatch to Engineer"}
+                              </button>
+                            );
+                          }
+
                           return (
-                            <button
-                              onClick={() => handleSendToEngineering(q)}
-                              disabled={isDispatching}
-                              className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-all disabled:opacity-60 active:scale-95"
-                            >
-                              {isDispatching ? (
-                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              ) : (
-                                <Hammer className="w-3 h-3" />
-                              )}
-                              {isDispatching ? "Dispatching…" : hasMilestones ? "Dispatch" : "Create Milestones"}
-                            </button>
+                            <div className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                              <Clock className="w-3 h-3 animate-pulse" /> Awaiting Payment
+                            </div>
                           );
                         })()}
 
@@ -784,7 +791,9 @@ export default function ClientApprovalsPage() {
 
                 {selectedQuote.status === "Approved" && (
                   (() => {
-                    const isDispatched = selectedQuote.project?.status && !["lead", "quotation_requested", "quotation_sent", "payment_pending", "payment_done"].includes(selectedQuote.project.status);
+                    const isDispatched = selectedQuote.project?.status && !["lead", "quotation_requested", "quotation_sent", "payment_pending", "payment_done", "ready_for_dispatch"].includes(selectedQuote.project.status);
+                    const isReadyForDispatch = selectedQuote.project?.status === "ready_for_dispatch";
+                    const hasMilestones = selectedQuote.project?.project_milestones && selectedQuote.project.project_milestones.length > 0;
 
                     if (isDispatched) {
                       return (
@@ -795,18 +804,42 @@ export default function ClientApprovalsPage() {
                       );
                     }
 
+                    if (!hasMilestones) {
+                      return (
+                        <button
+                          onClick={() => {
+                            router.push(`/accounts/milestones?project=${selectedQuote.project_id}&plan=true`);
+                            setSelectedQuote(null);
+                          }}
+                          className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
+                        >
+                          <Hammer className="w-4 h-4" />
+                          Create Milestones
+                        </button>
+                      );
+                    }
+
+                    if (isReadyForDispatch) {
+                      return (
+                        <button
+                          onClick={() => {
+                            handleSendToEngineering(selectedQuote);
+                            setSelectedQuote(null);
+                          }}
+                          disabled={dispatching === selectedQuote.id}
+                          className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 transition-all active:scale-95"
+                        >
+                          <Hammer className="w-4 h-4" />
+                          Dispatch to Engineer
+                        </button>
+                      );
+                    }
+
                     return (
-                      <button
-                        onClick={() => {
-                          handleSendToEngineering(selectedQuote);
-                          setSelectedQuote(null);
-                        }}
-                        disabled={dispatching === selectedQuote.id}
-                        className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 transition-all active:scale-95"
-                      >
-                        <Hammer className="w-4 h-4" />
-                        Dispatch to Survey Ops
-                      </button>
+                      <div className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-inner flex items-center justify-center gap-2">
+                        <Clock className="w-4 h-4 text-amber-500 animate-pulse" />
+                        Awaiting Payment
+                      </div>
                     );
                   })()
                 )}

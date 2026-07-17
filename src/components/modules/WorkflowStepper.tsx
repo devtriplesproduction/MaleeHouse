@@ -22,6 +22,7 @@ const STAGES = [
   { id: 'lead_created', label: 'Lead' },
   { id: 'quotation_sent', label: 'Quotation' },
   { id: 'payment_pending', label: 'Payment' },
+  { id: 'ready_for_dispatch', label: 'Ready' },
   { id: 'project_created', label: 'Assigned' },
   { id: 'data_collection', label: 'Field' },
   { id: 'data_sync', label: 'Survey' },
@@ -41,7 +42,7 @@ export function WorkflowStepper({ projectId, currentStatus, userRole }: Workflow
     
     const permissionMatrix: Record<string, string[]> = {
       'sales': ['lead_created', 'quotation_sent', 'payment_pending'],
-      'accountant': ['payment_done', 'project_created'],
+      'accountant': ['payment_done', 'ready_for_dispatch', 'project_created'],
       'engineer': ['data_collection', 'prototype', 'field_work', 'data_sync'],
       'cad': ['prototype'],
       'field': ['field_work', 'data_sync'],

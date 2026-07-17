@@ -235,14 +235,22 @@ async function validateStageTransition(
         }
         break;
       }
-      case "project_created": {
-        // Relaxed payment validation to allow direct dispatch to survey operations
-        // once a quotation is approved, even if payment is handled externally.
+      case "ready_for_dispatch": {
         const { data: quote } = await supabase.from("quotations").select("status").eq("project_id", projectId).eq("status", "Approved").limit(1);
         if (!quote || quote.length === 0) {
           return {
             success: false,
-            error: "Cannot transition to Engineering: An approved quotation is required before pushing to operations."
+            error: "Cannot transition to Ready For Dispatch: An approved quotation is required."
+          };
+        }
+        break;
+      }
+      case "project_created": {
+        const { data: project } = await supabase.from("projects").select("status").eq("id", projectId).single();
+        if (project?.status !== "ready_for_dispatch") {
+          return {
+            success: false,
+            error: "Cannot transition to Engineering: The project must be Ready For Dispatch before it can be sent to Engineering."
           };
         }
         break;
@@ -426,6 +434,7 @@ export async function transitionWorkflowAction(
       "quotation_sent",
       "payment_pending",
       "payment_done",
+      "ready_for_dispatch",
       "project_created",
       "data_collection",
       "prototype",
@@ -449,7 +458,7 @@ export async function transitionWorkflowAction(
     }
 
     // 4. Update Project Status using Admin Client (Bypass RLS after application-level verification)
-    const adminClient = createAdminClient();
+    const adminClient: any = createAdminClient();
     const { error: updateError, data: updatedProject } = await adminClient.from("projects").update({
       status: newStage,
       updated_at: new Date().toISOString()

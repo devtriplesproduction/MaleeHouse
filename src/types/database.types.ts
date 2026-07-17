@@ -15,7 +15,7 @@ export interface Database {
       notification_type: 'assignment' | 'stage_update' | 'approval' | 'rejection' | 'deadline_warning' | 'system'
       payment_status: 'pending' | 'verified' | 'rejected'
       project_priority: 'low' | 'medium' | 'high' | 'urgent'
-      project_status: 'lead' | 'requirement_gathering' | 'quotation_requested' | 'quotation_sent' | 'payment_pending' | 'payment_done' | 'project_created' | 'data_collection' | 'prototype' | 'review' | 'field_assigned' | 'field_work' | 'data_sync' | 'final_review' | 'completed' | 'archived'
+      project_status: 'lead' | 'requirement_gathering' | 'quotation_requested' | 'quotation_sent' | 'payment_pending' | 'payment_done' | 'ready_for_dispatch' | 'project_created' | 'data_collection' | 'prototype' | 'review' | 'field_assigned' | 'field_work' | 'data_sync' | 'final_review' | 'completed' | 'archived'
       quotation_status: 'Draft' | 'Pending' | 'Sent' | 'Viewed' | 'Approved' | 'Rejected' | 'Revision Requested' | 'Expired'
       site_type: 'residential' | 'commercial' | 'industrial' | 'infrastructure' | 'agricultural' | 'other'
       task_status: 'pending' | 'in_progress' | 'submitted' | 'completed' | 'overdue' | 'cancelled'

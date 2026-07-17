@@ -16,7 +16,7 @@ export const PERMISSIONS = {
   STAGE_UPDATE: {
     admin: ["*", "cad_finalization"],
     sales: ["lead_created", "quotation_requested", "quotation_sent", "payment_pending"],
-    accountant: ["quotation_sent", "payment_pending", "payment_done", "project_created", "quotation_requested"],
+    accountant: ["quotation_sent", "payment_pending", "payment_done", "ready_for_dispatch", "project_created", "quotation_requested"],
     engineer: [
       "data_collection", "prototype", "field_work", "data_sync",
       "field_assigned", "cad_approved", "review", "payment_pending", "completed", "cad_finalization"

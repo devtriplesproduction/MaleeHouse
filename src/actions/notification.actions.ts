@@ -268,6 +268,20 @@ export async function notifyStageUpdateAction(projectId: string, fromStage: stri
         message: `A new quotation has been requested for project "${project.name}".`,
       },
     ],
+    ready_for_dispatch: [
+      {
+        recipients: adminIds,
+        title: 'Project Ready for Dispatch',
+        message: `Milestone payment for "${project.name}" has been verified. The project is ready to be dispatched to Engineering.`,
+      },
+    ],
+    project_created: [
+      {
+        recipients: adminIds,
+        title: 'Project Dispatched to Engineering',
+        message: `Project "${project.name}" has been officially dispatched to Engineering survey department.`,
+      },
+    ],
     data_collection: [
       {
         recipients: [...getAssignedByRole('cad'), ...getAssignedByRole('field')],

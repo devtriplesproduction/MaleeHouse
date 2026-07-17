@@ -53,7 +53,7 @@ export const createProjectSchema = z.object({
 });
 
 export const updateProjectSchema = createProjectSchema.partial().extend({
-  status: z.enum(['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'project_created', 'data_collection', 'prototype', 'review', 'field_work', 'data_sync', 'final_review', 'completed']).optional(),
+  status: z.enum(['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'ready_for_dispatch', 'project_created', 'data_collection', 'prototype', 'review', 'field_work', 'data_sync', 'final_review', 'completed']).optional(),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
