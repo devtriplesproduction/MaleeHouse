@@ -1138,30 +1138,13 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 sm:col-span-2">
                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Work Email (System Access) *</label>
                     <input
                       value={formData.email}
                       disabled
-                      className="w-full h-11 px-4 py-2 bg-slate-100/50 dark:bg-white/2 text-slate-400 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full h-11 px-4 py-2 bg-slate-100/50 dark:bg-white/2 text-slate-400 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ERP Access Level *</label>
-                    <Select
-                      value={formData.role}
-                      onValueChange={(val) => setFormData({ ...formData, role: val })}
-                      disabled={!isEditing}
-                      buttonClassName="w-full h-11 px-4 bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                    >
-                      <SelectItem value="admin">System Admin</SelectItem>
-                      <SelectItem value="sales">Sales Officer</SelectItem>
-                      <SelectItem value="accountant">Accountant</SelectItem>
-                      <SelectItem value="engineer">Technical Engineer</SelectItem>
-                      <SelectItem value="cad">CAD Operator</SelectItem>
-                      <SelectItem value="field">Field</SelectItem>
-                      <SelectItem value="hr">HR</SelectItem>
-                    </Select>
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Account Status Override *</label>
