@@ -297,6 +297,29 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
   }
 }
 
+export async function resetEmployeePasswordAction(userId: string, newPassword: string) {
+  const adminProfile: any = await getUserProfileAction()
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
+  if (!newPassword || newPassword.length < 6) return { success: false, error: 'Password must be at least 6 characters.' }
+
+  try {
+    const supabaseAdmin: any = createAdminClient()
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: newPassword })
+    if (error) return { success: false, error: error.message }
+
+    await logAdminAuditAction({
+      action: 'EMPLOYEE_PASSWORD_RESET',
+      details: { reset_by: adminProfile.email },
+      severity: 'security',
+      targetUserId: userId,
+    })
+
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
 export async function toggleUserActiveAction(userId: string, isActive: boolean) {
   const adminProfile: any = await getUserProfileAction()
   if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }

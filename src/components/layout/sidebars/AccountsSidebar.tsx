@@ -1,6 +1,6 @@
 "use client";
 
-import { Calculator, Inbox, FileEdit, CheckCircle2, DollarSign, Receipt, Scroll, BarChart2, ShieldAlert, Target, Building2, Megaphone, AlertCircle, FolderKanban, Landmark, Clock, Calendar } from "lucide-react";
+import { Calculator, Inbox, FileEdit, CheckCircle2, DollarSign, Receipt, Scroll, BarChart2, ShieldAlert, Target, Building2, Megaphone, AlertCircle, FolderKanban, Landmark, Clock, CalendarCheck, PlaneTakeoff } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
 import { SidebarLink } from "./BaseSidebar";
@@ -9,8 +9,8 @@ import { useUser } from "@/hooks/useUser";
 const accountsLinks: SidebarLink[] = [
   { title: "Accounts Overview", href: "/accounts", icon: Calculator },
   { title: "EOD Reports", href: "/eod", icon: Clock },
-  { title: "My Attendance", href: "/attendance", icon: Calendar },
-  { title: "Apply Leave", href: "/leaves", icon: Calendar },
+  { title: "My Attendance", href: "/attendance", icon: CalendarCheck },
+  { title: "Apply Leave", href: "/leaves", icon: PlaneTakeoff },
   {
     title: "Quotations Workflow",
     icon: FileEdit,

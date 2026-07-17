@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, Users, BookOpen, Clock, Calendar, FileText, Target, Building2, Megaphone, DollarSign, Landmark } from "lucide-react";
+import { Settings, Users, BookOpen, Clock, CalendarCheck, PlaneTakeoff, FileText, Target, Building2, Megaphone, DollarSign, Landmark } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
 const adminLinks = [
@@ -10,9 +10,9 @@ const adminLinks = [
   { title: "All Projects", href: "/projects", icon: FileText },
   { title: "Procedures (SOP)", href: "/sop", icon: BookOpen },
   { title: "EOD Reports", href: "/eod", icon: Clock },
-  { title: "My Attendance", href: "/attendance", icon: Calendar },
+  { title: "My Attendance", href: "/attendance", icon: CalendarCheck },
   { title: "Announcements", href: "/announcements", icon: Megaphone },
-  { title: "Apply / Manage Leaves", href: "/leaves", icon: Calendar },
+  { title: "Apply / Manage Leaves", href: "/leaves", icon: PlaneTakeoff },
   { title: "Salary Records", href: "/hr/payroll", icon: DollarSign },
   { 
     title: "Company Settings", 

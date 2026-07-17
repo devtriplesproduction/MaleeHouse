@@ -599,11 +599,17 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2.5">
                             <div className="relative shrink-0">
-                              <img
-                                src={user.profile_photo || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"}
-                                alt={`${user.first_name} avatar`}
-                                className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
-                              />
+                              {user.profile_photo ? (
+                                <img
+                                  src={user.profile_photo}
+                                  alt={`${user.first_name} avatar`}
+                                  className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase">
+                                  {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
+                                </div>
+                              )}
                               <span className={cn(
                                 "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-[#0c101b]",
                                 user.is_active ? "bg-emerald-500" : "bg-slate-400"
@@ -1150,11 +1156,17 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
-                            <img
-                              src={user.profile_photo || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"}
-                              alt={`${user.first_name} avatar`}
-                              className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
-                            />
+                            {user.profile_photo ? (
+                              <img
+                                src={user.profile_photo}
+                                alt={`${user.first_name} avatar`}
+                                className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase">
+                                {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
+                              </div>
+                            )}
                             <span className={cn(
                               "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-[#0c101b]",
                               user.is_active ? "bg-emerald-500" : "bg-slate-400"
@@ -1262,11 +1274,17 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                         <td className="px-6 py-4 rounded-l-2xl">
                           <div className="flex items-center gap-2.5">
                             <div className="relative shrink-0">
-                              <img
-                                src={user.profile_photo || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"}
-                                alt={`${user.first_name} avatar`}
-                                className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
-                              />
+                              {user.profile_photo ? (
+                                <img
+                                  src={user.profile_photo}
+                                  alt={`${user.first_name} avatar`}
+                                  className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase">
+                                  {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
+                                </div>
+                              )}
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-slate-800 dark:text-white leading-snug">

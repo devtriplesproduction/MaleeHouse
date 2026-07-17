@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, FileText, Building, BookOpen, Clock, Calendar, PhoneCall, Megaphone } from "lucide-react";
+import { Users, FileText, Building, BookOpen, Clock, CalendarCheck, PlaneTakeoff, PhoneCall, Megaphone } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
 const salesLinks = [
@@ -9,8 +9,8 @@ const salesLinks = [
   { title: "All Projects", href: "/projects", icon: FileText },
   { title: "Client Directory", href: "/clients", icon: Building },
   { title: "EOD Reports", href: "/eod", icon: Clock },
-  { title: "My Attendance", href: "/attendance", icon: Calendar },
-  { title: "Apply Leave", href: "/leaves", icon: Calendar },
+  { title: "My Attendance", href: "/attendance", icon: CalendarCheck },
+  { title: "Apply Leave", href: "/leaves", icon: PlaneTakeoff },
   { title: "Announcements", href: "/announcements", icon: Megaphone },
 ];
 

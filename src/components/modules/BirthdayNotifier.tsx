@@ -135,11 +135,17 @@ export function BirthdayNotifier() {
                     >
                       <div className="relative">
                         <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-full blur opacity-40 group-hover:opacity-70 transition-opacity" />
-                        <img 
-                          src={n.user.profile_photo || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"}
-                          alt={n.user.first_name}
-                          className="relative w-14 h-14 rounded-full object-cover border-2 border-white dark:border-slate-800 shrink-0 z-10"
-                        />
+                        {n.user.profile_photo ? (
+                          <img 
+                            src={n.user.profile_photo}
+                            alt={n.user.first_name}
+                            className="relative w-14 h-14 rounded-full object-cover border-2 border-white dark:border-slate-800 shrink-0 z-10"
+                          />
+                        ) : (
+                          <div className="relative w-14 h-14 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg uppercase shrink-0 z-10">
+                            {n.user.first_name?.[0] || ""}{n.user.last_name?.[0] || ""}
+                          </div>
+                        )}
                       </div>
                       <div className="text-left flex-1 min-w-0">
                         <p className="font-extrabold text-lg text-slate-900 dark:text-white truncate">

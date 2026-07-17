@@ -752,15 +752,50 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        {doc.url && (
-                          <button
-                            onClick={() => setPreviewDoc(doc)}
-                            className="p-2.5 bg-slate-50 dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
-                            title="Preview document"
-                          >
-                            <Eye className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-                          </button>
-                        )}
+                          {(() => {
+                            const u = doc.url || doc.file_url || doc.file_path || doc.path || doc.link || doc.publicUrl || doc.src || doc.source || doc.file;
+                            if (u) {
+                              return (
+                                <>
+                                  <button
+                                    onClick={() => setPreviewDoc(doc)}
+                                    className="p-2.5 bg-slate-50 dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
+                                    title="Preview document"
+                                  >
+                                    <Eye className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+                                  </button>
+                                  <a
+                                    href={u}
+                                    download={doc.label || doc.name || "document"}
+                                    target="_blank"
+                                    rel="noreferrer noopener"
+                                    className="p-2.5 bg-slate-50 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-xl transition-all flex items-center justify-center"
+                                    title="Download document"
+                                  >
+                                    <Download className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+                                  </a>
+                                </>
+                              );
+                            }
+                            return (
+                                <>
+                                  <button
+                                    disabled
+                                    className="p-2.5 bg-slate-50 dark:bg-white/5 opacity-50 cursor-not-allowed rounded-xl transition-all"
+                                    title="File data is missing from database"
+                                  >
+                                    <Eye className="w-4 h-4 text-slate-400" />
+                                  </button>
+                                  <button
+                                    disabled
+                                    className="p-2.5 bg-slate-50 dark:bg-white/5 opacity-50 cursor-not-allowed rounded-xl transition-all flex items-center justify-center"
+                                    title="File data is missing from database"
+                                  >
+                                    <Download className="w-4 h-4 text-slate-400" />
+                                  </button>
+                                </>
+                            );
+                          })()}
                         <button
                           onClick={() => removeFile(doc.id)}
                           className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl transition-all"
@@ -805,16 +840,31 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                   </button>
                 </div>
                 <div className="flex-1 overflow-auto">
-                  {previewDoc.url?.startsWith('data:image') ? (
-                    <img src={previewDoc.url} alt={previewDoc.label || previewDoc.name} className="w-full h-auto object-contain" />
-                  ) : previewDoc.url?.startsWith('data:application/pdf') ? (
-                    <iframe src={previewDoc.url} className="w-full h-[70vh]" title={previewDoc.label || previewDoc.name} />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                      <FileText className="w-12 h-12 mb-3" />
-                      <p className="text-sm font-semibold">Preview not available for this file type.</p>
-                    </div>
-                  )}
+                  {(() => {
+                    const u = previewDoc.url || previewDoc.file_url || previewDoc.file_path || previewDoc.path || previewDoc.link || previewDoc.publicUrl || previewDoc.src || previewDoc.source || previewDoc.file || '';
+                    const isImg = u.startsWith('data:image') || u.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+                    const isPdf = u.startsWith('data:application/pdf') || u.match(/\.pdf$/i);
+                    
+                    if (isImg) {
+                      return (
+                        <div className="w-full h-[70vh] bg-slate-50/50 dark:bg-black/20 flex items-center justify-center p-4">
+                          <img src={u} alt={previewDoc.label || previewDoc.name} className="max-w-full max-h-full object-contain rounded-lg" />
+                        </div>
+                      );
+                    } else if (isPdf) {
+                      return <iframe src={u} className="w-full h-[70vh] border-0" title={previewDoc.label || previewDoc.name} />;
+                    } else {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                          <FileText className="w-12 h-12 mb-3" />
+                          <p className="text-sm font-semibold mb-4">Preview not available for this file type.</p>
+                          <a href={u} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-100 transition-colors">
+                            Download File
+                          </a>
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
             </div>
@@ -1068,56 +1118,63 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
           {/* TAB 5: ACCESS & SECURITY */}
           {activeTab === "security" && (
             <div className="space-y-6 animate-in fade-in duration-300">
-              
-
-
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Work Email (System Access) *</label>
-                  <input
-                    value={formData.email}
-                    disabled
-                    className="w-full h-11 px-4 py-2 bg-slate-100/50 dark:bg-white/2 text-slate-400 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  />
+              <div className="p-6 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-2xl">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white">System Permissions</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Manage ERP roles and account status.</p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ERP Access Level *</label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(val) => setFormData({ ...formData, role: val })}
-                    disabled={!isEditing}
-                    buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
-                  >
-                    <SelectItem value="admin">System Admin</SelectItem>
-                    <SelectItem value="sales">Sales Officer</SelectItem>
-                    <SelectItem value="accountant">Accountant</SelectItem>
-                    <SelectItem value="engineer">Technical Engineer</SelectItem>
-                    <SelectItem value="cad">CAD Operator</SelectItem>
-                    <SelectItem value="field">Field</SelectItem>
-                    <SelectItem value="hr">HR</SelectItem>
-                  </Select>
-                </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Account Status Override *</label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(val) => setFormData({ ...formData, status: val })}
-                  disabled={!isEditing}
-                  buttonClassName="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
-                >
-                  <SelectItem value="invited">Invited</SelectItem>
-                  <SelectItem value="onboarding_pending">Onboarding Pending</SelectItem>
-                  <SelectItem value="active">Active (Full ERP System Access)</SelectItem>
-                  <SelectItem value="probation">Probationary Period</SelectItem>
-                  <SelectItem value="suspended">Suspended (Access Temporarily Revoked)</SelectItem>
-                  <SelectItem value="notice_period">Notice Period</SelectItem>
-                  <SelectItem value="resigned">Resigned</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
-                  <SelectItem value="archived">Archived (Decommissioned profile)</SelectItem>
-                </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Work Email (System Access) *</label>
+                    <input
+                      value={formData.email}
+                      disabled
+                      className="w-full h-11 px-4 py-2 bg-slate-100/50 dark:bg-white/2 text-slate-400 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ERP Access Level *</label>
+                    <Select
+                      value={formData.role}
+                      onValueChange={(val) => setFormData({ ...formData, role: val })}
+                      disabled={!isEditing}
+                      buttonClassName="w-full h-11 px-4 bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
+                    >
+                      <SelectItem value="admin">System Admin</SelectItem>
+                      <SelectItem value="sales">Sales Officer</SelectItem>
+                      <SelectItem value="accountant">Accountant</SelectItem>
+                      <SelectItem value="engineer">Technical Engineer</SelectItem>
+                      <SelectItem value="cad">CAD Operator</SelectItem>
+                      <SelectItem value="field">Field</SelectItem>
+                      <SelectItem value="hr">HR</SelectItem>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Account Status Override *</label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(val) => setFormData({ ...formData, status: val })}
+                      disabled={!isEditing}
+                      buttonClassName="w-full h-11 px-4 bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
+                    >
+                      <SelectItem value="invited">Invited</SelectItem>
+                      <SelectItem value="onboarding_pending">Onboarding Pending</SelectItem>
+                      <SelectItem value="active">Active (Full ERP System Access)</SelectItem>
+                      <SelectItem value="probation">Probationary Period</SelectItem>
+                      <SelectItem value="suspended">Suspended (Access Temporarily Revoked)</SelectItem>
+                      <SelectItem value="notice_period">Notice Period</SelectItem>
+                      <SelectItem value="resigned">Resigned</SelectItem>
+                      <SelectItem value="terminated">Terminated</SelectItem>
+                      <SelectItem value="archived">Archived (Decommissioned profile)</SelectItem>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
           )}
