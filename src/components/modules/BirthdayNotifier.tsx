@@ -33,30 +33,30 @@ const FloatingElement = ({ children, delay = 0, yOffset = 20, xOffset = 20, dura
 
 const Balloons = () => {
   return (
-    <div className="absolute inset-0 pointer-events-none z-[0] overflow-hidden rounded-[2.5rem]">
-      {Array.from({ length: 12 }).map((_, i) => (
+    <div className="fixed inset-0 pointer-events-none z-[99998] overflow-hidden">
+      {Array.from({ length: 15 }).map((_, i) => (
         <motion.div
           key={i}
           initial={{
             opacity: 0,
-            y: 400,
-            x: Math.random() * 400 - 200,
+            y: "110vh",
+            x: `${Math.random() * 100}vw`,
           }}
           animate={{
-            y: -500,
-            x: `+=${Math.random() * 150 - 75}`,
-            opacity: [0, 0.8, 0.8, 0],
+            y: "-20vh",
+            x: `calc(${Math.random() * 100}vw + ${Math.random() * 100 - 50}px)`,
+            opacity: [0, 0.9, 0.9, 0],
           }}
           transition={{
-            duration: Math.random() * 4 + 4,
+            duration: Math.random() * 5 + 5,
             ease: "easeInOut",
             delay: Math.random() * 2,
             repeat: Infinity,
           }}
-          className="absolute bottom-0 left-1/2 -ml-6"
+          className="absolute top-0 left-0"
         >
-          <svg width="48" height="64" viewBox="0 0 24 32" fill="currentColor" className={
-            ["text-rose-400/60", "text-blue-400/60", "text-emerald-400/60", "text-amber-400/60", "text-violet-400/60"][Math.floor(Math.random() * 5)]
+          <svg width="60" height="80" viewBox="0 0 24 32" fill="currentColor" className={
+            ["text-rose-400/70", "text-blue-400/70", "text-emerald-400/70", "text-amber-400/70", "text-violet-400/70"][Math.floor(Math.random() * 5)]
           }>
             <path d="M12 0C7.58172 0 4 3.58172 4 8C4 13.5 10 20 12 24C14 20 20 13.5 20 8C20 3.58172 16.4183 0 12 0Z" />
             <path d="M11 24H13L14 28H10L11 24Z" fill="currentColor" />
@@ -70,7 +70,7 @@ const Balloons = () => {
 
 const Confetti = () => {
   return (
-    <div className="fixed inset-0 pointer-events-none z-[100000] overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none z-[99999] overflow-hidden">
       {Array.from({ length: 100 }).map((_, i) => {
         const isCircle = Math.random() > 0.5;
         const isRectangle = !isCircle && Math.random() > 0.5;
@@ -81,31 +81,29 @@ const Confetti = () => {
             key={i}
             initial={{
               opacity: 1,
-              y: -50,
-              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+              y: "-10vh",
+              x: `${Math.random() * 100}vw`,
               rotateX: 0,
               rotateY: 0,
               rotateZ: 0,
-              scale: Math.random() * 0.8 + 0.4,
             }}
             animate={{
-              y: typeof window !== 'undefined' ? window.innerHeight + 100 : 1000,
-              x: `+=${Math.random() * 300 - 150}`,
+              y: "110vh",
+              x: `calc(${Math.random() * 100}vw + ${Math.random() * 200 - 100}px)`,
               rotateX: Math.random() * 720,
               rotateY: Math.random() * 720,
               rotateZ: Math.random() * 720,
-              opacity: [1, 1, 1, 0],
             }}
             transition={{
-              duration: Math.random() * 3 + 2.5,
+              duration: Math.random() * 4 + 3,
               ease: "linear",
-              delay: Math.random() * 0.5,
+              delay: Math.random() * 1.5,
               repeat: Infinity,
             }}
             className={cn(
-              "absolute",
+              "absolute top-0 left-0",
               isRectangle ? "w-2 h-5" : "w-3 h-3",
-              ["bg-rose-500", "bg-blue-500", "bg-emerald-400", "bg-amber-400", "bg-pink-500", "bg-violet-500", "bg-cyan-400"][
+              ["bg-rose-500", "bg-blue-500", "bg-emerald-500", "bg-amber-400", "bg-pink-500", "bg-violet-500", "bg-cyan-400"][
                 Math.floor(Math.random() * 7)
               ]
             )}
