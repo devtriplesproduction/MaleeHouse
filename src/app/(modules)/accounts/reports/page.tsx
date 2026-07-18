@@ -1,5 +1,10 @@
 import React from "react";
-import { ReportsGenerator } from "@/features/accounts/ReportsGenerator";
+import dynamic from "next/dynamic";
+
+const ReportsGenerator = dynamic(
+  () => import("@/features/accounts/ReportsGenerator"),
+  { ssr: false }
+);
 
 export default function ReportsPage() {
   return (

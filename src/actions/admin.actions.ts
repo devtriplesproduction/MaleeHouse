@@ -115,12 +115,12 @@ export async function onboardEmployeeAction(
   },
   documents: any[] = []
 ) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') {
-    return { success: false, error: 'Unauthorized. Elevated privileges required.' }
-  }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') {
+      return { success: false, error: 'Unauthorized. Elevated privileges required.' }
+    }
+
     const supabaseAdmin: any = createAdminClient()
 
     // Check email uniqueness
@@ -235,10 +235,10 @@ export async function onboardEmployeeAction(
 }
 
 export async function updateEmployeeProfileAction(userId: string, updates: Partial<any>) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
+
     const supabaseAdmin: any = createAdminClient()
     let statusActive = updates.is_active
     if (updates.status) {
@@ -298,11 +298,11 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
 }
 
 export async function resetEmployeePasswordAction(userId: string, newPassword: string) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
-  if (!newPassword || newPassword.length < 6) return { success: false, error: 'Password must be at least 6 characters.' }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
+    if (!newPassword || newPassword.length < 6) return { success: false, error: 'Password must be at least 6 characters.' }
+
     const supabaseAdmin: any = createAdminClient()
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: newPassword })
     if (error) return { success: false, error: error.message }
@@ -321,10 +321,10 @@ export async function resetEmployeePasswordAction(userId: string, newPassword: s
 }
 
 export async function toggleUserActiveAction(userId: string, isActive: boolean) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
+
     const supabaseAdmin: any = createAdminClient()
     const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
 
@@ -356,10 +356,10 @@ export async function toggleUserActiveAction(userId: string, isActive: boolean) 
 
 
 export async function updateUserRoleAction(userId: string, role: string) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+
     const supabaseAdmin: any = createAdminClient()
     const { data: existing } = await (supabaseAdmin as any).from('profiles').select('role, email').eq('id', userId).maybeSingle()
 
@@ -387,18 +387,18 @@ export async function updateUserRoleAction(userId: string, role: string) {
 }
 
 export async function adminWipeSystemAction(confirmationString?: string) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
-
-  if (!checkActionRateLimit(adminProfile.id, 'adminWipeSystemAction', 1, 60 * 60 * 1000)) {
-    return { success: false, error: 'Rate limit exceeded. System wipe is highly restricted.' }
-  }
-
-  if (confirmationString !== 'I CONFIRM SYSTEM WIPE') {
-    return { success: false, error: 'Invalid confirmation string. You must pass exactly "I CONFIRM SYSTEM WIPE" to execute this destructive action.' }
-  }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+
+    if (!checkActionRateLimit(adminProfile.id, 'adminWipeSystemAction', 1, 60 * 60 * 1000)) {
+      return { success: false, error: 'Rate limit exceeded. System wipe is highly restricted.' }
+    }
+
+    if (confirmationString !== 'I CONFIRM SYSTEM WIPE') {
+      return { success: false, error: 'Invalid confirmation string. You must pass exactly "I CONFIRM SYSTEM WIPE" to execute this destructive action.' }
+    }
+
     const supabaseAdmin: any = createAdminClient()
     await Promise.all([
       (supabaseAdmin as any).from('workflow_history').delete().neq('id', ''),
@@ -423,10 +423,10 @@ export async function adminWipeSystemAction(confirmationString?: string) {
 }
 
 export async function getAdminAuditLogsAction() {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+
     const supabase: any = await createClient()
     const { data, error } = await supabase
       .from('activity_logs')
@@ -440,10 +440,10 @@ export async function getAdminAuditLogsAction() {
 }
 
 export async function offboardEmployeeAction(userId: string) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
+
     const supabaseAdmin: any = createAdminClient()
     const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
 
@@ -469,10 +469,10 @@ export async function offboardEmployeeAction(userId: string) {
 }
 
 export async function deleteEmployeeAction(userId: string) {
-  const adminProfile: any = await getUserProfileAction()
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
-
   try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
+
     const supabaseAdmin: any = createAdminClient()
     const { data: deletedUser } = await (supabaseAdmin as any).from('profiles').select('email, first_name, last_name').eq('id', userId).maybeSingle()
 

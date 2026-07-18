@@ -61,7 +61,7 @@ export default async function EngineerDashboardPage() {
   );
 
   const newlyAssigned = projects.filter(
-    (p: any) => p.status === "project_created" || p.status === "data_collection"
+    (p: any) => p.status === "project_created"
   );
 
   const pendingAcceptance = [...newlyAssigned];
@@ -71,7 +71,7 @@ export default async function EngineerDashboardPage() {
     (p: any) => qcRejectedProjectIds.has(p.id) && p.status !== "completed" && p.status !== "archived"
   );
   const activeProjects = projects.filter(
-    (p: any) => p.status !== "completed" && p.status !== "archived" && p.status !== "project_created" && p.status !== "data_collection"
+    (p: any) => p.status !== "completed" && p.status !== "archived" && p.status !== "project_created"
   );
 
   // Construct recent activities timeline

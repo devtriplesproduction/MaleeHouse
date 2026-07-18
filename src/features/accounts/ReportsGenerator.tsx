@@ -957,3 +957,5 @@ export function ReportsGenerator() {
   );
 }
 
+export default ReportsGenerator;
+
