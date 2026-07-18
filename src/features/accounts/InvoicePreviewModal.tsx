@@ -72,6 +72,9 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
   const remainingAmount = Math.max(0, totalAmount - amountPaid);
 
   const projectBudget = Number(invoice.projects?.budget) || 0;
+  
+  // Extract GST type from the active quotation (assuming the first one or the one with client_details)
+  const gstType = invoice.projects?.quotations?.[0]?.client_details?.gst_type || 'CGST_SGST';
   const projectPayments = invoice.projects?.payments || [];
   const projectVerifiedPayments = projectPayments.filter((p: any) => p.status === 'verified' || p.status === 'paid');
   const projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
@@ -326,15 +329,23 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                     <span>INR {Number(invoice.amount).toLocaleString('en-IN')}</span>
                  </div>
 
-                 <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                    <span>CGST ({Number(invoice.gst_rate) / 2}%)</span>
-                    <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
-                 </div>
-
-                 <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                    <span>SGST ({Number(invoice.gst_rate) / 2}%)</span>
-                    <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
-                 </div>
+                 {(!gstType || gstType === 'CGST_SGST') && Number(invoice.gst_amount) > 0 ? (
+                    <>
+                       <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                          <span>CGST ({Number(invoice.gst_rate) / 2}%)</span>
+                          <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
+                       </div>
+                       <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                          <span>SGST ({Number(invoice.gst_rate) / 2}%)</span>
+                          <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
+                       </div>
+                    </>
+                 ) : gstType === 'IGST' && Number(invoice.gst_amount) > 0 ? (
+                    <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                       <span>IGST ({Number(invoice.gst_rate)}%)</span>
+                       <span>INR {Number(invoice.gst_amount).toLocaleString('en-IN')}</span>
+                    </div>
+                 ) : null}
 
                  <div className="pt-3 border-t border-slate-200 flex justify-between items-end">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>

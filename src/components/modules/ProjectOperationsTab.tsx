@@ -15,6 +15,7 @@ interface ProjectOperationsTabProps {
   comments: any[];
   activityLogs: any[];
   workflowHistory: any[];
+  cadRevisions?: any[];
 }
 
 export default function ProjectOperationsTab({
@@ -28,6 +29,7 @@ export default function ProjectOperationsTab({
   comments,
   activityLogs,
   workflowHistory,
+  cadRevisions,
 }: ProjectOperationsTabProps) {
   // Determine if user is operational role
   const isOperational = ['admin', 'engineer', 'cad', 'field'].includes(userRole);
@@ -45,6 +47,9 @@ export default function ProjectOperationsTab({
             projectId={projectId}
             files={files || []}
             userRole={userRole}
+            projectStatus={projectStatus}
+            teamMembers={teamMembers}
+            cadRevisions={cadRevisions}
           />
         </section>
       )}

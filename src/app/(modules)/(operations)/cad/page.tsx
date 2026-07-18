@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { SOPList } from "@/components/sop/SOPList";
 import { EODFormModal } from "@/components/eod/EODFormModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardNotificationCenter from "@/components/modules/DashboardNotificationCenter";
 import { PendingProjectListCard } from "@/components/modules/PaginatedProjectList";
 
@@ -99,23 +100,74 @@ export default async function CADDashboardPage() {
               <Zap className="w-4 h-4 text-blue-500" />
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">My Active Assignments</h2>
             </div>
-            <div className="space-y-2">
-              {projects.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 border border-dashed border-white/10 rounded-2xl gap-3 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/5 flex items-center justify-center">
-                    <PenTool className="w-6 h-6 text-blue-500/30" />
-                  </div>
-                  <p className="text-sm font-bold text-slate-500">No active CAD tasks</p>
-                  <p className="text-xs text-slate-600">You currently have no active CAD tasks.</p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                  {projects.map((p: any) => (
-                    <PendingProjectListCard key={p.id} project={p} showAccept={!p.my_role} />
-                  ))}
-                </div>
-              )}
-            </div>
+            
+            <Tabs defaultValue="active" className="space-y-4">
+              <div className="border-b border-slate-200 dark:border-white/10 w-full overflow-x-auto custom-scrollbar pb-3">
+                <TabsList className="bg-transparent border-none p-0 flex h-auto gap-8 w-full justify-start">
+                  <TabsTrigger 
+                    value="active" 
+                    className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-blue-500 data-[state=active]:!text-blue-600 dark:data-[state=active]:!text-blue-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
+                  >
+                    Active Projects
+                    {projects.length > 0 && (
+                      <span className="px-1.5 py-0.2 text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded">
+                        {projects.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+
+                  <TabsTrigger 
+                    value="field_reviews" 
+                    className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-cyan-500 data-[state=active]:!text-cyan-600 dark:data-[state=active]:!text-cyan-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
+                  >
+                    Field Reviews
+                    {fieldReviews.length > 0 && (
+                      <span className="px-1.5 py-0.2 text-[10px] font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded">
+                        {fieldReviews.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="pt-1">
+                <TabsContent value="active" className="mt-0 focus-visible:outline-none">
+                  {projects.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 border border-dashed border-white/10 rounded-2xl gap-3 text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-500/5 flex items-center justify-center">
+                        <PenTool className="w-6 h-6 text-blue-500/30" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-500">No active CAD tasks</p>
+                      <p className="text-xs text-slate-600">You currently have no active CAD tasks.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      {projects.map((p: any) => (
+                        <PendingProjectListCard key={p.id} project={p} showAccept={!p.my_role} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="field_reviews" className="mt-0 focus-visible:outline-none">
+                  {fieldReviews.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 border border-dashed border-white/10 rounded-2xl gap-3 text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-cyan-500/5 flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-cyan-500/30" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-500">No field reviews</p>
+                      <p className="text-xs text-slate-600">You currently have no pending field reviews.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      {fieldReviews.map((p: any) => (
+                        <PendingProjectListCard key={p.id} project={p} showAccept={!p.my_role} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </div>
+            </Tabs>
           </div>
         </div>
 

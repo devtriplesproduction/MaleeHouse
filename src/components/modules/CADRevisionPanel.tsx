@@ -217,8 +217,7 @@ export function CADRevisionPanel({
                 key={rev.id}
                 className={cn(
                   "rounded-2xl border transition-all",
-                  cfg.bg,
-                  cfg.border,
+                  "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800",
                   isExpanded ? "shadow-lg" : "hover:shadow-md cursor-pointer"
                 )}
               >

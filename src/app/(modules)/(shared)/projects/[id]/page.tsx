@@ -34,7 +34,7 @@ import { ProjectTaskProgress } from "@/components/modules/ProjectTaskProgress";
 import { ProjectActivityFeed } from "@/components/modules/ProjectActivityFeed";
 import { ProjectBillingSummary } from "@/components/modules/ProjectBillingSummary";
 
-import { OperationsControlCenter } from "@/components/modules/OperationsControlCenter";
+
 import { SalesActionsPanel } from "@/features/sales/components/SalesActionsPanel";
 import { LeadCRMView } from "@/features/sales/components/LeadCRMView";
 import { QuotationList } from "@/features/accounts/QuotationList";

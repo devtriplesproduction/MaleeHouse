@@ -22,7 +22,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, downloadFile } from '@/lib/utils';
 import { deleteFileAction, renameFileAction } from '@/actions/vault.actions';
 import { registerFileAction } from '@/actions/file.actions';
 import { uploadProjectFile } from '@/lib/supabase/storage';
@@ -323,13 +323,12 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
                 <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-white/5 pt-3">
                   {cpImage ? (
                     <>
-                      <a 
-                        href={cpImage.file_url} 
-                        download={cpImage.file_name}
+                      <button 
+                        onClick={(e) => { e.preventDefault(); downloadFile(cpImage.file_url, cpImage.file_name); }}
                         className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1.5"
                       >
                         <Download className="w-3.5 h-3.5" /> Download
-                      </a>
+                      </button>
                       {(canUploadToTab('field') || isAdmin) && (
                         <button 
                           disabled={isPending}
@@ -388,13 +387,12 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
                 <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-white/5 pt-3">
                   {cpCsv ? (
                     <>
-                      <a 
-                        href={cpCsv.file_url} 
-                        download={cpCsv.file_name}
+                      <button 
+                        onClick={(e) => { e.preventDefault(); downloadFile(cpCsv.file_url, cpCsv.file_name); }}
                         className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1.5"
                       >
                         <Download className="w-3.5 h-3.5" /> Download
-                      </a>
+                      </button>
                       {(canUploadToTab('field') || isAdmin) && (
                         <button 
                           disabled={isPending}
@@ -497,13 +495,12 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
                     </div>
 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a 
-                        href={file.file_url} 
-                        download={file.file_name}
+                      <button 
+                        onClick={(e) => { e.preventDefault(); downloadFile(file.file_url, file.file_name); }}
                         className="p-1.5 rounded bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 transition-all"
                       >
                         <Download className="w-3.5 h-3.5" />
-                      </a>
+                      </button>
                       {(isAdmin || userRole === 'engineer') && (
                         <button 
                           onClick={() => { setRenamingFile(file); setNewName(file.file_name); }}

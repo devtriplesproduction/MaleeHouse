@@ -42,7 +42,7 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
 
   const items = quotation.items || [];
   const discountAmount = quotation.discount_amount || 0;
-  const discountPercentage = quotation.discount_percentage || 0;
+  const discountPercentage = quotation.discount_pct || quotation.discount_percentage || 0;
   const clauses = quotation.clauses || [];
   
   if (!mounted || !companySettings) return null;
@@ -201,10 +201,29 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                     </div>
                  )}
 
-                 <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                    <span>GST (18%)</span>
-                    <span>INR {(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</span>
-                 </div>
+                 {(!quotation.client_details?.gst_type && (quotation.gst_amount ?? 0) > 0) ? (
+                    <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                       <span>GST ({quotation.gst_rate ?? 18}%)</span>
+                       <span>INR {(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</span>
+                    </div>
+                 ) : quotation.client_details?.gst_type === 'NO_GST' || (quotation.gst_amount ?? 0) === 0 ? null : 
+                 quotation.client_details?.gst_type === 'IGST' ? (
+                    <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                       <span>IGST ({quotation.gst_rate ?? 18}%)</span>
+                       <span>INR {(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</span>
+                    </div>
+                 ) : (
+                    <>
+                       <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums mb-1">
+                          <span>CGST ({(quotation.gst_rate ?? 18) / 2}%)</span>
+                          <span>INR {((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</span>
+                       </div>
+                       <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                          <span>SGST ({(quotation.gst_rate ?? 18) / 2}%)</span>
+                          <span>INR {((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</span>
+                       </div>
+                    </>
+                 )}
                  <div className="pt-3 border-t border-slate-200 flex justify-between items-end">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>
                     <p className="text-xl font-bold text-slate-900 tracking-tight nums">INR {(quotation.total_amount ?? 0).toLocaleString('en-IN')}</p>
@@ -234,13 +253,13 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
               {clauses.length > 0 && (
                 <div className="space-y-3.5">
                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Contractual Terms & Clauses</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3.5 text-[11px] leading-relaxed text-slate-500">
+                   <div className="grid grid-cols-1 gap-y-3.5 text-[11px] leading-relaxed text-slate-500">
                       {clauses.map((clause: any, index: number) => (
                          <div key={index} className="space-y-1">
                             <p className="font-semibold text-slate-800 uppercase tracking-wide text-[9.5px]">
                                {index + 1}. {clause.title || clause.clause_title}
                             </p>
-                            <p className="pl-3 border-l border-slate-200 text-slate-500 font-medium">
+                            <p className="pl-3 border-l border-slate-200 text-slate-500 font-medium whitespace-pre-wrap">
                                {clause.content || clause.clause_content}
                             </p>
                          </div>

@@ -66,6 +66,7 @@ export default async function EngineerDashboardPage() {
 
   const pendingAcceptance = [...newlyAssigned];
   const cadReview = projects.filter((p: any) => p.status === "review");
+  const fieldReviews = projects.filter((p: any) => p.status === "data_sync");
   const qcReturns = projects.filter(
     (p: any) => qcRejectedProjectIds.has(p.id) && p.status !== "completed" && p.status !== "archived"
   );
@@ -271,6 +272,7 @@ export default async function EngineerDashboardPage() {
 
   const enrichedPending = pendingAcceptance.map(enrichProject);
   const enrichedCadReview = cadReview.map(enrichProject);
+  const enrichedFieldReviews = fieldReviews.map(enrichProject);
   const enrichedActive = activeProjects.map(enrichProject);
 
 
@@ -365,6 +367,18 @@ export default async function EngineerDashboardPage() {
                 </TabsTrigger>
 
                 <TabsTrigger 
+                  value="field_reviews" 
+                  className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-cyan-500 data-[state=active]:!text-cyan-600 dark:data-[state=active]:!text-cyan-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
+                >
+                  Field Reviews
+                  {fieldReviews.length > 0 && (
+                    <span className="px-1.5 py-0.2 text-[10px] font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded">
+                      {fieldReviews.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+
+                <TabsTrigger 
                   value="activity" 
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-amber-500 data-[state=active]:!text-amber-600 dark:data-[state=active]:!text-amber-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
@@ -449,6 +463,14 @@ export default async function EngineerDashboardPage() {
                   <EmptyState message="No CAD reviews pending." icon={PenTool} />
                 ) : (
                   <PaginatedProjectList projects={enrichedCadReview} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="field_reviews" className="mt-0 focus-visible:outline-none">
+                {enrichedFieldReviews.length === 0 ? (
+                  <EmptyState message="No field reviews pending." icon={FileText} />
+                ) : (
+                  <PaginatedProjectList projects={enrichedFieldReviews} />
                 )}
               </TabsContent>
 

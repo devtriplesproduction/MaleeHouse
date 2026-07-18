@@ -20,7 +20,7 @@ import {
   ChevronUp,
   ChevronDown
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, downloadFile } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { uploadProjectFile } from '@/lib/supabase/storage';
 import { updateProjectStageAction } from '@/actions/workflow.actions';
@@ -77,6 +77,7 @@ interface OperationsFileUploadPanelProps {
   userRole: string;
   projectStatus?: string;
   teamMembers?: any[];
+  cadRevisions?: any[];
 }
 
 export function OperationsFileUploadPanel({
@@ -84,7 +85,8 @@ export function OperationsFileUploadPanel({
   files,
   userRole,
   projectStatus,
-  teamMembers = []
+  teamMembers = [],
+  cadRevisions = []
 }: OperationsFileUploadPanelProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -113,6 +115,22 @@ export function OperationsFileUploadPanel({
   const controlPointDocs = files.filter((f: any) => f.category === 'control_point_image');
   const surveyDocs = files.filter((f: any) => f.category === 'survey_data' || f.category === 'control_point_csv');
   const finalDocs = files.filter((f: any) => f.category === 'final_file');
+
+  const latestCADRevision = cadRevisions?.[0];
+  const sortedPrototypes = [...prototypeDocs].sort((a: any, b: any) => {
+    const timeA = new Date(a.uploaded_at || a.created_at || 0).getTime();
+    const timeB = new Date(b.uploaded_at || b.created_at || 0).getTime();
+    return timeB - timeA;
+  });
+  const latestPrototype = sortedPrototypes[0];
+
+  const hasNewPrototypeUpload = (() => {
+    if (!latestPrototype) return false;
+    if (!latestCADRevision) return true;
+    const protoTime = new Date(latestPrototype.uploaded_at || latestPrototype.created_at || 0).getTime();
+    const revTime = new Date(latestCADRevision.submitted_at || latestCADRevision.updated_at || latestCADRevision.created_at || 0).getTime();
+    return protoTime > revTime;
+  })();
 
   const handleUploadPrototype = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -815,9 +833,9 @@ export function OperationsFileUploadPanel({
                 <a href={file.file_url} target="_blank" rel="noreferrer noopener" title="Preview" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 transition">
                   <Eye className="w-4 h-4" />
                 </a>
-                <a href={file.file_url} download={file.file_name} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 transition">
+                <button onClick={() => downloadFile(file.file_url, file.file_name)} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 transition">
                   <Download className="w-4 h-4" />
-                </a>
+                </button>
                 {(isAdmin || isEngineer) && !isProjectClosed && (
                   <button onClick={() => handleDeleteFile(file.id, file.file_name)} disabled={isPending} title="Delete" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition disabled:opacity-50">
                     <Trash2 className="w-4 h-4" />
@@ -898,9 +916,9 @@ export function OperationsFileUploadPanel({
                 <a href={file.file_url} target="_blank" rel="noreferrer noopener" title="Preview" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white dark:hover:bg-slate-800 transition">
                   <Eye className="w-4 h-4" />
                 </a>
-                <a href={file.file_url} download={file.file_name} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white dark:hover:bg-slate-800 transition">
+                <button onClick={() => downloadFile(file.file_url, file.file_name)} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white dark:hover:bg-slate-800 transition">
                   <Download className="w-4 h-4" />
-                </a>
+                </button>
                 {(isAdmin || isCad) && !isProjectClosed && (
                   <button onClick={() => handleDeleteFile(file.id, file.file_name)} disabled={isPending} title="Delete" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition disabled:opacity-50">
                     <Trash2 className="w-4 h-4" />
@@ -934,11 +952,12 @@ export function OperationsFileUploadPanel({
           {isCad && ['project_created', 'data_collection', 'prototype', 'review'].includes(projectStatus || '') && (
             <button
               onClick={handleSubmitPrototype}
-              disabled={isPending || prototypeDocs.length === 0}
+              disabled={isPending || prototypeDocs.length === 0 || (latestCADRevision && !hasNewPrototypeUpload)}
+              title={latestCADRevision && !hasNewPrototypeUpload ? "Please upload a new document to submit a new prototype." : ""}
               className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 transition-all shadow-sm"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Submit Prototype
+              {latestCADRevision && !hasNewPrototypeUpload ? "No New Prototype Uploaded" : "Submit Prototype"}
             </button>
           )}
 
@@ -1004,9 +1023,9 @@ export function OperationsFileUploadPanel({
                     <a href={file.file_url} target="_blank" rel="noreferrer noopener" title="Preview" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-800 transition">
                       <Eye className="w-4 h-4" />
                     </a>
-                    <a href={file.file_url} download={file.file_name} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-800 transition">
+                    <button onClick={() => downloadFile(file.file_url, file.file_name)} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-800 transition">
                       <Download className="w-4 h-4" />
-                    </a>
+                    </button>
                     {(isAdmin || isField) && !isProjectClosed && (
                       <button onClick={() => handleDeleteFile(file.id, file.file_name)} disabled={isPending} title="Delete" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition disabled:opacity-50">
                         <Trash2 className="w-4 h-4" />
@@ -1054,9 +1073,9 @@ export function OperationsFileUploadPanel({
                     <a href={file.file_url} target="_blank" rel="noreferrer noopener" title="Preview" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-800 transition">
                       <Eye className="w-4 h-4" />
                     </a>
-                    <a href={file.file_url} download={file.file_name} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-800 transition">
+                    <button onClick={() => downloadFile(file.file_url, file.file_name)} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-800 transition">
                       <Download className="w-4 h-4" />
-                    </a>
+                    </button>
                     {(isAdmin || isField) && !isProjectClosed && (
                       <button onClick={() => handleDeleteFile(file.id, file.file_name)} disabled={isPending} title="Delete" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition disabled:opacity-50">
                         <Trash2 className="w-4 h-4" />
@@ -1140,9 +1159,9 @@ export function OperationsFileUploadPanel({
                 <a href={file.file_url} target="_blank" rel="noreferrer noopener" title="Preview" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white dark:hover:bg-slate-800 transition">
                   <Eye className="w-4 h-4" />
                 </a>
-                <a href={file.file_url} download={file.file_name} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white dark:hover:bg-slate-800 transition">
+                <button onClick={() => downloadFile(file.file_url, file.file_name)} title="Download" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white dark:hover:bg-slate-800 transition">
                   <Download className="w-4 h-4" />
-                </a>
+                </button>
                 {(isAdmin || isCad) && !isProjectClosed && (
                   <button onClick={() => handleDeleteFile(file.id, file.file_name)} disabled={isPending} title="Delete" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition disabled:opacity-50">
                     <Trash2 className="w-4 h-4" />

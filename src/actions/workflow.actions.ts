@@ -49,11 +49,13 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
 export async function getAllOverrideRequestsAction() {
   try {
     const supabase: any = await createClient();
-    const { data, error } = await supabase
+    const { data: notifications, error } = await supabase
       .from('notifications')
       .select('id, title, message, is_read, created_at, related_project_id, projects!notifications_related_project_id_fkey(name, client_name, status)')
       .eq('title', 'Dispatch Override Requested')
       .order('created_at', { ascending: false });
+
+    let finalData = [];
 
     if (error) {
       // Fallback if projects relation fails
@@ -64,25 +66,52 @@ export async function getAllOverrideRequestsAction() {
         .order('created_at', { ascending: false });
         
       if (!fallbackData) return { success: false, error: error.message };
-      
-      const uniqueMap = new Map();
-      for (const n of fallbackData) {
-        if (n.related_project_id && !uniqueMap.has(n.related_project_id)) {
-          uniqueMap.set(n.related_project_id, { ...n, projects: null });
-        }
-      }
-      return { success: true, data: Array.from(uniqueMap.values()) };
+      finalData = fallbackData.map((n: any) => ({ ...n, projects: null }));
+    } else {
+      finalData = notifications || [];
     }
     
     // De-duplicate by project_id just in case multiple admins get the notification
     const uniqueMap = new Map();
-    for (const n of data) {
+    for (const n of finalData) {
       if (n.related_project_id && !uniqueMap.has(n.related_project_id)) {
         uniqueMap.set(n.related_project_id, n);
       }
     }
 
-    return { success: true, data: Array.from(uniqueMap.values()) };
+    // Recover any projects stuck in requested state without a notification
+    const { data: stuckProjects } = await supabase
+      .from('projects')
+      .select('id, name, client_name, status, updated_at')
+      .eq('dispatch_override_requested', true);
+      
+    if (stuckProjects && stuckProjects.length > 0) {
+      for (const p of stuckProjects) {
+        if (!uniqueMap.has(p.id)) {
+          uniqueMap.set(p.id, {
+            id: `stuck-${p.id}`,
+            title: 'Dispatch Override Requested',
+            message: `Accountant requested dispatch override for Project "${p.name}" (Payment is pending).`,
+            is_read: false,
+            created_at: p.updated_at || new Date().toISOString(),
+            related_project_id: p.id,
+            projects: {
+              name: p.name,
+              client_name: p.client_name,
+              status: p.status
+            }
+          });
+        } else {
+          uniqueMap.get(p.id).is_read = false; // ensure it shows as pending
+        }
+      }
+    }
+
+    const sortedData = Array.from(uniqueMap.values()).sort((a: any, b: any) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    return { success: true, data: sortedData };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

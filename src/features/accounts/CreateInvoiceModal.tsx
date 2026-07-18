@@ -72,24 +72,26 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
         const supabase = createClient();
         const { data, error } = await supabase
           .from('projects')
-          .select('budget, payments(amount, status), quotations(total_amount, status)')
+          .select('budget, payments(amount, status), quotations(total_amount, status, gst_rate)')
           .eq('id', projectId)
           .single();
         if (data) {
           const project = data as any;
-          // If project budget is 0, try to get it from an approved quotation (or any quotation as fallback)
           let activeBudget = Number(project.budget) || 0;
-          if (activeBudget === 0 && project.quotations && project.quotations.length > 0) {
+          let projectGstRate = 18;
+          if (project.quotations && project.quotations.length > 0) {
             const approvedQuotation = project.quotations.find((q: any) => q.status === 'approved');
             if (approvedQuotation) {
-              activeBudget = Number(approvedQuotation.total_amount);
+              activeBudget = activeBudget === 0 ? Number(approvedQuotation.total_amount) : activeBudget;
+              if (approvedQuotation.gst_rate !== undefined) projectGstRate = Number(approvedQuotation.gst_rate);
             } else {
-              // Fallback to highest quotation
-              activeBudget = Math.max(...project.quotations.map((q: any) => Number(q.total_amount)));
+              activeBudget = activeBudget === 0 ? Math.max(...project.quotations.map((q: any) => Number(q.total_amount))) : activeBudget;
+              if (project.quotations[0].gst_rate !== undefined) projectGstRate = Number(project.quotations[0].gst_rate);
             }
           }
           project.calculated_budget = activeBudget;
           setProjectData(project);
+          setFormData(prev => ({ ...prev, gst_rate: projectGstRate }));
         }
       };
       if (!projectData) fetchProject();

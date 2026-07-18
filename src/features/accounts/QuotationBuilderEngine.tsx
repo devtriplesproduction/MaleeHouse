@@ -83,7 +83,13 @@ export function QuotationBuilderEngine({
 
   // GST
   const defaultGstType = existingQuotation?.client_details?.gst_type;
-  const initialGstType = defaultGstType === 'CGST_SGST' ? 'CGST_SGST_18' : (defaultGstType === 'IGST' ? 'IGST_18' : defaultGstType || 'CGST_SGST_18');
+  const defaultGstRate = existingQuotation?.gst_rate;
+  let initialGstType = defaultGstType || 'CGST_SGST_18';
+  if (defaultGstType === 'CGST_SGST') {
+    initialGstType = defaultGstRate === 5 ? 'CGST_SGST_5' : 'CGST_SGST_18';
+  } else if (defaultGstType === 'IGST') {
+    initialGstType = defaultGstRate === 5 ? 'IGST_5' : 'IGST_18';
+  }
   const [gstType, setGstType] = useState<string>(initialGstType);
 
   // Notes

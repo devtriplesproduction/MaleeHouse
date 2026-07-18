@@ -273,8 +273,8 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
       const { data: project } = await supabase.from('projects').select('*').eq('id', payment.project_id).single();
 
       if (isActivationGatePaid || !project || ['lead_created', 'quotation_sent', 'payment_pending', 'payment_done'].includes(project.status)) {
-        await updateProjectStageAction(payment.project_id, 'ready_for_dispatch', 'Payment verified. Project ready for dispatch.');
-      } else if (milestoneLinkedStage && !['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'ready_for_dispatch'].includes(project.status)) {
+        await updateProjectStageAction(payment.project_id, 'project_created', 'Payment verified. Project initialized for operations.');
+      } else if (milestoneLinkedStage && !['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'project_created'].includes(project.status)) {
         await updateProjectStageAction(payment.project_id, milestoneLinkedStage, `Payment verified. Stage unlocked.`);
       }
 

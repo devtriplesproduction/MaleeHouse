@@ -46,6 +46,7 @@ interface QuotationData {
   total_amount: number;
   discount_amount?: number;
   discount_percentage?: number;
+  discount_pct?: number;
   notes?: string;
   terms?: string;
   status: string;
@@ -219,7 +220,7 @@ export default function ClientPortalPage() {
   const isSentOrViewed = quotation.status === "Sent" || quotation.status === "Viewed";
   const items = quotation.items || [];
   const discountAmount = quotation.discount_amount || 0;
-  const discountPercentage = quotation.discount_percentage || 0;
+  const discountPercentage = quotation.discount_pct || quotation.discount_percentage || 0;
   const clauses = quotation.clauses || [];
 
   return (

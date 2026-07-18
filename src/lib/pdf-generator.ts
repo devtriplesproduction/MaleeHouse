@@ -232,7 +232,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
 
   const items = quotation.items || [];
   const discountAmount = quotation.discount_amount || 0;
-  const discountPercentage = quotation.discount_percentage || 0;
+  const discountPercentage = quotation.discount_pct || quotation.discount_percentage || 0;
   const clauses = quotation.clauses || [];
 
   const itemsHtml = items.map((item: any, i: number) => `
@@ -253,7 +253,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
       <div style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: #1e293b; margin-bottom: 2px;">
         ${index + 1}. ${clause.title || clause.clause_title || 'Condition'}
       </div>
-      <div style="font-size: 9.5px; color: #64748b; line-height: 1.4; padding-left: 10px; border-left: 2px solid #e2e8f0;">
+      <div style="font-size: 9.5px; color: #64748b; line-height: 1.4; padding-left: 10px; border-left: 2px solid #e2e8f0; white-space: pre-wrap;">
         ${clause.content || clause.clause_content || ''}
       </div>
     </div>
@@ -554,22 +554,22 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
                 ` : ''}
                 ${(!quotation.client_details?.gst_type && (quotation.gst_amount ?? 0) > 0) ? `
                   <tr>
-                    <td class="totals-label">GST (18%)</td>
+                    <td class="totals-label">GST (${quotation.gst_rate ?? 18}%)</td>
                     <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
                   </tr>
                 ` : quotation.client_details?.gst_type === 'NO_GST' || (quotation.gst_amount ?? 0) === 0 ? '' : 
                   quotation.client_details?.gst_type === 'IGST' ? `
                   <tr>
-                    <td class="totals-label">IGST (18%)</td>
+                    <td class="totals-label">IGST (${quotation.gst_rate ?? 18}%)</td>
                     <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
                   </tr>
                   ` : `
                   <tr>
-                    <td class="totals-label">CGST (9%)</td>
+                    <td class="totals-label">CGST (${(quotation.gst_rate ?? 18) / 2}%)</td>
                     <td class="totals-val">INR ${((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</td>
                   </tr>
                   <tr>
-                    <td class="totals-label">SGST (9%)</td>
+                    <td class="totals-label">SGST (${(quotation.gst_rate ?? 18) / 2}%)</td>
                     <td class="totals-val">INR ${((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</td>
                   </tr>
                   `
@@ -609,7 +609,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
             ${clauses.length > 0 ? `
               <div style="margin-bottom: 20px;">
                 <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;">Contractual Terms &amp; Clauses</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
                   ${clausesHtml}
                 </div>
               </div>
@@ -749,6 +749,9 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
   const remainingAmount = Math.max(0, totalAmount - amountPaid);
 
   const projectBudget = Number(project?.budget) || 0;
+  
+  // Extract GST type from the active quotation (assuming the first one or the one with client_details)
+  const gstType = project?.quotations?.[0]?.client_details?.gst_type || 'CGST_SGST';
   const projectPayments = project?.payments || [];
   const projectVerifiedPayments = projectPayments.filter((p: any) => p.status === 'verified' || p.status === 'paid');
   const projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
@@ -900,15 +903,21 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
                     <span>INR ${Number(invoice.amount).toLocaleString('en-IN')}</span>
                  </div>
 
-                 <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                    <span>CGST (${Number(invoice.gst_rate) / 2}%)</span>
-                    <span>INR ${(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
-                 </div>
-
-                 <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                    <span>SGST (${Number(invoice.gst_rate) / 2}%)</span>
-                    <span>INR ${(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
-                 </div>
+                 ${(!gstType || gstType === 'CGST_SGST') && Number(invoice.gst_amount) > 0 ? `
+                    <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                       <span>CGST (${Number(invoice.gst_rate) / 2}%)</span>
+                       <span>INR ${(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                       <span>SGST (${Number(invoice.gst_rate) / 2}%)</span>
+                       <span>INR ${(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
+                    </div>
+                 ` : gstType === 'IGST' && Number(invoice.gst_amount) > 0 ? `
+                    <div class="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                       <span>IGST (${Number(invoice.gst_rate)}%)</span>
+                       <span>INR ${Number(invoice.gst_amount).toLocaleString('en-IN')}</span>
+                    </div>
+                 ` : ''}
 
                  <div class="pt-3 border-t border-slate-200 flex justify-between items-end">
                     <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>

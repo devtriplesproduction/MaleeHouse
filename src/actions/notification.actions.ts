@@ -79,7 +79,7 @@ export async function notifyRejectionAction(userId: string, projectId: string, c
 }
 
 export async function notifyApprovalAction(projectId: string) {
-  const supabase: any = await createClient()
+  const supabase: any = await createAdminClient()
   const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
   const { data: accountants } = await supabase.from('profiles').select('id').eq('role', 'accountant').eq('is_active', true)
 
@@ -100,7 +100,7 @@ export async function notifyApprovalAction(projectId: string) {
 }
 
 export async function notifyAdminDispatchOverrideRequestAction(projectId: string) {
-  const supabase: any = await createClient()
+  const supabase: any = await createAdminClient()
   const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
   const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin').eq('is_active', true)
 
@@ -121,7 +121,7 @@ export async function notifyAdminDispatchOverrideRequestAction(projectId: string
 }
 
 export async function notifyPaymentAction(projectId: string) {
-  const supabase: any = await createClient()
+  const supabase: any = await createAdminClient()
   const { data: project } = await supabase.from('projects').select('name, client_name, created_by').eq('id', projectId).single()
   if (!project) return { success: false, error: 'Project not found' }
 
@@ -146,7 +146,7 @@ export async function notifyPaymentAction(projectId: string) {
 }
 
 export async function notifyNewProjectAction(projectId: string, projectName: string) {
-  const supabase: any = await createClient()
+  const supabase: any = await createAdminClient()
   
   const { data: admins } = await supabase.from('profiles').select('id').in('role', ['admin', 'accountant']).eq('is_active', true)
   
@@ -241,7 +241,7 @@ export async function notifyMentionAction(authorName: string, recipientId: strin
 }
 
 export async function notifyStageUpdateAction(projectId: string, fromStage: string | null, toStage: string) {
-  const supabase: any = await createClient()
+  const supabase: any = await createAdminClient()
   const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
   if (!project) return { success: true }
 
@@ -371,7 +371,7 @@ export async function notifySupplementalUploadAction(projectId: string) {
     const profile: any = await getUserProfileAction()
     if (!profile) return { success: false, error: 'Unauthorized' }
 
-    const supabase: any = await createClient()
+    const supabase: any = await createAdminClient()
     const { data: project } = await supabase.from('projects').select('name, status').eq('id', projectId).single()
     const { data: assignments } = await supabase
       .from('project_assignments')
@@ -442,7 +442,7 @@ export async function notifySupplementalUploadAction(projectId: string) {
 
 export async function notifyNewHolidayAction(holidayName: string, date: string, isOptional: boolean) {
   try {
-    const supabase: any = await createClient()
+    const supabase: any = await createAdminClient()
     const { data: users } = await supabase.from('profiles').select('id').eq('is_active', true)
     
     if (!users || users.length === 0) return { success: true }

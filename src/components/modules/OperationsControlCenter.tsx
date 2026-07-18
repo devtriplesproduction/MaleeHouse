@@ -467,7 +467,7 @@ export function OperationsControlCenter({
 
   const intakeFiles = files.filter((f: any) => ['requirements', 'quotation', 'receipt', 'intake_document'].includes(f.category));
 
-  if (isAssigned && userRole === 'engineer' && projectStatus !== 'completed') {
+  if (isAssigned && !isControlPointsMissing) {
     return null;
   }
 
@@ -500,19 +500,6 @@ export function OperationsControlCenter({
           ) : (
             // Standard View for non-engineers (CAD, Field, QC, etc.)
             <>
-              {userRole !== 'engineer' && (
-                <div className="p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-4">
-                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", workflow?.bgColor || "bg-indigo-500/10")}>
-                    {workflow ? <workflow.icon className={cn("w-6 h-6", workflow.color)} /> : <Activity className="w-6 h-6 text-indigo-500" />}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-wide">Active Objective</p>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
-                      {workflow?.action || "Monitoring Lifecycle"}
-                    </h3>
-                  </div>
-                </div>
-              )}
 
               {isControlPointsMissing && (
                 <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-3 text-amber-500 animate-in fade-in duration-300">
@@ -526,118 +513,7 @@ export function OperationsControlCenter({
                 </div>
               )}
 
-              {/* Role Specific Control Panel */}
-              {(userRole !== 'engineer' || projectStatus === 'completed') && (
-                <div className="space-y-4">
-                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-wide px-2">Operational Controls</p>
 
-                    <div className="grid grid-cols-1 gap-3">
-                      {userRole !== 'engineer' && (
-                        <button
-                          disabled={isFrozen}
-                          onClick={() => setIsUploadOpen(true)}
-                          className={cn(
-                            "flex items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 transition-all group",
-                            isFrozen
-                              ? "opacity-50 cursor-not-allowed hover:bg-white/50 dark:hover:bg-white/5"
-                              : "hover:border-indigo-500/30 hover:bg-white dark:hover:bg-white/10"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center transition-colors",
-                              !isFrozen && "group-hover:bg-indigo-500/10"
-                            )}>
-                              <Upload className={cn("w-5 h-5 text-slate-500", !isFrozen && "group-hover:text-indigo-500")} />
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Transmit Deliverable</p>
-                              <p className="text-xs text-slate-400">
-                                {isFrozen ? "Disabled: Project Frozen" : "Upload CAD, data, or field logs"}
-                              </p>
-                            </div>
-                          </div>
-                          <ArrowRight className={cn("w-4 h-4 text-slate-300 transition-all", !isFrozen && "group-hover:text-indigo-500 group-hover:translate-x-1")} />
-                        </button>
-                      )}
-
-                      {workflow && !(userRole === 'engineer' && projectStatus === 'project_created') && (
-                        <button
-                          disabled={isTransitionDisabled}
-                          onClick={() => setIsTransitionOpen(true)}
-                          className={cn(
-                            "flex items-center justify-between p-4 rounded-2xl border transition-all group",
-                            workflow.bgColor,
-                            isTransitionDisabled
-                              ? "opacity-50 cursor-not-allowed border-transparent"
-                              : "border-transparent hover:border-current"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", workflow.bgColor)}>
-                              <workflow.icon className={cn("w-5 h-5", workflow.color)} />
-                            </div>
-                            <div className="text-left">
-                              <p className={cn("text-sm font-bold", workflow.color)}>{workflow.action}</p>
-                              <p className="text-xs text-slate-400">
-                                {isFrozen
-                                  ? "Disabled: Project Frozen"
-                                  : isControlPointsMissing
-                                    ? "Block: Upload Control Points (Image & CSV) in Digital Vault to proceed"
-                                    : `Advance project to ${workflow.nextStage.replace('_', ' ')}`}
-                              </p>
-                            </div>
-                          </div>
-                          <ArrowRight className={cn("w-4 h-4 transition-all", !isTransitionDisabled && "group-hover:translate-x-1", workflow.color)} />
-                        </button>
-                      )}
-
-                      {projectStatus === 'data_sync' && ['cad', 'admin'].includes(userRole) && (
-                        <button
-                          disabled={isFrozen}
-                          onClick={() => setIsRejectModalOpen(true)}
-                          className={cn(
-                            "flex items-center justify-between p-4 rounded-2xl border transition-all group border-rose-500/30 hover:border-rose-500 bg-rose-500/5",
-                            isFrozen && "opacity-50 cursor-not-allowed border-transparent"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
-                              <XCircle className="w-5 h-5 text-rose-500" />
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-bold text-rose-500">Reject Survey Data</p>
-                              <p className="text-xs text-rose-500/70">
-                                Send project back to field team for rework
-                              </p>
-                            </div>
-                          </div>
-                          <ArrowRight className="w-4 h-4 text-rose-500 transition-all group-hover:translate-x-1" />
-                        </button>
-                      )}
-
-                      {projectStatus === 'completed' && ['admin', 'engineer'].includes(userRole) && (
-                        <button
-                          onClick={() => setIsReopenModalOpen(true)}
-                          className="flex items-center justify-between p-4 rounded-2xl border transition-all group border-amber-500/30 hover:border-amber-500 bg-amber-500/5 mt-4 w-full"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                              <AlertTriangle className="w-5 h-5 text-amber-500" />
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-bold text-amber-500">Reopen Project</p>
-                              <p className="text-xs text-amber-500/70">
-                                Unlock project to allow CAD corrections
-                              </p>
-                            </div>
-                          </div>
-                          <ArrowRight className="w-4 h-4 text-amber-500 transition-all group-hover:translate-x-1" />
-                        </button>
-                      )}
-                    </div>
-                </div>
-              )}
             </>
           )}
         </div>
