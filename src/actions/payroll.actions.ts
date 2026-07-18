@@ -260,6 +260,12 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
 
     revalidatePath("/admin/payroll");
     revalidatePath("/hr/payroll");
+
+    if (bankId) {
+      const { syncBankBalance } = await import("@/actions/bank.actions");
+      await syncBankBalance(bankId);
+    }
+
     return { success: true, message: `Payroll cycle for ${month}/${year} locked successfully.` };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -320,6 +326,12 @@ export async function unlockPayrollCycleAction(month: number, year: number) {
 
     revalidatePath("/admin/payroll");
     revalidatePath("/hr/payroll");
+
+    if (existing.bank_id) {
+      const { syncBankBalance } = await import("@/actions/bank.actions");
+      await syncBankBalance(existing.bank_id);
+    }
+
     return { success: true, message: `Payroll cycle for ${month}/${year} unlocked successfully.` };
   } catch (error: any) {
     return { success: false, error: error.message };

@@ -319,6 +319,11 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
 
     await revalidateAccountsPaths(payment.project_id);
 
+    if (payment.bank_id) {
+      const { syncBankBalance } = await import('@/actions/bank.actions');
+      await syncBankBalance(payment.bank_id);
+    }
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

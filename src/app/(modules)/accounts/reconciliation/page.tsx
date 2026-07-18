@@ -13,7 +13,7 @@ export default async function ReconciliationPage() {
 
   const totalBanks = (banks || []).length;
   const totalBalance = (banks || []).reduce(
-    (sum: number, b: any) => sum + Number(b.opening_balance || 0),
+    (sum: number, b: any) => sum + Number(b.current_balance || 0),
     0
   );
 
@@ -133,9 +133,16 @@ export default async function ReconciliationPage() {
 
                 {/* Balance row */}
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Opening Balance</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-200 nums">
+                  <span className="text-slate-450 dark:text-slate-400">Opening Balance</span>
+                  <span className="font-semibold text-slate-600 dark:text-slate-300 nums">
                     {fmt(Number(bank.opening_balance || 0))}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Current Balance</span>
+                  <span className="font-bold text-slate-900 dark:text-white nums">
+                    {fmt(Number(bank.current_balance || 0))}
                   </span>
                 </div>
 

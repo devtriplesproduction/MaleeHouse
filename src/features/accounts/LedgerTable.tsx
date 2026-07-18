@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  Download, Search, Filter, Calendar, ChevronLeft, ChevronRight, 
-  BarChart3, FileText, CheckCircle2, AlertCircle, Clock, Landmark
+  Download, Search, ChevronLeft, ChevronRight, ChevronDown,
+  CheckCircle2, Clock, Landmark, Calendar, RefreshCw, Filter, User, BarChart3
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -171,61 +171,83 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
 
   return (
     <div className="space-y-6">
-      {/* Filter Bar */}
-      <div className="flex flex-col xl:flex-row items-center gap-4 bg-white/60 dark:bg-[#0c101b]/60 backdrop-blur-2xl p-5 rounded-3xl border border-white/40 dark:border-white/10 shadow-xl shadow-slate-200/40 dark:shadow-none">
-        <div className="relative w-full xl:w-64 shrink-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-            placeholder="Search descriptions..."
-            className="w-full pl-9 pr-4 h-11 rounded-2xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all dark:text-white placeholder:text-slate-400 shadow-sm"
-          />
+      {/* Filter Bar — EODReview style */}
+      <div className="relative z-50 flex flex-col md:flex-row items-end gap-4 glass-card p-6 border-white/5 shadow-2xl bg-[#0a0f1d]/40 backdrop-blur-xl">
+        {/* Search */}
+        <div className="flex-1 w-full space-y-2">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block ml-1">Search</label>
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-500 transition-colors" />
+            <input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              placeholder="Description, project, category..."
+              className="w-full h-11 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl pl-11 pr-4 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
+            />
+          </div>
         </div>
-        
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 w-full">
-          <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+
+        {/* Category */}
+        <div className="w-full md:w-48 space-y-2">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block ml-1">Category</label>
+          <div className="relative group">
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-500 transition-colors" />
+            <select
+              value={categoryFilter}
+              onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
+              className="w-full h-11 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl pl-11 pr-10 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all appearance-none cursor-pointer"
+            >
+              <option value="">All Categories</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* From Date */}
+        <div className="w-full md:w-44 space-y-2">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block ml-1">From</label>
+          <div className="relative group">
+            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-500 transition-colors pointer-events-none" />
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
-              className="w-full h-11 px-4 rounded-2xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all dark:text-white shadow-sm"
+              className="w-full h-11 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl pl-11 pr-4 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all"
             />
-            <span className="text-slate-400 text-sm">to</span>
+          </div>
+        </div>
+
+        {/* To Date */}
+        <div className="w-full md:w-44 space-y-2">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block ml-1">To</label>
+          <div className="relative group">
+            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-500 transition-colors pointer-events-none" />
             <input
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
-              className="w-full h-11 px-4 rounded-2xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all dark:text-white shadow-sm"
+              className="w-full h-11 bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl pl-11 pr-4 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all"
             />
           </div>
+        </div>
 
-          <select
-            value={categoryFilter}
-            onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-            className="h-11 px-4 rounded-2xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 transition-all dark:text-white appearance-none cursor-pointer w-full sm:w-40 shrink-0 shadow-sm"
+        {/* Actions */}
+        <div className="flex items-end gap-2 w-full md:w-auto shrink-0">
+          <button
+            onClick={() => { setSearch(''); setDateFrom(''); setDateTo(''); setCategoryFilter(''); setProjectFilter(''); setCurrentPage(1); }}
+            className="h-11 w-full md:w-28 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-semibold text-sm flex items-center justify-center gap-2 border border-indigo-500/20 transition-all active:scale-95 shadow-lg shadow-indigo-500/5"
           >
-            <option value="">All Categories</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-
-          <div className="w-full sm:w-64 shrink-0">
-            <SearchableSelect
-              value={projectFilter}
-              onValueChange={(val) => { setProjectFilter(val); setCurrentPage(1); }}
-              options={projectOptions}
-              placeholder="All Projects"
-              searchPlaceholder="Search projects..."
-            />
-          </div>
-
+            <RefreshCw className="w-4 h-4" />
+            Reset
+          </button>
           <button
             onClick={handleExportExcel}
             disabled={isExporting || filteredData.length === 0}
-            className="h-11 px-5 shrink-0 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-slate-900/10 dark:shadow-none hover:shadow-xl hover:shadow-slate-900/20 active:scale-95"
+            className="h-11 w-full md:w-32 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-slate-900/10"
           >
             <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export Excel'}</span>
+            {isExporting ? 'Exporting...' : 'Export'}
           </button>
         </div>
       </div>

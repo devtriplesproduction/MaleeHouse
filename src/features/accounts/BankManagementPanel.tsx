@@ -91,7 +91,7 @@ export function BankManagementPanel() {
         {!loading && (
           <button
             onClick={() => setEditingBank({ 
-              bank_name: "", account_name: "", account_number: "", ifsc_code: "", branch_name: "", is_default: false, account_usage: "Operations" 
+              bank_name: "", account_name: "", account_number: "", ifsc_code: "", branch_name: "", is_default: false, account_usage: "Operations", opening_balance: 0 
             })}
             className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"
           >
@@ -192,6 +192,12 @@ export function BankManagementPanel() {
                        <div className="absolute inset-0 bg-yellow-900/10 border-x border-yellow-900/10 mx-2" />
                        <div className="absolute inset-0 bg-yellow-900/10 border-y border-yellow-900/10 my-1.5" />
                     </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider block text-slate-400 dark:text-slate-500">Current Balance</span>
+                      <span className="text-base font-black text-slate-900 dark:text-white">
+                        ₹{(bank.current_balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-4">
@@ -206,6 +212,10 @@ export function BankManagementPanel() {
                       <div>
                         <span className="text-[10px] font-semibold uppercase tracking-wider block mb-0.5 text-slate-400 dark:text-slate-500">Account Purpose</span>
                         <p className="text-xs font-bold tracking-wide uppercase text-slate-800 dark:text-slate-200">{bank.account_usage || "Operations"}</p>
+                      </div>
+                      <div className="text-center">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider block mb-0.5 text-slate-400 dark:text-slate-500">Opening Balance</span>
+                        <p className="text-xs font-bold tracking-wide text-slate-800 dark:text-slate-200">₹{(bank.opening_balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] font-semibold uppercase tracking-wider block mb-0.5 text-slate-400 dark:text-slate-500">IFSC</span>
@@ -231,7 +241,7 @@ export function BankManagementPanel() {
               </p>
               <button
                 onClick={() => setEditingBank({ 
-                  bank_name: "", account_name: "", account_number: "", ifsc_code: "", branch_name: "", is_default: true, account_usage: "Operations" 
+                  bank_name: "", account_name: "", account_number: "", ifsc_code: "", branch_name: "", is_default: true, account_usage: "Operations", opening_balance: 0 
                 })}
                 className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
               >
@@ -286,6 +296,20 @@ export function BankManagementPanel() {
                     onChange={(e) => setEditingBank({ ...editingBank, account_name: e.target.value })}
                     className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
                     placeholder="e.g. Malee House"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <CreditCard className="h-3.5 w-3.5 text-indigo-500/70" /> Opening Balance *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingBank.opening_balance ?? 0}
+                    onChange={(e) => setEditingBank({ ...editingBank, opening_balance: e.target.value === "" ? 0 : Number(e.target.value) })}
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
+                    placeholder="e.g. 0.00"
                   />
                 </div>
 

@@ -63,6 +63,11 @@ export async function createExpenseAction(payload: CreateExpenseInput): Promise<
 
     await revalidateAccountsPaths(payload.project_id || undefined);
 
+    if (data.bank_id) {
+      const { syncBankBalance } = await import('@/actions/bank.actions');
+      await syncBankBalance(data.bank_id);
+    }
+
     return { success: true, data };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -187,6 +192,16 @@ export async function updateExpenseAction(payload: UpdateExpenseInput): Promise<
       await revalidateAccountsPaths(undefined);
     }
 
+    if (existing.bank_id || updatedExpense.bank_id) {
+      const { syncBankBalance } = await import('@/actions/bank.actions');
+      if (existing.bank_id) {
+        await syncBankBalance(existing.bank_id);
+      }
+      if (updatedExpense.bank_id && updatedExpense.bank_id !== existing.bank_id) {
+        await syncBankBalance(updatedExpense.bank_id);
+      }
+    }
+
     return { success: true, data: updatedExpense };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -239,6 +254,11 @@ export async function deleteExpenseAction(id: string): Promise<ActionResponse> {
     });
 
     await revalidateAccountsPaths(existing.project_id || undefined);
+
+    if (existing.bank_id) {
+      const { syncBankBalance } = await import('@/actions/bank.actions');
+      await syncBankBalance(existing.bank_id);
+    }
 
     return { success: true };
   } catch (error: any) {
