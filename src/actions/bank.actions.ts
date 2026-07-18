@@ -1,6 +1,7 @@
 "use server";
-
+ 
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 export async function getBankAccountsAction() {
   try {
@@ -31,18 +32,23 @@ export async function saveBankAccountAction(payload: any) {
     }
 
     if (payload.id) {
+      // Sanitize the payload to only update editable columns
+      const { id, created_at, updated_at, ...updateData } = payload;
       const { error } = await (supabase as any)
         .from("bank_accounts")
-        .update(payload)
+        .update(updateData)
         .eq("id", payload.id);
       if (error) throw error;
     } else {
+      const { id, created_at, updated_at, ...insertData } = payload;
       const { error } = await (supabase as any)
         .from("bank_accounts")
-        .insert([payload]);
+        .insert([insertData]);
       if (error) throw error;
     }
 
+    revalidatePath("/accounts/banks");
+    revalidatePath("/(modules)/(shared)/settings/account");
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -58,6 +64,8 @@ export async function deleteBankAccountAction(id: string) {
       .eq("id", id);
 
     if (error) throw error;
+    revalidatePath("/accounts/banks");
+    revalidatePath("/(modules)/(shared)/settings/account");
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -84,6 +92,8 @@ export async function setDefaultBankAccountAction(id: string) {
 
     if (err2) throw err2;
 
+    revalidatePath("/accounts/banks");
+    revalidatePath("/(modules)/(shared)/settings/account");
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

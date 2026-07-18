@@ -23,38 +23,40 @@ export function LedgerWorkspace({ incomeData, expenseData, projects }: LedgerWor
 
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
-      <div className="border-b border-slate-200/60 dark:border-white/5 pb-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Ledger</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Track all issued invoices, received payments and logged expenses.
-        </p>
-      </div>
+      <div className="border-b border-slate-200/60 dark:border-white/5 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Ledger</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Track all issued invoices, received payments and logged expenses.
+          </p>
+        </div>
 
-      {/* Tab switcher */}
-      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-xl w-fit">
-        {tabs.map(({ key, label, icon: Icon, count }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={cn(
-              'flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
-              tab === key
-                ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            )}
-          >
-            <Icon className="w-4 h-4" />
-            {label}
-            <span className={cn(
-              'text-[11px] px-1.5 py-0.5 rounded-md font-bold',
-              tab === key
-                ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
-                : 'bg-slate-200 dark:bg-white/10 text-slate-500'
-            )}>
-              {count}
-            </span>
-          </button>
-        ))}
+        {/* Tab switcher */}
+        <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-xl shrink-0">
+          {tabs.map(({ key, label, icon: Icon, count }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={cn(
+                'flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+                tab === key
+                  ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+              <span className={cn(
+                'text-[11px] px-1.5 py-0.5 rounded-md font-bold',
+                tab === key
+                  ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
+                  : 'bg-slate-200 dark:bg-white/10 text-slate-500'
+              )}>
+                {count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <LedgerTable
