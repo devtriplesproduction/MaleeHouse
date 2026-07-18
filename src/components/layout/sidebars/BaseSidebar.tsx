@@ -11,8 +11,9 @@ import { useSidebarStore } from "@/store/useSidebarStore";
 export interface SidebarLink {
   title: string;
   href?: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
   subLinks?: { title: string; href: string; icon?: React.ElementType }[];
+  isSeparator?: boolean;
 }
 
 interface BaseSidebarProps {
@@ -74,11 +75,16 @@ export function BaseSidebar({ links }: BaseSidebarProps) {
 
         {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto no-scrollbar py-4 px-3 space-y-0.5">
-          {links.map((link) => {
+          {links.map((link, idx) => {
+            if (link.isSeparator) {
+              return (
+                <div key={`sep-${idx}`} className="my-2.5 border-t border-slate-200 dark:border-white/10" />
+              );
+            }
             if (link.subLinks && link.subLinks.length > 0) {
               const isOpen = openMenus[link.title];
               const isAnyChildActive = link.subLinks.some((sub: any) => pathname === sub.href || pathname.startsWith(sub.href + "/"));
-              const Icon = link.icon;
+              const Icon = link.icon || (() => null);
               return (
                 <div key={link.title} className="space-y-0.5">
                   <button
@@ -138,7 +144,7 @@ export function BaseSidebar({ links }: BaseSidebarProps) {
               ? pathname === link.href
               : link.href && (pathname === link.href || pathname.startsWith(link.href + "/"));
 
-            const Icon = link.icon;
+            const Icon = link.icon || (() => null);
 
             return (
               <Link
