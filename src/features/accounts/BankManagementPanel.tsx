@@ -126,75 +126,75 @@ export function BankManagementPanel() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-
+ 
             <form onSubmit={handleSave} className="relative z-10 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                <div className="space-y-2.5">
-                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                    <Landmark className="h-3.5 w-3.5 text-indigo-500" /> Bank Name *
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <Landmark className="h-3.5 w-3.5 text-indigo-500/70" /> Bank name *
                   </label>
                   <input
                     type="text"
                     value={editingBank.bank_name || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, bank_name: e.target.value })}
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
                     placeholder="e.g. HDFC Bank"
                   />
                 </div>
                 
-                <div className="space-y-2.5">
-                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                    <CreditCard className="h-3.5 w-3.5 text-indigo-500" /> Account Name *
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <CreditCard className="h-3.5 w-3.5 text-indigo-500/70" /> Account name *
                   </label>
                   <input
                     type="text"
                     value={editingBank.account_name || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, account_name: e.target.value })}
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
                     placeholder="e.g. Malee House"
                   />
                 </div>
 
-                <div className="space-y-2.5">
-                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                    <Hash className="h-3.5 w-3.5 text-indigo-500" /> Account Number *
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <Hash className="h-3.5 w-3.5 text-indigo-500/70" /> Account number *
                   </label>
                   <input
                     type="text"
                     value={editingBank.account_number || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, account_number: e.target.value })}
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm tracking-widest"
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
                     placeholder="e.g. 50200000000000"
                   />
                 </div>
 
-                <div className="space-y-2.5">
-                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                    <Hash className="h-3.5 w-3.5 text-indigo-500" /> IFSC Code *
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <Hash className="h-3.5 w-3.5 text-indigo-500/70" /> Ifsc code *
                   </label>
                   <input
                     type="text"
                     value={editingBank.ifsc_code || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, ifsc_code: e.target.value })}
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm uppercase placeholder:normal-case"
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm uppercase placeholder:normal-case"
                     placeholder="e.g. HDFC0001234"
                   />
                 </div>
 
-                <div className="space-y-2.5 md:col-span-2">
-                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                    <Building2 className="h-3.5 w-3.5 text-indigo-500" /> Branch Name *
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-indigo-500/70" /> Branch name *
                   </label>
                   <input
                     type="text"
                     value={editingBank.branch_name || ""}
                     onChange={(e) => setEditingBank({ ...editingBank, branch_name: e.target.value })}
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/20 text-sm font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#0f1526] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
                     placeholder="e.g. MG Road Branch"
                   />
                 </div>
 
-                <div className="space-y-2.5 flex items-center md:col-span-2 pt-2">
+                <div className="space-y-2 flex items-center md:col-span-2 pt-1">
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <div className="relative flex items-center justify-center w-5 h-5">
                       <input
@@ -205,28 +205,27 @@ export function BankManagementPanel() {
                       />
                       <CheckCircle2 className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" />
                     </div>
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white transition-colors">
                       Set as Default Bank Account
                     </span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-8 mt-8 border-t border-slate-200/50 dark:border-white/10">
+              <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-slate-200/50 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setEditingBank(null)}
-                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                  className="px-6 py-2.5 rounded-xl text-sm font-semibold text-slate-550 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="group relative flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 overflow-hidden"
+                  className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
                 >
-                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                  <Save className="w-4 h-4 relative z-10" />
-                  <span className="relative z-10">Save Bank Account</span>
+                  <Save className="w-4 h-4" />
+                  <span>Save Bank Account</span>
                 </button>
               </div>
             </form>
@@ -236,35 +235,42 @@ export function BankManagementPanel() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+            className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"
           >
             {banks.map((bank) => (
               <div
                 key={bank.id}
                 className={cn(
-                  "relative group overflow-hidden rounded-2xl border transition-all duration-300 p-6 shadow-xl w-full max-w-sm aspect-[1.586/1] flex flex-col justify-between",
+                  "relative group overflow-hidden rounded-2xl border transition-all duration-300 ease-out p-6 shadow-md w-full max-w-sm min-h-[255px] flex flex-col justify-between hover:-translate-y-1.5 hover:scale-[1.015] hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/20",
                   bank.is_default 
-                    ? "border-slate-700/50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white shadow-slate-900/30" 
-                    : "border-slate-200 dark:border-white/10 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 text-slate-800 dark:text-white hover:shadow-lg"
+                    ? "bg-gradient-to-br from-indigo-50/50 via-white to-indigo-50/30 border-indigo-500 shadow-indigo-100 dark:from-slate-900 dark:via-[#151936] dark:to-slate-900 dark:border-indigo-500/50 dark:shadow-indigo-500/10 text-slate-800 dark:text-white"
+                    : "bg-gradient-to-br from-white to-slate-50/50 border-slate-200 text-slate-700 dark:from-slate-900 dark:via-[#111428] dark:to-slate-900 dark:border-slate-800 dark:text-slate-200"
                 )}
               >
                 {/* Background Pattern/Glow */}
-                <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/[0.03] dark:bg-white/5 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/[0.03] dark:bg-white/5 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
 
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-lg shadow-sm border",
-                      bank.is_default 
-                        ? "bg-white/10 border-white/20 text-white" 
-                        : "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300"
+                      bank.is_default
+                        ? "bg-indigo-50 border-indigo-100 text-indigo-600 dark:bg-white/10 dark:border-white/20 dark:text-white"
+                        : "bg-slate-50 border-slate-100 text-slate-600 dark:bg-white/5 dark:border-white/10 dark:text-slate-300"
                     )}>
                       <Landmark className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold tracking-tight leading-none">{bank.bank_name}</h3>
-                      <p className={cn("text-[11px] font-medium mt-1 uppercase tracking-wider", bank.is_default ? "text-slate-300" : "text-slate-500")}>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold tracking-tight leading-none text-slate-950 dark:text-white">{bank.bank_name}</h3>
+                        {bank.is_default && (
+                          <span className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20 text-[9px] font-bold uppercase tracking-widest py-0.5 px-2 rounded-full">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-semibold mt-1.5 uppercase tracking-wider text-slate-600 dark:text-slate-400">
                         {bank.branch_name}
                       </p>
                     </div>
@@ -273,14 +279,14 @@ export function BankManagementPanel() {
                   {/* Actions Dropdown / Icons */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {!bank.is_default && (
-                      <button onClick={() => handleSetDefault(bank.id)} className="p-1.5 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-md transition-colors" title="Set as Default">
+                      <button onClick={() => handleSetDefault(bank.id)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Set as Default">
                         <CheckCircle2 className="w-4 h-4 text-slate-400 hover:text-emerald-500" />
                       </button>
                     )}
-                    <button onClick={() => setEditingBank(bank)} className="p-1.5 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-md transition-colors" title="Edit">
+                    <button onClick={() => setEditingBank(bank)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Edit">
                       <Edit className="w-4 h-4 text-slate-400 hover:text-blue-500" />
                     </button>
-                    <button onClick={() => handleDelete(bank.id)} className="p-1.5 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-md transition-colors" title="Delete">
+                    <button onClick={() => handleDelete(bank.id)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Delete">
                       <Trash2 className="w-4 h-4 text-slate-400 hover:text-rose-500" />
                     </button>
                   </div>
@@ -288,7 +294,7 @@ export function BankManagementPanel() {
 
                 <div className="relative z-10 flex flex-col justify-end flex-1 mt-6">
                   {/* EMV Chip and Contactless Icon */}
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-7 rounded bg-gradient-to-br from-yellow-200 to-yellow-500 border border-yellow-600/30 overflow-hidden relative opacity-90">
                        <div className="absolute inset-0 bg-yellow-900/10 border-x border-yellow-900/10 mx-2" />
                        <div className="absolute inset-0 bg-yellow-900/10 border-y border-yellow-900/10 my-1.5" />
@@ -297,30 +303,24 @@ export function BankManagementPanel() {
 
                   <div className="space-y-4">
                     <div>
-                      <span className={cn("text-[10px] font-bold uppercase tracking-widest block mb-1 opacity-70")}>Account Number</span>
-                      <p className="font-mono text-xl tracking-widest font-semibold drop-shadow-sm">
+                      <span className="text-[10px] font-bold uppercase tracking-widest block mb-1 text-slate-500 dark:text-slate-400">Account Number</span>
+                      <p className="text-xl tracking-widest font-bold text-slate-950 dark:text-white drop-shadow-sm">
                         {bank.account_number.replace(/(\d{4})/g, '$1 ').trim()}
                       </p>
                     </div>
                     
                     <div className="flex justify-between items-end">
                       <div>
-                        <span className={cn("text-[10px] font-bold uppercase tracking-widest block mb-0.5 opacity-70")}>Account Holder</span>
-                        <p className="text-sm font-semibold tracking-wide uppercase">{bank.account_name}</p>
+                        <span className="text-[10px] font-bold uppercase tracking-widest block mb-0.5 text-slate-500 dark:text-slate-400">Account Holder</span>
+                        <p className="text-xs font-bold tracking-wide uppercase text-slate-900 dark:text-slate-200">{bank.account_name}</p>
                       </div>
                       <div className="text-right">
-                        <span className={cn("text-[10px] font-bold uppercase tracking-widest block mb-0.5 opacity-70")}>IFSC</span>
-                        <p className="text-sm font-mono font-semibold tracking-wider uppercase">{bank.ifsc_code}</p>
+                        <span className="text-[10px] font-bold uppercase tracking-widest block mb-0.5 text-slate-500 dark:text-slate-400">IFSC</span>
+                        <p className="text-xs font-bold tracking-wider uppercase text-slate-900 dark:text-slate-200">{bank.ifsc_code}</p>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {bank.is_default && (
-                  <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest py-1 px-4 rounded-tl-xl shadow-lg border-t border-l border-emerald-400/50 z-20">
-                    Default Account
-                  </div>
-                )}
               </div>
             ))}
 

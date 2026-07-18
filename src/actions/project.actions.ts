@@ -46,8 +46,8 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
 
     const supabase: any = await createClient();
 
-    // Use PRJ-MH(State Code)-XXX format
-    const explicitPrefix = `PRJ-MH${state_code}-`;
+    // Use PRJ-(State Code)-XXX format
+    const explicitPrefix = `PRJ-${state_code}-`;
 
     const { data: existingProjects, error: fetchError } = await supabase
       .from('projects')
