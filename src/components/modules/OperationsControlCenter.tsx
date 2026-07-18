@@ -329,11 +329,7 @@ export function OperationsControlCenter({
   const isAdmin = userRole === 'admin';
   const isAssigned = isAdmin || teamMembers.some((m: any) => m.userId === currentUserId);
 
-  const hasCPImage = files.some((f: any) => f.category === 'control_point_image');
-  const hasCPCsv = files.some((f: any) => f.category === 'control_point_csv');
-  const areControlPointsUploaded = hasCPImage && hasCPCsv;
-  const isControlPointsMissing = projectStatus === 'data_collection' && !areControlPointsUploaded;
-  const isTransitionDisabled = isFrozen || isControlPointsMissing;
+  const isTransitionDisabled = isFrozen;
 
   const getWorkflowConfig = () => {
     switch (projectStatus) {
@@ -467,7 +463,7 @@ export function OperationsControlCenter({
 
   const intakeFiles = files.filter((f: any) => ['requirements', 'quotation', 'receipt', 'intake_document'].includes(f.category));
 
-  if (isAssigned && !isControlPointsMissing) {
+  if (isAssigned) {
     return null;
   }
 
@@ -500,19 +496,6 @@ export function OperationsControlCenter({
           ) : (
             // Standard View for non-engineers (CAD, Field, QC, etc.)
             <>
-
-              {isControlPointsMissing && (
-                <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-3 text-amber-500 animate-in fade-in duration-300">
-                  <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold tracking-wide">Compulsory Step: Control Points Required</p>
-                    <p className="text-sm text-slate-500 leading-normal">
-                      This project cannot be advanced to CAD Prototype until the field engineer has uploaded the required **Control Points** files (both an **Image** and a **CSV file**) to the Digital Vault.
-                    </p>
-                  </div>
-                </div>
-              )}
-
 
             </>
           )}
