@@ -37,14 +37,14 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Minimal events (removed mousemove to reduce spam, mousedown/keydown is enough)
-    const events = ["mousedown", "keydown", "touchstart", "scroll"];
-    events.forEach((event) => window.addEventListener(event, handleActivity, { passive: true }));
-    
+    // Added mousemove back (it's throttled to 5s anyway) so reading/moving mouse counts as activity.
+    const events = ["mousedown", "keydown", "touchstart", "scroll", "mousemove"];
+    // Use capture: true so we catch scroll events on nested elements (scroll doesn't bubble)
+    events.forEach((event) => window.addEventListener(event, handleActivity, { passive: true, capture: true }));
     resetTimer();
 
     return () => {
-      events.forEach((event) => window.removeEventListener(event, handleActivity));
+      events.forEach((event) => window.removeEventListener(event, handleActivity, { capture: true }));
       clearTimeout(timeout);
     };
   }, [router]);

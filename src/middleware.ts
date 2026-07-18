@@ -29,9 +29,10 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const method = request.method;
 
-  // 1. Strict limit for Login Brute Force (5 attempts per minute per IP)
+  // 1. Strict limit for Login Brute Force (5 attempts per minute per IP, increased for dev)
   if (path === '/login' && method === 'POST') {
-    const isAllowed = applyRateLimit(`${ip}-login`, 5, 60 * 1000);
+    const limit = process.env.NODE_ENV === 'development' ? 100 : 5;
+    const isAllowed = applyRateLimit(`${ip}-login`, limit, 60 * 1000);
     if (!isAllowed) {
       return new NextResponse('Too many login attempts. Please try again later.', { status: 429 });
     }

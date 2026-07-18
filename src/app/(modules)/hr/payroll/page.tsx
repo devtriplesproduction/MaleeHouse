@@ -1,30 +1,34 @@
-import React, { Suspense } from "react";
-import { getAllUsersAction } from "@/actions/admin.actions";
-import { UserManagementTable } from "@/components/modules/UserManagementTable";
+import React from 'react';
+import { calculateMonthlyPayrollAction } from '@/actions/payroll.actions';
+import { PayrollClient } from './PayrollClient';
+import { requireRole } from '@/lib/auth-guard';
 
 export const metadata = {
   title: "Salary Records | HR Portal",
 };
 
 export default async function SalaryRecordsPage() {
-  const result = await getAllUsersAction();
+  const { profile } = await requireRole("hr");
+  const currentUserRole = profile?.role || 'hr';
 
-  if (!result.success) {
-    return (
-      <div className="p-8 text-center bg-rose-50 dark:bg-rose-950/20 rounded-2xl border border-rose-200 dark:border-rose-900/30 text-rose-600 dark:text-rose-400">
-        <h2 className="text-xl font-bold">Failed to load salary records</h2>
-        <p className="text-sm mt-1">{result.error}</p>
-      </div>
-    );
-  }
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1; // 1-12
+  const currentYear = today.getFullYear();
 
-  const users = result.data || [];
+  // Fetch initial data
+  const res = await calculateMonthlyPayrollAction(currentMonth, currentYear);
+  const initialData = res.success && res.data ? res.data : [];
+  const initialIsLocked = res.success ? !!res.isLocked : false;
 
   return (
-    <div className="animate-in fade-in duration-700">
-      <Suspense fallback={<div className="h-[600px] bg-white/5 animate-pulse rounded-2xl" />}>
-        <UserManagementTable initialUsers={users} defaultTab="payroll" />
-      </Suspense>
+    <div className="animate-in fade-in duration-500 pb-12">
+      <PayrollClient 
+        initialMonth={currentMonth}
+        initialYear={currentYear}
+        initialData={initialData}
+        initialIsLocked={initialIsLocked}
+        currentUserRole={currentUserRole}
+      />
     </div>
   );
 }

@@ -144,8 +144,12 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
     if (error) return { success: false, error: error.message };
 
     // Milestone status is implicitly derived from invoices(payments) instead
-
-    await updateProjectStageAction(payload.project_id, 'payment_pending', 'Payment manually logged.');
+    
+    // Only update to payment_pending if the project is in its early stages
+    const { data: currentProject } = await supabase.from('projects').select('status').eq('id', payload.project_id).single();
+    if (currentProject && ['lead_created', 'quotation_requested', 'quotation_sent', 'payment_pending'].includes(currentProject.status)) {
+      await updateProjectStageAction(payload.project_id, 'payment_pending', 'Payment manually logged.');
+    }
 
     await supabase.from('activity_logs').insert({
       id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -273,8 +277,12 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
       const { data: project } = await supabase.from('projects').select('*').eq('id', payment.project_id).single();
 
       if (isActivationGatePaid || !project || ['lead_created', 'quotation_sent', 'payment_pending', 'payment_done'].includes(project.status)) {
-        await updateProjectStageAction(payment.project_id, 'project_created', 'Payment verified. Project initialized for operations.');
-      } else if (milestoneLinkedStage && !['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'project_created'].includes(project.status)) {
+        const stageRes = await updateProjectStageAction(payment.project_id, 'ready_for_dispatch', 'Payment verified. Project ready for dispatch.');
+        if (stageRes?.success) {
+          // Auto-forward to engineering queue, skipping the manual dispatch button
+          await updateProjectStageAction(payment.project_id, 'project_created', 'Auto-dispatched to Engineering after payment verification.');
+        }
+      } else if (milestoneLinkedStage && !['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'ready_for_dispatch', 'project_created'].includes(project.status)) {
         await updateProjectStageAction(payment.project_id, milestoneLinkedStage, `Payment verified. Stage unlocked.`);
       }
 
