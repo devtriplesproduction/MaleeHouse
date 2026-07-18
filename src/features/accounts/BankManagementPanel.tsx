@@ -82,8 +82,8 @@ export function BankManagementPanel() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-white flex items-center gap-2 tracking-tight">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
               <Landmark className="w-4 h-4" />
             </div>
             Bank Accounts
@@ -97,11 +97,10 @@ export function BankManagementPanel() {
             onClick={() => setEditingBank({ 
               bank_name: "", account_name: "", account_number: "", ifsc_code: "", branch_name: "", is_default: false 
             })}
-            className="group relative flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 overflow-hidden"
+            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
           >
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-            <Plus className="w-4 h-4 relative z-10" />
-            <span className="relative z-10">Add Bank Account</span>
+            <Plus className="w-4 h-4" />
+            <span>Add Bank Account</span>
           </button>
         )}
       </div>
@@ -243,86 +242,85 @@ export function BankManagementPanel() {
               <div
                 key={bank.id}
                 className={cn(
-                  "relative group overflow-hidden rounded-3xl border transition-all duration-300 p-6 md:p-8",
+                  "relative group overflow-hidden rounded-2xl border transition-all duration-300 p-6 shadow-xl w-full max-w-sm aspect-[1.586/1] flex flex-col justify-between",
                   bank.is_default 
-                    ? "border-indigo-500/50 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 shadow-xl shadow-indigo-500/10" 
-                    : "border-slate-200 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl hover:shadow-lg hover:border-slate-300 dark:hover:border-white/20"
+                    ? "border-slate-700/50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white shadow-slate-900/30" 
+                    : "border-slate-200 dark:border-white/10 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 text-slate-800 dark:text-white hover:shadow-lg"
                 )}
               >
-                {bank.is_default && (
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-                )}
+                {/* Background Pattern/Glow */}
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
 
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex items-start justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm",
-                        bank.is_default 
-                          ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-500/20" 
-                          : "bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300"
-                      )}>
-                        <Landmark className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{bank.bank_name}</h3>
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5" />
-                          {bank.branch_name}
-                        </p>
-                      </div>
+                <div className="relative z-10 flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-lg shadow-sm border",
+                      bank.is_default 
+                        ? "bg-white/10 border-white/20 text-white" 
+                        : "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300"
+                    )}>
+                      <Landmark className="w-5 h-5" />
                     </div>
-                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {!bank.is_default && (
-                        <button
-                          onClick={() => handleSetDefault(bank.id)}
-                          className="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 rounded-xl text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                          title="Set as Default"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setEditingBank(bank)}
-                        className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(bank.id)}
-                        className="p-2 hover:bg-rose-50 dark:hover:bg-rose-500/20 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div>
+                      <h3 className="text-base font-semibold tracking-tight leading-none">{bank.bank_name}</h3>
+                      <p className={cn("text-[11px] font-medium mt-1 uppercase tracking-wider", bank.is_default ? "text-slate-300" : "text-slate-500")}>
+                        {bank.branch_name}
+                      </p>
                     </div>
                   </div>
-
-                  <div className="mt-auto space-y-3 bg-white/50 dark:bg-black/20 rounded-2xl p-5 border border-slate-100 dark:border-white/5 backdrop-blur-md">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Account Name</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{bank.account_name}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Account No</span>
-                      <span className="font-black font-mono tracking-wider text-slate-900 dark:text-white">{bank.account_number}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">IFSC</span>
-                      <span className="font-bold font-mono tracking-wider text-slate-900 dark:text-white">{bank.ifsc_code}</span>
-                    </div>
+                  
+                  {/* Actions Dropdown / Icons */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {!bank.is_default && (
+                      <button onClick={() => handleSetDefault(bank.id)} className="p-1.5 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-md transition-colors" title="Set as Default">
+                        <CheckCircle2 className="w-4 h-4 text-slate-400 hover:text-emerald-500" />
+                      </button>
+                    )}
+                    <button onClick={() => setEditingBank(bank)} className="p-1.5 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-md transition-colors" title="Edit">
+                      <Edit className="w-4 h-4 text-slate-400 hover:text-blue-500" />
+                    </button>
+                    <button onClick={() => handleDelete(bank.id)} className="p-1.5 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-md transition-colors" title="Delete">
+                      <Trash2 className="w-4 h-4 text-slate-400 hover:text-rose-500" />
+                    </button>
                   </div>
-
-                  {bank.is_default && (
-                    <div className="mt-6 flex items-center justify-center gap-2 py-2 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl border border-indigo-500/20">
-                      <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                      <span className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                        Default Account
-                      </span>
-                    </div>
-                  )}
                 </div>
+
+                <div className="relative z-10 flex flex-col justify-end flex-1 mt-6">
+                  {/* EMV Chip and Contactless Icon */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-7 rounded bg-gradient-to-br from-yellow-200 to-yellow-500 border border-yellow-600/30 overflow-hidden relative opacity-90">
+                       <div className="absolute inset-0 bg-yellow-900/10 border-x border-yellow-900/10 mx-2" />
+                       <div className="absolute inset-0 bg-yellow-900/10 border-y border-yellow-900/10 my-1.5" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <span className={cn("text-[10px] font-bold uppercase tracking-widest block mb-1 opacity-70")}>Account Number</span>
+                      <p className="font-mono text-xl tracking-widest font-semibold drop-shadow-sm">
+                        {bank.account_number.replace(/(\d{4})/g, '$1 ').trim()}
+                      </p>
+                    </div>
+                    
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <span className={cn("text-[10px] font-bold uppercase tracking-widest block mb-0.5 opacity-70")}>Account Holder</span>
+                        <p className="text-sm font-semibold tracking-wide uppercase">{bank.account_name}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={cn("text-[10px] font-bold uppercase tracking-widest block mb-0.5 opacity-70")}>IFSC</span>
+                        <p className="text-sm font-mono font-semibold tracking-wider uppercase">{bank.ifsc_code}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {bank.is_default && (
+                  <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest py-1 px-4 rounded-tl-xl shadow-lg border-t border-l border-emerald-400/50 z-20">
+                    Default Account
+                  </div>
+                )}
               </div>
             ))}
 

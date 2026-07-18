@@ -14,9 +14,8 @@ import {
   PlaneTakeoff, 
   FolderKanban, 
   Target, 
-  DollarSign, 
+  DollarSign,
   Landmark, 
-  Receipt, 
   AlertCircle, 
   Scale, 
   BarChart2, 
@@ -71,10 +70,9 @@ export function AccountsSidebar() {
       icon: Landmark,
       subLinks: [
         { title: "Bank Accounts", href: "/accounts/banks", icon: Landmark },
-        { title: "Income Ledger", href: "/accounts/ledger/income", icon: DollarSign },
-        { title: "Expense Ledger", href: "/accounts/ledger/expense", icon: Receipt },
+        { title: "Ledger", href: "/accounts/ledger", icon: Scroll },
         { title: "Outstanding Payments", href: "/accounts/outstanding", icon: AlertCircle },
-        { title: "Reconciliation", href: "#", icon: Scale },
+        { title: "Reconciliation", href: "/accounts/reconciliation", icon: Scale },
         { title: "Financial Reports", href: "/accounts/reports", icon: BarChart2 },
       ]
     },
