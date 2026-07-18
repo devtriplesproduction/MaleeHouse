@@ -901,23 +901,6 @@ export function QuotationBuilderEngine({
                 )}
               </div>
 
-              {/* Margin notes */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Margin Strategy</label>
-                <textarea value={internalNotes.margin_notes}
-                  onChange={e => setInternalNotes(n => ({ ...n, margin_notes: e.target.value }))}
-                  rows={3} placeholder="Margin, outsourcing costs, sub-contractor rates…"
-                  className="flat-input resize-none text-sm" />
-              </div>
-
-              {/* Finance notes */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Special Billing Logic</label>
-                <textarea value={internalNotes.finance_notes}
-                  onChange={e => setInternalNotes(n => ({ ...n, finance_notes: e.target.value }))}
-                  rows={3} placeholder="Special billing terms, milestone-based release…"
-                  className="flat-input resize-none text-sm" />
-              </div>
             </div>
           </div>
 

@@ -7,6 +7,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_REDIRECTS, Role } from '@/lib/permissions/roles'
 import { redirect } from 'next/navigation'
 
+// [DIAG] Remove when bug is resolved.
+function aaLog(tag: string, data?: Record<string, unknown>) {
+  if (process.env.NODE_ENV !== 'development') return
+  console.log(`[AA ${new Date().toISOString()}] ${tag}`, data ? JSON.stringify(data) : '')
+}
+
 export async function loginAction(email: string, password: string) {
   const supabase: any = await createClient()
 
@@ -32,16 +38,22 @@ export async function loginAction(email: string, password: string) {
 
   if (profileFetchError) {
     console.error("Profile fetch error:", profileFetchError)
+    // [DIAG]
+    aaLog('SIGNOUT', { caller: 'loginAction/profileFetchError', userId: authData.user.id })
     await supabase.auth.signOut()
     return { success: false, error: 'A database error occurred. Please try again.' }
   }
 
   if (!profile) {
+    // [DIAG]
+    aaLog('SIGNOUT', { caller: 'loginAction/profileNotFound', userId: authData.user.id })
     await supabase.auth.signOut()
     return { success: false, error: 'Profile not found. Contact your administrator.' }
   }
 
   if (!profile.is_active) {
+    // [DIAG]
+    aaLog('SIGNOUT', { caller: 'loginAction/isActiveFalse', userId: authData.user.id })
     await supabase.auth.signOut()
     return { success: false, error: 'Your account has been suspended. Contact your administrator.' }
   }
@@ -49,6 +61,8 @@ export async function loginAction(email: string, password: string) {
   if (profile.temp_password_expires_at) {
     const expiryDate = new Date(profile.temp_password_expires_at)
     if (new Date() > expiryDate) {
+      // [DIAG]
+      aaLog('SIGNOUT', { caller: 'loginAction/tempPasswordExpired', userId: authData.user.id })
       await supabase.auth.signOut()
       return { success: false, error: 'Your temporary password has expired (24-hour limit). Please contact your System Administrator.' }
     }
@@ -67,6 +81,8 @@ export async function loginAction(email: string, password: string) {
 }
 
 export async function signOutAction() {
+  // [DIAG]
+  aaLog('SIGNOUT', { caller: 'signOutAction/explicit' })
   const supabase: any = await createClient()
   await supabase.auth.signOut()
   return { success: true }

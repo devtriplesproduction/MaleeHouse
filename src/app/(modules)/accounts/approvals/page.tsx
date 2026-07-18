@@ -752,29 +752,6 @@ export default function ClientApprovalsPage() {
                   </div>
                 </div>
 
-                {/* Margins and Discussion Logs */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    Audit Margin Analysis
-                  </h4>
-
-                  <div className="p-4 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/40 dark:border-white/5 space-y-3.5 text-xs">
-                    <div className="flex justify-between items-center pb-2.5 border-b border-slate-200/40 dark:border-white/5">
-                      <span className="text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Markup Notes</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">
-                        {selectedQuote.internal_notes?.margin_notes || "Standard 15% pricing markup applied"}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      <span className="text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider block">Discussion Log</span>
-                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-semibold">
-                        {selectedQuote.internal_notes?.pricing_discussions?.[0] || "No pricing discussion logs recorded for this quotation iteration."}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* PDF & Dispatch Quick Actions */}

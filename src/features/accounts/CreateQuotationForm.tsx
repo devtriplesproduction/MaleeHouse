@@ -437,26 +437,6 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Margin Strategy</label>
-                <textarea 
-                  value={internalNotes.margin_notes}
-                  onChange={(e) => setInternalNotes({...internalNotes, margin_notes: e.target.value})}
-                  className="w-full h-24 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-[11px] font-medium focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-slate-900 dark:text-white resize-none"
-                  placeholder="Record estimated margin, outsourcing costs..."
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Special Billing Logic</label>
-                <textarea 
-                  value={internalNotes.finance_notes}
-                  onChange={(e) => setInternalNotes({...internalNotes, finance_notes: e.target.value})}
-                  className="w-full h-24 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-[11px] font-medium focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-slate-900 dark:text-white resize-none"
-                  placeholder="Special billing terms for this client..."
-                />
-              </div>
             </div>
           </div>
 

@@ -6,6 +6,13 @@ import { Role } from "@/lib/permissions/permissions";
 import { useRouter } from "next/navigation";
 import { signOutAction, getUserProfileAction } from "@/actions/auth.actions";
 
+// [DIAG] Remove when bug is resolved.
+const DEV = process.env.NODE_ENV === 'development'
+function upLog(tag: string, data?: Record<string, unknown>) {
+  if (!DEV) return
+  console.log(`[UP ${new Date().toISOString()}] ${tag}`, data ? JSON.stringify(data) : '')
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -31,13 +38,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const getUserProfile = async (forceLoading = false) => {
     if (forceLoading) setIsLoading(true);
+    // [DIAG]
+    upLog('GET_PROFILE_START', { forceLoading })
     try {
       const profile: any = await getUserProfileAction();
 
       if (!profile) {
+        // [DIAG]
+        upLog('GET_PROFILE_NULL', {})
         setUser(null);
         setRole(null);
       } else {
+        // [DIAG]
+        upLog('GET_PROFILE_OK', { id: profile.id, role: profile.role, is_active: profile.is_active })
         setUser({
           id: profile.id,
           name: `${profile.first_name} ${profile.last_name}`.trim(),
@@ -46,6 +59,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setRole(profile.role as Role);
       }
     } catch (err) {
+      // [DIAG]
+      upLog('GET_PROFILE_ERROR', { error: String(err) })
       console.error("Error in UserProvider fetch:", err);
     } finally {
       setIsLoading(false);
@@ -54,11 +69,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Initial fetch
+    upLog('INITIAL_MOUNT', {})
     getUserProfile(true);
 
     // Set up auth subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
+      // [DIAG]
+      const expiresAt = session?.expires_at
+      const expiresIn = expiresAt ? Math.round(expiresAt - Date.now() / 1000) : null
+      upLog('AUTH_EVENT', {
+        event,
+        uid: session?.user?.id ?? null,
+        email: session?.user?.email ?? null,
+        expiresAt: expiresAt ? new Date(expiresAt * 1000).toISOString() : null,
+        expiresInSeconds: expiresIn,
+        hasAccessToken: !!session?.access_token,
+        hasRefreshToken: !!session?.refresh_token,
+      })
+
       if (event === 'SIGNED_OUT') {
+        upLog('REDIRECT_TO_LOGIN', { reason: 'SIGNED_OUT event' })
         setUser(null);
         setRole(null);
         setIsLoading(false);

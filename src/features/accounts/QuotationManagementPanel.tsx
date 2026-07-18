@@ -370,24 +370,6 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
                     onUpdate={() => { fetchQuotations(false); onRefresh?.(); }}
                   />
                 </div>
-
-                {/* ── Internal notes ──────────────────────────────────────── */}
-                {isAccountant && q.internal_notes && (q.internal_notes.margin_notes || q.internal_notes.finance_notes) && (
-                  <div className="border-t border-slate-100 dark:border-white/5 p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {q.internal_notes.margin_notes && (
-                      <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                        <p className="text-[9px] font-semibold uppercase tracking-wider text-emerald-600 mb-1">Margin Notes</p>
-                        <p className="text-xs text-slate-500 italic">{q.internal_notes.margin_notes}</p>
-                      </div>
-                    )}
-                    {q.internal_notes.finance_notes && (
-                      <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                        <p className="text-[9px] font-semibold uppercase tracking-wider text-blue-600 mb-1">Billing Logic</p>
-                        <p className="text-xs text-slate-500 italic">{q.internal_notes.finance_notes}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
