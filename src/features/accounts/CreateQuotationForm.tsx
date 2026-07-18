@@ -277,12 +277,13 @@ export function CreateQuotationForm({ project, onCancel, onSuccess }: CreateQuot
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="col-span-12 pt-2">
-                       <input 
+                    <div className="col-span-12 pt-1">
+                       <textarea 
                         placeholder="Detailed scope or geographical constraints..."
                         value={item.description}
                         onChange={(e) => updateItem(index, 'description', e.target.value)}
-                        className="w-full bg-transparent border-none text-[10px] font-medium text-slate-500 outline-none focus:text-indigo-400 transition-colors px-1"
+                        rows={2}
+                        className="w-full bg-transparent border-none text-[10px] font-medium text-slate-500 outline-none focus:text-indigo-400 transition-colors px-1 resize-none leading-relaxed"
                       />
                     </div>
                   </motion.div>
