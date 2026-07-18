@@ -33,8 +33,6 @@ export function AccountsSidebar() {
 
   const links: SidebarLink[] = [
     { title: "Dashboard", href: "/accounts", icon: Home },
-    
-    { title: "Divider 1", isSeparator: true },
 
     {
       title: "Quotations",
@@ -47,8 +45,6 @@ export function AccountsSidebar() {
       ]
     },
 
-    { title: "Divider 2", isSeparator: true },
-
     {
       title: "Workplace",
       icon: Users,
@@ -60,8 +56,6 @@ export function AccountsSidebar() {
       ]
     },
 
-    { title: "Divider 3", isSeparator: true },
-
     {
       title: "Projects",
       icon: FolderKanban,
@@ -71,8 +65,6 @@ export function AccountsSidebar() {
         { title: "Billing & Collections", href: "/accounts/billing", icon: DollarSign },
       ]
     },
-
-    { title: "Divider 4", isSeparator: true },
 
     {
       title: "Banking",
@@ -86,8 +78,6 @@ export function AccountsSidebar() {
         { title: "Financial Reports", href: "/accounts/reports", icon: BarChart2 },
       ]
     },
-
-    { title: "Divider 5", isSeparator: true },
 
     {
       title: "Company Settings",
