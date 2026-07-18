@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Download, Search, Filter, Calendar, ChevronLeft, ChevronRight, 
-  BarChart3, FileText, CheckCircle2, AlertCircle, Clock
+  BarChart3, FileText, CheckCircle2, AlertCircle, Clock, Landmark
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ export interface LedgerItem {
   added_by?: string;
   receipt_url?: string;
   source: 'invoice' | 'payment' | 'expense';
+  bank_name?: string;
 }
 
 interface LedgerTableProps {
@@ -301,6 +302,11 @@ export function LedgerTable({ data, type, projects }: LedgerTableProps) {
                         </td>
                         <td className="py-4 px-6 text-sm text-slate-900 dark:text-white max-w-[250px] truncate">
                           {item.description}
+                          {item.bank_name && (
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Landmark className="w-3 h-3" /> {item.bank_name}
+                            </span>
+                          )}
                         </td>
                         <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">
                           {formatAmount(item.amount)}

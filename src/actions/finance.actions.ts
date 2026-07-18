@@ -362,7 +362,7 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    let query = supabase.from('payments').select('*, projects(name, client_name)');
+    let query = supabase.from('payments').select('*, projects(name, client_name), bank_accounts(bank_name)');
 
     if (projectId) {
       query = query.eq('project_id', projectId);

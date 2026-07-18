@@ -9,6 +9,7 @@ import { uploadFileToServerAction } from '@/actions/storage.actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectItem } from '@/components/ui/select';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
+import { BankAccountSelector } from '@/components/ui/BankAccountSelector';
 
 interface ExpenseEntryModalProps {
   isOpen: boolean;
@@ -52,6 +53,7 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
     amount: '',
     expense_date: new Date().toISOString().split('T')[0],
     description: '',
+    bank_id: '',
   });
 
   React.useEffect(() => {
@@ -62,6 +64,7 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
         amount: expenseToEdit.amount?.toString() || '',
         expense_date: expenseToEdit.expense_date ? new Date(expenseToEdit.expense_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         description: expenseToEdit.description || '',
+        bank_id: expenseToEdit.bank_id || '',
       });
     } else if (!expenseToEdit && isOpen) {
       setFormData({
@@ -70,6 +73,7 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
         amount: '',
         expense_date: new Date().toISOString().split('T')[0],
         description: '',
+        bank_id: '',
       });
     }
   }, [expenseToEdit, isOpen, initialCategory, defaultProjectId]);
@@ -92,7 +96,7 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
     }
   };
 
-  const isFormValid = formData.category && formData.amount && Number(formData.amount) > 0 && formData.expense_date && formData.description.trim().length > 0;
+  const isFormValid = formData.category && formData.amount && Number(formData.amount) > 0 && formData.expense_date && formData.description.trim().length > 0 && formData.bank_id;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +123,8 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
         amount: Number(formData.amount),
         expense_date: formData.expense_date,
         description: formData.description,
-        receipt_url
+        receipt_url,
+        bank_id: formData.bank_id || undefined,
       };
       
       let res;
@@ -131,6 +136,7 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
           amount: Number(formData.amount),
           expense_date: formData.expense_date,
           description: formData.description,
+          bank_id: formData.bank_id || undefined,
         });
       } else {
         res = await createExpenseAction(payload);
@@ -151,6 +157,7 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
           amount: '',
           expense_date: new Date().toISOString().split('T')[0],
           description: '',
+          bank_id: '',
         });
         setFile(null);
       } else {
@@ -192,6 +199,17 @@ export function ExpenseEntryModal({ isOpen, onClose, projects, onSuccess, defaul
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/50 dark:bg-slate-900/20">
           <form id="expense-form" onSubmit={handleSubmit} className="space-y-6">
             
+            {/* Bank Account — required for new transactions */}
+            <div className="space-y-2">
+              <BankAccountSelector
+                value={formData.bank_id}
+                onChange={(id) => setFormData({ ...formData, bank_id: id })}
+                required
+                showLabel
+                label="Paid from Bank Account"
+              />
+            </div>
+
             {/* Project Select */}
             {projects.length > 0 && (
               <div className="space-y-2">

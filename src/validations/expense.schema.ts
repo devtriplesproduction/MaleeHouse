@@ -32,6 +32,7 @@ export const createExpenseSchema = z.object({
   amount: z.number().positive('Amount must be positive'),
   expense_date: z.string().min(1, 'Expense date is required'),
   receipt_url: z.string().url('Invalid receipt URL').or(z.literal('')).nullable().optional(),
+  bank_id: z.string().uuid('Invalid bank account').optional(),
 });
 
 export const updateExpenseSchema = z.object({
@@ -44,6 +45,7 @@ export const updateExpenseSchema = z.object({
   amount: z.number().positive('Amount must be positive').optional(),
   expense_date: z.string().optional(),
   receipt_url: z.string().url('Invalid receipt URL').or(z.literal('')).nullable().optional(),
+  bank_id: z.string().uuid('Invalid bank account').optional(),
 });
 
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;

@@ -87,7 +87,7 @@ export async function getExpensesAction(filters?: {
     const supabase: any = await createClient();
     let query = supabase
       .from('expenses')
-      .select('*, projects(name, client_name), profiles!created_by(first_name, last_name)');
+      .select('*, projects(name, client_name), profiles!created_by(first_name, last_name), bank_accounts(bank_name)');
 
     if (filters?.project_id) {
       query = query.eq('project_id', filters.project_id);

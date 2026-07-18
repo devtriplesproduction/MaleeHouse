@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Lock, Unlock, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { BankAccountSelector } from "@/components/ui/BankAccountSelector";
 
 interface PayrollClientProps {
   initialMonth: number;
@@ -36,6 +37,7 @@ export function PayrollClient({
   const [isLocked, setIsLocked] = useState(initialIsLocked);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [bankId, setBankId] = useState('');
 
   useEffect(() => {
     if (month !== initialMonth || year !== initialYear) {
@@ -81,10 +83,14 @@ export function PayrollClient({
   };
 
   const handleLock = async () => {
+    if (!bankId) {
+      toast.error('Please select a bank account before locking payroll.');
+      return;
+    }
     if (!confirm(`Are you sure you want to lock the payroll for ${month}/${year}? This will freeze all calculations.`)) return;
     
     setActionLoading(true);
-    const res = await lockPayrollCycleAction(month, year);
+    const res = await lockPayrollCycleAction(month, year, bankId);
     if (res.success) {
       toast.success(res.message);
       setIsLocked(true);
@@ -140,10 +146,20 @@ export function PayrollClient({
                 Unlock Cycle
               </Button>
             ) : (
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleLock} disabled={loading || actionLoading}>
-                {actionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-                Lock & Process
-              </Button>
+              <div className="flex items-center gap-2">
+                <div className="w-64">
+                  <BankAccountSelector
+                    value={bankId}
+                    onChange={setBankId}
+                    required
+                    showLabel={false}
+                  />
+                </div>
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleLock} disabled={loading || actionLoading}>
+                  {actionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                  Lock &amp; Process
+                </Button>
+              </div>
             )
           )}
         </div>

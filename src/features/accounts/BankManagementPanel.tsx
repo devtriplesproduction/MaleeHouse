@@ -110,7 +110,7 @@ export function BankManagementPanel() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+          className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3"
         >
           {banks.map((bank, index) => {
             const cardThemes = [
@@ -137,7 +137,7 @@ export function BankManagementPanel() {
               <div
                 key={bank.id}
                 className={cn(
-                  "relative group overflow-hidden rounded-2xl border transition-all duration-500 ease-out p-6 shadow-md w-full max-w-sm min-h-[255px] flex flex-col justify-between hover:-translate-y-2 hover:scale-[1.015] hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-indigo-500/10",
+                  "relative group overflow-hidden rounded-2xl border transition-all duration-500 ease-out p-6 shadow-md w-full min-h-[255px] flex flex-col justify-between hover:-translate-y-2 hover:scale-[1.015] hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-indigo-500/10",
                   theme.light,
                   theme.dark,
                   bank.is_default && "border-indigo-500 shadow-indigo-100/50 dark:border-indigo-500/50 dark:shadow-indigo-500/10"

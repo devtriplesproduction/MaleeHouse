@@ -189,7 +189,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
  * lockPayrollCycleAction
  * Freezes the draft calculation and logs it as an immutable snapshot.
  */
-export async function lockPayrollCycleAction(month: number, year: number) {
+export async function lockPayrollCycleAction(month: number, year: number, bankId?: string) {
   const profile: any = await getUserProfileAction();
   if (profile?.role !== "admin" && profile?.role !== "hr") {
     return { success: false, error: "Only System Administrators or HR can lock payroll cycles." };
@@ -231,7 +231,8 @@ export async function lockPayrollCycleAction(month: number, year: number) {
         year,
         status: "locked",
         locked_by: profile.id,
-        locked_at: new Date().toISOString()
+        locked_at: new Date().toISOString(),
+        bank_id: bankId || null,
       }, { onConflict: 'id' });
 
     if (upsertError) throw upsertError;

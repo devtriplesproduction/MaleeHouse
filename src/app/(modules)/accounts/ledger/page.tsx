@@ -56,6 +56,7 @@ export default async function LedgerPage() {
       status: pay.status || "completed",
       receipt_url: pay.receipt_url,
       source: "payment",
+      bank_name: pay.bank_accounts?.bank_name || undefined,
     });
   });
 
@@ -82,6 +83,7 @@ export default async function LedgerPage() {
       added_by: addedByName,
       receipt_url: exp.receipt_url,
       source: "expense",
+      bank_name: exp.bank_accounts?.bank_name || undefined,
     });
   });
 
