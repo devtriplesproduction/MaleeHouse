@@ -529,13 +529,9 @@ export function QuotationBuilderEngine({
                     initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
                     className="grid grid-cols-12 gap-3 items-start p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-indigo-300 dark:hover:border-indigo-500/20 transition-all">
 
-                    <div className="col-span-5 space-y-1">
+                    <div className="col-span-5">
                       <input value={item.service_name} onChange={e => updateItem(idx, 'service_name', e.target.value)}
                         placeholder="Service name…" className="flat-input h-9 text-xs font-medium" />
-                      <textarea value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
-                        placeholder="Description (optional)…"
-                        rows={2}
-                        className="w-full rounded-lg bg-transparent border-none px-3 text-[11px] text-slate-400 outline-none focus:text-slate-600 dark:focus:text-slate-300 resize-none font-medium leading-relaxed" />
                     </div>
 
                     <div className="col-span-2">
@@ -559,6 +555,13 @@ export function QuotationBuilderEngine({
                         className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                    </div>
+
+                    <div className="col-span-12 pt-1.5 border-t border-slate-200/50 dark:border-white/5">
+                      <textarea value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
+                        placeholder="Description (optional)…"
+                        rows={2}
+                        className="w-full bg-transparent border-none px-1 text-[11px] text-slate-400 outline-none focus:text-slate-600 dark:focus:text-slate-300 resize-none font-medium leading-relaxed" />
                     </div>
                   </motion.div>
                 ))}
