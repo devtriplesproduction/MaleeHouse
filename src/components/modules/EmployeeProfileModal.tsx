@@ -396,7 +396,6 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   const handleDocumentNameChange = (id: string, newName: string) => {
     const updatedDocs = documentsList.map((f: any) => f.id === id ? { ...f, label: newName } : f);
     setDocumentsList(updatedDocs);
-    updateEmployeeProfileAction(employee.id, { documents: updatedDocs });
   };
 
   const copyToClipboard = (text: string) => {
@@ -750,7 +749,6 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                             type="text"
                             value={doc.label || doc.name || ""}
                             onChange={(e) => handleDocumentNameChange(doc.id, e.target.value)}
-                            onBlur={() => updateEmployeeProfileAction(employee.id, { documents: documentsList })}
                             placeholder="Document name..."
                             className="w-full text-xs font-bold text-slate-800 dark:text-slate-200 bg-transparent border-b border-transparent hover:border-slate-200 dark:hover:border-white/10 focus:border-indigo-400 outline-none transition-all pb-0.5"
                           />
