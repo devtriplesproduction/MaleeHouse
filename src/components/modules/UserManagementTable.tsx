@@ -67,12 +67,13 @@ interface UserProfile {
 
 interface UserManagementTableProps {
   initialUsers: UserProfile[];
+  defaultTab?: "directory" | "payroll" | "security" | "birthdays";
 }
 
 
-export function UserManagementTable({ initialUsers }: UserManagementTableProps) {
+export function UserManagementTable({ initialUsers, defaultTab = "directory" }: UserManagementTableProps) {
   const [users, setUsers] = useState<UserProfile[]>(initialUsers);
-  const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security" | "birthdays">("directory");
+  const [activeTab, setActiveTab] = useState<"directory" | "payroll" | "security" | "birthdays">(defaultTab);
 
   // Filtering & Search state
   const [searchTerm, setSearchTerm] = useState("");
