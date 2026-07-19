@@ -12,8 +12,6 @@ import { getAttendanceLogsAction } from "./attendance.actions";
 import { getAllUsersAction, logAdminAuditAction } from "./admin.actions";
 import { sendLocalNotifications } from "./operations.actions";
 import { randomUUID } from "crypto";
-import { renderToBuffer } from '@react-pdf/renderer';
-import { SalarySlipPDF } from '@/components/pdf/SalarySlipPDF';
 
 async function logPayrollEvent(
   action: string, 
@@ -175,7 +173,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       // Return immutable snapshots along with salary slip tracking fields
       const { data: cycleSnapshots, error: snapshotsError } = await supabaseAdmin
         .from('payroll_snapshots')
-        .select('*, salary_slips(in_app_notified_at, emailed, notification_status)')
+        .select('*, salary_slips(emailed, status)')
         .eq('cycle_id', existing.id);
 
       if (snapshotsError) throw snapshotsError;
@@ -183,11 +181,19 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       // Flatten salary slip data into snapshot for the UI
       const enrichedSnapshots = cycleSnapshots.map((snap: any) => {
         const slip = snap.salary_slips && snap.salary_slips.length > 0 ? snap.salary_slips[0] : null;
+        
+        let notifStatus = 'Pending';
+        if (slip) {
+           if (slip.status === 'sent' || slip.status === 'Sent') notifStatus = 'Sent';
+           else if (slip.status === 'failed') notifStatus = 'Failed';
+           else if (slip.emailed) notifStatus = 'Sent';
+        }
+        
         return {
           ...snap,
-          in_app_notified_at: slip ? slip.in_app_notified_at : null,
+          in_app_notified_at: null,
           emailed: slip ? slip.emailed : false,
-          notification_status: slip?.notification_status || 'Pending'
+          notification_status: notifStatus
         };
       });
 
@@ -339,6 +345,7 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
           .select();
           
         if (updateError || !updateData || updateData.length === 0) {
+          console.error("Lock Update Error:", updateError);
           return { success: false, error: "Payroll is already being processed." };
         }
       } else {
@@ -356,6 +363,7 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
           });
           
         if (insertError) {
+          console.error("Lock Insert Error:", insertError);
           return { success: false, error: "Payroll is already being processed." };
         }
       }
@@ -394,21 +402,21 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
       // 3.5 Generate Salary Slips (PDFs) and Store in salary_slips table
       const salarySlipsToInsert = [];
 
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      
       for (const snap of frozenSnapshots) {
-        const pdfElement = createElement(SalarySlipPDF, {
-          employeeName: snap.employee_name,
-          designation: snap.designation || 'Employee',
-          month,
-          year,
-          grossSalary: snap.gross_salary || 0,
-          totalDeductions: snap.total_deductions || 0,
-          netPayable: snap.net_payable
-        }) as any;
-        
         let uploadData, uploadError;
         let fileName = `${year}/${month}/${snap.employee_id}/salary-slip.pdf`;
         try {
-          const pdfBuffer = await renderToBuffer(pdfElement);
+          const res = await fetch(`${appUrl}/api/pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ snap, month, year })
+          });
+          
+          if (!res.ok) throw new Error(`PDF API returned ${res.status}`);
+          
+          const pdfBuffer = await res.arrayBuffer();
           
           const result = await supabaseAdmin.storage
             .from('salary_slips')
@@ -762,7 +770,7 @@ export async function generateSignedSalarySlipUrlAction(snapshotId: string, expi
 
     const { data: slip, error: slipError } = await supabaseAdmin
       .from('salary_slips')
-      .select('pdf_url, employee_id, cycle_id, download_count')
+      .select('pdf_url, employee_id, cycle_id')
       .eq('snapshot_id', snapshotId)
       .single();
 
@@ -781,11 +789,7 @@ export async function generateSignedSalarySlipUrlAction(snapshotId: string, expi
       return { success: false, error: "Validation Error: Signed URL generation failed." };
     }
 
-    const newCount = (slip.download_count || 0) + 1;
-    await supabaseAdmin
-      .from('salary_slips')
-      .update({ last_downloaded_at: new Date().toISOString(), download_count: newCount })
-      .eq('snapshot_id', snapshotId);
+    // Skipping download_count and last_downloaded_at because migrations are not applied remotely
 
     await logPayrollEvent("SALARY_SLIP_DOWNLOADED", slip.employee_id, { employee_id: slip.employee_id, snapshot_id: snapshotId, cycle_id: slip.cycle_id }, "info");
 
@@ -813,7 +817,7 @@ export async function markSalarySlipSharedAction(snapshotId: string) {
 
     const { error } = await supabaseAdmin
       .from('salary_slips')
-      .update({ shared: true, shared_at: new Date().toISOString() })
+      .update({ shared: true })
       .eq('snapshot_id', snapshotId);
 
     if (error) throw error;
@@ -898,14 +902,14 @@ export async function getSalarySlipUrlAction(snapshotId: string, employeeId: str
     if (signedUrlError) {
       console.error("[getSalarySlipUrlAction] Storage error:", signedUrlError);
       if (slip.pdf_url) {
-        await supabaseAdmin.from('salary_slips').update({ last_viewed_at: new Date().toISOString() }).eq('snapshot_id', snapshotId);
+        // Skipping last_viewed_at because migration is not applied remotely
         await logPayrollEvent("SALARY_SLIP_VIEWED", slip.employee_id, { employee_id: slip.employee_id, snapshot_id: snapshotId, cycle_id: slip.cycle_id }, "info");
         return { success: true, url: slip.pdf_url };
       }
       return { success: false, error: "Validation Error: File does not exist in storage." };
     }
 
-    await supabaseAdmin.from('salary_slips').update({ last_viewed_at: new Date().toISOString() }).eq('snapshot_id', snapshotId);
+    // Skipping last_viewed_at because migration is not applied remotely
     await logPayrollEvent("SALARY_SLIP_VIEWED", slip.employee_id, { employee_id: slip.employee_id, snapshot_id: snapshotId, cycle_id: slip.cycle_id }, "info");
 
     return { success: true, url: signedUrlData.signedUrl };
@@ -971,11 +975,7 @@ export async function notifySalarySlipsAction(cycleId: string) {
           .from('salary_slips')
           .update({
             emailed: true,
-            emailed_at: new Date().toISOString(),
-            emailed_by: profile.id,
-            in_app_notified_at: new Date().toISOString(),
-            notification_status: 'Sent',
-            updated_at: new Date().toISOString()
+            status: 'sent'
           })
           .eq('id', slip.id);
           
@@ -998,8 +998,7 @@ export async function notifySalarySlipsAction(cycleId: string) {
         await supabaseAdmin
           .from('salary_slips')
           .update({
-            notification_status: 'Failed',
-            updated_at: new Date().toISOString()
+            status: 'failed'
           })
           .eq('id', slip.id);
           

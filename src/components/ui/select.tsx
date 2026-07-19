@@ -89,6 +89,7 @@ export function Select({ value, onValueChange, placeholder, children, className,
     <AnimatePresence>
       {open && (
         <motion.div 
+          key="select-dropdown"
           initial={{ opacity: 0, y: -8, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -4, scale: 0.98 }}
@@ -98,10 +99,11 @@ export function Select({ value, onValueChange, placeholder, children, className,
             top: coords.top,
             left: coords.left,
             width: coords.width,
+            zIndex: 99999
           }}
           id="select-portal-container"
           className={cn(
-            "z-[999] rounded-xl overflow-hidden",
+            "z-[99999] rounded-xl overflow-hidden",
             "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl",
             "border border-slate-200/80 dark:border-white/10",
             "shadow-xl shadow-slate-200/50 dark:shadow-black/50"

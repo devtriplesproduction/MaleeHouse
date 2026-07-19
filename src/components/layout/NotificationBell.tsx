@@ -217,7 +217,7 @@ export function NotificationBell() {
                 let targetUrl = null;
                 let viewText = null;
 
-                if (notification.type === 'payroll') {
+                if ((notification.type as string) === 'payroll') {
                   targetUrl = '/employee/salary';
                   viewText = '· View Salary';
                 } else if (notification.related_project_id) {

@@ -339,12 +339,7 @@ export function PayrollClient({
                             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked || fetchingUrl === row.id + '-dl'} title="Download PDF" onClick={() => handleDownloadSlip(row)}>
                               {fetchingUrl === row.id + '-dl' ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin" /> : <Download className="w-4 h-4 text-blue-500" />}
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked} title="Print">
-                              <Printer className="w-4 h-4 text-emerald-500" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked} title="Email" onClick={() => handleEmailSlip(row)}>
-                              <Mail className="w-4 h-4 text-amber-500" />
-                            </Button>
+
                             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked} title="Share" onClick={() => handleOpenShare(row)}>
                               <Share2 className="w-4 h-4 text-purple-500" />
                             </Button>

@@ -1,5 +1,5 @@
 "use client";
-
+// Force HMR cache invalidation
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,27 +15,26 @@ interface ShareSalarySlipDialogProps {
 }
 
 export function ShareSalarySlipDialog({ open, onOpenChange, snapshotId, employeeName }: ShareSalarySlipDialogProps) {
-  const [loading, setLoading] = useState(false);
+  const [loadingType, setLoadingType] = useState<'copy' | 'email' | 'whatsapp' | null>(null);
 
   const handleShare = async (method: 'copy' | 'email' | 'whatsapp') => {
-    setLoading(true);
+    setLoadingType(method);
     
-    // 1. Generate secure signed URL
-    const res = await generateSignedSalarySlipUrlAction(snapshotId, 7 * 24 * 3600); // 7 days valid
-    
-    if (!res.success || !res.signedUrl) {
-      toast.error(res.error || "Failed to generate secure link");
-      setLoading(false);
-      return;
-    }
-    
-    const secureUrl = res.signedUrl;
-
-    // 2. Mark as shared in DB
-    await markSalarySlipSharedAction(snapshotId);
-
-    // 3. Execute sharing method
     try {
+      // 1. Generate secure signed URL
+      const res = await generateSignedSalarySlipUrlAction(snapshotId, 7 * 24 * 3600); // 7 days valid
+      
+      if (!res.success || !res.signedUrl) {
+        toast.error(res.error || "Failed to generate secure link");
+        return;
+      }
+      
+      const secureUrl = res.signedUrl;
+
+      // 2. Mark as shared in DB
+      await markSalarySlipSharedAction(snapshotId);
+
+      // 3. Execute sharing method
       if (method === 'copy') {
         await navigator.clipboard.writeText(`Salary Slip for ${employeeName}: ${secureUrl}`);
         toast.success("Secure link copied to clipboard");
@@ -49,12 +48,12 @@ export function ShareSalarySlipDialog({ open, onOpenChange, snapshotId, employee
         window.open(`https://wa.me/?text=${text}`, '_blank');
         toast.success("WhatsApp opened");
       }
+      onOpenChange(false);
     } catch (err) {
-      toast.error("Failed to execute sharing action");
+      toast.error("An unexpected error occurred during sharing.");
+    } finally {
+      setLoadingType(null);
     }
-
-    setLoading(false);
-    onOpenChange(false);
   };
 
   return (
@@ -72,9 +71,9 @@ export function ShareSalarySlipDialog({ open, onOpenChange, snapshotId, employee
             variant="outline" 
             className="justify-start gap-3 h-12" 
             onClick={() => handleShare('copy')}
-            disabled={loading}
+            disabled={loadingType !== null}
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Link2 className="w-5 h-5 text-indigo-500" />}
+            {loadingType === 'copy' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Link2 className="w-5 h-5 text-indigo-500" />}
             Copy Secure Link
           </Button>
           
@@ -82,9 +81,9 @@ export function ShareSalarySlipDialog({ open, onOpenChange, snapshotId, employee
             variant="outline" 
             className="justify-start gap-3 h-12" 
             onClick={() => handleShare('email')}
-            disabled={loading}
+            disabled={loadingType !== null}
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5 text-amber-500" />}
+            {loadingType === 'email' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5 text-amber-500" />}
             Share via Email App
           </Button>
           
@@ -92,9 +91,9 @@ export function ShareSalarySlipDialog({ open, onOpenChange, snapshotId, employee
             variant="outline" 
             className="justify-start gap-3 h-12" 
             onClick={() => handleShare('whatsapp')}
-            disabled={loading}
+            disabled={loadingType !== null}
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5 text-emerald-500" />}
+            {loadingType === 'whatsapp' ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5 text-emerald-500" />}
             Share via WhatsApp
           </Button>
         </div>
