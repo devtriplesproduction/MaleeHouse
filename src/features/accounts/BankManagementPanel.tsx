@@ -259,7 +259,7 @@ export function BankManagementPanel() {
       )}
 
       {editingBank && mounted && createPortal(
-        <div className="fixed inset-0 z-[50] flex items-center justify-center p-4 overflow-y-auto font-sans">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto font-sans">
           <div className="absolute inset-0 bg-slate-900/40 dark:bg-[#020408]/80 backdrop-blur-2xl animate-in fade-in duration-300" onClick={() => setEditingBank(null)} />
           
           <div className="relative w-full max-w-xl bg-white dark:bg-[#080b14] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8">

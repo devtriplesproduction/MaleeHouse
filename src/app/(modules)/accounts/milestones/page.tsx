@@ -597,7 +597,7 @@ function ProjectMilestonesContent() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 20 }}
                 transition={{ type: "spring", damping: 28, stiffness: 280 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
               >
                 <div
                   className="pointer-events-auto w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#0f121b] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 flex flex-col overflow-hidden"

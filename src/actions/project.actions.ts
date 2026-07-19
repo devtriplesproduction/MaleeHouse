@@ -1,5 +1,7 @@
 'use server';
 
+import { normalizeData } from '@/lib/normalize';
+
 import { checkActionRateLimit } from '@/lib/rate-limit';
 
 import { cache } from 'react';
@@ -30,7 +32,7 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
       };
     }
 
-    const { name, client_name, target_completion_date, phone, email, state_code } = validatedFields.data;
+    const { name, client_name, target_completion_date, phone, email, state_code, gst_number } = validatedFields.data;
 
     const contactInfo = validatedFields.data.client_contact ||
       `Phone: ${phone}${email ? `, Email: ${email}` : ''}`;
@@ -65,6 +67,7 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
       id: projectId,
       name: validatedFields.data.name,
       client_name: validatedFields.data.client_name,
+      gst_number: validatedFields.data.gst_number || null,
       client_contact: contactInfo,
       client_address: validatedFields.data.client_address || '',
       site_type: validatedFields.data.site_type || 'residential',
@@ -104,7 +107,7 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
     revalidatePath('/projects');
     revalidatePath('/operations');
 
-    return { success: true, data: newProject };
+    return { success: true, data: normalizeData(newProject) };
   } catch (error: any) {
     console.error('Unexpected error creating project:', error);
     return { success: false, error: error?.message || 'An unexpected error occurred.' };
@@ -151,7 +154,7 @@ export async function updateProjectAction(
 
     await revalidateAccountsPaths(projectId);
 
-    return { success: true, data: updated };
+    return { success: true, data: normalizeData(updated) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -238,7 +241,7 @@ export async function getSalesPipelineAction(): Promise<ActionResponse> {
       };
     });
 
-    return { success: true, data: pipeline };
+    return { success: true, data: normalizeData(pipeline) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -261,7 +264,7 @@ export async function getPaymentProjectsAction(): Promise<ActionResponse> {
 
     if (error) throw error;
 
-    return { success: true, data: paymentProjects };
+    return { success: true, data: normalizeData(paymentProjects) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -297,7 +300,7 @@ export async function getReviewProjectsAction(): Promise<ActionResponse> {
     const { data: reviewProjects, error } = await query;
     if (error) throw error;
 
-    return { success: true, data: reviewProjects };
+    return { success: true, data: normalizeData(reviewProjects) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -342,7 +345,7 @@ export async function assignUserAction(
     if (upsertError) throw upsertError;
 
     await revalidateAccountsPaths(projectId);
-    return { success: true, data: newAssignment };
+    return { success: true, data: normalizeData(newAssignment) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -369,7 +372,7 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return { success: true, data: activeProjects };
+      return { success: true, data: normalizeData(activeProjects) };
     } else {
       const { data: assignments, error: aError } = await supabase
         .from('project_assignments')
@@ -393,7 +396,7 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
         .order('created_at', { ascending: false });
 
       if (pError) throw pError;
-      return { success: true, data: assignedProjects };
+      return { success: true, data: normalizeData(assignedProjects) };
     }
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -415,7 +418,7 @@ export async function getProjectByIdAction(projectId: string): Promise<ActionRes
 
     if (error || !project) return { success: false, error: 'Project not found' };
 
-    return { success: true, data: project };
+    return { success: true, data: normalizeData(project) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

@@ -81,7 +81,7 @@ export function AssignmentModal({ projectId, currentAssignments, onClose }: Assi
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-2xl glass-card border-white/15 shadow-2xl shadow-black/40 flex flex-col max-h-[90vh] overflow-hidden">
 
         {/* Header */}

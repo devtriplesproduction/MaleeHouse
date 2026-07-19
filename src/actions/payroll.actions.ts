@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfileAction } from "@/actions/auth.actions";
@@ -31,6 +33,18 @@ export interface PayrollSnapshot {
   days_unpaid_leave: number;
   days_absent: number;
   net_payable: number;
+  basic_salary?: number;
+  hra?: number;
+  allowance?: number;
+  bonus?: number;
+  gross_salary?: number;
+  pf?: number;
+  esi?: number;
+  professional_tax?: number;
+  income_tax?: number;
+  other_deductions?: number;
+  total_deductions?: number;
+  net_salary?: number;
   calculated_at: string;
 }
 
@@ -43,7 +57,7 @@ export async function getPayrollCyclesAction() {
     const supabase: any = await createClient();
     const { data: cycles, error } = await supabase.from('payroll_cycles').select('*');
     if (error) throw error;
-    return { success: true, data: cycles };
+    return { success: true, data: normalizeData(cycles) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -160,6 +174,21 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       const prorationFactor = workingDaysLimit > 0 ? totalEarnedDays / workingDaysLimit : 1;
       const net_payable = Math.max(0, Math.round(base_salary * Math.max(0, prorationFactor)));
 
+      const basic_salary = Math.round(net_payable * 0.5);
+      const hra = Math.round(net_payable * 0.2);
+      const allowance = net_payable - basic_salary - hra;
+      const bonus = 0;
+      const gross_salary = basic_salary + hra + allowance + bonus;
+      
+      const pf = 0;
+      const esi = 0;
+      const professional_tax = 0;
+      const income_tax = 0;
+      const other_deductions = 0;
+      const total_deductions = pf + esi + professional_tax + income_tax + other_deductions;
+      
+      const net_salary = gross_salary - total_deductions;
+
       return {
         id: `draft-${emp.id}`,
         cycle_id: existing?.id || "draft-cycle",
@@ -175,6 +204,18 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
         days_unpaid_leave,
         days_absent,
         net_payable,
+        basic_salary,
+        hra,
+        allowance,
+        bonus,
+        gross_salary,
+        pf,
+        esi,
+        professional_tax,
+        income_tax,
+        other_deductions,
+        total_deductions,
+        net_salary,
         calculated_at: new Date().toISOString()
       };
     });
@@ -200,7 +241,7 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const supabaseAdmin: any = createAdminClient();
 
-    const { data: cycles, error: cycleFetchError } = await supabase
+    const { data: cycles, error: cycleFetchError } = await supabaseAdmin
       .from('payroll_cycles')
       .select('*')
       .eq('month', month)
@@ -251,6 +292,92 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
 
     if (snapshotsInsertError) throw snapshotsInsertError;
 
+    // 3.4 Ensure salary_slips bucket exists
+    const { data: buckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
+    if (bucketsError) throw bucketsError;
+    const bucketExists = buckets.some((b: any) => b.name === 'salary_slips');
+    if (!bucketExists) {
+      const { error: createBucketError } = await supabaseAdmin.storage.createBucket('salary_slips', { public: true });
+      if (createBucketError) throw new Error(`Failed to create salary_slips bucket: ${createBucketError.message}`);
+    }
+
+    // 3.5 Generate Salary Slips (PDFs) and Store in salary_slips table
+    const salarySlipsToInsert = [];
+    const uploadedFileNames: string[] = [];
+
+    for (const snap of frozenSnapshots) {
+      // Basic text representation (in a real app, use a server-compatible PDF library like pdfkit)
+      const pdfContent = `SALARY SLIP
+-----------------------------
+Employee: ${snap.employee_name}
+Designation: ${snap.designation}
+Month/Year: ${month}/${year}
+
+Gross Salary: ${snap.gross_salary || 0}
+Total Deductions: ${snap.total_deductions || 0}
+Net Payable: ${snap.net_payable}
+
+Generated automatically by MaleeHouse OS.
+`;
+      
+      const fileName = `salary_slip_${snap.employee_id}_${month}_${year}.txt`; // using .txt for robustness without canvas/puppeteer on edge
+      
+      let uploadData, uploadError;
+      try {
+        const result = await supabaseAdmin.storage
+          .from('salary_slips')
+          .upload(fileName, pdfContent, {
+            contentType: 'text/plain',
+            upsert: true
+          });
+        uploadData = result.data;
+        uploadError = result.error;
+      } catch (err: any) {
+        uploadError = err;
+        console.error(`[lockPayrollCycleAction] Caught upload exception for ${snap.employee_id}:`, err);
+      }
+        
+      if (uploadError) {
+        console.error(`[lockPayrollCycleAction] Error uploading salary slip for ${snap.employee_id}:`, uploadError);
+        throw new Error(`Failed to upload salary slip for ${snap.employee_name}: ${uploadError.message || 'Unknown storage error'}`);
+      }
+
+      let pdfUrl = null;
+      if (uploadData) {
+        const { data: publicUrlData } = supabaseAdmin.storage.from('salary_slips').getPublicUrl(fileName);
+        pdfUrl = publicUrlData.publicUrl;
+      }
+
+      salarySlipsToInsert.push({
+        employee_id: snap.employee_id,
+        cycle_id: cycleId,
+        snapshot_id: snap.id,
+        pdf_url: pdfUrl,
+        generated_by: profile.id
+      });
+
+      if (uploadData) {
+        uploadedFileNames.push(fileName);
+      }
+    }
+
+    if (salarySlipsToInsert.length > 0) {
+      const { error: slipsInsertError } = await supabaseAdmin
+        .from('salary_slips')
+        .insert(salarySlipsToInsert);
+      if (slipsInsertError) {
+        console.error(`[lockPayrollCycleAction] Error inserting salary slips:`, slipsInsertError);
+        
+        // Rollback: delete the successfully uploaded files from storage
+        if (uploadedFileNames.length > 0) {
+          console.log(`[lockPayrollCycleAction] Rolling back ${uploadedFileNames.length} uploaded files...`);
+          await supabaseAdmin.storage.from('salary_slips').remove(uploadedFileNames);
+        }
+        
+        throw new Error(`Error inserting salary slips: ${slipsInsertError.message}`);
+      }
+    }
+
     // 4. Admin Audit Logging
     await logAdminAuditAction({
       action: "PAYROLL_CYCLE_LOCKED",
@@ -271,6 +398,7 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
 
     return { success: true, message: `Payroll cycle for ${month}/${year} locked successfully.` };
   } catch (error: any) {
+    console.error("[lockPayrollCycleAction] Final Error:", error);
     return { success: false, error: error.message };
   }
 }
@@ -302,6 +430,31 @@ export async function unlockPayrollCycleAction(month: number, year: number) {
 
     if (!existing || existing.status !== "locked") {
       return { success: false, error: "This payroll cycle is not locked." };
+    }
+
+    // 0. Clean up storage files for this cycle
+    const { data: slipsToDelete } = await supabaseAdmin
+      .from('salary_slips')
+      .select('pdf_url')
+      .eq('cycle_id', existing.id);
+
+    if (slipsToDelete && slipsToDelete.length > 0) {
+      const filePaths = slipsToDelete
+        .map((s: any) => {
+          if (!s.pdf_url) return null;
+          const parts = s.pdf_url.split('/');
+          return parts[parts.length - 1];
+        })
+        .filter(Boolean);
+        
+      if (filePaths.length > 0) {
+        const { error: removeError } = await supabaseAdmin.storage
+          .from('salary_slips')
+          .remove(filePaths);
+        if (removeError) {
+          console.error("[unlockPayrollCycleAction] Failed to delete storage files:", removeError);
+        }
+      }
     }
 
     // 1. Delete snapshots
@@ -340,6 +493,260 @@ export async function unlockPayrollCycleAction(month: number, year: number) {
 
     return { success: true, message: `Payroll cycle for ${month}/${year} unlocked successfully.` };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * getMySalarySlipsAction
+ * Fetches salary slips for the logged in employee.
+ * Leverages RLS to automatically scope to the authenticated user.
+ */
+export async function getMySalarySlipsAction() {
+  try {
+    const supabase = await createClient();
+    
+    // We join with payroll_cycles to get the month and year
+    const { data: slips, error } = await supabase
+      .from('salary_slips')
+      .select(`
+        id,
+        pdf_url,
+        status,
+        generated_at,
+        cycle:payroll_cycles(month, year)
+      `)
+      .order('generated_at', { ascending: false });
+
+    if (error) throw error;
+    
+    // Normalize data to flatten the cycle month/year
+    const formattedData = (slips || []).map((s: any) => ({
+      id: s.id,
+      month: s.cycle?.month,
+      year: s.cycle?.year,
+      status: s.status,
+      pdf_url: s.pdf_url,
+      generated_at: s.generated_at
+    }));
+
+    return { success: true, data: formattedData };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * emailSalarySlipAction
+ * Fetches the salary slip file from storage, mocks an email send, and updates the emailed status.
+ */
+export async function emailSalarySlipAction(snapshotId: string) {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (profile?.role !== "admin" && profile?.role !== "hr") {
+      return { success: false, error: "Only System Administrators or HR can email salary slips." };
+    }
+
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
+
+    // 1. Fetch the slip and employee email
+    const { data: slip, error: slipError } = await supabaseAdmin
+      .from('salary_slips')
+      .select('id, pdf_url, employee_id, profiles!salary_slips_employee_id_fkey(email, first_name, last_name)')
+      .eq('snapshot_id', snapshotId)
+      .single();
+
+    if (slipError || !slip) {
+      return { success: false, error: "Salary slip not found for this snapshot." };
+    }
+
+    if (!slip.pdf_url) {
+      return { success: false, error: "No PDF generated for this salary slip." };
+    }
+
+    const employeeEmail = slip.profiles?.email;
+    const employeeName = slip.profiles?.first_name ? `${slip.profiles.first_name} ${slip.profiles.last_name || ''}`.trim() : "Employee";
+
+    if (!employeeEmail) {
+      return { success: false, error: "Employee does not have a registered email address." };
+    }
+
+    // 2. Extract filename from URL (we used public URL)
+    const urlParts = slip.pdf_url.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+
+    // 3. Download the file from storage securely
+    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+      .from('salary_slips')
+      .download(fileName);
+
+    if (downloadError || !fileData) {
+      return { success: false, error: "Failed to securely retrieve the salary slip file." };
+    }
+
+    // 4. MOCK EMAIL SENDING (using the binary fileData as an attachment)
+    console.log(`[MOCK EMAIL] Sending Salary Slip to ${employeeEmail}...`);
+    console.log(`[MOCK EMAIL] Attachment: ${fileName} (${fileData.size} bytes)`);
+    await new Promise(resolve => setTimeout(resolve, 800)); // simulate network delay
+
+    // 5. Update emailed = true
+    const { error: updateError } = await supabaseAdmin
+      .from('salary_slips')
+      .update({ emailed: true })
+      .eq('id', slip.id);
+
+    if (updateError) {
+      return { success: false, error: "Email sent, but failed to update status." };
+    }
+
+    return { success: true, message: `Salary slip emailed to ${employeeName}.` };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * generateSignedSalarySlipUrlAction
+ * Generates a temporary signed URL for a salary slip.
+ */
+export async function generateSignedSalarySlipUrlAction(snapshotId: string, expiresInSeconds: number = 3600) {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (profile?.role !== "admin" && profile?.role !== "hr") {
+      return { success: false, error: "Unauthorized access." };
+    }
+
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
+
+    const { data: slip, error: slipError } = await supabaseAdmin
+      .from('salary_slips')
+      .select('pdf_url')
+      .eq('snapshot_id', snapshotId)
+      .single();
+
+    if (slipError || !slip || !slip.pdf_url) {
+      return { success: false, error: "Salary slip file not found." };
+    }
+
+    // Extract filename from stored url/path
+    const urlParts = slip.pdf_url.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+
+    const { data, error } = await supabaseAdmin.storage
+      .from('salary_slips')
+      .createSignedUrl(fileName, expiresInSeconds);
+
+    if (error || !data) {
+      return { success: false, error: "Failed to generate secure link." };
+    }
+
+    return { success: true, signedUrl: data.signedUrl };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * markSalarySlipSharedAction
+ * Updates the shared status of a salary slip in the database.
+ */
+export async function markSalarySlipSharedAction(snapshotId: string) {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (profile?.role !== "admin" && profile?.role !== "hr") {
+      return { success: false, error: "Unauthorized access." };
+    }
+
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
+
+    const { error } = await supabaseAdmin
+      .from('salary_slips')
+      .update({ shared: true })
+      .eq('snapshot_id', snapshotId);
+
+    if (error) throw error;
+    
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * getSalarySlipsStatusAction
+ * Fetches the status of all salary slips for a given cycle.
+ */
+export async function getSalarySlipsStatusAction(cycleId: string) {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (profile?.role !== "admin" && profile?.role !== "hr") {
+      return { success: false, error: "Unauthorized access." };
+    }
+
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
+
+    const { data, error } = await supabaseAdmin
+      .from('salary_slips')
+      .select('id, employee_id, snapshot_id, emailed, shared, status')
+      .eq('cycle_id', cycleId);
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getSalarySlipUrlAction(snapshotId: string, employeeId: string, month: number, year: number) {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (!['admin', 'hr'].includes(profile.role?.toLowerCase()) && profile.id !== employeeId) {
+      return { success: false, error: 'Unauthorized access to salary slip.' };
+    }
+
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
+
+    const { data: slip, error } = await supabaseAdmin
+      .from('salary_slips')
+      .select('*')
+      .eq('snapshot_id', snapshotId)
+      .single();
+
+    if (error || !slip) {
+      return { success: false, error: "Salary slip not generated." };
+    }
+
+    const fileName = `salary_slip_${employeeId}_${month}_${year}.txt`;
+    
+    let signedUrlData, signedUrlError;
+    try {
+      const result = await supabaseAdmin.storage
+        .from('salary_slips')
+        .createSignedUrl(fileName, 60 * 60);
+      signedUrlData = result.data;
+      signedUrlError = result.error;
+    } catch (err: any) {
+      signedUrlError = err;
+      console.error(`[getSalarySlipUrlAction] Caught signed URL exception for ${employeeId}:`, err);
+    }
+
+    if (signedUrlError) {
+      console.error("[getSalarySlipUrlAction] Storage error:", signedUrlError);
+      if (slip.pdf_url) return { success: true, url: slip.pdf_url };
+      return { success: false, error: "Failed to generate secure file URL." };
+    }
+
+    return { success: true, url: signedUrlData.signedUrl };
+  } catch (error: any) {
+    console.error("[getSalarySlipUrlAction] Error:", error);
     return { success: false, error: error.message };
   }
 }

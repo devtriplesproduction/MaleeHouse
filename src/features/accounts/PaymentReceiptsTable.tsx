@@ -265,7 +265,7 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
       {mounted && typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
           {selectedReceipt && (
-            <div className="fixed inset-0 z-[100] overflow-y-auto p-6 md:p-12 flex justify-center items-start animate-in fade-in duration-300 print:p-0">
+            <div className="fixed inset-0 z-[9999] overflow-y-auto p-6 md:p-12 flex justify-center items-start animate-in fade-in duration-300 print:p-0">
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}

@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from "next/cache";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { createClient } from "@/lib/supabase/server";
@@ -191,7 +193,7 @@ export async function getAttendanceLogsAction(employeeId?: string, month?: numbe
       });
     }
 
-    return { success: true, data: filtered };
+    return { success: true, data: normalizeData(filtered) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

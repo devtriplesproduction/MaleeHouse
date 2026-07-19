@@ -1,5 +1,7 @@
 'use server';
 
+import { normalizeData } from '@/lib/normalize';
+
 import { checkActionRateLimit } from '@/lib/rate-limit';
 
 import { createClient } from '@/lib/supabase/server';
@@ -107,7 +109,7 @@ export async function registerFileAction(payload: RegisterFileInput): Promise<Ac
 
     revalidatePath(`/projects/${validatedFields.data.project_id}`);
 
-    return { success: true, data: insertedFile };
+    return { success: true, data: normalizeData(insertedFile) };
   } catch (error: any) {
     return { success: false, error: error?.message || 'An unexpected error occurred.' };
   }
@@ -148,7 +150,7 @@ export async function getProjectFilesAction(projectId: string): Promise<ActionRe
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error?.message || 'An unexpected error occurred.' };
   }

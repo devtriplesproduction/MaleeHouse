@@ -495,7 +495,7 @@ export function ClientDirectory({ clients, userRole }: ClientDirectoryProps) {
       {/* ── Custom Theme UI Details Modal ── */}
       {selectedClient && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[100] bg-slate-100/95 dark:bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] bg-slate-100/95 dark:bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={handleCloseModal}
         >
           <div

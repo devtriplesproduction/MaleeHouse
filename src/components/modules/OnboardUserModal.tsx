@@ -327,7 +327,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
   if (!mounted || !isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[50] flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-slate-900/40 dark:bg-[#020408]/80 backdrop-blur-2xl animate-in fade-in duration-300" />
       
       <div className="relative w-full max-w-2xl bg-white dark:bg-[#080b14] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8">
@@ -991,7 +991,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
 
       {/* Doc Preview Overlay */}
       {previewDoc && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setPreviewDoc(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setPreviewDoc(null)}>
           <div className="bg-white dark:bg-[#0a0d16] rounded-2xl shadow-2xl overflow-hidden w-full max-w-3xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5">
               <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{previewDoc.label || previewDoc.name}</p>

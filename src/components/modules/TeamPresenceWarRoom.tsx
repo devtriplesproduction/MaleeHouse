@@ -161,7 +161,7 @@ export function TeamPresenceWarRoom() {
                     <div key={u.userId} className="flex items-start gap-3 group/member">
                       <div className="relative">
                         <div className={cn("w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/5 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 text-xs shadow-sm", theme.border)}>
-                          {u.name.split(" ").map((n: any) => n[0]).join("").toUpperCase().slice(0, 2)}
+                          {(u.name || "Unknown User").split(" ").map((n: any) => n[0]).join("").toUpperCase().slice(0, 2)}
                         </div>
                         <div className={cn("absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-900", theme.dot)} />
                       </div>
@@ -171,7 +171,7 @@ export function TeamPresenceWarRoom() {
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <Eye className="w-3 h-3 text-slate-400" />
                           <p className="text-xs font-medium text-slate-500 truncate italic">
-                            Viewing: {u.currentPath.split("/").pop() || "Dashboard"}
+                            Viewing: {(u.currentPath || "").split("/").pop() || "Dashboard"}
                           </p>
                         </div>
                       </div>

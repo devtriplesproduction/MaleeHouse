@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -111,7 +113,7 @@ export async function getAllOverrideRequestsAction() {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-    return { success: true, data: sortedData };
+    return { success: true, data: normalizeData(sortedData) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

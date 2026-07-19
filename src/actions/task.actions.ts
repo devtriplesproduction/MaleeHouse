@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from "next/cache";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { notifyAssignmentAction } from "@/actions/notification.actions";
@@ -130,7 +132,7 @@ export async function getEngineerTasksAction(userId: string) {
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: tasks };
+    return { success: true, data: normalizeData(tasks) };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to fetch engineer tasks" };
   }

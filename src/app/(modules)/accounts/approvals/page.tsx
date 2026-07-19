@@ -625,7 +625,7 @@ export default function ClientApprovalsPage() {
       {/* Itemization Preview Modal/Drawer */}
       <AnimatePresence>
         {selectedQuote && (
-          <div className="fixed inset-0 z-50 flex items-center justify-end">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-end">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}

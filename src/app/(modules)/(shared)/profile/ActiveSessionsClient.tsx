@@ -110,7 +110,7 @@ export default function ActiveSessionsClient() {
       </button>
 
       {isOpen && mounted && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#0f121b] border border-slate-200 dark:border-white/10 rounded-3xl p-6 md:p-8 w-full max-w-lg shadow-2xl relative overflow-hidden text-slate-900 dark:text-white">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
             

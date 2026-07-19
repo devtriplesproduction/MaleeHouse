@@ -102,7 +102,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
   if (!mounted) return null;
   
   return createPortal(
-    <div className="fixed inset-0 z-[100] overflow-y-auto p-6 md:p-12 flex justify-center items-start animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto p-6 md:p-12 flex justify-center items-start animate-in fade-in duration-300">
       {/* Full screen backdrop that blurs everything, including the sidebar */}
       <div 
         className="fixed inset-0 bg-slate-950/60 dark:bg-black/85 backdrop-blur-md z-0" 

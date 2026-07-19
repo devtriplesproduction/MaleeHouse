@@ -203,7 +203,7 @@ function RichTextarea({
     const afterCursor = text.slice(selectionStart);
 
     // Replace the '@search' substring before cursor with selected user mention
-    const prefix = beforeCursor.replace(/@\w*$/, `@${member.firstName || member.email.split("@")[0]} `);
+    const prefix = beforeCursor.replace(/@\w*$/, `@${member.firstName || (member.email || "").split("@")[0]} `);
     const newVal = prefix + afterCursor;
     
     onChange(newVal);
@@ -574,7 +574,7 @@ export function ProjectActivityFeed({
             ) : (
               // Render formatted comment content with @mention styling
               <p className="whitespace-pre-wrap">
-                {comment.content.split(/(@\w+)/g).map((word, i) => {
+                {(comment.content || "").split(/(@\w+)/g).map((word, i) => {
                   if (word.startsWith("@")) {
                     return (
                       <span 

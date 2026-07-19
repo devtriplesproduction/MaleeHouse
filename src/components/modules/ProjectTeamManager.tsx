@@ -104,14 +104,14 @@ export function ProjectTeamManager({ projectId, initialTeam }: ProjectTeamManage
             {team.map((member) => (
               <div key={member.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 group">
                 <div className="flex items-center gap-3">
-                  <Avatar fallback={`${member.first_name[0]}${member.last_name[0]}`} />
+                  <Avatar fallback={`${member.first_name?.[0] || 'U'}${member.last_name?.[0] || ''}`} />
                   <div>
-                    <p className="text-sm font-semibold">{member.first_name} {member.last_name}</p>
-                    <p className="text-xs text-muted-foreground">{member.email}</p>
+                    <p className="text-sm font-semibold">{member.first_name || 'Unknown'} {member.last_name || 'User'}</p>
+                    <p className="text-xs text-muted-foreground">{member.email || 'No email'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant="glass" className="capitalize">{member.role.replace('_', ' ')}</Badge>
+                  <Badge variant="glass" className="capitalize">{member.role?.replace('_', ' ') || 'Member'}</Badge>
                   <Button 
                     variant="ghost" 
                     size="icon" 

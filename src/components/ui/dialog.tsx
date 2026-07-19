@@ -77,13 +77,13 @@ export function DialogContent({
   if (!mounted || !context?.open) return null;
   
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={() => context.onOpenChange(false)}
       />
     <div className={cn(
-      "glass-card relative z-50 w-full max-w-lg animate-in zoom-in-95 fade-in duration-300 border-white/10 shadow-2xl",
+      "glass-card relative z-[9999] w-full max-w-lg animate-in zoom-in-95 fade-in duration-300 border-white/10 shadow-2xl",
       className
     )}>
       {children}

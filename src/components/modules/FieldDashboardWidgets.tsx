@@ -255,7 +255,7 @@ export function QuickUploadButton() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-white/10 space-y-4">
             <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
               <Upload className="w-5 h-5 text-sky-500" />
@@ -323,7 +323,7 @@ export function SiteProgressButton({ projectId }: { projectId: string }) {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-200 dark:border-white/10 space-y-4">
             <h3 className="text-lg font-black text-slate-900 dark:text-white">Update Progress</h3>
             

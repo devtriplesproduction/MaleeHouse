@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from "next/cache";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import {
@@ -123,7 +125,7 @@ export async function getOpsTeamMembersAction() {
       .order('first_name');
 
     if (error) throw error;
-    return { success: true, data: data || [] };
+    return { success: true, data: normalizeData(data || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

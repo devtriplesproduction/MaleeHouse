@@ -15,6 +15,7 @@ const FAKE_DOMAINS = [
 export const createProjectSchema = z.object({
   name: z.string().min(3, { message: 'Project name must be at least 3 characters.' }),
   client_name: z.string().min(2, { message: 'Client name must be at least 2 characters.' }),
+  gst_number: z.string().optional(),
   phone: z.string().refine((val) => {
     try {
       return isValidPhoneNumber(val);

@@ -410,7 +410,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
 
   const modalContent = (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={handleClose} />
 
       <div className="relative w-full max-w-2xl bg-white dark:bg-[#080b14] rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8 flex flex-col h-[750px] max-h-[90vh]">
@@ -836,7 +836,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
           {/* Doc Preview Overlay */}
           {previewDoc && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setPreviewDoc(null)}>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setPreviewDoc(null)}>
               <div className="bg-white dark:bg-[#0a0d16] rounded-2xl shadow-2xl overflow-hidden w-full max-w-3xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5">
                   <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{previewDoc.label || previewDoc.name}</p>
@@ -1285,7 +1285,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
       {/* Confirm Close Modal */}
       {showCloseConfirm && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowCloseConfirm(false)} />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#080b14] rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden p-6 text-center animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4">

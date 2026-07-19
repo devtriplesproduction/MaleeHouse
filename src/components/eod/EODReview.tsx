@@ -325,13 +325,25 @@ function ReportRow({
     setAdminNote(report.admin_note || "");
   }, [report.adjusted_hours, report.hours_spent, report.admin_note]);
 
-  const tasksCount = report.tasks_completed.split('\n').filter((t: any) => t.trim().length > 0).length;
+  const tasksCount = (report.tasks_completed || '').split('\n').filter((t: any) => t.trim().length > 0).length;
 
   const handleApprove = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     setIsUpdating(true);
     
     const parsedHours = parseFloat(adjustedHours);
+
+    if (!/^\d+(\.\d{1,2})?$/.test(adjustedHours.toString())) {
+      toast.error('Office hours can have at most 2 decimal places');
+      setIsUpdating(false);
+      return;
+    }
+
+    if (parsedHours > 12) {
+      toast.error('Office hours cannot exceed 12');
+      setIsUpdating(false);
+      return;
+    }
     
     const result = await updateEODReportAction(report.id, {
       status: 'approved',
@@ -353,6 +365,18 @@ function ReportRow({
     setIsUpdating(true);
     
     const parsedHours = parseFloat(adjustedHours);
+
+    if (!/^\d+(\.\d{1,2})?$/.test(adjustedHours.toString())) {
+      toast.error('Office hours can have at most 2 decimal places');
+      setIsUpdating(false);
+      return;
+    }
+
+    if (parsedHours > 12) {
+      toast.error('Office hours cannot exceed 12');
+      setIsUpdating(false);
+      return;
+    }
     
     const result = await updateEODReportAction(report.id, {
       adjusted_hours: isNaN(parsedHours) ? report.hours_spent : parsedHours,
@@ -431,7 +455,7 @@ function ReportRow({
                 <div>
                   <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400/80 mb-3">TASKS COMPLETED</h5>
                   <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                    {report.tasks_completed.split(/!\[.*?\]\((.*?)\)/).map((part: string, index: number) => {
+                    {(report.tasks_completed || '').split(/!\[.*?\]\((.*?)\)/).map((part: string, index: number) => {
                       if (index % 2 === 1) {
                         return (
                           <div key={index} className="my-4">

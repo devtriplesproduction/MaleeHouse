@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from "next/cache";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { createClient } from "@/lib/supabase/server";
@@ -60,7 +62,7 @@ export async function createIssueAction(
     if (error) return { success: false, error: error.message };
 
     revalidatePath(`/projects/${projectId}`);
-    return { success: true, data: newIssue };
+    return { success: true, data: normalizeData(newIssue) };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to create issue" };
   }
@@ -101,7 +103,7 @@ export async function getProjectIssuesAction(projectId: string) {
 
     if (error) return { success: false, error: error.message };
 
-    return { success: true, data: projectIssues };
+    return { success: true, data: normalizeData(projectIssues) };
   } catch (err: any) {
     return { success: false, error: err.message, data: [] };
   }

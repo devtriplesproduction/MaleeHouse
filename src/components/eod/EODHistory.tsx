@@ -31,7 +31,7 @@ export function EODHistory({ reports }: EODHistoryProps) {
 
 function HistoryRow({ report, index }: { report: any; index: number }) {
   const [expanded, setExpanded] = useState(false);
-  const tasksCount = report.tasks_completed.split('\n').filter((t: string) => t.trim().length > 0).length;
+  const tasksCount = (report.tasks_completed || '').split('\n').filter((t: string) => t.trim().length > 0).length;
   const isApproved = report.status === 'approved';
 
   return (
@@ -102,7 +102,7 @@ function HistoryRow({ report, index }: { report: any; index: number }) {
                 <div>
                   <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400/80 mb-3">TASKS COMPLETED</h5>
                   <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                    {report.tasks_completed.split(/!\[.*?\]\((.*?)\)/).map((part: string, index: number) => {
+                    {(report.tasks_completed || '').split(/!\[.*?\]\((.*?)\)/).map((part: string, index: number) => {
                       if (index % 2 === 1) {
                         return (
                           <div key={index} className="my-4">

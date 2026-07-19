@@ -51,7 +51,7 @@ export function AlertDialogContent({
   if (!mounted || !context?.open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
       {/* Overlay — dismissible on click */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"

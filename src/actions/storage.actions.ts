@@ -1,5 +1,7 @@
 'use server';
 
+import { normalizeData } from '@/lib/normalize';
+
 import { checkActionRateLimit } from '@/lib/rate-limit';
 
 import { createClient } from '@/lib/supabase/server';
@@ -206,7 +208,7 @@ export async function getEmployeeDocumentsAction(employeeId: string) {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

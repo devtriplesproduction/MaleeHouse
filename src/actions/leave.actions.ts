@@ -1,5 +1,7 @@
 'use server'
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from 'next/cache'
 import { ActionResponse } from './project.actions'
 import { getUserProfileAction } from './auth.actions'
@@ -91,7 +93,7 @@ export async function applyLeaveAction(payload: {
     if (error) return { success: false, error: error.message }
 
     revalidatePath('/leaves')
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -110,7 +112,7 @@ export async function getMyLeavesAction(): Promise<ActionResponse> {
       .order('created_at', { ascending: false })
 
     if (error) return { success: false, error: error.message }
-    return { success: true, data: data || [] }
+    return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -129,7 +131,7 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
       .order('created_at', { ascending: false })
 
     if (error) return { success: false, error: error.message }
-    return { success: true, data: data || [] }
+    return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -213,7 +215,7 @@ export async function updateLeaveStatusAction(id: string, status: 'approved' | '
     }
 
     revalidatePath('/leaves')
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -249,7 +251,7 @@ export async function getLeaveBalanceAction(userId?: string): Promise<{ success:
     const usedLeaves = attendanceData ? attendanceData.length : 0
     const balance = Math.max(0, 1 - usedLeaves) // 1 leave per month, no carry forward
 
-    return { success: true, data: balance }
+    return { success: true, data: normalizeData(balance) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

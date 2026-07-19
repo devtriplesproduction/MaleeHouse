@@ -128,7 +128,7 @@ export function BirthdayNotifier() {
     if (!currentUser || !role) return;
 
     const today = new Date().toISOString().split("T")[0];
-    const key = `hasSeenBirthdays_${today}`;
+    const key = `hasSeenBirthdays_${currentUser.id}_${today}`;
     const hasSeenBirthdays = localStorage.getItem(key);
     if (hasSeenBirthdays) return;
 
@@ -149,7 +149,7 @@ export function BirthdayNotifier() {
 
   const handleAcknowledge = () => {
     const today = new Date().toISOString().split("T")[0];
-    localStorage.setItem(`hasSeenBirthdays_${today}`, "true");
+    localStorage.setItem(`hasSeenBirthdays_${currentUser?.id}_${today}`, "true");
     setNotifications([]);
   };
 

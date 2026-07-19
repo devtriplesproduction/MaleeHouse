@@ -4,17 +4,22 @@ import React, { useState, useEffect } from "react";
 
 import { 
   calculateMonthlyPayrollAction, 
-  lockPayrollCycleAction, 
+  lockPayrollCycleAction,
   unlockPayrollCycleAction,
+  emailSalarySlipAction,
+  getSalarySlipUrlAction,
   PayrollSnapshot
 } from "@/actions/payroll.actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Lock, Unlock, Download, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, Unlock, Download, Loader2, FileText, Printer, Mail, Share2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { BankAccountSelector } from "@/components/ui/BankAccountSelector";
+import { SalarySlipPreviewDialog } from "@/components/modules/SalarySlipPreviewDialog";
+import { ShareSalarySlipDialog } from "@/components/modules/ShareSalarySlipDialog";
+import { BulkPayrollOperationsDialog } from "@/components/modules/BulkPayrollOperationsDialog";
 
 interface PayrollClientProps {
   initialMonth: number;
@@ -38,6 +43,13 @@ export function PayrollClient({
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [bankId, setBankId] = useState('');
+  const [fetchingUrl, setFetchingUrl] = useState<string | null>(null);
+  
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<{id: string, name: string, url: string} | null>(null);
+
+  const [shareOpen, setShareOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   useEffect(() => {
     if (month !== initialMonth || year !== initialYear) {
@@ -118,6 +130,65 @@ export function PayrollClient({
 
   const monthName = new Date(year, month - 1, 1).toLocaleString('default', { month: 'long' });
 
+  const getPdfUrl = (employeeId: string) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    if (!supabaseUrl) return '';
+    return `${supabaseUrl}/storage/v1/object/public/salary_slips/salary_slip_${employeeId}_${month}_${year}.txt`;
+  };
+
+  const handleViewSlip = async (row: any) => {
+    setFetchingUrl(row.id);
+    const res = await getSalarySlipUrlAction(row.id, row.employee_id, month, year);
+    setFetchingUrl(null);
+    
+    if (res.success && res.url) {
+      setSelectedEmployee({
+        id: row.id,
+        name: row.employee_name,
+        url: res.url
+      });
+      setPreviewOpen(true);
+    } else {
+      toast.error(res.error || "Salary slip not generated.");
+    }
+  };
+
+  const handleDownloadSlip = async (row: any) => {
+    setFetchingUrl(row.id + '-dl');
+    const res = await getSalarySlipUrlAction(row.id, row.employee_id, month, year);
+    setFetchingUrl(null);
+    
+    if (res.success && res.url) {
+      const link = document.createElement('a');
+      link.href = res.url;
+      link.download = `Salary_Slip_${row.employee_name.replace(/\s+/g, '_')}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      toast.error(res.error || "Salary slip not generated.");
+    }
+  };
+
+  const handleOpenShare = (row: any) => {
+    setSelectedEmployee({
+      id: row.id,
+      name: row.employee_name,
+      url: "" // Not needed for share dialog
+    });
+    setShareOpen(true);
+  };
+
+  const handleEmailSlip = async (row: any) => {
+    const loadingToastId = toast.loading(`Emailing salary slip to ${row.employee_name}...`);
+    const res = await emailSalarySlipAction(row.id);
+    if (res.success) {
+      toast.success(res.message, { id: loadingToastId });
+    } else {
+      toast.error(res.error || "Failed to email salary slip", { id: loadingToastId });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -175,10 +246,18 @@ export function PayrollClient({
               <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">Draft (Live Calc)</Badge>
             )}
           </CardTitle>
-          <Button variant="ghost" size="sm" className="text-slate-500">
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            {isLocked && (
+              <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" onClick={() => setBulkOpen(true)}>
+                <Layers className="w-4 h-4 mr-2" />
+                Bulk Actions
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" className="text-slate-500">
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -198,6 +277,7 @@ export function PayrollClient({
                     <TableHead className="text-center">Leaves</TableHead>
                     <TableHead className="text-center">Absent</TableHead>
                     <TableHead className="text-right font-bold text-indigo-600 dark:text-indigo-400">Net Payable</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -218,11 +298,30 @@ export function PayrollClient({
                         <TableCell className="text-right font-bold text-indigo-600 dark:text-indigo-400">
                           ₹{row.net_payable.toLocaleString()}
                         </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked || fetchingUrl === row.id} title="View Salary Slip" onClick={() => handleViewSlip(row)}>
+                              {fetchingUrl === row.id ? <Loader2 className="w-4 h-4 text-slate-500 animate-spin" /> : <FileText className="w-4 h-4 text-slate-500" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked || fetchingUrl === row.id + '-dl'} title="Download PDF" onClick={() => handleDownloadSlip(row)}>
+                              {fetchingUrl === row.id + '-dl' ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin" /> : <Download className="w-4 h-4 text-blue-500" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked} title="Print">
+                              <Printer className="w-4 h-4 text-emerald-500" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked} title="Email" onClick={() => handleEmailSlip(row)}>
+                              <Mail className="w-4 h-4 text-amber-500" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isLocked} title="Share" onClick={() => handleOpenShare(row)}>
+                              <Share2 className="w-4 h-4 text-purple-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-slate-500">
+                      <TableCell colSpan={8} className="h-24 text-center text-slate-500">
                         No employees found for this payroll cycle.
                       </TableCell>
                     </TableRow>
@@ -233,6 +332,33 @@ export function PayrollClient({
           )}
         </CardContent>
       </Card>
+
+      <SalarySlipPreviewDialog 
+        open={previewOpen} 
+        onOpenChange={setPreviewOpen} 
+        employeeName={selectedEmployee?.name || ''} 
+        pdfUrl={selectedEmployee?.url} 
+      />
+
+      {selectedEmployee && (
+        <ShareSalarySlipDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          snapshotId={selectedEmployee.id}
+          employeeName={selectedEmployee.name}
+        />
+      )}
+
+      {isLocked && (
+        <BulkPayrollOperationsDialog
+          open={bulkOpen}
+          onOpenChange={setBulkOpen}
+          snapshots={data}
+          month={month}
+          year={year}
+          getPdfUrl={getPdfUrl}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,7 @@
 'use server';
 
+import { normalizeData } from '@/lib/normalize';
+
 import { checkActionRateLimit } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 import { getUserProfileAction } from '@/actions/auth.actions';
@@ -70,7 +72,7 @@ export async function createExpenseAction(payload: CreateExpenseInput): Promise<
       await flagBackdatedReconciliationsAction(data.bank_id, data.expense_date, "Expense Added");
     }
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -118,7 +120,7 @@ export async function getExpensesAction(filters?: {
 
     if (error) return { success: false, error: error.message };
 
-    return { success: true, data: data || [] };
+    return { success: true, data: normalizeData(data || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -207,7 +209,7 @@ export async function updateExpenseAction(payload: UpdateExpenseInput): Promise<
       }
     }
 
-    return { success: true, data: updatedExpense };
+    return { success: true, data: normalizeData(updatedExpense) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -316,7 +318,7 @@ export async function createProjectBudgetItemAction(payload: CreateProjectBudget
 
     await revalidateAccountsPaths(payload.project_id || undefined);
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

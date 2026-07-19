@@ -1,5 +1,7 @@
 'use server'
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from 'next/cache'
 import { ActionResponse } from './project.actions'
 import { getUserProfileAction } from './auth.actions'
@@ -85,7 +87,7 @@ export async function submitEODAction(payload: {
     }
 
     revalidatePath('/eod')
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -104,7 +106,7 @@ export async function getMyEODReportsAction(): Promise<ActionResponse> {
       .order('date', { ascending: false })
 
     if (error) return { success: false, error: error.message }
-    return { success: true, data: data || [] }
+    return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -123,7 +125,7 @@ export async function getAllEODReportsAction(): Promise<ActionResponse> {
       .order('date', { ascending: false })
 
     if (error) return { success: false, error: error.message }
-    return { success: true, data: data || [] }
+    return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -171,7 +173,7 @@ export async function updateEODReportAction(id: string, updates: { adjusted_hour
     })
 
     revalidatePath('/eod')
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

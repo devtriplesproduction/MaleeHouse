@@ -164,6 +164,7 @@ export function ProjectCreationWizard() {
     defaultValues: {
       name: '',
       client_name: '',
+      gst_number: '',
       phone: '',
       email: '',
       client_address: '',
@@ -373,6 +374,23 @@ export function ProjectCreationWizard() {
                               </div>
                               {errors.client_name && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.client_name.message}</p>}
                             </div>
+                          </div>
+
+                          {/* GST Number */}
+                          <div className="space-y-2">
+                            <label htmlFor="input-gst" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                              GST Number (Optional)
+                            </label>
+                            <div className="relative group">
+                              <Building2 className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
+                              <input
+                                id="input-gst"
+                                {...methods.register('gst_number')}
+                                placeholder="e.g. 27AAAAA0000A1Z5"
+                                className={cn("glass-input h-14 !pl-12 font-medium text-sm placeholder:font-normal placeholder:text-slate-400/70 uppercase", c.focusBorder, c.focusRing)}
+                              />
+                            </div>
+                            {errors.gst_number && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.gst_number.message}</p>}
                           </div>
 
                           {/* Contact Phone & Email */}
@@ -646,6 +664,13 @@ export function ProjectCreationWizard() {
                                 <p className="text-xs font-medium text-slate-400 dark:text-slate-550 uppercase tracking-widest">Client Name</p>
                                 <p className="text-sm font-medium text-slate-800 dark:text-white">{watch('client_name')}</p>
                               </div>
+
+                              {watch('gst_number') && (
+                                <div className="space-y-1">
+                                  <p className="text-xs font-medium text-slate-400 dark:text-slate-550 uppercase tracking-widest">GST Number</p>
+                                  <p className="text-sm font-medium text-slate-800 dark:text-white uppercase">{watch('gst_number')}</p>
+                                </div>
+                              )}
 
                               <div className="space-y-1">
                                 <p className="text-xs font-medium text-slate-400 dark:text-slate-550 uppercase tracking-widest">Contact Phone</p>

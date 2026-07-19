@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { revalidatePath } from "next/cache";
@@ -13,7 +15,7 @@ export async function getReconciliationHistoryAction(bankId: string) {
       .eq("bank_id", bankId)
       .order("statement_date", { ascending: false });
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

@@ -85,9 +85,11 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
   }, [filter, searchQuery, selectedMonth, selectedYear]);
 
   // Sync state if initialLeaves changes
-  if (JSON.stringify(initialLeaves) !== JSON.stringify(leaves)) {
-    setLeaves(initialLeaves);
-  }
+  useEffect(() => {
+    if (JSON.stringify(initialLeaves) !== JSON.stringify(leaves)) {
+      setLeaves(initialLeaves);
+    }
+  }, [initialLeaves, leaves]);
 
   const handleStatusUpdate = async (id: string, newStatus: 'approved' | 'rejected' | 'pending', reason?: string) => {
     setProcessingId(id);

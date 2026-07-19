@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -195,7 +197,7 @@ export async function updateCompanySettingsAction(settings: Partial<CompanySetti
     revalidatePath("/admin/settings");
     revalidatePath("/accounts");
     revalidatePath("/projects");
-    return { success: true, data: updatedSettings };
+    return { success: true, data: normalizeData(updatedSettings) };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update settings" };
   }

@@ -1,5 +1,7 @@
 'use server'
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from 'next/cache'
 import { ActionResponse } from './project.actions'
 import { getUserProfileAction } from './auth.actions'
@@ -18,7 +20,7 @@ export async function getSOPsAction(): Promise<ActionResponse> {
       .order('created_at', { ascending: false })
 
     if (error) return { success: false, error: error.message }
-    return { success: true, data: data || [] }
+    return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -32,7 +34,7 @@ export async function getAllSOPsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient()
     const { data, error } = await supabase.from('sops').select('*').order('created_at', { ascending: false })
     if (error) return { success: false, error: error.message }
-    return { success: true, data: data || [] }
+    return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -60,7 +62,7 @@ export async function createSOPAction(payload: { title: string; content: string;
     if (error) return { success: false, error: error.message }
 
     revalidatePath('/sop')
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -83,7 +85,7 @@ export async function updateSOPAction(id: string, payload: { title?: string; con
     if (!data) return { success: false, error: 'SOP not found' }
 
     revalidatePath('/sop')
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

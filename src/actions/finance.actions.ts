@@ -1,5 +1,7 @@
 'use server';
 
+import { normalizeData } from '@/lib/normalize';
+
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { notifyPaymentAction } from '@/actions/notification.actions';
@@ -95,7 +97,7 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
 
     await revalidateAccountsPaths(payload.project_id);
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -171,7 +173,7 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
     await revalidateAccountsPaths(payload.project_id);
     revalidatePath(`/projects/${payload.project_id}`);
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -358,7 +360,7 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -387,7 +389,7 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -418,7 +420,7 @@ export async function assignAccountantAction(projectId: string, accountantId: st
 
     await revalidateAccountsPaths(projectId);
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -437,13 +439,13 @@ export async function getAccountantOwnerAction(projectId: string): Promise<Actio
       .maybeSingle();
 
     if (error) return { success: false, error: error.message };
-    if (!data) return { success: true, data: null };
+    if (!data) return { success: true, data: normalizeData(null) };
 
     if (profile.role !== 'admin' && profile.id !== data.accountant_id) {
       return { success: false, error: 'Access denied.' };
     }
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -582,7 +584,7 @@ export async function createMilestonesAction(
 
     await revalidateAccountsPaths(projectId);
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -600,7 +602,7 @@ export async function getMilestonesAction(projectId: string): Promise<ActionResp
       .order('created_at', { ascending: true });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -663,7 +665,7 @@ export async function freezeProjectAction(
     await revalidateAccountsPaths(projectId);
     revalidatePath('/operations');
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -717,7 +719,7 @@ export async function unfreezeProjectAction(projectId: string, comment?: string)
     await revalidateAccountsPaths(projectId);
     revalidatePath('/operations');
 
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -757,7 +759,7 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
       };
     });
 
-    return { success: true, data: processedData };
+    return { success: true, data: normalizeData(processedData) };
   } catch (error: any) {
     console.error("getAllMilestonesAction Error: ", error);
     return { success: false, error: error.message };
@@ -1098,7 +1100,7 @@ export async function getProjectsFinancialSummaryAction(projectIds: string[]): P
       });
     }
 
-    return { success: true, data: summary };
+    return { success: true, data: normalizeData(summary) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -1317,7 +1319,7 @@ export async function getProjectProfitabilityAction(): Promise<{ success: boolea
 
     result.sort((a, b) => b.margin - a.margin);
 
-    return { success: true, data: result };
+    return { success: true, data: normalizeData(result) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -1359,7 +1361,7 @@ export async function getProjectFinancesAction(projectId: string): Promise<Actio
     const { data, error } = await supabase.from('project_finances').select('*').eq('project_id', projectId).maybeSingle();
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -1509,7 +1511,7 @@ export async function getProjectBillingSummaryAction(): Promise<ActionResponse> 
     // Sort by pending balance descending, then by name
     result.sort((a, b) => b.pending_balance - a.pending_balance || a.name.localeCompare(b.name));
 
-    return { success: true, data: result };
+    return { success: true, data: normalizeData(result) };
 
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -1579,7 +1581,7 @@ export async function getOutstandingBalancesAction(): Promise<ActionResponse> {
 
     const outstandingProjects = projectSummaries.filter((p: any) => p.outstanding > 0 || p.status !== 'completed');
 
-    return { success: true, data: outstandingProjects };
+    return { success: true, data: normalizeData(outstandingProjects) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

@@ -1,5 +1,7 @@
 'use server';
 
+import { normalizeData } from '@/lib/normalize';
+
 import { createClient } from '@/lib/supabase/server';
 import { getUserProfileAction } from './auth.actions';
 import { revalidatePath } from 'next/cache';
@@ -15,7 +17,7 @@ export async function getHolidaysAction(): Promise<ActionResponse> {
       .order('date', { ascending: true });
 
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -48,7 +50,7 @@ export async function createHolidayAction(payload: {
     await notifyNewHolidayAction(payload.name, payload.date, payload.is_optional);
     
     revalidatePath('/hr/holidays');
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -105,7 +107,7 @@ export async function updateHolidayAction(
     if (error) throw error;
 
     revalidatePath('/hr/holidays');
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

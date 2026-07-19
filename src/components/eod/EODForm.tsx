@@ -1,4 +1,5 @@
 'use client';
+// Force hot reload
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -164,8 +165,13 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
       return;
     }
 
-    if (parseFloat(formData.hours_spent) > 10) {
-      toast.error('Office hours cannot exceed 10');
+    if (!/^\d+(\.\d{1,2})?$/.test(formData.hours_spent)) {
+      toast.error('Office hours can have at most 2 decimal places');
+      return;
+    }
+
+    if (parseFloat(formData.hours_spent) > 12) {
+      toast.error('Office hours cannot exceed 12');
       return;
     }
 
@@ -204,7 +210,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
         });
         setPhoto(null);
         if (onSuccess) onSuccess();
-        window.location.reload();
+        router.refresh();
       } else {
         toast.error(response.error || 'Failed to submit report');
       }
@@ -266,7 +272,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                 </div>
                 {hasSubmitted ? (
                   <div className="w-full h-32 overflow-y-auto rounded-2xl bg-slate-100 dark:bg-[#070b14]/50 border border-slate-200 dark:border-white/5 p-4 text-sm text-slate-900 dark:text-slate-100 opacity-75 cursor-not-allowed shadow-inner whitespace-pre-wrap leading-relaxed">
-                    {formData.tasks_completed.split(/!\[.*?\]\((.*?)\)/).map((part, index) => {
+                    {(formData.tasks_completed || '').split(/!\[.*?\]\((.*?)\)/).map((part, index) => {
                       if (index % 2 === 1) {
                         return (
                           <div key={index} className="my-3">
@@ -431,8 +437,8 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                     <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none" />
                     <input
                       type="number"
-                      step="0.5"
-                      max="10"
+                      step="0.01"
+                      max="12"
                       placeholder="e.g. 8.5"
                       value={formData.hours_spent}
                       onChange={(e) => setFormData({ ...formData, hours_spent: e.target.value })}

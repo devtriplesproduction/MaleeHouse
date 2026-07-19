@@ -186,7 +186,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
       )}
 
       {open && createPortal(
-        <div className="fixed inset-0 z-[100] overflow-y-auto p-6 md:p-12 flex justify-center items-start animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto p-6 md:p-12 flex justify-center items-start animate-in fade-in duration-300">
           <div 
             className="fixed inset-0 bg-slate-950/60 dark:bg-black/85 backdrop-blur-md z-0" 
             onClick={() => setOpen(false)}

@@ -1,19 +1,26 @@
 "use server";
+
+import { normalizeData } from '@/lib/normalize';
  
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+import { createClient as createServiceRoleClient } from "@supabase/supabase-js";
+
 export async function getBankAccountsAction() {
   try {
-    const supabase = await createClient();
-    const { data, error } = await (supabase as any)
+    const supabase = createServiceRoleClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data, error } = await supabase
       .from("bank_accounts")
       .select("*")
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

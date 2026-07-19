@@ -1,5 +1,7 @@
 'use server'
 
+import { normalizeData } from '@/lib/normalize';
+
 import { getUserProfileAction } from './auth.actions'
 import { createClient } from '@/lib/supabase/server'
 import { getAllLeavesAction } from './leave.actions'
@@ -79,7 +81,7 @@ export async function getPendingLeaveRequestsAction() {
   if (!res.success) return res
 
   const pending = (res.data || []).filter((l: any) => l.status === 'pending')
-  return { success: true, data: pending }
+  return { success: true, data: normalizeData(pending) }
 }
 
 export async function getTodayAttendanceSummaryAction() {
@@ -155,7 +157,7 @@ export async function getOnboardingInProgressAction() {
       (u: any) => !['admin', 'hr'].includes(u.role?.toLowerCase())
     );
 
-    return { success: true, data: filtered }
+    return { success: true, data: normalizeData(filtered) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

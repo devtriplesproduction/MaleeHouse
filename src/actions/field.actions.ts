@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeData } from '@/lib/normalize';
+
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { createClient } from "@/lib/supabase/server";
 import { insertNotification } from "./notification.actions";
@@ -48,7 +50,7 @@ export async function getMyVisitsAction() {
     };
   });
 
-  return { success: true, data: formattedVisits };
+  return { success: true, data: normalizeData(formattedVisits) };
 }
 
 
@@ -237,7 +239,7 @@ export async function getMyPendingFieldReportsAction() {
     }
   }
 
-  return { success: true, data: pendingReports };
+  return { success: true, data: normalizeData(pendingReports) };
 }
 
 export async function markVisitCompletedAction(visitId: string) {
@@ -353,7 +355,7 @@ export async function getMyMaterialRequestsAction() {
     created_at: req.created_at
   }));
 
-  return { success: true, data: formattedRequests };
+  return { success: true, data: normalizeData(formattedRequests) };
 }
 
 export async function getAllMaterialRequestsAction() {
@@ -393,7 +395,7 @@ export async function getAllMaterialRequestsAction() {
     created_at: req.created_at
   }));
 
-  return { success: true, data: formattedRequests };
+  return { success: true, data: normalizeData(formattedRequests) };
 }
 
 export async function updateMaterialRequestStatusAction(requestId: string, newStatus: "approved" | "delivered" | "rejected") {

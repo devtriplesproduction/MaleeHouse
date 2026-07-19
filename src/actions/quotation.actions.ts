@@ -1,5 +1,7 @@
 'use server';
 
+import { normalizeData } from '@/lib/normalize';
+
 import { checkActionRateLimit } from '@/lib/rate-limit';
 
 import { revalidatePath } from 'next/cache';
@@ -156,7 +158,7 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
       await revalidateAccountsPaths(payload.project_id);
     }
 
-    return { success: true, data: newQuotation };
+    return { success: true, data: normalizeData(newQuotation) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -422,7 +424,7 @@ export async function getQuotationIntakeQueueAction(): Promise<ActionResponse> {
       (p.status === 'lead_created' && p.creator?.role === 'accountant')
     );
 
-    return { success: true, data: filteredProjects };
+    return { success: true, data: normalizeData(filteredProjects) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -446,7 +448,7 @@ export async function getProjectQuotationsAction(projectId: string, _cacheBuster
         .from('quotations')
         .select('*, project:projects(id, name, client_name, status)')
         .eq('id', projectId);
-      return { success: true, data: standalone || [] };
+      return { success: true, data: normalizeData(standalone || []) };
     }
 
     const { data: projectQuotations } = await supabase
@@ -455,7 +457,7 @@ export async function getProjectQuotationsAction(projectId: string, _cacheBuster
       .eq('project_id', projectId)
       .order('created_at', { ascending: false });
 
-    return { success: true, data: projectQuotations || [] };
+    return { success: true, data: normalizeData(projectQuotations || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -473,7 +475,7 @@ export async function getQuotationByIdAction(id: string): Promise<ActionResponse
       .eq('id', id)
       .single();
 
-    return { success: true, data: quotation };
+    return { success: true, data: normalizeData(quotation) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -496,7 +498,7 @@ export async function getAllQuotationsAction(): Promise<ActionResponse> {
       .select('*, project:projects(id, name, client_name, status, project_milestones(id))')
       .order('created_at', { ascending: false });
 
-    return { success: true, data: sorted || [] };
+    return { success: true, data: normalizeData(sorted || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -611,7 +613,7 @@ export async function getQuotationVersionsAction(quotationId: string): Promise<A
       .eq('quotation_id', quotationId)
       .order('version_number', { ascending: false });
 
-    return { success: true, data: quotationVersions || [] };
+    return { success: true, data: normalizeData(quotationVersions || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -624,7 +626,7 @@ export async function getQuotationTemplatesAction(): Promise<ActionResponse> {
 
     const supabase: any = await createClient();
     const { data: templates } = await supabase.from('quotation_templates').select('*').order('created_at', { ascending: false });
-    return { success: true, data: templates || [] };
+    return { success: true, data: normalizeData(templates || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

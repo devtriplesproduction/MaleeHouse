@@ -1,5 +1,7 @@
 'use server';
 
+import { normalizeData } from '@/lib/normalize';
+
 import { createClient } from '@/lib/supabase/server';
 import { getUserProfileAction } from './auth.actions';
 import { getAllUsersAction } from './admin.actions';
@@ -35,7 +37,7 @@ export async function getAnnouncementsAction(): Promise<ActionResponse> {
       };
     });
 
-    return { success: true, data: mappedData };
+    return { success: true, data: normalizeData(mappedData) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -90,7 +92,7 @@ export async function createAnnouncementAction(payload: {
     }
 
     revalidatePath('/announcements');
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -123,7 +125,7 @@ export async function updateAnnouncementAction(id: string, payload: {
     if (error) throw error;
 
     revalidatePath('/announcements');
-    return { success: true, data };
+    return { success: true, data: normalizeData(data) };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

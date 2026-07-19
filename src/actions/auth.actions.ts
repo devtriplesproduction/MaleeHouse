@@ -1,5 +1,7 @@
 'use server'
 
+import { normalizeData } from '@/lib/normalize';
+
 import { cache } from 'react'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -144,7 +146,7 @@ export async function updateMyProfileAction(updates: Partial<any>) {
     if (error) return { success: false, error: error.message }
 
     revalidatePath('/profile')
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -249,7 +251,7 @@ export async function getTodayBirthdaysAction() {
       }
     })
 
-    return { success: true, data: bdays }
+    return { success: true, data: normalizeData(bdays) }
   } catch (error) {
     console.error('Error fetching birthdays:', error)
     return { success: false, data: [] }

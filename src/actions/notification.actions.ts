@@ -1,5 +1,7 @@
 'use server'
 
+import { normalizeData } from '@/lib/normalize';
+
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserProfileAction } from './auth.actions'
@@ -192,7 +194,7 @@ export async function getNotificationsAction() {
       project_name: (n as any).projects?.name ?? undefined,
     }))
 
-    return { success: true, data: mapped }
+    return { success: true, data: normalizeData(mapped) }
   } catch (error: any) {
     return { success: false, error: error.message, data: [] }
   }

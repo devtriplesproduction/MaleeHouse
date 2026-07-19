@@ -1,5 +1,7 @@
 'use server'
 
+import { normalizeData } from '@/lib/normalize';
+
 import { revalidatePath } from 'next/cache'
 import { getUserProfileAction } from '@/actions/auth.actions'
 import { createClient } from '@/lib/supabase/server'
@@ -95,7 +97,7 @@ export async function getAllUsersAction() {
       console.log('getAllUsersAction db error:', error)
       throw error
     }
-    return { success: true, data: data || [] }
+    return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     console.error('Directory Fetch Error:', error)
     return { success: false, error: error.message }
@@ -291,7 +293,7 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
     )
 
     revalidatePath('/admin/users')
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -433,7 +435,7 @@ export async function getAdminAuditLogsAction() {
       .select('*')
       .order('created_at', { ascending: false })
     if (error) throw error
-    return { success: true, data: data || [] }
+    return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -610,7 +612,7 @@ export async function getLastSalaryIncrementAction(employeeId: string) {
       throw new Error('Failed to fetch last increment')
     }
     
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -636,7 +638,7 @@ export async function getSalaryIncrementHistoryAction(employeeId: string) {
       throw new Error('Failed to fetch increment history')
     }
     
-    return { success: true, data }
+    return { success: true, data: normalizeData(data) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

@@ -1,3 +1,4 @@
+import { normalizeData } from '@/lib/normalize';
 // Analytics actions - Server only, no "use server" directive because of unstable_cache
 
 import { createClient } from "@/lib/supabase/server";
@@ -52,7 +53,7 @@ export async function getProjectEfficiencyAction(projectId: string) {
       });
     }
 
-    return { success: true, data: efficiencyData };
+    return { success: true, data: normalizeData(efficiencyData) };
   } catch (err) {
     return { success: false, error: "Failed to calculate efficiency" };
   }

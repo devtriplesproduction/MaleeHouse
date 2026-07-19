@@ -716,7 +716,7 @@ export function UserManagementTable({ initialUsers, defaultTab = "directory" }: 
                               <>
                                 {/* Overlay/Backdrop to close dropdown when clicked outside */}
                                 <div
-                                  className="fixed inset-0 z-40"
+                                  className="fixed inset-0 z-[9999]"
                                   onClick={() => setActiveMenuUserId(null)}
                                 />
                                 <div className="absolute right-6 top-12 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
@@ -1415,7 +1415,7 @@ export function UserManagementTable({ initialUsers, defaultTab = "directory" }: 
 
       {/* ONE-TIME PASSWORD DIALOG OVERLAY */}
       {oneTimePassModal && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setOneTimePassModal(null)} />
           <div className="relative w-full max-w-md bg-white dark:bg-[#080b14] rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
             <div className="w-14 h-14 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/20 text-indigo-500">
