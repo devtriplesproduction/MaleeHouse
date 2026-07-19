@@ -912,7 +912,7 @@ export async function getSalarySlipUrlAction(snapshotId: string, employeeId: str
     return { success: false, error: error.message };
   }
 }
-\n
+
 /**
  * notifySalarySlipsAction
  * Loads salary slips, validates data, and prepares notifications.
