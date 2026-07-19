@@ -10,7 +10,7 @@ export type NotificationItem = {
   id: string
   title: string
   message: string
-  type: 'assignment' | 'stage_update' | 'approval' | 'rejection' | 'deadline_warning' | 'system'
+  type: 'assignment' | 'stage_update' | 'approval' | 'rejection' | 'deadline_warning' | 'system' | 'payroll'
   is_read: boolean
   created_at: string
   related_project_id?: string
