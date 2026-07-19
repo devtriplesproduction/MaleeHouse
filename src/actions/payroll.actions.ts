@@ -264,6 +264,9 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
     if (bankId) {
       const { syncBankBalance } = await import("@/actions/bank.actions");
       await syncBankBalance(bankId);
+      const { flagBackdatedReconciliationsAction } = await import("@/actions/reconciliation.actions");
+      const transactionDate = new Date(year, month, 0).toISOString().split('T')[0];
+      await flagBackdatedReconciliationsAction(bankId, transactionDate, "Payroll Cycle Locked");
     }
 
     return { success: true, message: `Payroll cycle for ${month}/${year} locked successfully.` };
@@ -330,6 +333,9 @@ export async function unlockPayrollCycleAction(month: number, year: number) {
     if (existing.bank_id) {
       const { syncBankBalance } = await import("@/actions/bank.actions");
       await syncBankBalance(existing.bank_id);
+      const { flagBackdatedReconciliationsAction } = await import("@/actions/reconciliation.actions");
+      const transactionDate = new Date(year, month, 0).toISOString().split('T')[0];
+      await flagBackdatedReconciliationsAction(existing.bank_id, transactionDate, "Payroll Cycle Unlocked");
     }
 
     return { success: true, message: `Payroll cycle for ${month}/${year} unlocked successfully.` };

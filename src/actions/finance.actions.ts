@@ -322,6 +322,11 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
     if (payment.bank_id) {
       const { syncBankBalance } = await import('@/actions/bank.actions');
       await syncBankBalance(payment.bank_id);
+      
+      if (status === 'verified') {
+        const { flagBackdatedReconciliationsAction } = await import('@/actions/reconciliation.actions');
+        await flagBackdatedReconciliationsAction(payment.bank_id, payment.payment_date || payment.created_at, "Payment Verified");
+      }
     }
 
     return { success: true };

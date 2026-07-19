@@ -118,6 +118,8 @@ export default function ReconciliationWorkspace({ banks }: Props) {
     }
   }
 
+  const currentHistory = history.filter((r: any) => r.is_current !== false);
+
   const difference =
     erpData && statementBalance !== ""
       ? erpData.erp_balance - Number(statementBalance)
@@ -259,6 +261,66 @@ export default function ReconciliationWorkspace({ banks }: Props) {
                 </p>
                 <p className="text-xs text-slate-400">{selectedBank.account_name}</p>
               </div>
+
+              {/* Last Reconciled Card */}
+              {currentHistory.length > 0 && (
+                <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex flex-col sm:flex-row gap-4 justify-between">
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1 text-slate-400 dark:text-slate-500">Last Reconciled</span>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {new Date(currentHistory[0].statement_date).toLocaleDateString("en-IN")}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1 text-slate-400 dark:text-slate-500">Reconciled By</span>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {currentHistory[0].reconciled_by_profile ? `${currentHistory[0].reconciled_by_profile.first_name} ${currentHistory[0].reconciled_by_profile.last_name}` : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1 text-slate-400 dark:text-slate-500">Original Status</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className={cn("w-1.5 h-1.5 rounded-full", statusDot[currentHistory[0].status])} />
+                      <span className={cn("text-xs font-semibold", statusColors[currentHistory[0].status])}>
+                        {statusLabel[currentHistory[0].status]}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1 text-slate-400 dark:text-slate-500">Current Period</span>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {new Date(new Date(currentHistory[0].statement_date).getTime() + 86400000).toLocaleDateString("en-IN")} → {statementDate ? new Date(statementDate).toLocaleDateString("en-IN") : "Select End Date"}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {currentHistory.length === 0 && selectedBank && (
+                <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex flex-col sm:flex-row gap-4 justify-between">
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1 text-slate-400 dark:text-slate-500">Current Period</span>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      Opening Balance Date → {statementDate ? new Date(statementDate).toLocaleDateString("en-IN") : "Select End Date"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {currentHistory.length > 0 && currentHistory[0].review_status === 'needs_review' && (
+                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-amber-800 dark:text-amber-400">Needs Review</p>
+                      <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                        Reason: Backdated {currentHistory[0].review_trigger_type} on {new Date(currentHistory[0].review_trigger_date).toLocaleDateString("en-IN")}.
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => { setStatementDate(currentHistory[0].statement_date); setErpData(null); }} className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-colors">
+                    Re-reconcile Affected Period
+                  </button>
+                </div>
+              )}
 
               {/* Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -484,7 +546,7 @@ export default function ReconciliationWorkspace({ banks }: Props) {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-white/5">
-                        {["Date", "ERP Balance", "Statement", "Difference", "Adjustment", "Status", "By"].map((h) => (
+                        {["Date", "ERP Balance", "Statement", "Difference", "Adjustment", "Status", "By", "Superseded On", "Superseded By"].map((h) => (
                           <th key={h} className="px-4 py-2.5 text-left font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider whitespace-nowrap">
                             {h}
                           </th>
@@ -509,18 +571,33 @@ export default function ReconciliationWorkspace({ banks }: Props) {
                           <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 nums whitespace-nowrap">
                             {Number(r.adjustment_amount) !== 0 ? fmt(Number(r.adjustment_amount)) : "—"}
                           </td>
-                          <td className="px-4 py-2.5 whitespace-nowrap">
+                          <td className="px-4 py-2.5 whitespace-nowrap flex items-center gap-2">
                             <span className={cn(
                               "flex items-center gap-1 font-semibold",
-                              statusColors[r.status]
+                              r.is_current === false ? "text-slate-400 dark:text-slate-500 line-through" : statusColors[r.status]
                             )}>
-                              <div className={cn("w-1.5 h-1.5 rounded-full", statusDot[r.status])} />
-                              {statusLabel[r.status]}
+                              <div className={cn("w-1.5 h-1.5 rounded-full", r.is_current === false ? "bg-slate-300 dark:bg-slate-600" : statusDot[r.status])} />
+                              {r.is_current === false ? "Superseded" : statusLabel[r.status]}
                             </span>
+                            {r.is_current !== false && r.review_status === 'needs_review' && (
+                              <span title={`Backdated ${r.review_trigger_type} on ${new Date(r.review_trigger_date).toLocaleDateString("en-IN")}`} className="bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20 text-[9px] font-bold uppercase tracking-widest py-0.5 px-2 rounded-full cursor-help">
+                                Needs Review
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-2.5 text-slate-400 whitespace-nowrap">
                             {r.reconciled_by_profile
                               ? `${r.reconciled_by_profile.first_name} ${r.reconciled_by_profile.last_name}`
+                              : "—"}
+                          </td>
+                          <td className="px-4 py-2.5 text-slate-400 whitespace-nowrap">
+                            {r.superseded_at 
+                              ? new Date(r.superseded_at).toLocaleDateString("en-IN") + " " + new Date(r.superseded_at).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit' })
+                              : "—"}
+                          </td>
+                          <td className="px-4 py-2.5 text-slate-400 whitespace-nowrap">
+                            {r.superseded_by_profile
+                              ? `${r.superseded_by_profile.first_name} ${r.superseded_by_profile.last_name}`
                               : "—"}
                           </td>
                         </tr>

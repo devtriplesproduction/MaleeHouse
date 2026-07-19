@@ -164,6 +164,11 @@ export function BankManagementPanel() {
                             Default
                           </span>
                         )}
+                        {(bank as any).reconciliation_review_status === 'needs_review' && (
+                          <span title="Backdated transactions have affected previous reconciliations." className="bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20 text-[9px] font-bold uppercase tracking-widest py-0.5 px-2 rounded-full cursor-help whitespace-nowrap">
+                            Needs Review
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] font-semibold mt-1.5 uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         {bank.branch_name}

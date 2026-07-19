@@ -9,12 +9,42 @@ export async function getReconciliationHistoryAction(bankId: string) {
     const supabase = await createClient();
     const { data, error } = await (supabase as any)
       .from("bank_reconciliations")
-      .select("*, reconciled_by_profile:profiles!reconciled_by(first_name, last_name)")
+      .select("*, reconciled_by_profile:profiles!reconciled_by(first_name, last_name), superseded_by_profile:profiles!superseded_by(first_name, last_name)")
       .eq("bank_id", bankId)
       .order("statement_date", { ascending: false });
     if (error) throw error;
     return { success: true, data };
   } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function flagBackdatedReconciliationsAction(
+  bankId: string,
+  transactionDate: string,
+  triggerType: string
+) {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized" };
+
+    const supabase = await createClient();
+    const { error } = await (supabase as any).rpc("flag_backdated_reconciliations", {
+      p_bank_id: bankId,
+      p_transaction_date: transactionDate,
+      p_trigger_type: triggerType,
+      p_triggered_by: profile.id
+    });
+
+    if (error) {
+      console.error("RPC flag_backdated_reconciliations error:", error);
+      return { success: false, error: error.message };
+    }
+    
+    revalidatePath("/accounts");
+    return { success: true };
+  } catch (err: any) {
+    console.error("flagBackdatedReconciliationsAction caught:", err);
     return { success: false, error: err.message };
   }
 }
@@ -138,36 +168,21 @@ export async function saveReconciliationAction(payload: {
     const profile: any = await getUserProfileAction();
     const reconciled_by = profile?.id ?? null;
 
-    const { error: insertError } = await (supabase as any)
-      .from("bank_reconciliations")
-      .insert([
-        {
-          bank_id: payload.bank_id,
-          statement_date: payload.statement_date,
-          opening_balance,
-          erp_balance,
-          statement_balance: payload.statement_balance,
-          difference,
-          transaction_count,
-          status: finalStatus,
-          adjustment_amount: finalAdjustmentAmount,
-          adjustment_reason: finalAdjustmentReason,
-          reconciled_by,
-          notes: payload.notes ?? null,
-        },
-      ]);
-    if (insertError) throw insertError;
+    const { error: rpcError } = await (supabase as any).rpc("save_reconciliation", {
+      p_bank_id: payload.bank_id,
+      p_statement_date: payload.statement_date,
+      p_statement_balance: payload.statement_balance,
+      p_notes: payload.notes ?? null,
+      p_status: finalStatus,
+      p_adjustment_amount: finalAdjustmentAmount,
+      p_adjustment_reason: finalAdjustmentReason ?? null,
+      p_reconciled_by: reconciled_by,
+      p_opening_balance: opening_balance,
+      p_erp_balance: erp_balance,
+      p_transaction_count: transaction_count,
+    });
 
-    // Update denormalized cache on bank_accounts
-    const { error: updateError } = await (supabase as any)
-      .from("bank_accounts")
-      .update({
-        last_reconciled_at: new Date().toISOString(),
-        last_reconciled_balance: payload.statement_balance,
-        reconciliation_status: finalStatus,
-      })
-      .eq("id", payload.bank_id);
-    if (updateError) throw updateError;
+    if (rpcError) throw rpcError;
 
     revalidatePath("/accounts/reconciliation");
     return { success: true, data: { difference, status: finalStatus } };

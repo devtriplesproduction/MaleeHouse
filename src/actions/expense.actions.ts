@@ -66,6 +66,8 @@ export async function createExpenseAction(payload: CreateExpenseInput): Promise<
     if (data.bank_id) {
       const { syncBankBalance } = await import('@/actions/bank.actions');
       await syncBankBalance(data.bank_id);
+      const { flagBackdatedReconciliationsAction } = await import('@/actions/reconciliation.actions');
+      await flagBackdatedReconciliationsAction(data.bank_id, data.expense_date, "Expense Added");
     }
 
     return { success: true, data };
@@ -194,11 +196,14 @@ export async function updateExpenseAction(payload: UpdateExpenseInput): Promise<
 
     if (existing.bank_id || updatedExpense.bank_id) {
       const { syncBankBalance } = await import('@/actions/bank.actions');
+      const { flagBackdatedReconciliationsAction } = await import('@/actions/reconciliation.actions');
       if (existing.bank_id) {
         await syncBankBalance(existing.bank_id);
+        await flagBackdatedReconciliationsAction(existing.bank_id, existing.expense_date, "Expense Updated");
       }
       if (updatedExpense.bank_id && updatedExpense.bank_id !== existing.bank_id) {
         await syncBankBalance(updatedExpense.bank_id);
+        await flagBackdatedReconciliationsAction(updatedExpense.bank_id, updatedExpense.expense_date, "Expense Updated");
       }
     }
 
@@ -258,6 +263,8 @@ export async function deleteExpenseAction(id: string): Promise<ActionResponse> {
     if (existing.bank_id) {
       const { syncBankBalance } = await import('@/actions/bank.actions');
       await syncBankBalance(existing.bank_id);
+      const { flagBackdatedReconciliationsAction } = await import('@/actions/reconciliation.actions');
+      await flagBackdatedReconciliationsAction(existing.bank_id, existing.expense_date, "Expense Deleted");
     }
 
     return { success: true };
