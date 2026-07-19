@@ -319,8 +319,14 @@ export async function getTeamAssignmentsAction(projectId: string): Promise<OpRes
     const supabase: any = await createClient();
     const { data: assignments } = await supabase.from('project_assignments').select('*').eq('project_id', projectId);
     
-    const userIds = Array.from(new Set()).filter(Boolean);
-    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+    const userIds = Array.from(new Set((assignments || []).map((a: any) => a.user_id))).filter(Boolean);
+    
+    let profiles = [];
+    if (userIds.length > 0) {
+      const { data } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
+      profiles = data || [];
+    }
+    
     const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     const projectAssignments = (assignments || []).map((a: any) => ({
@@ -785,6 +791,25 @@ export async function submitFieldSurveyAction(
     return { success: true, error: null };
   } catch (err: any) {
     return { success: false, error: err.message };
+  }
+}
+
+export async function notifyCadSurveyDataUploadedAction(projectId: string): Promise<void> {
+  const assignRes = await getTeamAssignmentsAction(projectId);
+  if (assignRes.success && assignRes.data) {
+    const cadUserIds = assignRes.data
+      .filter((a: any) => ["cad"].includes(a.role))
+      .map((a: any) => a.user_id);
+    
+    if (cadUserIds.length > 0) {
+      await sendLocalNotifications(
+        cadUserIds,
+        "Survey Data Uploaded",
+        `Field survey completed for this project. Ready for CAD synchronization.`,
+        "system",
+        projectId
+      );
+    }
   }
 }
 

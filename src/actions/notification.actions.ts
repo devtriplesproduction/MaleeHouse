@@ -351,7 +351,7 @@ export async function notifyStageUpdateAction(projectId: string, fromStage: stri
 
   const getAssignedByRole = (role: string) =>
     (assignments || [])
-      .filter((a: any) => (a.profiles?.role ?? a.role) === role)
+      .filter((a: any) => a.role === role)
       .map((a: any) => a.user_id)
 
   // Notification target map: stage → who should be notified and what message they should see
@@ -488,7 +488,7 @@ export async function notifySupplementalUploadAction(projectId: string) {
     // Each role notifies the next stage actor, not everyone
     const getAssignedByRole = (role: string): string[] =>
       (assignments || [])
-        .filter((a: any) => (a.profiles?.role ?? a.role) === role)
+        .filter((a: any) => a.role === role)
         .map((a: any) => a.user_id)
 
     let recipients: string[] = []

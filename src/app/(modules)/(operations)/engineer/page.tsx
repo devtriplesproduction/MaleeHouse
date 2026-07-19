@@ -68,8 +68,22 @@ export default async function EngineerDashboardPage() {
   );
 
   const pendingAcceptance = [...newlyAssigned];
-  const cadReview = projects.filter((p: any) => p.status === "review");
-  const fieldReviews = projects.filter((p: any) => p.status === "data_sync");
+  const cadReview = projects.filter((p: any) => {
+    if (p.status === "review") return true;
+    if (p.status === "data_sync") {
+      const projectLogs = activityLogs.filter((l: any) => l.project_id === p.id);
+      return projectLogs.some((l: any) => l.action === "FILE_UPLOADED" && l.details?.category === "final_file");
+    }
+    return false;
+  });
+  
+  const fieldReviews = projects.filter((p: any) => {
+    if (p.status === "data_sync") {
+      const projectLogs = activityLogs.filter((l: any) => l.project_id === p.id);
+      return !projectLogs.some((l: any) => l.action === "FILE_UPLOADED" && l.details?.category === "final_file");
+    }
+    return false;
+  });
   const qcReturns = projects.filter(
     (p: any) => qcRejectedProjectIds.has(p.id) && p.status !== "completed" && p.status !== "archived"
   );

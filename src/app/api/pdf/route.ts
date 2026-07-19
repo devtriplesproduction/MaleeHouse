@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { generateSalarySlipPdfBuffer } from '@/lib/pdfGenerator';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const { snap, month, year } = await request.json();

@@ -39,8 +39,23 @@ export async function approveProjectAction(projectId: string): Promise<ReviewRes
       return { success: false, error: stageResponse.error || "Failed to update project workflow." };
     }
 
-    // 3. Notify accountants
+    // Notify accountants
     notifyApprovalAction(projectId).catch(console.error);
+
+    // Notify CAD that their prototype was approved
+    if (assignments) {
+      const cadUserIds = assignments.filter((a: any) => a.role === 'cad').map((a: any) => a.user_id);
+      if (cadUserIds.length > 0) {
+        const { sendLocalNotifications } = await import('@/actions/operations.actions');
+        await sendLocalNotifications(
+          cadUserIds,
+          "CAD Prototype Approved",
+          "Your CAD prototype has been approved by the Engineer.",
+          "approval",
+          projectId
+        );
+      }
+    }
 
     revalidatePath(`/projects/${projectId}`);
     return { success: true };

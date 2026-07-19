@@ -25,7 +25,7 @@ interface Invoice {
   project_id: string;
   amount: number;
   total_amount: number;
-  status: 'draft' | 'sent' | 'paid' | 'cancelled';
+  status: 'draft' | 'sent' | 'paid' | 'cancelled' | 'overdue';
   due_date: string | null;
   created_at: string;
   projects?: {

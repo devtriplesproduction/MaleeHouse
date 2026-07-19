@@ -682,6 +682,9 @@ export function OperationsFileUploadPanel({
       );
 
       if (stageRes?.success) {
+        const { notifyCadSurveyDataUploadedAction } = await import("@/actions/operations.actions");
+        await notifyCadSurveyDataUploadedAction(projectId);
+        
         toast({
           title: 'Submitted Survey Data',
           description: 'Project moved to Data Sync stage.',
