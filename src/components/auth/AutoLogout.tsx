@@ -66,21 +66,22 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
     if (showWarning) {
       if (warningIntervalRef.current) clearInterval(warningIntervalRef.current);
       warningIntervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            if (warningIntervalRef.current) clearInterval(warningIntervalRef.current);
-            logout();
-            return 0;
-          }
-          return prev - 1;
-        });
+        setTimeLeft((prev) => prev - 1);
       }, 1000);
     }
 
     return () => {
       if (warningIntervalRef.current) clearInterval(warningIntervalRef.current);
     };
-  }, [showWarning, logout]);
+  }, [showWarning]);
+
+  // Handle logout when countdown reaches zero
+  useEffect(() => {
+    if (showWarning && timeLeft <= 0) {
+      if (warningIntervalRef.current) clearInterval(warningIntervalRef.current);
+      logout();
+    }
+  }, [showWarning, timeLeft, logout]);
 
   const handleStayLoggedIn = () => {
     lastActivityRef.current = Date.now();

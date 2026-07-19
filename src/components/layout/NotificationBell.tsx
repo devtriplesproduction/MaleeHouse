@@ -9,7 +9,7 @@ import { useRealtimeContext } from "@/providers/RealtimeProvider";
 import {
   getNotificationsAction,
   markNotificationAsReadAction,
-  markAllNotificationsAsReadAction,
+  clearAllNotificationsAction,
   type NotificationItem,
 } from "@/actions/notification.actions";
 import type { Database } from "@/types/database.types";
@@ -113,11 +113,11 @@ export function NotificationBell() {
     });
   }
 
-  // ── Mark all as read ──
-  function handleMarkAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+  // ── Clear all ──
+  function handleClearAll() {
+    setNotifications([]);
     startTransition(async () => {
-      await markAllNotificationsAsReadAction();
+      await clearAllNotificationsAction();
     });
   }
 
@@ -171,9 +171,9 @@ export function NotificationBell() {
               )}
             </div>
             <div className="flex items-center gap-1">
-              {unreadCount > 0 && (
+              {notifications.length > 0 && (
                 <button
-                  onClick={handleMarkAllRead}
+                  onClick={handleClearAll}
                   disabled={isPending}
                   title="Clear all"
                   className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors disabled:opacity-50"

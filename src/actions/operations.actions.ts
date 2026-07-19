@@ -95,7 +95,8 @@ export async function sendLocalNotifications(
   projectId?: string | null
 ) {
   if (!userIds || userIds.length === 0) return;
-  const supabase: any = await createClient();
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const supabaseAdmin: any = createAdminClient();
   const notifications = userIds.map((userId: string) => ({
     id: generateId("ntf"),
     user_id: userId,
@@ -106,7 +107,10 @@ export async function sendLocalNotifications(
     related_project_id: projectId || null,
     created_at: new Date().toISOString(),
   }));
-  await supabase.from('notifications').insert(notifications);
+  const { error } = await supabaseAdmin.from('notifications').insert(notifications);
+  if (error) {
+    console.error("[sendLocalNotifications] Insert error:", error);
+  }
 }
 
 async function getProjectName(projectId: string): Promise<string> {

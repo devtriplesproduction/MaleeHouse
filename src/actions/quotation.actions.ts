@@ -81,7 +81,7 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
     const { data: existingQuotations } = await supabase
       .from('quotations')
       .select('id, quotation_number')
-      .ilike('id', `${searchPrefix}%`);
+      .or(`id.ilike.${searchPrefix}%,quotation_number.ilike.${searchPrefix}%`);
 
     const existingIds = (existingQuotations || []).map((q: any) => q.id);
     const existingNumbers = (existingQuotations || []).map((q: any) => q.quotation_number);

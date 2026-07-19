@@ -33,6 +33,8 @@ interface Lead {
   status: string;
   created_at: string;
   follow_up_date?: string | null;
+  latest_follow_up_status?: string;
+  latest_outcome?: string;
 }
 
 interface FollowUpCalendarProps {
@@ -424,6 +426,26 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
                     <div className="flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-white/5 px-3 py-2.5 rounded-xl border border-slate-200/50 dark:border-white/5">
                       <Phone className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
                       <span className="break-words w-full font-medium leading-relaxed">{lead.client_contact}</span>
+                    </div>
+                  )}
+
+                  {(lead.latest_follow_up_status || lead.latest_outcome) && (
+                    <div className="bg-slate-100/50 dark:bg-white/5 rounded-xl p-3 border border-slate-200/50 dark:border-white/5 space-y-1.5">
+                      {lead.latest_follow_up_status && (
+                         <div className="flex items-center mb-1.5">
+                           <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/15">
+                             {lead.latest_follow_up_status}
+                           </span>
+                         </div>
+                      )}
+                      {lead.latest_outcome && (
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Outcome / Notes</span>
+                          <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-1 leading-relaxed line-clamp-3">
+                            {lead.latest_outcome}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

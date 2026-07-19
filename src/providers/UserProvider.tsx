@@ -91,7 +91,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         upLog('REDIRECT_TO_LOGIN', { reason: 'SIGNED_OUT event' })
         setUser(null);
         setRole(null);
-        setIsLoading(false);
+        // Do not set isLoading(false) to avoid re-rendering protected components with a null user during redirect.
         router.push('/login');
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         getUserProfile();

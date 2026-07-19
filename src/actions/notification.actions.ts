@@ -230,6 +230,24 @@ export async function markAllNotificationsAsReadAction() {
   }
 }
 
+export async function clearAllNotificationsAction() {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (!profile) return { success: false, error: 'Unauthorized' }
+
+    const supabase: any = await createClient()
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', profile.id)
+
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
 export async function notifyMentionAction(authorName: string, recipientId: string, projectId: string, commentSnippet: string) {
   const supabase: any = await createClient()
   const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()

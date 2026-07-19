@@ -647,10 +647,15 @@ export async function unlockPayrollCycleAction(month: number, year: number) {
  */
 export async function getMySalarySlipsAction() {
   try {
-    const supabase = await createClient();
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized" };
+
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
     
     // We join with payroll_cycles to get the month and year
-    const { data: slips, error } = await supabase
+    // We use the admin client because employees don't have RLS access to payroll_cycles
+    const { data: slips, error } = await supabaseAdmin
       .from('salary_slips')
       .select(`
         id,
@@ -661,6 +666,7 @@ export async function getMySalarySlipsAction() {
         snapshot_id,
         cycle:payroll_cycles(month, year)
       `)
+      .eq('employee_id', profile.id)
       .order('generated_at', { ascending: false });
 
     if (error) throw error;
@@ -831,6 +837,41 @@ export async function markSalarySlipSharedAction(snapshotId: string) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * downloadSalarySlipBase64Action
+ * Downloads the salary slip PDF from storage and returns it as a Base64 string.
+ * This is useful for bypassing client-side CORS issues when bundling ZIPs.
+ */
+export async function downloadSalarySlipBase64Action(employeeId: string, month: number, year: number) {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (profile?.role !== "admin" && profile?.role !== "hr") {
+      return { success: false, error: "Unauthorized access." };
+    }
+
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
+
+    let fileName = `${year}/${month}/${employeeId}/salary-slip.pdf`;
+
+    const { data, error } = await supabaseAdmin.storage
+      .from('salary_slips')
+      .download(fileName);
+
+    if (error || !data) {
+      return { success: false, error: "Validation Error: Salary slip file does not exist." };
+    }
+
+    const arrayBuffer = await data.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    
+    return { success: true, base64 };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 
 /**
  * getSalarySlipsStatusAction

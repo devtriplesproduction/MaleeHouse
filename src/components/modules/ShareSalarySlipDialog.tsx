@@ -36,7 +36,7 @@ export function ShareSalarySlipDialog({ open, onOpenChange, snapshotId, employee
 
       // 3. Execute sharing method
       if (method === 'copy') {
-        await navigator.clipboard.writeText(`Salary Slip for ${employeeName}: ${secureUrl}`);
+        await navigator.clipboard.writeText(secureUrl);
         toast.success("Secure link copied to clipboard");
       } else if (method === 'email') {
         const subject = encodeURIComponent(`Salary Slip - ${employeeName}`);

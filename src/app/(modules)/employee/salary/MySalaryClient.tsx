@@ -113,10 +113,19 @@ export function MySalaryClient({ slips, employeeName }: MySalaryClientProps) {
                              try {
                                const res = await getSalarySlipUrlAction(slip.snapshot_id, slip.employee_id, slip.month, slip.year);
                                if (res.success && res.url) {
-                                 const printWin = window.open(res.url, '_blank');
-                                 if (printWin) {
-                                   printWin.focus();
-                                   setTimeout(() => printWin.print(), 1000);
+                                 try {
+                                   const response = await fetch(res.url);
+                                   const blob = await response.blob();
+                                   const blobUrl = URL.createObjectURL(blob);
+                                   const printWin = window.open(blobUrl, '_blank');
+                                   if (printWin) {
+                                     printWin.focus();
+                                     setTimeout(() => printWin.print(), 500);
+                                   }
+                                 } catch (fetchErr) {
+                                   // Fallback if fetch fails (e.g., CORS)
+                                   const fallbackWin = window.open(res.url, '_blank');
+                                   if (fallbackWin) fallbackWin.focus();
                                  }
                                } else {
                                  alert("Failed to load salary slip for printing.");

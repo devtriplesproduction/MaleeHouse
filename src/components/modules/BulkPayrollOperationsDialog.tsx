@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Download, Mail, RefreshCw, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { emailSalarySlipAction, getSalarySlipsStatusAction } from "@/actions/payroll.actions";
+import { emailSalarySlipAction, getSalarySlipsStatusAction, downloadSalarySlipBase64Action } from "@/actions/payroll.actions";
 import JSZip from "jszip";
 
 interface SnapshotData {
@@ -77,14 +77,13 @@ export function BulkPayrollOperationsDialog({
 
       for (let i = 0; i < snapshots.length; i++) {
         const snap = snapshots[i];
-        const url = getPdfUrl(snap.employee_id);
         
         try {
-          const response = await fetch(url);
-          if (!response.ok) throw new Error("Network error");
-          const blob = await response.blob();
+          const res = await downloadSalarySlipBase64Action(snap.employee_id, month, year);
+          if (!res.success || !res.base64) throw new Error(res.error || "Failed to download");
+          
           const safeName = snap.employee_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-          zip.file(`Salary_Slip_${safeName}_${month}_${year}.pdf`, blob);
+          zip.file(`Salary_Slip_${safeName}_${month}_${year}.pdf`, res.base64, { base64: true });
           s++;
         } catch (e) {
           f++;

@@ -232,12 +232,45 @@ export async function getSalesPipelineAction(): Promise<ActionResponse> {
 
     const followUpTasks = (tasks || []).filter((t: any) => t.title?.startsWith('Follow-up'));
 
+    const { data: comments, error: cError } = await supabase
+      .from('comments')
+      .select('project_id, content')
+      .eq('comment_type', 'follow_up')
+      .order('created_at', { ascending: false });
+
     const pipeline = (projects || []).map((p: any) => {
       const pTasks = followUpTasks.filter((t: any) => t.project_id === p.id);
       pTasks.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+      
+      const pComments = (comments || []).filter((c: any) => c.project_id === p.id);
+      let latestFollowUpStatus = '';
+      let latestOutcome = '';
+      
+      if (pComments.length > 0) {
+        const latestContent = pComments[0].content;
+        const contentLines = latestContent.split('\n');
+        const outcomeLine = contentLines.find((l: string) => l.trim().startsWith("Follow-up Outcome:"));
+        const statusLine = contentLines.find((l: string) => l.trim().startsWith("Status:"));
+        
+        latestOutcome = outcomeLine ? outcomeLine.replace(/Follow-up Outcome:\s*/, "").trim() : "";
+        latestFollowUpStatus = statusLine ? statusLine.replace(/Status:\s*/, "").trim() : "";
+        
+        if (!latestOutcome && !latestFollowUpStatus) {
+           if (latestContent.includes("Follow-up Outcome: ")) {
+              latestOutcome = latestContent.replace("Follow-up Outcome: ", "").split('\n')[0] || '';
+              latestFollowUpStatus = latestContent.split('\n')[1]?.replace('Status: ', '') || 'Follow Up';
+           } else {
+              latestOutcome = latestContent;
+              latestFollowUpStatus = 'Follow Up';
+           }
+        }
+      }
+
       return {
         ...p,
-        follow_up_date: pTasks[0]?.due_date || null
+        follow_up_date: pTasks[0]?.due_date || null,
+        latest_follow_up_status: latestFollowUpStatus,
+        latest_outcome: latestOutcome
       };
     });
 

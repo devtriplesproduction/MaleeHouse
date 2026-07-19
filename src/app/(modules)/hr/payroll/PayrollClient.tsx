@@ -134,7 +134,7 @@ export function PayrollClient({
   const getPdfUrl = (employeeId: string) => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     if (!supabaseUrl) return '';
-    return `${supabaseUrl}/storage/v1/object/public/salary_slips/salary_slip_${employeeId}_${month}_${year}.pdf`;
+    return `${supabaseUrl}/storage/v1/object/public/salary_slips/${year}/${month}/${employeeId}/salary-slip.pdf`;
   };
 
   
@@ -204,6 +204,50 @@ export function PayrollClient({
     } else {
       toast.error(res.error || "Failed to email salary slip", { id: loadingToastId });
     }
+  };
+
+  const handleExportCSV = () => {
+    if (!data || data.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    
+    const headers = [
+      "Employee Name",
+      "Employee ID",
+      "Department",
+      "Base Salary",
+      "Present",
+      "Paid Leave",
+      "Unpaid Leave",
+      "Absent",
+      "Net Payable"
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...data.map(row => [
+        `"${row.employee_name}"`,
+        `"${row.employee_id_external}"`,
+        `"${row.department}"`,
+        row.base_salary,
+        row.days_present + row.days_field,
+        row.days_paid_leave,
+        row.days_unpaid_leave,
+        row.days_absent,
+        row.net_payable
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Salary_Records_${month}_${year}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -276,9 +320,9 @@ export function PayrollClient({
                 Bulk Actions
               </Button>
             )}
-            <Button variant="ghost" size="sm" className="text-slate-500">
+            <Button variant="ghost" size="sm" className="text-slate-500" onClick={handleExportCSV}>
               <Download className="w-4 h-4 mr-2" />
-              Export CSV
+              Export Excel (CSV)
             </Button>
           </div>
         </CardHeader>

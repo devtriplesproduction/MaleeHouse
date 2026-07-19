@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { 
   getNotificationsAction, 
   markNotificationAsReadAction, 
-  markAllNotificationsAsReadAction,
+  clearAllNotificationsAction,
   type NotificationItem
 } from '@/actions/notification.actions';
 import { formatDistanceToNow } from 'date-fns';
@@ -29,7 +29,8 @@ const TYPE_META: Record<string, { color: string; bg: string; icon: any }> = {
   approval:         { color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: ShieldCheck },
   rejection:        { color: 'text-rose-500', bg: 'bg-rose-500/10', icon: AlertTriangle },
   deadline_warning: { color: 'text-amber-500', bg: 'bg-amber-500/10', icon: AlertTriangle },
-  system:           { color: 'text-slate-500', bg: 'bg-slate-500/10', icon: Bell }
+  system:           { color: 'text-slate-500', bg: 'bg-slate-500/10', icon: Bell },
+  payroll:          { color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: FileText }
 };
 
 export default function DashboardNotificationCenter() {
@@ -65,10 +66,10 @@ export default function DashboardNotificationCenter() {
     });
   };
 
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map((n: any) => ({ ...n, is_read: true })));
+  const handleClearAll = () => {
+    setNotifications([]);
     startTransition(async () => {
-      await markAllNotificationsAsReadAction();
+      await clearAllNotificationsAction();
     });
   };
 
@@ -85,9 +86,9 @@ export default function DashboardNotificationCenter() {
           </div>
         </div>
 
-        {unreadCount > 0 && (
+        {notifications.length > 0 && (
           <button
-            onClick={handleMarkAllRead}
+            onClick={handleClearAll}
             disabled={isPending}
             className="flex items-center gap-1 text-xs font-bold text-indigo-500 hover:text-indigo-600 transition"
           >
