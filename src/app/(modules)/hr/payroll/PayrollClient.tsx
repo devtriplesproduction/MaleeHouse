@@ -6,6 +6,7 @@ import {
   calculateMonthlyPayrollAction, 
   lockPayrollCycleAction,
   unlockPayrollCycleAction,
+  notifySalarySlipsAction,
   emailSalarySlipAction,
   getSalarySlipUrlAction,
   PayrollSnapshot
@@ -136,6 +137,21 @@ export function PayrollClient({
     return `${supabaseUrl}/storage/v1/object/public/salary_slips/salary_slip_${employeeId}_${month}_${year}.pdf`;
   };
 
+  
+  const handleNotifyAll = async () => {
+    if (!existingCycleId) return;
+    setActionLoading(true);
+    const loadingToastId = toast.loading(`Sending notifications to all employees...`);
+    const res = await notifySalarySlipsAction(existingCycleId);
+    setActionLoading(false);
+    if (res.success) {
+      toast.success(res.message, { id: loadingToastId });
+      loadData(); // Reload to update status
+    } else {
+      toast.error(res.error || "Failed to send notifications.", { id: loadingToastId });
+    }
+  };
+
   const handleViewSlip = async (row: any) => {
     setFetchingUrl(row.id);
     const res = await getSalarySlipUrlAction(row.id, row.employee_id, month, year);
@@ -212,10 +228,16 @@ export function PayrollClient({
           
           {(currentUserRole === 'admin' || currentUserRole === 'hr') && (
             isLocked ? (
-              <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={handleUnlock} disabled={loading || actionLoading}>
-                {actionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Unlock className="w-4 h-4 mr-2" />}
-                Unlock Cycle
-              </Button>
+              <>
+                <Button variant="outline" className="text-emerald-600 hover:text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20" onClick={handleNotifyAll} disabled={loading || actionLoading}>
+                  {actionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                  Notify Employees
+                </Button>
+                <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={handleUnlock} disabled={loading || actionLoading}>
+                  {actionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Unlock className="w-4 h-4 mr-2" />}
+                  Unlock Cycle
+                </Button>
+              </>
             ) : (
               <div className="flex items-center gap-2">
                 <div className="w-64">
@@ -277,6 +299,7 @@ export function PayrollClient({
                     <TableHead className="text-center">Leaves</TableHead>
                     <TableHead className="text-center">Absent</TableHead>
                     <TableHead className="text-right font-bold text-indigo-600 dark:text-indigo-400">Net Payable</TableHead>
+                    <TableHead className="text-center">Notification</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -297,6 +320,15 @@ export function PayrollClient({
                         <TableCell className="text-center text-red-600 font-medium">{row.days_absent}</TableCell>
                         <TableCell className="text-right font-bold text-indigo-600 dark:text-indigo-400">
                           ₹{row.net_payable.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {row.notification_status === 'Sent' ? (
+                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0">Sent</Badge>
+                          ) : row.notification_status === 'Failed' ? (
+                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">Failed</Badge>
+                          ) : (
+                            <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 border-0">Pending</Badge>
+                          )}
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-1">
@@ -321,7 +353,7 @@ export function PayrollClient({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center text-slate-500">
+                      <TableCell colSpan={9} className="h-24 text-center text-slate-500">
                         No employees found for this payroll cycle.
                       </TableCell>
                     </TableRow>

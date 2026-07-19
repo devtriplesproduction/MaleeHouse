@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Printer, Search } from "lucide-react";
 import { SalarySlipPreviewDialog } from "@/components/modules/SalarySlipPreviewDialog";
+import { getSalarySlipUrlAction } from "@/actions/payroll.actions";
 
 interface SalarySlipData {
   id: string;
@@ -14,6 +15,8 @@ interface SalarySlipData {
   year: number;
   status: string;
   pdf_url: string | null;
+  employee_id: string;
+  snapshot_id: string;
   generated_at: string;
 }
 
@@ -29,6 +32,16 @@ export function MySalaryClient({ slips, employeeName }: MySalaryClientProps) {
   const handleView = (slip: SalarySlipData) => {
     setSelectedSlip(slip);
     setPreviewOpen(true);
+  };
+
+  
+  const handleRefreshUrl = async () => {
+    if (!selectedSlip) return null;
+    const res = await getSalarySlipUrlAction(selectedSlip.snapshot_id, selectedSlip.employee_id, selectedSlip.month, selectedSlip.year);
+    if (res.success && res.url) {
+      return res.url;
+    }
+    return null;
   };
 
   const getMonthName = (monthNum: number) => {
@@ -77,25 +90,41 @@ export function MySalaryClient({ slips, employeeName }: MySalaryClientProps) {
                           <Button variant="ghost" size="icon" className="h-8 w-8" title="View Salary Slip" disabled={!slip.pdf_url} onClick={() => handleView(slip)}>
                             <FileText className="w-4 h-4 text-slate-500" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Download PDF" disabled={!slip.pdf_url} onClick={() => {
-                             if (!slip.pdf_url) return;
-                             const link = document.createElement('a');
-                             link.href = slip.pdf_url;
-                             link.download = `Salary_Slip_${employeeName.replace(/\s+/g, '_')}_${slip.month}_${slip.year}.pdf`;
-                             document.body.appendChild(link);
-                             link.click();
-                             document.body.removeChild(link);
-                          }}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Download PDF" onClick={async () => {
+                             try {
+                               const res = await getSalarySlipUrlAction(slip.snapshot_id, slip.employee_id, slip.month, slip.year);
+                               if (res.success && res.url) {
+                                 const link = document.createElement('a');
+                                 link.href = res.url;
+                                 link.download = `Salary_Slip_${employeeName.replace(/\s+/g, '_')}_${slip.month}_${slip.year}.pdf`;
+                                 document.body.appendChild(link);
+                                 link.click();
+                                 document.body.removeChild(link);
+                               } else {
+                                 alert("Failed to download salary slip.");
+                               }
+                             } catch (e) {
+                               alert("An error occurred while downloading.");
+                             }
+                           }}>
                             <Download className="w-4 h-4 text-blue-500" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Print" disabled={!slip.pdf_url} onClick={() => {
-                             if (!slip.pdf_url) return;
-                             const printWin = window.open(slip.pdf_url, '_blank');
-                             if (printWin) {
-                               printWin.focus();
-                               setTimeout(() => printWin.print(), 1000);
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Print" onClick={async () => {
+                             try {
+                               const res = await getSalarySlipUrlAction(slip.snapshot_id, slip.employee_id, slip.month, slip.year);
+                               if (res.success && res.url) {
+                                 const printWin = window.open(res.url, '_blank');
+                                 if (printWin) {
+                                   printWin.focus();
+                                   setTimeout(() => printWin.print(), 1000);
+                                 }
+                               } else {
+                                 alert("Failed to load salary slip for printing.");
+                               }
+                             } catch (e) {
+                               alert("An error occurred while printing.");
                              }
-                          }}>
+                           }}>
                             <Printer className="w-4 h-4 text-emerald-500" />
                           </Button>
                         </div>
@@ -123,6 +152,7 @@ export function MySalaryClient({ slips, employeeName }: MySalaryClientProps) {
         onOpenChange={setPreviewOpen} 
         employeeName={employeeName} 
         pdfUrl={selectedSlip?.pdf_url} 
+        onRefreshUrl={handleRefreshUrl}
       />
     </div>
   );

@@ -14,7 +14,7 @@ import {
 } from "@/actions/notification.actions";
 import type { Database } from "@/types/database.types";
 
-type NotificationType = "assignment" | "stage_update" | "approval" | "rejection" | "deadline_warning" | "system";
+type NotificationType = "assignment" | "stage_update" | "approval" | "rejection" | "deadline_warning" | "system" | "payroll";
 
 // ── Icon + colour per type ────────────────────────────────────────────────────
 
@@ -28,6 +28,7 @@ const TYPE_META: Record<
   rejection:        { emoji: "❌", dotColor: "bg-rose-500"    },
   deadline_warning: { emoji: "⚠️", dotColor: "bg-amber-500"  },
   system:           { emoji: "🔔", dotColor: "bg-gray-400"   },
+  payroll:          { emoji: "💰", dotColor: "bg-emerald-500" },
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -210,8 +211,19 @@ export function NotificationBell() {
               </div>
             ) : (
               sortedNotifications.map((notification) => {
-                const meta =
-                  TYPE_META[notification.type] ?? TYPE_META.system;
+                  const meta =
+                  TYPE_META[notification.type as NotificationType] ?? TYPE_META.system;
+
+                let targetUrl = null;
+                let viewText = null;
+
+                if (notification.type === 'payroll') {
+                  targetUrl = '/employee/salary';
+                  viewText = '· View Salary';
+                } else if (notification.related_project_id) {
+                  targetUrl = `/projects/${notification.related_project_id}`;
+                  viewText = '· View Project';
+                }
 
                 const notificationContent = (
                   <>
@@ -268,9 +280,9 @@ export function NotificationBell() {
                             { addSuffix: true }
                           )}
                         </time>
-                        {notification.related_project_id && (
+                        {viewText && (
                           <span className="text-[11px] text-indigo-500 font-black uppercase tracking-widest">
-                            · View Project
+                            {viewText}
                           </span>
                         )}
                       </div>
@@ -278,11 +290,11 @@ export function NotificationBell() {
                   </>
                 );
 
-                if (notification.related_project_id) {
+                if (targetUrl) {
                   return (
                     <Link
                       key={notification.id}
-                      href={`/projects/${notification.related_project_id}`}
+                      href={targetUrl}
                       onClick={() => {
                         handleMarkRead(notification.id);
                         setIsOpen(false);
