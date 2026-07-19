@@ -1094,8 +1094,8 @@ export function OperationsFileUploadPanel({
             </div>
           </div>
 
-          {/* CAD/Engineer Survey Validation Buttons */}
-          {(isCad || isEngineer || isAdmin) && ["field_assigned", "field_work", "data_sync"].includes(projectStatus || "") && surveyDocs.length > 0 && (
+          {/* CAD Survey Validation Buttons */}
+          {(isCad || isAdmin) && projectStatus === "data_sync" && surveyDocs.length > 0 && (
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => handleReviewSurveyInline(false)}

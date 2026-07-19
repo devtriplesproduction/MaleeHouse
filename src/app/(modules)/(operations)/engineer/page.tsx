@@ -21,6 +21,8 @@ import { MaterialApprovalWidget } from "@/components/modules/MaterialApprovalWid
 
 
 
+import { filterActivityLogsByRole } from "@/lib/utils";
+
 export default async function EngineerDashboardPage() {
   const profile = await getUserProfileAction();
   const firstName = profile?.first_name || "Engineer";
@@ -41,7 +43,8 @@ export default async function EngineerDashboardPage() {
     getAllMaterialRequestsAction()
   ]);
 
-  const activityLogs: any[] = (activityLogsRes.data as any) || [];
+  const rawActivityLogs: any[] = (activityLogsRes.data as any) || [];
+  const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
   const comments: any[] = (commentsRes.data as any) || [];
   const files: any[] = (filesRes.data as any) || [];
   const allUsers: any[] = (usersRes.data as any) || [];

@@ -44,7 +44,7 @@ export default function DashboardNotificationCenter() {
     try {
       const res = await getNotificationsAction();
       if (res && res.success && res.data) {
-        setNotifications(res.data);
+        setNotifications(res.data.filter((n: any) => n.related_project_id));
       }
     } catch (err) {
       console.error(err);

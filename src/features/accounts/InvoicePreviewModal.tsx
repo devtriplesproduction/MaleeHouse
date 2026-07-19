@@ -40,14 +40,14 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
     setMounted(true);
     import('@/actions/bank.actions').then(m => {
       m.getBankAccountsAction().then(res => {
-        if (res.success && res.data) {
+        if (res && res.success && res.data) {
           setBanks(res.data);
           if (invoice.bank_id) {
             setBank(res.data.find((b: any) => b.id === invoice.bank_id) || null);
           }
         }
-      });
-    });
+      }).catch(console.error);
+    }).catch(console.error);
   }, [invoice.bank_id]);
 
   const handleBankChange = async (bankId: string) => {

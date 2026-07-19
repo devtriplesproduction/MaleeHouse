@@ -27,3 +27,18 @@ export async function downloadFile(url: string, filename: string) {
     window.open(url, '_blank');
   }
 }
+
+export function filterActivityLogsByRole(logs: any[], role: string) {
+  if (role === 'admin' || role === 'accountant') return logs;
+  
+  const financeActions = [
+    "PAYMENT_VERIFIED", "RECEIPT_GENERATED", "PAYMENT_LOGGED", 
+    "INVOICE_CREATED", "INVOICE_DELETED", "update_invoice",
+    "MILESTONES_CREATED", "MILESTONE_STATUS_UPDATE", "MILESTONE_RESCHEDULED",
+    "QUOTATION_CREATED", "QUOTATION_STATUS_UPDATED", "QUOTATION_REVISED", "QUOTATION_DELETED",
+    "EXPENSE_CREATED", "EXPENSE_UPDATED", "EXPENSE_DELETED", "BUDGET_ITEM_CREATED",
+    "PROJECT_FROZEN", "PROJECT_UNFROZEN"
+  ];
+  
+  return logs.filter(log => !financeActions.includes(log.action));
+}

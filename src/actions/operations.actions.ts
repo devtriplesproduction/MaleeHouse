@@ -799,8 +799,8 @@ export async function reviewFieldSurveyAction(
 
     const lockCheck = await verifyProjectNotLocked(projectId);
     if (!lockCheck.success) return lockCheck;
-    if (!["cad", "engineer", "admin"].includes(profile.role))
-      return { success: false, error: "Only CAD/Engineers can review field surveys." };
+    if (!["cad", "admin"].includes(profile.role))
+      return { success: false, error: "Only CAD can review field surveys." };
 
     if (isApproved) {
       const stRes = await updateProjectStageAction(projectId, "cad_finalization", `Field Survey Accepted. Ready for Final CAD. Notes: ${reviewNotes}`);
@@ -824,7 +824,7 @@ export async function reviewFieldSurveyAction(
             fieldUserIds,
             "Field Survey Rejected",
             `Your survey for this project was rejected. Reason: ${reviewNotes}`,
-            "alert",
+            "rejection",
             projectId
           );
         }
@@ -889,20 +889,30 @@ export async function logFieldVisitAction(
     const accessCheck = await verifyProjectAccess(projectId, profile.id, profile.role as Role, true);
     if (!accessCheck.isAllowed) return { success: false, error: accessCheck.error || "Access denied." };
 
+    const supabase: any = await createClient();
+
+    // Auto-assign existing field engineers for this project to the new visit
+    const { data: assignments } = await supabase
+      .from('project_assignments')
+      .select('user_id')
+      .eq('project_id', projectId)
+      .eq('role', 'field');
+      
+    const assignedFieldEngineers = assignments ? assignments.map((a: any) => a.user_id) : [];
+
     const newVisit = {
       id: generateId("vst"),
       project_id: projectId,
       scheduled_date: visitDate,
       status: "scheduled",
       purpose: description || "Scheduled from Milestones Portal",
-      assigned_team: [],
+      assigned_team: assignedFieldEngineers,
       visit_cost: price || 0,
       is_billable: price ? true : false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
-    const supabase: any = await createClient();
     const { error: insertErr } = await supabase.from('project_visits').insert(newVisit);
     if (insertErr) return { success: false, error: insertErr.message };
 

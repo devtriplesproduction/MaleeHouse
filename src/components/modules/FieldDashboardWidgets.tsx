@@ -74,7 +74,7 @@ export function DailyVisitsWidget({ visits }: { visits: any[] }) {
         </span>
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
         {visits.length === 0 ? (
           <p className="text-sm text-slate-500 py-4 text-center">No visits scheduled today.</p>
         ) : (

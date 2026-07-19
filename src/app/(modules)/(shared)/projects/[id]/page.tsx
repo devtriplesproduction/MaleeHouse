@@ -25,7 +25,7 @@ import {
   Lock
 } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, filterActivityLogsByRole } from "@/lib/utils";
 import { WorkflowStepper } from "@/features/workflow/WorkflowStepper";
 import { ProjectFileSection } from "@/components/modules/ProjectFileSection";
 import { WorkflowCheckpoints } from "@/components/modules/WorkflowCheckpoints";
@@ -228,7 +228,8 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
   const visits = visitsRes.data || [];
   const accountantOwner = accountantRes.data || null;
   const projectIssues = issuesRes.data || [];
-  const activityLogs = activityLogsRes.data || [];
+  const rawActivityLogs = activityLogsRes.data || [];
+  const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
   const allUsers = allUsersRes.data || [];
 
   const isStageBlocked = (milestones || []).some(
