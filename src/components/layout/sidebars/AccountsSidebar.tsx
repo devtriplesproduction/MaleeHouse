@@ -82,7 +82,6 @@ export function AccountsSidebar() {
       icon: Settings,
       subLinks: [
         { title: "Company Details", href: "/settings/details", icon: Building2 },
-        { title: "Company Accounts", href: "/settings/account", icon: Landmark },
         ...(role === "admin" ? [{ title: "Audit Logs", href: "/accounts/audit", icon: ShieldAlert }] : [])
       ]
     }
