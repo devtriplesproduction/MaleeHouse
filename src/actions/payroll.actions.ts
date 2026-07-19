@@ -1007,7 +1007,7 @@ export async function notifySalarySlipsAction(cycleId: string) {
           "SALARY_SLIP_NOTIFICATION_FAILED", 
           slip.employee_id, 
           { cycle_id: cycleId, snapshot_id: slip.snapshot_id, error: err.message }, 
-          "error"
+          "warning"
         );
           
         failCount++;
