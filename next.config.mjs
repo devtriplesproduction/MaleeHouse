@@ -2,7 +2,6 @@
 const nextConfig = {
   optimizeFonts: false,
   experimental: {
-    serverComponentsExternalPackages: ['@react-pdf/renderer'],
     serverActions: {
       bodySizeLimit: '10mb',
     },

@@ -12,6 +12,8 @@ import { getAttendanceLogsAction } from "./attendance.actions";
 import { getAllUsersAction, logAdminAuditAction } from "./admin.actions";
 import { sendLocalNotifications } from "./operations.actions";
 import { randomUUID } from "crypto";
+import { renderToBuffer } from '@react-pdf/renderer';
+import { SalarySlipPDF } from '@/components/pdf/SalarySlipPDF';
 
 async function logPayrollEvent(
   action: string, 
@@ -94,6 +96,7 @@ export interface PayrollSnapshot {
   total_deductions?: number;
   net_salary?: number;
   calculated_at: string;
+  notification_status?: string;
 }
 
 /**
@@ -389,8 +392,6 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
       }
 
       // 3.5 Generate Salary Slips (PDFs) and Store in salary_slips table
-      const { renderToBuffer } = await import('@react-pdf/renderer');
-      const { SalarySlipPDF } = await import('@/components/pdf/SalarySlipPDF');
       const salarySlipsToInsert = [];
 
       for (const snap of frozenSnapshots) {
@@ -402,7 +403,7 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
           grossSalary: snap.gross_salary || 0,
           totalDeductions: snap.total_deductions || 0,
           netPayable: snap.net_payable
-        });
+        }) as any;
         
         let uploadData, uploadError;
         let fileName = `${year}/${month}/${snap.employee_id}/salary-slip.pdf`;
