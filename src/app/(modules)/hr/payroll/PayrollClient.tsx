@@ -139,14 +139,15 @@ export function PayrollClient({
 
   
   const handleNotifyAll = async () => {
-    if (!existingCycleId) return;
+    const currentCycleId = data.length > 0 ? data[0].cycle_id : null;
+    if (!currentCycleId) return;
     setActionLoading(true);
     const loadingToastId = toast.loading(`Sending notifications to all employees...`);
-    const res = await notifySalarySlipsAction(existingCycleId);
+    const res = await notifySalarySlipsAction(currentCycleId);
     setActionLoading(false);
     if (res.success) {
       toast.success(res.message, { id: loadingToastId });
-      loadData(); // Reload to update status
+      fetchData(month, year); // Reload to update status
     } else {
       toast.error(res.error || "Failed to send notifications.", { id: loadingToastId });
     }
