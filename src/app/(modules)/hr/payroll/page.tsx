@@ -3,6 +3,8 @@ import { calculateMonthlyPayrollAction } from '@/actions/payroll.actions';
 import { PayrollClient } from './PayrollClient';
 import { requireRole } from '@/lib/auth-guard';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Salary Records | HR Portal",
 };

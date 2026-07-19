@@ -133,7 +133,7 @@ export function PayrollClient({
   const getPdfUrl = (employeeId: string) => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     if (!supabaseUrl) return '';
-    return `${supabaseUrl}/storage/v1/object/public/salary_slips/salary_slip_${employeeId}_${month}_${year}.txt`;
+    return `${supabaseUrl}/storage/v1/object/public/salary_slips/salary_slip_${employeeId}_${month}_${year}.pdf`;
   };
 
   const handleViewSlip = async (row: any) => {
@@ -161,7 +161,7 @@ export function PayrollClient({
     if (res.success && res.url) {
       const link = document.createElement('a');
       link.href = res.url;
-      link.download = `Salary_Slip_${row.employee_name.replace(/\s+/g, '_')}.txt`;
+      link.download = `Salary_Slip_${row.employee_name.replace(/\s+/g, '_')}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

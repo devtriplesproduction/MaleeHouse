@@ -3,6 +3,9 @@
 import { normalizeData } from '@/lib/normalize';
 
 import { revalidatePath } from "next/cache";
+import { createElement } from 'react';
+import { renderToBuffer } from '@react-pdf/renderer';
+import { SalarySlipPDF } from '@/components/pdf/SalarySlipPDF';
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { getAttendanceLogsAction } from "./attendance.actions";
@@ -306,40 +309,42 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
     const uploadedFileNames: string[] = [];
 
     for (const snap of frozenSnapshots) {
-      // Basic text representation (in a real app, use a server-compatible PDF library like pdfkit)
-      const pdfContent = `SALARY SLIP
------------------------------
-Employee: ${snap.employee_name}
-Designation: ${snap.designation}
-Month/Year: ${month}/${year}
-
-Gross Salary: ${snap.gross_salary || 0}
-Total Deductions: ${snap.total_deductions || 0}
-Net Payable: ${snap.net_payable}
-
-Generated automatically by MaleeHouse OS.
-`;
-      
-      const fileName = `salary_slip_${snap.employee_id}_${month}_${year}.txt`; // using .txt for robustness without canvas/puppeteer on edge
+      const pdfElement = createElement(SalarySlipPDF, {
+        employeeName: snap.employee_name,
+        designation: snap.designation || 'Employee',
+        month,
+        year,
+        grossSalary: snap.gross_salary || 0,
+        totalDeductions: snap.total_deductions || 0,
+        netPayable: snap.net_payable
+      });
       
       let uploadData, uploadError;
+      let fileName = `salary_slip_${snap.employee_id}_${month}_${year}.pdf`;
       try {
+        const pdfBuffer = await renderToBuffer(pdfElement);
+        
         const result = await supabaseAdmin.storage
           .from('salary_slips')
-          .upload(fileName, pdfContent, {
-            contentType: 'text/plain',
+          .upload(fileName, pdfBuffer, {
+            contentType: 'application/pdf',
             upsert: true
           });
         uploadData = result.data;
         uploadError = result.error;
       } catch (err: any) {
         uploadError = err;
-        console.error(`[lockPayrollCycleAction] Caught upload exception for ${snap.employee_id}:`, err);
+        console.error(`[lockPayrollCycleAction] Caught generation/upload exception for ${snap.employee_id}:`, err);
       }
         
       if (uploadError) {
-        console.error(`[lockPayrollCycleAction] Error uploading salary slip for ${snap.employee_id}:`, uploadError);
-        throw new Error(`Failed to upload salary slip for ${snap.employee_name}: ${uploadError.message || 'Unknown storage error'}`);
+        console.error(`[lockPayrollCycleAction] Error processing salary slip for ${snap.employee_id}:`, uploadError);
+        // Atomic Rollback
+        if (uploadedFileNames.length > 0) {
+          await supabaseAdmin.storage.from('salary_slips').remove(uploadedFileNames);
+        }
+        await supabaseAdmin.from('payroll_cycles').delete().eq('id', cycleId);
+        throw new Error(`Failed to process salary slip for ${snap.employee_name}: ${uploadError.message || 'Unknown error'}`);
       }
 
       let pdfUrl = null;
@@ -724,7 +729,12 @@ export async function getSalarySlipUrlAction(snapshotId: string, employeeId: str
       return { success: false, error: "Salary slip not generated." };
     }
 
-    const fileName = `salary_slip_${employeeId}_${month}_${year}.txt`;
+    // Determine extension based on stored URL if possible, fallback to .pdf
+    let fileName = `salary_slip_${employeeId}_${month}_${year}.pdf`;
+    if (slip.pdf_url) {
+      const urlParts = slip.pdf_url.split('/');
+      fileName = urlParts[urlParts.length - 1];
+    }
     
     let signedUrlData, signedUrlError;
     try {
