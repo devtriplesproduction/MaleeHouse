@@ -5,8 +5,7 @@ import { headers } from "next/headers";
 
 import { revalidatePath } from "next/cache";
 import { createElement } from 'react';
-import { renderToBuffer } from '@react-pdf/renderer';
-import { SalarySlipPDF } from '@/components/pdf/SalarySlipPDF';
+
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { getAttendanceLogsAction } from "./attendance.actions";
@@ -390,6 +389,8 @@ export async function lockPayrollCycleAction(month: number, year: number, bankId
       }
 
       // 3.5 Generate Salary Slips (PDFs) and Store in salary_slips table
+      const { renderToBuffer } = await import('@react-pdf/renderer');
+      const { SalarySlipPDF } = await import('@/components/pdf/SalarySlipPDF');
       const salarySlipsToInsert = [];
 
       for (const snap of frozenSnapshots) {
