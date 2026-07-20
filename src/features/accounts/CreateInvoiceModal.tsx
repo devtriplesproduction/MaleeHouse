@@ -93,7 +93,11 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
           }
           project.calculated_budget = activeBudget;
           setProjectData(project);
-          setFormData(prev => ({ ...prev, gst_rate: projectGstRate }));
+          setFormData(prev => ({ 
+            ...prev, 
+            gst_rate: projectGstRate,
+            amount: initialAmount ? Number((initialAmount / (1 + projectGstRate / 100)).toFixed(2)) : prev.amount
+          }));
         }
       };
       if (!projectData) fetchProject();
@@ -103,23 +107,24 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
         if (res && res.success && res.data) {
           setBanks(res.data as any[]);
           const defaultBank = (res.data as any[]).find((b: any) => b.is_default);
-          if (defaultBank) {
+          if (defaultBank && !formData.bank_id) {
             setFormData(prev => ({ ...prev, bank_id: defaultBank.id }));
           }
         }
       };
       if (banks.length === 0) fetchBanks();
     }
-  }, [open, companySettings, projectId, projectData, banks.length]);
+  }, [open, companySettings, projectId, projectData, banks.length, initialAmount]);
 
   useEffect(() => {
-    if (initialAmount !== undefined) {
-      setFormData(prev => ({ ...prev, amount: initialAmount }));
+    if (initialAmount !== undefined && !open) {
+      // Don't override while open unless triggered by open change, handled above
+      setFormData(prev => ({ ...prev, amount: Number((initialAmount / (1 + prev.gst_rate / 100)).toFixed(2)) }));
     }
     if (milestoneDueDate !== undefined && milestoneDueDate !== null) {
       setFormData(prev => ({ ...prev, due_date: new Date(milestoneDueDate).toISOString().split('T')[0] }));
     }
-  }, [initialAmount, milestoneDueDate]);
+  }, [initialAmount, milestoneDueDate, open]);
 
   const handleSubmit = async () => {
     setLoading(true);
