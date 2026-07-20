@@ -1719,14 +1719,14 @@ export async function publicUpdateInvoiceStatusAction(invoiceId: string, status:
     
     // Instead of createClient which uses the user auth, we should use createAdminClient
     const { createAdminClient } = await import('@/lib/supabase/admin');
-    const adminSupabase = createAdminClient();
+    const adminSupabase: any = createAdminClient();
 
     const { data: invoice, error: fetchError } = await adminSupabase.from('invoices').select('project_id').eq('id', invoiceId).single();
     if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
 
     const { error: updateError } = await adminSupabase
       .from('invoices')
-      .update({ status })
+      .update({ status: status as any })
       .eq('id', invoiceId);
       
     if (updateError) return { success: false, error: updateError.message };
