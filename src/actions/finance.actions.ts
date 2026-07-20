@@ -78,6 +78,14 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
 
     if (error) return { success: false, error: error.message };
 
+    // Update milestone status to invoiced if applicable
+    if (validated.data.milestone_id) {
+      await supabase
+        .from('project_milestones')
+        .update({ status: 'invoiced', updated_at: new Date().toISOString() })
+        .eq('id', validated.data.milestone_id);
+    }
+
     await supabase.from('workflow_history').insert({
       id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: payload.project_id,
@@ -209,7 +217,7 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
     if (profile.role === 'admin' || profile.role === 'accountant') {
       const verifyRes = await verifyPaymentAction(data.id, 'verified', 'Auto-verified because payment was logged by accountant or admin.');
       if (!verifyRes.success) {
-        console.error("Auto-verification failed:", verifyRes.error);
+        return { success: false, error: "Auto-verification failed: " + verifyRes.error };
       }
     }
 
