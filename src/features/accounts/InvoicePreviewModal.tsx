@@ -122,6 +122,9 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                    <span className={cn(
                      "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border shadow-sm ml-2",
                      invoice.status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/20' :
+                     invoice.status === 'accepted' ? 'bg-teal-500/20 text-teal-300 border-teal-500/20' :
+                     invoice.status === 'rejected' ? 'bg-red-500/20 text-red-300 border-red-500/20' :
+                     invoice.status === 'in_review' ? 'bg-amber-500/20 text-amber-300 border-amber-500/20' :
                      invoice.status === 'overdue' ? 'bg-rose-500/20 text-rose-300 border-rose-500/20' :
                      invoice.status === 'cancelled' ? 'bg-white/10 text-slate-300 border-white/10' :
                      'bg-blue-500/20 text-blue-300 border-blue-500/20'

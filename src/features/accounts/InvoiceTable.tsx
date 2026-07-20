@@ -25,7 +25,7 @@ interface Invoice {
   project_id: string;
   amount: number;
   total_amount: number;
-  status: 'draft' | 'sent' | 'paid' | 'cancelled' | 'overdue';
+  status: 'draft' | 'sent' | 'paid' | 'cancelled' | 'overdue' | 'accepted' | 'rejected' | 'in_review';
   due_date: string | null;
   created_at: string;
   projects?: {
@@ -45,6 +45,9 @@ const statusConfig: Record<string, { label: string; className: string; icon: any
   sent: { label: 'Sent', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: ArrowUpRight },
   paid: { label: 'Paid', className: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 },
   cancelled: { label: 'Cancelled', className: 'bg-rose-500/10 text-rose-500 border-rose-500/20', icon: XCircle },
+  accepted: { label: 'Accepted', className: 'bg-teal-500/10 text-teal-600 border-teal-500/20', icon: CheckCircle2 },
+  rejected: { label: 'Rejected', className: 'bg-red-500/10 text-red-500 border-red-500/20', icon: XCircle },
+  in_review: { label: 'In Review', className: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Clock },
 };
 
 export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceTableProps) {

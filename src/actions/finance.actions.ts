@@ -1673,3 +1673,76 @@ export async function updateInvoiceBankAccountAction(invoiceId: string, bankId: 
     return { success: false, error: error.message };
   }
 }
+
+export async function updateInvoiceStatusAction(invoiceId: string, status: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+    
+    const { data: invoice, error: fetchError } = await supabase.from('invoices').select('project_id').eq('id', invoiceId).single();
+    if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
+
+    const lockCheck = await verifyProjectNotLocked(invoice.project_id);
+    if (!lockCheck.success) {
+      return { success: false, error: lockCheck.error || "Project is locked." };
+    }
+
+    const { error: updateError } = await supabase
+      .from('invoices')
+      .update({ status })
+      .eq('id', invoiceId);
+      
+    if (updateError) return { success: false, error: updateError.message };
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: invoice.project_id,
+      user_id: profile.id,
+      action: 'INVOICE_STATUS_UPDATED',
+      details: { invoice_id: invoiceId, status },
+      created_at: new Date().toISOString()
+    });
+
+    await revalidateAccountsPaths(invoice.project_id);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+
+export async function publicUpdateInvoiceStatusAction(invoiceId: string, status: string): Promise<ActionResponse> {
+  try {
+    const supabase = await createClient(); // assuming createAdminClient or similar if RLS blocks public update
+    
+    // Instead of createClient which uses the user auth, we should use createAdminClient
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const adminSupabase = createAdminClient();
+
+    const { data: invoice, error: fetchError } = await adminSupabase.from('invoices').select('project_id').eq('id', invoiceId).single();
+    if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
+
+    const { error: updateError } = await adminSupabase
+      .from('invoices')
+      .update({ status })
+      .eq('id', invoiceId);
+      
+    if (updateError) return { success: false, error: updateError.message };
+
+    await adminSupabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: invoice.project_id,
+      user_id: '00000000-0000-0000-0000-000000000000', // System or public user
+      action: 'INVOICE_STATUS_UPDATED_BY_CLIENT',
+      details: { invoice_id: invoiceId, status },
+      created_at: new Date().toISOString()
+    });
+
+    await revalidateAccountsPaths(invoice.project_id);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
