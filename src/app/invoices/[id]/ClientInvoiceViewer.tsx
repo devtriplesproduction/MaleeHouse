@@ -6,6 +6,10 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
 import { toast } from 'sonner';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { publicUpdateInvoiceStatusAction } from '@/actions/finance.actions';
+import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 interface ClientInvoiceViewerProps {
   invoice: any;
@@ -13,6 +17,26 @@ interface ClientInvoiceViewerProps {
 }
 
 export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceViewerProps) {
+  const router = useRouter();
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleUpdateStatus = async (status: string) => {
+    setIsUpdating(true);
+    try {
+      const res = await publicUpdateInvoiceStatusAction(invoice.id, status);
+      if (res.success) {
+        toast.success(`Invoice marked as ${status.replace('_', ' ')}`);
+        router.refresh();
+      } else {
+        toast.error(res.error || 'Failed to update invoice');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleDownload = () => {
     generateInvoicePDF(invoice, invoice.projects, companySettings);
   };
@@ -55,6 +79,9 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                   <span className={cn(
                     "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border shadow-sm ml-2",
                     invoice.status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/20' :
+                    invoice.status === 'accepted' ? 'bg-teal-500/20 text-teal-300 border-teal-500/20' :
+                    invoice.status === 'rejected' ? 'bg-red-500/20 text-red-300 border-red-500/20' :
+                    invoice.status === 'in_review' ? 'bg-amber-500/20 text-amber-300 border-amber-500/20' :
                     invoice.status === 'overdue' ? 'bg-rose-500/20 text-rose-300 border-rose-500/20' :
                     invoice.status === 'cancelled' ? 'bg-white/10 text-slate-300 border-white/10' :
                     'bg-blue-500/20 text-blue-300 border-blue-500/20'
@@ -287,13 +314,52 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                 </button>
                 
                 <button 
-                  onClick={handleDownload}
+                  onClick={() => window.print()}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
                 >
                   <Printer className="w-4 h-4" /> Print Document
                 </button>
               </div>
             </div>
+
+            {/* Client Response Actions */}
+            {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+              <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xl shadow-slate-200/40">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Client Response</h3>
+                
+                <div className="space-y-3">
+                  {invoice.status !== 'accepted' && (
+                    <button 
+                      onClick={() => handleUpdateStatus('accepted')}
+                      disabled={isUpdating}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Accept Invoice
+                    </button>
+                  )}
+                  
+                  {invoice.status !== 'in_review' && (
+                    <button 
+                      onClick={() => handleUpdateStatus('in_review')}
+                      disabled={isUpdating}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                    >
+                      <Clock className="w-4 h-4" /> Mark Under Review
+                    </button>
+                  )}
+
+                  {invoice.status !== 'rejected' && (
+                    <button 
+                      onClick={() => handleUpdateStatus('rejected')}
+                      disabled={isUpdating}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                    >
+                      <XCircle className="w-4 h-4" /> Reject Invoice
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
 
 

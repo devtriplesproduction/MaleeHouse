@@ -286,7 +286,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
           
           .page {
             width: 210mm;
-            height: 297mm;
+            min-height: 297mm;
             padding: 20mm;
             margin: 10px auto;
             box-sizing: border-box;
@@ -455,7 +455,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
               margin: 0;
               box-shadow: none;
               width: 210mm;
-              height: 297mm;
+              min-height: 297mm;
             }
           }
         </style>

@@ -72,6 +72,7 @@ export function AccountsSidebar() {
         { title: "Bank Accounts", href: "/accounts/banks", icon: Landmark },
         { title: "Ledger", href: "/accounts/ledger", icon: Scroll },
         { title: "Outstanding Payments", href: "/accounts/outstanding", icon: AlertCircle },
+        { title: "Payroll", href: "/accounts/payroll", icon: FileText },
         { title: "Reconciliation", href: "/accounts/reconciliation", icon: Scale },
         { title: "Financial Reports", href: "/accounts/reports", icon: BarChart2 },
       ]

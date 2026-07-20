@@ -8,13 +8,16 @@ import {
   XCircle, 
   ArrowUpRight,
   Building,
-  Calendar
+  Calendar,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { LogPaymentModal } from './LogPaymentModal';
 import { getCompanySettingsAction } from '@/actions/settings.actions';
+import { deleteInvoiceAction } from '@/actions/finance.actions';
 
 interface Invoice {
   id: string;
@@ -22,7 +25,7 @@ interface Invoice {
   project_id: string;
   amount: number;
   total_amount: number;
-  status: 'draft' | 'sent' | 'paid' | 'cancelled';
+  status: 'draft' | 'sent' | 'paid' | 'cancelled' | 'overdue' | 'accepted' | 'rejected' | 'in_review';
   due_date: string | null;
   created_at: string;
   projects?: {
@@ -42,6 +45,9 @@ const statusConfig: Record<string, { label: string; className: string; icon: any
   sent: { label: 'Sent', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: ArrowUpRight },
   paid: { label: 'Paid', className: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 },
   cancelled: { label: 'Cancelled', className: 'bg-rose-500/10 text-rose-500 border-rose-500/20', icon: XCircle },
+  accepted: { label: 'Accepted', className: 'bg-teal-500/10 text-teal-600 border-teal-500/20', icon: CheckCircle2 },
+  rejected: { label: 'Rejected', className: 'bg-red-500/10 text-red-500 border-red-500/20', icon: XCircle },
+  in_review: { label: 'In Review', className: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Clock },
 };
 
 export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceTableProps) {
@@ -49,10 +55,30 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentInvoice, setSelectedPaymentInvoice] = useState<Invoice | null>(null);
   const [companySettings, setCompanySettings] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     getCompanySettingsAction().then(setCompanySettings).catch(console.error);
   }, []);
+
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    if (!confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return;
+    
+    setIsDeleting(invoiceId);
+    try {
+      const res = await deleteInvoiceAction(invoiceId);
+      if (res.success) {
+        toast.success('Invoice deleted successfully');
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error('Failed to delete invoice', { description: res.error });
+      }
+    } catch (err: any) {
+      toast.error('An error occurred', { description: err.message });
+    } finally {
+      setIsDeleting(null);
+    }
+  };
 
   const filtered = invoices.filter((invoice) => {
     if (!searchQuery) return true;
@@ -132,16 +158,19 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
                     statusConfig[invoice.status]?.className
                   )}>
                     <StatusIcon className="w-3.5 h-3.5" />
-                    {statusConfig[invoice.status]?.label}
+                    {invoice.status === 'sent' && (new Date().getTime() - new Date(invoice.created_at).getTime()) > 2 * 24 * 60 * 60 * 1000 ? 'Pending' : statusConfig[invoice.status]?.label}
                   </span>
                 </div>
               </div>
 
               {/* Section 3: Action Button (25%) */}
               <div className="w-full md:w-[25%] flex-shrink-0 flex items-center gap-2 md:justify-end md:border-l border-slate-100 dark:border-white/5 md:pl-4">
-                {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                {(invoice.status === 'sent' || invoice.status === 'overdue') && (
                   <button 
-                    onClick={() => {
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setSelectedPaymentInvoice(invoice);
                       setPaymentModalOpen(true);
                     }}
@@ -152,12 +181,32 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
                   </button>
                 )}
                 <button 
-                  onClick={() => setSelectedInvoice(invoice)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedInvoice(invoice);
+                  }}
                   className="h-8 px-4 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   View invoice
                 </button>
+                {invoice.status === 'draft' && (
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteInvoice(invoice.id);
+                    }}
+                    disabled={isDeleting === invoice.id}
+                    className="h-8 w-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 ml-1"
+                    title="Delete Invoice"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           );

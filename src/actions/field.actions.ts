@@ -18,7 +18,14 @@ export async function getMyVisitsAction() {
   const endOfWeek = new Date(today);
   endOfWeek.setDate(today.getDate() + 7);
 
-  const { data, error } = await supabase
+  const { data: assignments } = await supabase
+    .from('project_assignments')
+    .select('project_id')
+    .eq('user_id', profile.id);
+    
+  const assignedProjectIds = assignments ? assignments.map((a: any) => a.project_id) : [];
+
+  let query = supabase
     .from("project_visits")
     .select(`
       id,
@@ -29,10 +36,17 @@ export async function getMyVisitsAction() {
         client_address
       )
     `)
-    .contains("assigned_team", [profile.id])
     .gte("scheduled_date", today.toISOString())
     .lte("scheduled_date", endOfWeek.toISOString())
     .order("scheduled_date", { ascending: true });
+
+  if (assignedProjectIds.length > 0) {
+    query = query.or(`assigned_team.cs.{${profile.id}},project_id.in.(${assignedProjectIds.join(',')})`);
+  } else {
+    query = query.contains("assigned_team", [profile.id]);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching my visits:", error);

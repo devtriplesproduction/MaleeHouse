@@ -103,6 +103,49 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
   }
 }
 
+export async function deleteInvoiceAction(invoiceId: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+
+    // Fetch invoice to check status
+    const { data: invoice, error: fetchError } = await supabase.from('invoices').select('status, project_id').eq('id', invoiceId).single();
+    if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
+
+    if (invoice.status !== 'draft') {
+      return { success: false, error: 'Only draft invoices can be deleted.' };
+    }
+
+    const lockCheck = await verifyProjectNotLocked(invoice.project_id);
+    if (!lockCheck.success) {
+      return { success: false, error: lockCheck.error || "Project is locked." };
+    }
+
+    const { error: deleteError } = await supabase.from('invoices').delete().eq('id', invoiceId);
+    if (deleteError) return { success: false, error: deleteError.message };
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: invoice.project_id,
+      user_id: profile.id,
+      action: 'INVOICE_DELETED',
+      details: { invoice_id: invoiceId },
+      created_at: new Date().toISOString()
+    });
+
+    await revalidateAccountsPaths(invoice.project_id);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function logPaymentAction(payload: CreatePaymentInput): Promise<ActionResponse> {
   try {
     const validated = createPaymentSchema.safeParse(payload);
@@ -332,6 +375,27 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
     }
 
     return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getInvoiceByIdAction(invoiceId: string): Promise<ActionResponse> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*, projects(name, client_name, budget, payments(amount, status)), payments(amount, status)')
+      .eq('id', invoiceId)
+      .single();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -1604,6 +1668,79 @@ export async function updateInvoiceBankAccountAction(invoiceId: string, bankId: 
       .eq('status', 'draft');
 
     if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateInvoiceStatusAction(invoiceId: string, status: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const supabase: any = await createClient();
+    
+    const { data: invoice, error: fetchError } = await supabase.from('invoices').select('project_id').eq('id', invoiceId).single();
+    if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
+
+    const lockCheck = await verifyProjectNotLocked(invoice.project_id);
+    if (!lockCheck.success) {
+      return { success: false, error: lockCheck.error || "Project is locked." };
+    }
+
+    const { error: updateError } = await supabase
+      .from('invoices')
+      .update({ status })
+      .eq('id', invoiceId);
+      
+    if (updateError) return { success: false, error: updateError.message };
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: invoice.project_id,
+      user_id: profile.id,
+      action: 'INVOICE_STATUS_UPDATED',
+      details: { invoice_id: invoiceId, status },
+      created_at: new Date().toISOString()
+    });
+
+    await revalidateAccountsPaths(invoice.project_id);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+
+export async function publicUpdateInvoiceStatusAction(invoiceId: string, status: string): Promise<ActionResponse> {
+  try {
+    const supabase = await createClient(); // assuming createAdminClient or similar if RLS blocks public update
+    
+    // Instead of createClient which uses the user auth, we should use createAdminClient
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const adminSupabase: any = createAdminClient();
+
+    const { data: invoice, error: fetchError } = await adminSupabase.from('invoices').select('project_id').eq('id', invoiceId).single();
+    if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
+
+    const { error: updateError } = await adminSupabase
+      .from('invoices')
+      .update({ status: status as any })
+      .eq('id', invoiceId);
+      
+    if (updateError) return { success: false, error: updateError.message };
+
+    await adminSupabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: invoice.project_id,
+      user_id: '00000000-0000-0000-0000-000000000000', // System or public user
+      action: 'INVOICE_STATUS_UPDATED_BY_CLIENT',
+      details: { invoice_id: invoiceId, status },
+      created_at: new Date().toISOString()
+    });
+
+    await revalidateAccountsPaths(invoice.project_id);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

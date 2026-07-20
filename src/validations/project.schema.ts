@@ -23,14 +23,17 @@ export const createProjectSchema = z.object({
       return false;
     }
   }, { message: 'Please enter a valid phone number.' }),
-  email: z.string().trim().min(1, { message: 'Email is required.' }).email({ message: 'Please enter a valid email address.' }).refine((val) => {
-    const domain = val.split('@')[1];
-    if (!domain) return true;
-    const lowerDomain = domain.toLowerCase();
-    if (FAKE_DOMAINS.includes(lowerDomain)) return false;
-    // Check against standard disposable list
-    return !disposableDomains.includes(lowerDomain);
-  }, { message: 'Please provide a valid, non-temporary business or personal email.' }),
+  email: z.union([
+    z.literal(''),
+    z.string().trim().email({ message: 'Please enter a valid email address.' }).refine((val) => {
+      const domain = val.split('@')[1];
+      if (!domain) return true;
+      const lowerDomain = domain.toLowerCase();
+      if (FAKE_DOMAINS.includes(lowerDomain)) return false;
+      // Check against standard disposable list
+      return !disposableDomains.includes(lowerDomain);
+    }, { message: 'Please provide a valid, non-temporary business or personal email.' })
+  ]).optional(),
   client_contact: z.string().optional(),
   client_address: z.string().min(10, { message: 'Full address is required.' }),
   state_code: z.string().min(2).max(2, { message: 'State code must be exactly 2 letters (e.g., TX, NY).' }).toUpperCase(),

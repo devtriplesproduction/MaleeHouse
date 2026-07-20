@@ -161,23 +161,29 @@ export function LogPaymentModal({
                 </motion.div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Transaction ID / Reference (Optional)
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FileText className="w-4 h-4 text-slate-400" />
+              {['UPI', 'Cheque'].includes(method) && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {method === 'Cheque' ? 'Cheque Number (Optional)' : 'Transaction ID (Optional)'}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FileText className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={txnId}
+                      onChange={e => setTxnId(e.target.value)}
+                      placeholder={method === 'Cheque' ? 'e.g. 123456' : 'e.g. UTR Number or Txn ID'}
+                      className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    />
                   </div>
-                  <input
-                    type="text"
-                    value={txnId}
-                    onChange={e => setTxnId(e.target.value)}
-                    placeholder="e.g. UTR Number or Cheque No."
-                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  />
-                </div>
-              </div>
+                </motion.div>
+              )}
 
               <div className="pt-4 flex gap-3">
                 <button

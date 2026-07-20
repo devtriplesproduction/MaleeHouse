@@ -83,7 +83,7 @@ export async function getAllUsersAction() {
   try {
     const profile: any = await getUserProfileAction()
     console.log('getAllUsersAction profile:', profile?.id, profile?.role)
-    if (!profile || !['admin', 'engineer', 'hr'].includes(profile.role?.toLowerCase())) {
+    if (!profile || !['admin', 'engineer', 'hr', 'accountant'].includes(profile.role?.toLowerCase())) {
       console.log('getAllUsersAction unauthorized:', { profileExists: !!profile, role: profile?.role })
       return { success: false, error: 'Unauthorized' }
     }

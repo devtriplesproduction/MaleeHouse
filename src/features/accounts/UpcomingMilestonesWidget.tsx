@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { autoGenerateMilestoneInvoicesAction } from '@/actions/finance.actions';
+import { autoGenerateMilestoneInvoicesAction, getInvoiceByIdAction } from '@/actions/finance.actions';
+import { getCompanySettingsAction } from '@/actions/settings.actions';
 import {
   Calendar,
   Building2,
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CreateInvoiceModal } from './CreateInvoiceModal';
+import { InvoicePreviewModal } from './InvoicePreviewModal';
 
 export interface Milestone {
   id: string;
@@ -58,6 +60,19 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
   const router = useRouter();
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+  const [previewInvoice, setPreviewInvoice] = useState<any | null>(null);
+  const [companySettings, setCompanySettings] = useState<any>(null);
+
+  useEffect(() => {
+    getCompanySettingsAction().then(setCompanySettings).catch(console.error);
+  }, []);
+
+  const handleInvoiceClick = async (invoiceId: string) => {
+    const res = await getInvoiceByIdAction(invoiceId);
+    if (res.success && res.data) {
+      setPreviewInvoice(res.data);
+    }
+  };
 
   useEffect(() => {
     const needsGeneration = milestones.some(m => {
@@ -72,9 +87,11 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
 
     if (needsGeneration) {
       autoGenerateMilestoneInvoicesAction().then((res) => {
-        if (res.success && res.data?.generated > 0) {
+        if (res?.success && res.data?.generated > 0) {
           router.refresh();
         }
+      }).catch(err => {
+        console.error("autoGenerateMilestoneInvoicesAction failed:", err);
       });
     }
   }, [milestones, router]);
@@ -224,7 +241,13 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
                     <p className="text-sm font-bold text-slate-900 dark:text-white nums flex items-center justify-end gap-1.5">
                       {formatCurrency(m.amount)}
                       {m.invoices && m.invoices.length > 0 ? (
-                        <span className="text-[8px] leading-none py-0.5 px-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-sm uppercase tracking-widest font-extrabold" title="Invoice generated and ready to send">READY</span>
+                        m.invoices[0].status === 'sent' ? (
+                          <span className="text-[8px] leading-none py-0.5 px-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-sm uppercase tracking-widest font-extrabold" title="Invoice sent to client">SENT</span>
+                        ) : m.invoices[0].status === 'paid' ? (
+                          <span className="text-[8px] leading-none py-0.5 px-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-sm uppercase tracking-widest font-extrabold" title="Invoice paid">PAID</span>
+                        ) : (
+                          <span className="text-[8px] leading-none py-0.5 px-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-sm uppercase tracking-widest font-extrabold" title="Invoice generated and ready to send">READY</span>
+                        )
                       ) : (
                         <span className="text-[8px] leading-none py-0.5 px-1 bg-slate-100 dark:bg-white/5 text-slate-400 rounded-sm uppercase tracking-widest font-bold" title="Invoice pending generation">PENDING</span>
                       )}
@@ -245,14 +268,13 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
 
             if (hasInvoice) {
               return (
-                <Link
+                <div
                   key={m.id}
-                  href={`/invoices/${m.invoices![0].id}`}
-                  target="_blank"
+                  onClick={() => handleInvoiceClick(m.invoices![0].id)}
                   className={cardClasses}
                 >
                   {cardContent}
-                </Link>
+                </div>
               );
             }
 
@@ -283,6 +305,16 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
           initialAmount={selectedMilestone.amount}
           onSuccess={() => {
             // Ideally we'd trigger a refresh here, but the user can click the refresh button manually
+          }}
+        />
+      )}
+      {previewInvoice && (
+        <InvoicePreviewModal
+          invoice={previewInvoice}
+          companySettings={companySettings}
+          onClose={() => setPreviewInvoice(null)}
+          onRefresh={() => {
+            router.refresh();
           }}
         />
       )}

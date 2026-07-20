@@ -16,9 +16,10 @@ export default async function LedgerPage() {
   ]);
 
   const supabase: any = await createClient();
-  const [{ data: projectsData }, { data: visitsData }] = await Promise.all([
+  const [{ data: projectsData }, { data: visitsData }, { data: payrollData }] = await Promise.all([
     supabase.from("projects").select("id, name"),
     supabase.from("project_visits").select("*, projects(name)"),
+    supabase.from("payroll_cycles").select("id, month, year, status, created_at, bank_accounts(bank_name), payroll_snapshots(net_payable)").eq("status", "locked"),
   ]);
 
   const projects = projectsData || [];
@@ -29,6 +30,7 @@ export default async function LedgerPage() {
   const payments = paymentsRes.success ? (paymentsRes.data || []) : [];
 
   invoices.forEach((inv: any) => {
+    if (inv.status === 'paid') return; // Hide paid invoices to avoid duplicating with the actual payment record
     incomeData.push({
       id: `inv-${inv.id}`,
       date: inv.created_at,
@@ -87,7 +89,28 @@ export default async function LedgerPage() {
     });
   });
 
+
+  (payrollData || []).forEach((cycle: any) => {
+    const totalAmount = (cycle.payroll_snapshots || []).reduce((sum: number, snap: any) => sum + Number(snap.net_payable || 0), 0);
+    if (totalAmount > 0) {
+      expenseData.push({
+        id: `payroll-${cycle.id}`,
+        date: cycle.created_at,
+        project_id: "company-wide",
+        project_name: "Company-wide",
+        category: "Payroll Processing",
+        description: `Payroll Cycle - ${cycle.month}/${cycle.year}`,
+        amount: totalAmount,
+        status: "paid",
+        added_by: "System",
+        source: "expense",
+        bank_name: cycle.bank_accounts?.bank_name || undefined,
+      });
+    }
+  });
+
   (visitsData || []).forEach((visit: any) => {
+
     const amt = Number(visit.visit_cost || 0);
     if (amt > 0) {
       expenseData.push({

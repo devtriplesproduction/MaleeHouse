@@ -27,6 +27,7 @@ interface CreateInvoiceModalProps {
   clientName: string;
   milestoneId?: string;
   milestoneTitle?: string;
+  milestoneDueDate?: string | null;
   expenseId?: string;
   expenseTitle?: string;
   visitId?: string;
@@ -37,7 +38,7 @@ interface CreateInvoiceModalProps {
   onSuccess?: () => void;
 }
 
-export function CreateInvoiceModal({ projectId, projectName, clientName, milestoneId, milestoneTitle, expenseId, expenseTitle, visitId, visitTitle, initialAmount, isOpen, onOpenChange, onSuccess }: CreateInvoiceModalProps) {
+export function CreateInvoiceModal({ projectId, projectName, clientName, milestoneId, milestoneTitle, milestoneDueDate, expenseId, expenseTitle, visitId, visitTitle, initialAmount, isOpen, onOpenChange, onSuccess }: CreateInvoiceModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<any>(null);
@@ -56,7 +57,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
     amount: initialAmount || 0,
     gst_rate: 18,
     notes: '',
-    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days
+    due_date: milestoneDueDate ? new Date(milestoneDueDate).toISOString().split('T')[0] : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days
     bank_id: ''
   });
 
@@ -115,7 +116,10 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
     if (initialAmount !== undefined) {
       setFormData(prev => ({ ...prev, amount: initialAmount }));
     }
-  }, [initialAmount]);
+    if (milestoneDueDate !== undefined && milestoneDueDate !== null) {
+      setFormData(prev => ({ ...prev, due_date: new Date(milestoneDueDate).toISOString().split('T')[0] }));
+    }
+  }, [initialAmount, milestoneDueDate]);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -206,6 +210,9 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                         "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border shadow-sm ml-2",
                         createdInvoice ? (
                           createdInvoice.status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/20' :
+                          createdInvoice.status === 'accepted' ? 'bg-teal-500/20 text-teal-300 border-teal-500/20' :
+                          createdInvoice.status === 'rejected' ? 'bg-red-500/20 text-red-300 border-red-500/20' :
+                          createdInvoice.status === 'in_review' ? 'bg-amber-500/20 text-amber-300 border-amber-500/20' :
                           createdInvoice.status === 'overdue' ? 'bg-rose-500/20 text-rose-300 border-rose-500/20' :
                           createdInvoice.status === 'cancelled' ? 'bg-white/10 text-slate-300 border-white/10' :
                           'bg-blue-500/20 text-blue-300 border-blue-500/20'

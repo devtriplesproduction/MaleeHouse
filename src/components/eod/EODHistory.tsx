@@ -69,7 +69,7 @@ function HistoryRow({ report, index }: { report: any; index: number }) {
           </div>
           <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300/90 text-sm font-semibold">
             <Clock className="w-4 h-4" />
-            <span>{report.adjusted_hours ?? report.hours_spent}h logged</span>
+            <span>{report.adjusted_hours || report.hours_spent || 0}h logged</span>
           </div>
           
           {isApproved ? (
@@ -143,7 +143,7 @@ function HistoryRow({ report, index }: { report: any; index: number }) {
                     <div className="space-y-0.5">
                       <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Adjusted Hours</div>
                       <div className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                        {report.adjusted_hours !== undefined && report.adjusted_hours !== null ? `${report.adjusted_hours}h` : `${report.hours_spent}h`}
+                        {report.adjusted_hours ? `${report.adjusted_hours}h` : `${report.hours_spent || 0}h`}
                       </div>
                     </div>
                     

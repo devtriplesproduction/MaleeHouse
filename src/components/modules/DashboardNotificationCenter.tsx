@@ -150,13 +150,6 @@ export default function DashboardNotificationCenter() {
             };
 
             const sortedNotifications = [...notifications].sort((a: any, b: any) => {
-              const aPriority = getNotificationPriority(a.title, a.message, a.type || '');
-              const bPriority = getNotificationPriority(b.title, b.message, b.type || '');
-              
-              if (aPriority !== bPriority) {
-                return aPriority - bPriority;
-              }
-              
               if (a.is_read !== b.is_read) {
                 return a.is_read ? 1 : -1;
               }

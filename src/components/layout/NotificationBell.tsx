@@ -81,7 +81,7 @@ export function NotificationBell() {
       setIsLoading(true);
       const result = await getNotificationsAction();
       if (result && result.success && result.data) {
-        setNotifications(result.data);
+        setNotifications(result.data.filter((n: any) => !n.related_project_id));
       }
       setIsLoading(false);
     }

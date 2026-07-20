@@ -21,6 +21,8 @@ import { MaterialApprovalWidget } from "@/components/modules/MaterialApprovalWid
 
 
 
+import { filterActivityLogsByRole } from "@/lib/utils";
+
 export default async function EngineerDashboardPage() {
   const profile = await getUserProfileAction();
   const firstName = profile?.first_name || "Engineer";
@@ -41,7 +43,8 @@ export default async function EngineerDashboardPage() {
     getAllMaterialRequestsAction()
   ]);
 
-  const activityLogs: any[] = (activityLogsRes.data as any) || [];
+  const rawActivityLogs: any[] = (activityLogsRes.data as any) || [];
+  const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
   const comments: any[] = (commentsRes.data as any) || [];
   const files: any[] = (filesRes.data as any) || [];
   const allUsers: any[] = (usersRes.data as any) || [];
@@ -65,8 +68,22 @@ export default async function EngineerDashboardPage() {
   );
 
   const pendingAcceptance = [...newlyAssigned];
-  const cadReview = projects.filter((p: any) => p.status === "review");
-  const fieldReviews = projects.filter((p: any) => p.status === "data_sync");
+  const cadReview = projects.filter((p: any) => {
+    if (p.status === "review") return true;
+    if (p.status === "data_sync") {
+      const projectLogs = activityLogs.filter((l: any) => l.project_id === p.id);
+      return projectLogs.some((l: any) => l.action === "FILE_UPLOADED" && l.details?.category === "final_file");
+    }
+    return false;
+  });
+  
+  const fieldReviews = projects.filter((p: any) => {
+    if (p.status === "data_sync") {
+      const projectLogs = activityLogs.filter((l: any) => l.project_id === p.id);
+      return !projectLogs.some((l: any) => l.action === "FILE_UPLOADED" && l.details?.category === "final_file");
+    }
+    return false;
+  });
   const qcReturns = projects.filter(
     (p: any) => qcRejectedProjectIds.has(p.id) && p.status !== "completed" && p.status !== "archived"
   );
