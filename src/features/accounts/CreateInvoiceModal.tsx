@@ -278,7 +278,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
               <div className="lg:col-span-2 space-y-6">
                 {/* WYSIWYG Invoice Body */}
                 <div className={`bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-10 md:p-12 relative min-h-[900px] justify-between transition-all ${createdInvoice ? 'opacity-80 scale-[0.99] pointer-events-none' : ''}`}>
-               <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of {projectData && Number(projectData.calculated_budget) > 0 && milestoneId ? '2' : '1'}</div>
+               <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of 1</div>
 
                <div className="space-y-8 flex-1">
                   {/* Document Header */}
@@ -390,106 +390,32 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
 
                {/* Totals panel */}
                <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-end">
-                  <div className="w-full md:w-72 space-y-2.5">
+                  <div className="w-full md:w-[350px] space-y-2.5">
                      <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                        <span>Subtotal</span>
-                        <span>INR {Number(formData.amount).toLocaleString('en-IN')}</span>
+                        <span>Total Cost of Project</span>
+                        <span>INR {Number(projectData?.calculated_budget || 0).toLocaleString('en-IN')}</span>
                      </div>
-
                      <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                        <span>CGST ({formData.gst_rate / 2}%)</span>
-                        <span>INR {(gstAmount / 2).toLocaleString('en-IN')}</span>
+                        <span>Total Project Paid</span>
+                        <span>INR {((projectData?.payments || [])
+                                      .filter((p: any) => p.status === 'verified' || p.status === 'paid')
+                                      .reduce((sum: number, p: any) => sum + Number(p.amount), 0)).toLocaleString('en-IN')}</span>
                      </div>
-
-                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                        <span>SGST ({formData.gst_rate / 2}%)</span>
-                        <span>INR {(gstAmount / 2).toLocaleString('en-IN')}</span>
-                     </div>
-
-                     <div className="pt-3 border-t border-slate-200 flex justify-between items-end">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>
-                        <p className="text-xl font-bold text-slate-900 tracking-tight nums">INR {totalAmount.toLocaleString('en-IN')}</p>
-                     </div>
-
                      <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums pt-2 border-t border-slate-100">
-                        <span>Amount Paid</span>
-                        <span>INR 0</span>
+                        <span>Current Invoice Amount</span>
+                        <span>INR {totalAmount.toLocaleString('en-IN')}</span>
                      </div>
-
-                     <div className={`flex justify-between items-end p-2 rounded-lg ${totalAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                        <p className="text-[11px] font-bold uppercase tracking-wider">Invoice Balance</p>
-                        <p className="text-lg font-bold tracking-tight nums">INR {totalAmount.toLocaleString('en-IN')}</p>
-                     </div>
-
-                     {/* End of Totals */}
-                  </div>
-               </div>
-            </div>
-
-            {/* PAGE 2: Project Financial Summary */}
-            {projectData && Number(projectData.calculated_budget) > 0 && milestoneId && (
-               <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-10 md:p-12 relative min-h-[500px] mt-6">
-                  <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 2 of 2</div>
-                  <div className="space-y-6 flex-1 mt-4">
-                     <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6">Project Financial Summary</h2>
-                     
-                     <div className="space-y-4">
-                        <table className="w-full border-collapse">
-                           <thead>
-                              <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                                 <th className="py-2.5 text-left w-12">#</th>
-                                 <th className="py-2.5 text-left">Description</th>
-                                 <th className="py-2.5 text-right w-36">Amount</th>
-                              </tr>
-                           </thead>
-                           <tbody className="divide-y divide-slate-100 text-slate-700">
-                              <tr className="align-top">
-                                 <td className="py-4 text-xs font-semibold text-slate-400">1</td>
-                                 <td className="py-4">
-                                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">Total Cost of Project</p>
-                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">Total approved budget for this project.</p>
-                                 </td>
-                                 <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">INR {Number(projectData.calculated_budget).toLocaleString('en-IN')}</td>
-                              </tr>
-                              <tr className="align-top">
-                                 <td className="py-4 text-xs font-semibold text-slate-400">2</td>
-                                 <td className="py-4">
-                                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">Previously Paid</p>
-                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">Sum of all payments cleared before this invoice.</p>
-                                 </td>
-                                 <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">
-                                   INR {((projectData.payments || [])
-                                     .filter((p: any) => p.status === 'verified' || p.status === 'paid')
-                                     .reduce((sum: number, p: any) => sum + Number(p.amount), 0)).toLocaleString('en-IN')}
-                                 </td>
-                              </tr>
-                              <tr className="align-top bg-indigo-50/30">
-                                 <td className="py-4 text-xs font-semibold text-indigo-400 px-2 rounded-l-lg">3</td>
-                                 <td className="py-4">
-                                    <p className="text-xs font-bold text-indigo-700 uppercase tracking-tight">Current Invoice Due</p>
-                                    <p className="text-[11px] text-indigo-600/70 mt-1 leading-relaxed max-w-lg">Amount requested in this current milestone invoice.</p>
-                                 </td>
-                                 <td className="py-4 text-right text-xs font-bold text-indigo-700 nums px-2 rounded-r-lg">INR {totalAmount.toLocaleString('en-IN')}</td>
-                              </tr>
-                           </tbody>
-                        </table>
-                     </div>
-
-                     <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-end">
-                        <div className="w-full md:w-[350px] space-y-2.5">
-                           <div className="flex justify-between items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
-                              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Project Balance Remaining</p>
-                              <p className="text-xl font-bold text-slate-900 tracking-tight nums">
-                                INR {Math.max(0, Number(projectData.calculated_budget) - ((projectData.payments || [])
-                                  .filter((p: any) => p.status === 'verified' || p.status === 'paid')
-                                  .reduce((sum: number, p: any) => sum + Number(p.amount), 0)) - totalAmount).toLocaleString('en-IN')}
-                              </p>
-                           </div>
-                        </div>
+                     <div className={`flex justify-between items-end p-3 rounded-lg mt-2 ${totalAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                        <p className="text-[11px] font-bold uppercase tracking-wider">Project Balance Remaining</p>
+                        <p className="text-lg font-bold tracking-tight nums">
+                          INR {Math.max(0, Number(projectData?.calculated_budget || 0) - ((projectData?.payments || [])
+                            .filter((p: any) => p.status === 'verified' || p.status === 'paid')
+                            .reduce((sum: number, p: any) => sum + Number(p.amount), 0)) - totalAmount).toLocaleString('en-IN')}
+                        </p>
                      </div>
                   </div>
                </div>
-            )}             {/* Bottom Actions Area */}
+            </div>             {/* Bottom Actions Area */}
              {!createdInvoice && (
                 <div className="mt-8 flex justify-end pb-8">
                    <Button 

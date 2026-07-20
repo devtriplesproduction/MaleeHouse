@@ -42,7 +42,17 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
   const items = quotation.items || [];
   const discountAmount = quotation.discount_amount || 0;
   const discountPercentage = quotation.discount_pct || quotation.discount_percentage || 0;
-  const clauses = quotation.clauses || [];
+  
+  // Deduplicate clauses to prevent legacy duplication issues
+  const rawClauses = quotation.clauses || [];
+  const clausesMap = new Map();
+  rawClauses.forEach((c: any) => {
+    const title = c.title || c.clause_title;
+    if (title && !clausesMap.has(title)) {
+      clausesMap.set(title, c);
+    }
+  });
+  const clauses = Array.from(clausesMap.values());
   
   if (!mounted || !companySettings) return null;
   
