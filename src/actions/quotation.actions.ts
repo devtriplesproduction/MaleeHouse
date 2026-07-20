@@ -14,11 +14,10 @@ import {
 import { getUserProfileAction } from './auth.actions';
 import { updateProjectStageAction } from './workflow.actions';
 import { requireAuthContext } from '@/lib/permissions/permissions';
-import { notifyStageUpdateAction } from './notification.actions';
+import { notifyStageUpdateAction, notifyQuotationCreatedAction } from './notification.actions';
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
 import { generateSequentialCode } from '@/lib/id-generator';
 import { createClient } from '@/lib/supabase/server';
-
 export type ActionResponse<T = any> = {
   success: boolean;
   data?: T;
@@ -148,6 +147,10 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
       details: { quotation_id: quotationId, quotation_number: quotationNumber, version: 1 },
       created_at: new Date().toISOString()
     });
+
+    try {
+      notifyQuotationCreatedAction(payload.project_id || null, quotationNumber).catch(console.error);
+    } catch (_) {}
 
     if (payload.project_id) {
       // Sync quotation total_amount to project budget

@@ -23,7 +23,8 @@ import { cn } from '@/lib/utils';
 import {
   assignTeamMemberAction,
   claimProjectAction,
-  removeTeamMemberAction
+  removeTeamMemberAction,
+  reviewFieldSurveyAction
 } from '@/actions/operations.actions';
 import { transitionWorkflowAction, updateProjectStageAction, reopenProjectAction } from '@/actions/workflow.actions';
 import { FileUploader } from './FileUploader';
@@ -428,7 +429,7 @@ export function OperationsControlCenter({
     if (!rejectionNote.trim()) return;
     setIsRejecting(true);
     try {
-      const res = await updateProjectStageAction(projectId, 'field_work', `CAD rejected survey data. Rework required. Reason: ${rejectionNote}`);
+      const res = await reviewFieldSurveyAction(projectId, false, rejectionNote);
       if (res?.success) {
         toast({ title: "Survey Rejected", description: "Project sent back to field team.", variant: "success" });
         setIsRejectModalOpen(false);

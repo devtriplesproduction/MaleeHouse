@@ -808,6 +808,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
         clientName={selectedInvoiceMilestone?.projects?.client_name || ''}
         milestoneId={selectedInvoiceMilestone?.id || ''}
         milestoneTitle={selectedInvoiceMilestone?.title || ''}
+        milestoneDueDate={selectedInvoiceMilestone?.due_date || null}
         initialAmount={selectedInvoiceMilestone?.amount || 0}
         onSuccess={() => {
           setInvoiceModalOpen(false);

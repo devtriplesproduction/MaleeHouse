@@ -30,6 +30,7 @@ export default async function LedgerPage() {
   const payments = paymentsRes.success ? (paymentsRes.data || []) : [];
 
   invoices.forEach((inv: any) => {
+    if (inv.status === 'paid') return; // Hide paid invoices to avoid duplicating with the actual payment record
     incomeData.push({
       id: `inv-${inv.id}`,
       date: inv.created_at,

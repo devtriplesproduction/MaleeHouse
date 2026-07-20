@@ -208,7 +208,7 @@ function ProjectMilestonesContent() {
         percentage: "",
         due_date: "",
         is_activation_gate: false,
-        linked_stage: ""
+        linked_stage: milestones.length === 0 ? "data_collection" : ""
       }
     ]);
   };
@@ -751,6 +751,7 @@ function ProjectMilestonesContent() {
                                         onValueChange={(val) => updateMilestone(idx, 'linked_stage', val)}
                                         placeholder="-- No linked stage --"
                                         buttonClassName="h-9 w-full bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 rounded-lg px-3 text-xs text-slate-900 dark:text-white"
+                                        disabled={idx === 0}
                                       >
                                         <SelectItem value="" className="text-xs py-2">-- No linked stage --</SelectItem>
                                         

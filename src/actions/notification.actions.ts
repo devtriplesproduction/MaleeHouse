@@ -150,7 +150,8 @@ export async function notifyPaymentAction(projectId: string) {
 export async function notifyNewProjectAction(projectId: string, projectName: string) {
   const supabase: any = await createAdminClient()
   
-  const { data: admins } = await supabase.from('profiles').select('id').in('role', ['admin', 'accountant']).eq('is_active', true)
+  // Notify admin, accountant, and sales of new projects
+  const { data: admins } = await supabase.from('profiles').select('id').in('role', ['admin', 'accountant', 'sales']).eq('is_active', true)
   
   if (!admins || admins.length === 0) return { success: true }
 
@@ -168,6 +169,34 @@ export async function notifyNewProjectAction(projectId: string, projectName: str
   return { success: true }
 }
 
+export async function notifyQuotationCreatedAction(projectId: string | null, quotationNumber: string) {
+  const supabase: any = await createAdminClient()
+  
+  // Notify admin and sales
+  const { data: users } = await supabase.from('profiles').select('id').in('role', ['admin', 'sales']).eq('is_active', true)
+  
+  if (!users || users.length === 0) return { success: true }
+
+  let projectName = 'a project';
+  if (projectId) {
+    const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single();
+    if (project) projectName = `"${project.name}"`;
+  }
+
+  await Promise.all(
+    users.map((u: any) =>
+      insertNotification({
+        userId: u.id,
+        title: 'Quotation Created',
+        message: `A new quotation (${quotationNumber}) has been created for ${projectName}.`,
+        type: 'system',
+        relatedProjectId: projectId || undefined,
+      })
+    )
+  )
+  return { success: true }
+}
+
 export async function getNotificationsAction() {
   try {
     const profile: any = await getUserProfileAction()
@@ -176,14 +205,59 @@ export async function getNotificationsAction() {
     const supabase: any = await createClient()
     const { data: notifications, error } = await supabase
       .from('notifications')
-      .select('*, projects!related_project_id(name)')
+      .select('*, projects!related_project_id(name, status)')
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(100)
 
     if (error) throw error
 
-    const mapped = (notifications || []).map((n: any) => ({
+    // Define workflow stages to determine if a project has passed a role's responsibilities
+    const STAGE_ORDER = [
+      'project_created',    // 0 (accountant)
+      'data_collection',    // 1 (engineer)
+      'prototype',          // 2 (cad)
+      'review',             // 3 (engineer)
+      'field_assigned',     // 4 (engineer)
+      'field_work',         // 5 (field)
+      'data_sync',          // 6 (cad)
+      'cad_finalization',   // 7 (cad)
+      'completed'           // 8 (admin)
+    ];
+
+    const ROLE_MAX_STAGE: Record<string, number> = {
+      'accountant': 8, // Accountants might need to see things until the end for billing
+      'field': 5,
+      'cad': 7,
+      'engineer': 4,
+      'admin': 8,
+    };
+
+    const userRole = profile.role || 'user';
+    const maxStageIndexForRole = ROLE_MAX_STAGE[userRole] ?? 8;
+
+    const filtered = (notifications || []).filter((n: any) => {
+      // Keep system/non-project notifications
+      if (!n.related_project_id) return true;
+
+      const pStatus = (n as any).projects?.status;
+      if (!pStatus) return true; // Keep if we can't determine status
+
+      // Always hide if completed or cancelled
+      if (['completed', 'cancelled', 'delivered'].includes(pStatus)) return false;
+
+      const currentStageIndex = STAGE_ORDER.indexOf(pStatus);
+      if (currentStageIndex === -1) return true; // Unknown status, keep it
+
+      // Hide if the project has progressed PAST the user's maximum responsible stage
+      if (currentStageIndex > maxStageIndexForRole) {
+        return false;
+      }
+
+      return true;
+    });
+
+    const mapped = filtered.map((n: any) => ({
       id: n.id,
       title: n.title,
       message: n.message,
@@ -192,9 +266,11 @@ export async function getNotificationsAction() {
       created_at: n.created_at,
       related_project_id: n.related_project_id ?? undefined,
       project_name: (n as any).projects?.name ?? undefined,
+      project_status: (n as any).projects?.status ?? undefined,
     }))
 
-    return { success: true, data: normalizeData(mapped) }
+    // Limit to 50 after filtering
+    return { success: true, data: normalizeData(mapped.slice(0, 50)) }
   } catch (error: any) {
     return { success: false, error: error.message, data: [] }
   }
@@ -275,7 +351,7 @@ export async function notifyStageUpdateAction(projectId: string, fromStage: stri
 
   const getAssignedByRole = (role: string) =>
     (assignments || [])
-      .filter((a: any) => (a.profiles?.role ?? a.role) === role)
+      .filter((a: any) => a.role === role)
       .map((a: any) => a.user_id)
 
   // Notification target map: stage → who should be notified and what message they should see
@@ -328,6 +404,11 @@ export async function notifyStageUpdateAction(projectId: string, fromStage: stri
         recipients: getAssignedByRole('field'),
         title: 'Action Required: Field Survey',
         message: `Project "${project.name}" has entered Field Survey stage. Please begin site work.`,
+      },
+      {
+        recipients: adminIds,
+        title: 'Assignment Accepted',
+        message: `Field Engineer has accepted the assignment and started work on "${project.name}".`,
       },
     ],
     data_sync: [
@@ -407,7 +488,7 @@ export async function notifySupplementalUploadAction(projectId: string) {
     // Each role notifies the next stage actor, not everyone
     const getAssignedByRole = (role: string): string[] =>
       (assignments || [])
-        .filter((a: any) => (a.profiles?.role ?? a.role) === role)
+        .filter((a: any) => a.role === role)
         .map((a: any) => a.user_id)
 
     let recipients: string[] = []

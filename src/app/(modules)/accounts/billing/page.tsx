@@ -19,8 +19,8 @@ export default function BillingPage() {
   const [activeTab, setActiveTab] = useState<"projects" | "milestones" | "invoices" | "receipts">("projects");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [invoiceRes, milestoneRes, projectRes] = await Promise.all([
         getInvoicesAction(),
@@ -40,7 +40,7 @@ export default function BillingPage() {
     } catch (err) {
       console.error("Failed to load billing data", err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -84,7 +84,7 @@ export default function BillingPage() {
           </div>
 
           <button
-            onClick={fetchData}
+            onClick={() => fetchData(true)}
             className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400 transition-all hover:text-slate-900 dark:hover:text-white active:scale-95 flex-shrink-0"
             title="Refresh Data"
           >
@@ -153,14 +153,14 @@ export default function BillingPage() {
           {activeTab === "projects" && (
             <ProjectBillingTable 
               projects={projectsData} 
-              onRefresh={fetchData} 
+              onRefresh={() => fetchData(false)} 
               searchQuery={searchQuery}
             />
           )}
           {activeTab === "milestones" && (
             <MilestonePaymentsTable 
               milestones={milestones} 
-              onRefresh={fetchData} 
+              onRefresh={() => fetchData(false)} 
               searchQuery={searchQuery}
             />
           )}
@@ -168,7 +168,7 @@ export default function BillingPage() {
             <InvoiceTable 
               invoices={invoices} 
               searchQuery={searchQuery}
-              onRefresh={fetchData}
+              onRefresh={() => fetchData(false)}
             />
           )}
           {activeTab === "receipts" && (
