@@ -158,7 +158,7 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
                     statusConfig[invoice.status]?.className
                   )}>
                     <StatusIcon className="w-3.5 h-3.5" />
-                    {statusConfig[invoice.status]?.label}
+                    {invoice.status === 'sent' && (new Date().getTime() - new Date(invoice.created_at).getTime()) > 2 * 24 * 60 * 60 * 1000 ? 'Pending' : statusConfig[invoice.status]?.label}
                   </span>
                 </div>
               </div>
