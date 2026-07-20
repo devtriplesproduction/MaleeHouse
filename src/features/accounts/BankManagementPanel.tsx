@@ -12,8 +12,10 @@ import {
   setDefaultBankAccountAction 
 } from "@/actions/bank.actions";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 export function BankManagementPanel() {
+  const router = useRouter();
   const [banks, setBanks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingBank, setEditingBank] = useState<any>(null);
@@ -136,8 +138,9 @@ export function BankManagementPanel() {
             return (
               <div
                 key={bank.id}
+                onClick={() => router.push(`/accounts/banking/accounts/${bank.id}`)}
                 className={cn(
-                  "relative group overflow-hidden rounded-2xl border transition-all duration-500 ease-out p-6 shadow-md w-full min-h-[255px] flex flex-col justify-between hover:-translate-y-2 hover:scale-[1.015] hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-indigo-500/10",
+                  "relative group overflow-hidden rounded-2xl border transition-all duration-500 ease-out p-6 shadow-md w-full min-h-[255px] flex flex-col justify-between hover:-translate-y-2 hover:scale-[1.015] hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-indigo-500/10 cursor-pointer",
                   theme.light,
                   theme.dark,
                   bank.is_default && "border-indigo-500 shadow-indigo-100/50 dark:border-indigo-500/50 dark:shadow-indigo-500/10"
@@ -178,14 +181,14 @@ export function BankManagementPanel() {
                   
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {!bank.is_default && (
-                      <button onClick={() => handleSetDefault(bank.id)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Set as Default">
+                      <button onClick={(e) => { e.stopPropagation(); handleSetDefault(bank.id); }} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Set as Default">
                         <CheckCircle2 className="w-4 h-4 text-slate-400 hover:text-emerald-500" />
                       </button>
                     )}
-                    <button onClick={() => setEditingBank(bank)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Edit">
+                    <button onClick={(e) => { e.stopPropagation(); setEditingBank(bank); }} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Edit">
                       <Edit className="w-4 h-4 text-slate-400 hover:text-blue-500" />
                     </button>
-                    <button onClick={() => handleDelete(bank.id)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Delete">
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(bank.id); }} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md transition-colors" title="Delete">
                       <Trash2 className="w-4 h-4 text-slate-400 hover:text-rose-500" />
                     </button>
                   </div>
@@ -215,7 +218,7 @@ export function BankManagementPanel() {
                     
                     <div className="flex justify-between items-end">
                       <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-wider block mb-0.5 text-slate-400 dark:text-slate-500">Account Purpose</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider block mb-0.5 text-slate-400 dark:text-slate-500">Purpose</span>
                         <p className="text-xs font-bold tracking-wide uppercase text-slate-800 dark:text-slate-200">{bank.account_usage || "Operations"}</p>
                       </div>
                       <div className="text-center">
@@ -346,7 +349,7 @@ export function BankManagementPanel() {
 
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                    <Tag className="h-3.5 w-3.5 text-indigo-500/70" /> Account purpose *
+                    <Tag className="h-3.5 w-3.5 text-indigo-500/70" /> Purpose *
                   </label>
                   <input
                     type="text"

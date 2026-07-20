@@ -7,6 +7,7 @@ import { AdminLeaveDashboard } from '@/components/leaves/AdminLeaveDashboard';
 import { ApplyLeaveButton } from "@/components/modules/ApplyLeaveButton";
 import { redirect } from 'next/navigation';
 import { Calendar } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export const metadata = {
   title: 'Leave Management | Malee House',
@@ -48,25 +49,47 @@ export default async function LeavesPage() {
         </div>
       )}
 
-      {/* ── Personal Leave Metrics Dashboard ── */}
-      <LeaveMetrics leaves={myLeaves} profile={profile} leaveBalance={leaveBalance} />
-
       {isManager ? (
-        <AdminLeaveDashboard initialLeaves={allLeaves} currentUserRole={profile.role} currentUserId={profile.id} />
+        <Tabs defaultValue="admin" className="w-full mt-4">
+          <TabsList className="mb-6 bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl">
+            <TabsTrigger value="admin" className="rounded-lg">Dashboard</TabsTrigger>
+            <TabsTrigger value="my-leaves" className="rounded-lg">My Leaves</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="admin" className="space-y-6">
+            <AdminLeaveDashboard initialLeaves={allLeaves} currentUserRole={profile.role} currentUserId={profile.id} />
+          </TabsContent>
+          
+          <TabsContent value="my-leaves" className="space-y-6 animate-in fade-in duration-500">
+            <LeaveMetrics leaves={myLeaves} profile={profile} leaveBalance={leaveBalance} />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <section className="lg:col-span-7 w-full relative">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-indigo-500/10 dark:bg-indigo-500/5 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
+                <LeaveForm />
+              </section>
+              <section className="lg:col-span-5 w-full flex flex-col space-y-6">
+                <LeaveHistory leaves={myLeaves} profile={profile} />
+              </section>
+            </div>
+          </TabsContent>
+        </Tabs>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Form (Widened) */}
-          <section className="lg:col-span-7 w-full relative">
-            {/* Ambient Glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-indigo-500/10 dark:bg-indigo-500/5 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
-            <LeaveForm />
-          </section>
+        <>
+          <LeaveMetrics leaves={myLeaves} profile={profile} leaveBalance={leaveBalance} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left Column: Form (Widened) */}
+            <section className="lg:col-span-7 w-full relative">
+              {/* Ambient Glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-indigo-500/10 dark:bg-indigo-500/5 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
+              <LeaveForm />
+            </section>
 
-          {/* Right Column: History */}
-          <section className="lg:col-span-5 w-full flex flex-col space-y-6">
-            <LeaveHistory leaves={myLeaves} profile={profile} />
-          </section>
-        </div>
+            {/* Right Column: History */}
+            <section className="lg:col-span-5 w-full flex flex-col space-y-6">
+              <LeaveHistory leaves={myLeaves} profile={profile} />
+            </section>
+          </div>
+        </>
       )}
     </div>
   );

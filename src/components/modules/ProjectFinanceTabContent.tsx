@@ -17,6 +17,7 @@ import {
   MessageSquare,
   ArrowRight,
   TrendingUp,
+  TrendingDown,
   Award,
   Loader2,
   Target,
@@ -580,7 +581,7 @@ export function ProjectFinanceTabContent({
       </div>
 
       {/* ── Project Milestones Ledger ── */}
-      <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-6">
+      <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-2xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -606,7 +607,7 @@ export function ProjectFinanceTabContent({
         {showMilestoneForm && (
           <form
             onSubmit={handleMilestoneSubmit}
-            className="p-6 bg-slate-950/60 rounded-3xl border border-slate-800 space-y-6 animate-in slide-in-from-top duration-300"
+            className="p-6 bg-slate-950/60 rounded-2xl border border-slate-800 space-y-6 animate-in slide-in-from-top duration-300"
           >
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-indigo-500" /> Configure
@@ -789,7 +790,7 @@ export function ProjectFinanceTabContent({
         )}
 
         {/* Milestones List Ledger */}
-        <div className="overflow-x-auto rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
@@ -816,7 +817,7 @@ export function ProjectFinanceTabContent({
                     className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50/80 dark:hover:bg-white/[0.02] text-sm transition duration-200"
                   >
                     <td className="p-4">
-                      <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <div className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                         {m.is_activation_gate && (
                           <span title="Project Activation Milestone">
                             <Award className="w-4 h-4 text-indigo-500" />
@@ -830,7 +831,7 @@ export function ProjectFinanceTabContent({
                         </span>
                       )}
                     </td>
-                    <td className="p-4 nums font-bold text-slate-400 dark:text-slate-500">
+                    <td className="p-4 nums font-medium text-slate-400 dark:text-slate-500">
                       {formatRupee(m.amount)}
                     </td>
                     <td className="p-4 nums text-slate-500 dark:text-slate-400">
@@ -839,7 +840,7 @@ export function ProjectFinanceTabContent({
                         (9% CGST + 9% SGST)
                       </div>
                     </td>
-                    <td className="p-4 nums font-bold text-indigo-600 dark:text-indigo-400">
+                    <td className="p-4 nums font-semibold text-indigo-600 dark:text-indigo-400">
                       {formatRupee(totalAmount)}
                     </td>
                     <td className="p-4 nums font-medium text-slate-400 dark:text-slate-500">
@@ -859,14 +860,14 @@ export function ProjectFinanceTabContent({
                     <td className="p-4">
                       <span
                         className={cn(
-                          "px-3.5 py-1.5 rounded-full text-[11px] font-black tracking-widest uppercase shadow-sm border",
+                          "px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase shadow-sm border",
                           m.status === "paid"
                             ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
                             : m.status === "overdue"
                               ? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"
                               : m.status === "invoice_generated"
                                 ? "bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20"
-                                : "bg-slate-900 text-white border-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700"
                         )}
                       >
                         {m.status.replace("_", " ")}
@@ -885,9 +886,9 @@ export function ProjectFinanceTabContent({
                               )
                             }
                             disabled={isSubmitting}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-xs transition-all disabled:opacity-50 shadow-md shadow-indigo-500/20 hover:-translate-y-0.5"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 shadow-md shadow-indigo-500/20 hover:-translate-y-0.5"
                           >
-                            Bill Milestone
+                            Bill
                           </button>
                         ) : m.status === "invoice_generated" ? (
                           <button
@@ -895,7 +896,7 @@ export function ProjectFinanceTabContent({
                               setSelectedPaymentMilestone(m);
                               setPaymentModalOpen(true);
                             }}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full text-xs transition-all shadow-md shadow-indigo-500/20 hover:-translate-y-0.5"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-indigo-500/20 hover:-translate-y-0.5"
                           >
                             Log Payment
                           </button>
@@ -904,7 +905,7 @@ export function ProjectFinanceTabContent({
                             Pending Verification
                           </span>
                         ) : m.status === "paid" ? (
-                          <span className="text-sm text-emerald-600 dark:text-emerald-500 font-black tracking-tight">
+                          <span className="text-sm text-emerald-600 dark:text-emerald-500 font-bold tracking-tight">
                             Paid ✓
                           </span>
                         ) : m.status === "overdue" ? (
@@ -936,7 +937,7 @@ export function ProjectFinanceTabContent({
       </div>
 
       {/* ── Project Costs & Expenses Ledger ── */}
-      <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-6">
+      <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-2xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white font-sans">
@@ -978,32 +979,60 @@ export function ProjectFinanceTabContent({
         </div>
 
         {/* Expense Summary Header */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-indigo-50/80 to-slate-50/50 dark:from-indigo-950/30 dark:to-slate-900/20 border border-indigo-100/50 dark:border-indigo-500/10 flex flex-col relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
-            <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-colors"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500/80 mb-2 relative z-10">Total Billed Revenue</span>
-            <span className="text-3xl font-black text-indigo-950 dark:text-indigo-100 nums relative z-10">{formatRupee(totalBilled)}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          {/* Billed Revenue Card */}
+          <div className="glass-card p-6 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
+            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/15 transition-all duration-500 pointer-events-none" />
+            <div className="flex items-start justify-between relative z-10">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Billed Revenue</p>
+                <h3 className="text-3xl font-extrabold tracking-tight text-indigo-950 dark:text-indigo-100 leading-none">
+                  {formatRupee(totalBilled)}
+                </h3>
+              </div>
+              <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                <TrendingUp className="w-5 h-5 text-indigo-500" />
+              </div>
+            </div>
           </div>
 
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-rose-50/80 to-slate-50/50 dark:from-rose-950/30 dark:to-slate-900/20 border border-rose-100/50 dark:border-rose-500/10 flex flex-col relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
-            <div className="absolute -right-10 -top-10 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-colors"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-rose-500/80 mb-2 relative z-10">Total Expenses</span>
-            <span className="text-3xl font-black text-rose-950 dark:text-rose-100 nums relative z-10">{formatRupee(totalExpenses)}</span>
+          {/* Expenses Card */}
+          <div className="glass-card p-6 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
+            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/15 transition-all duration-500 pointer-events-none" />
+            <div className="flex items-start justify-between relative z-10">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Expenses</p>
+                <h3 className="text-3xl font-extrabold tracking-tight text-rose-950 dark:text-rose-100 leading-none">
+                  {formatRupee(totalExpenses)}
+                </h3>
+              </div>
+              <div className="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                <TrendingDown className="w-5 h-5 text-rose-500" />
+              </div>
+            </div>
           </div>
 
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/80 to-slate-50/50 dark:from-emerald-950/30 dark:to-slate-900/20 border border-emerald-100/50 dark:border-emerald-500/10 flex flex-col relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
-            <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-colors"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80 mb-2 relative z-10">Current Profitability</span>
-            <span className={cn(
-              "text-3xl font-black nums relative z-10 tracking-tight",
-              currentProfit >= 0 ? "text-emerald-600 dark:text-emerald-400 drop-shadow-[0_2px_8px_rgba(16,185,129,0.2)]" : "text-rose-600 dark:text-rose-500 drop-shadow-[0_2px_8px_rgba(244,63,94,0.2)]"
-            )}>
-              {formatRupee(currentProfit)}
-            </span>
+          {/* Profitability Card */}
+          <div className="glass-card p-6 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
+            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/15 transition-all duration-500 pointer-events-none" />
+            <div className="flex items-start justify-between relative z-10">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Current Profitability</p>
+                <h3 className={cn(
+                  "text-3xl font-extrabold tracking-tight leading-none",
+                  currentProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-500"
+                )}>
+                  {formatRupee(currentProfit)}
+                </h3>
+              </div>
+              <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                <DollarSign className="w-5 h-5 text-emerald-500" />
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
@@ -1184,7 +1213,7 @@ export function ProjectFinanceTabContent({
 
       {/* ── Visit-Based Ledger Panel ── */}
       {project.billing_type === "visit_based" && (
-        <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-4">
+        <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-2xl space-y-4">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white font-sans">
               Indian SAC 9983 Survey Visit Ledger
@@ -1195,7 +1224,7 @@ export function ProjectFinanceTabContent({
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
@@ -1366,7 +1395,7 @@ export function ProjectFinanceTabContent({
       </Dialog>
 
       {/* ── Freeze History Panel ── */}
-      <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-3xl space-y-4">
+      <div className="glass-card p-6 md:p-8 bg-gradient-to-br from-white/95 to-slate-50/50 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-white/5 rounded-2xl space-y-4">
         <div>
           <h3 className="text-lg font-bold text-slate-900 dark:text-white font-sans">
             Freeze & Lockout History
@@ -1377,7 +1406,7 @@ export function ProjectFinanceTabContent({
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-950/20 shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">

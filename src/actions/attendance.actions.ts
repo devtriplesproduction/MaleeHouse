@@ -171,7 +171,7 @@ export async function getAttendanceLogsAction(employeeId?: string, month?: numbe
     const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
     let query = supabaseAdmin.from('attendance_logs').select('*');
 
-    const isPrivileged = profile.role === 'admin' || profile.role === 'hr';
+    const isPrivileged = profile.role === 'admin' || profile.role === 'hr' || profile.role === 'accountant';
 
     if (!isPrivileged) {
       // Normal users can only see their own attendance logs

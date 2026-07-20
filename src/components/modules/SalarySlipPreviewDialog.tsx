@@ -119,7 +119,7 @@ export function SalarySlipPreviewDialog({ open, onOpenChange, employeeName, pdfU
             </Button>
           </div>
         </DialogHeader>
-        <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 p-4 flex justify-center">
+        <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-900 p-8 flex justify-center items-start">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-500">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-500 mb-4"></div>
@@ -131,12 +131,12 @@ export function SalarySlipPreviewDialog({ open, onOpenChange, employeeName, pdfU
             </div>
           ) : currentUrl ? (
             <div 
-              style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}
-              className="bg-white shadow-xl rounded-sm max-w-full h-full flex items-center justify-center min-w-[600px] overflow-hidden"
+              style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s', width: '210mm', height: '297mm', maxWidth: '100%', aspectRatio: '1 / 1.414' }}
+              className="bg-white shadow-2xl rounded-sm mx-auto overflow-hidden"
             >
               <iframe 
-                src={currentUrl} 
-                className="w-full h-full border-0 min-h-[800px]" 
+                src={`${currentUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
+                className="w-full h-full border-0" 
                 title="Salary Slip Preview"
               />
             </div>

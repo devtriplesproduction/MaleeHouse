@@ -124,48 +124,58 @@ export function ProjectFinanceDashboardTab({ projectId, theme }: { projectId: st
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="group rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg shadow-emerald-500/5 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500 pointer-events-none"></div>
-          <div className="relative z-10 flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+        {/* Income Card */}
+        <div className="glass-card p-6 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/15 transition-all duration-500 pointer-events-none" />
+          <div className="flex items-start justify-between relative z-10">
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Income (Paid)</p>
+              <h3 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
+                {formatCurrency(totalIncome)}
+              </h3>
+            </div>
+            <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
               <TrendingUp className="w-5 h-5 text-emerald-500" />
             </div>
-            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Total Income (Paid)</h3>
-          </div>
-          <div className="relative z-10 text-3xl font-black text-slate-900 dark:text-white">
-            {formatCurrency(totalIncome)}
           </div>
         </div>
 
-        <div className="group rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg shadow-rose-500/5 hover:shadow-xl hover:shadow-rose-500/10 transition-all duration-300 relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl group-hover:bg-rose-500/20 transition-all duration-500 pointer-events-none"></div>
-          <div className="relative z-10 flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
+        {/* Expenses Card */}
+        <div className="glass-card p-6 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/15 transition-all duration-500 pointer-events-none" />
+          <div className="flex items-start justify-between relative z-10">
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Expenses</p>
+              <h3 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
+                {formatCurrency(totalExpense)}
+              </h3>
+            </div>
+            <div className="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
               <TrendingDown className="w-5 h-5 text-rose-500" />
             </div>
-            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Total Expenses</h3>
-          </div>
-          <div className="relative z-10 text-3xl font-black text-slate-900 dark:text-white">
-            {formatCurrency(totalExpense)}
           </div>
         </div>
 
-        <div className={`group rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg ${theme?.glow || 'shadow-indigo-500/5'} hover:shadow-xl hover:${theme?.glow || 'shadow-indigo-500/10'} transition-all duration-300 relative overflow-hidden`}>
-          <div className={`absolute -right-10 -top-10 w-32 h-32 ${theme?.bg || 'bg-indigo-500/10'} rounded-full blur-3xl group-hover:${theme?.hover || 'bg-indigo-500/20'} transition-all duration-500 pointer-events-none`}></div>
-          <div className="relative z-10 flex items-center gap-3 mb-2">
-            <div className={`w-10 h-10 rounded-xl ${theme?.bg || 'bg-indigo-500/10'} flex items-center justify-center`}>
+        {/* Net Profit Card */}
+        <div className="glass-card p-6 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/15 transition-all duration-500 pointer-events-none" />
+          <div className="flex items-start justify-between relative z-10">
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Net Profit</p>
+              <h3 className={`text-3xl font-extrabold tracking-tight leading-none ${netProfit >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                {formatCurrency(netProfit)}
+              </h3>
+            </div>
+            <div className={`p-3 ${theme?.bg || 'bg-indigo-500/10'} rounded-2xl border ${theme?.border || 'border-indigo-500/20'} shadow-inner group-hover:scale-110 transition-transform duration-500`}>
               <DollarSign className={`w-5 h-5 ${theme?.text || 'text-indigo-500'}`} />
             </div>
-            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Net Profit</h3>
-          </div>
-          <div className={`relative z-10 text-3xl font-black ${netProfit >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
-            {formatCurrency(netProfit)}
           </div>
         </div>
       </div>
 
-      <div className={`rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl p-6 shadow-lg ${theme?.glow || 'shadow-indigo-500/5'} relative overflow-hidden`}>
-        <div className={`absolute -left-10 -bottom-10 w-40 h-40 ${theme?.bg || 'bg-indigo-500/10'} rounded-full blur-3xl pointer-events-none`}></div>
+      {/* Budget vs Spend Card */}
+      <div className="glass-card p-6 dark:bg-white/[0.03] shadow-xl shadow-black/[0.02] relative overflow-hidden">
+        <div className={`absolute -left-10 -bottom-10 w-40 h-40 ${theme?.bg?.replace('bg-', '') || 'indigo-500'}/5 rounded-full blur-3xl pointer-events-none`} />
         <h3 className="relative z-10 text-sm font-bold text-slate-900 dark:text-white mb-4">Budget vs Actual Spend</h3>
         <div className="relative z-10 flex justify-between text-xs text-slate-500 mb-2 font-semibold">
           <span>{formatCurrency(totalExpense)} Spent</span>
@@ -173,11 +183,11 @@ export function ProjectFinanceDashboardTab({ projectId, theme }: { projectId: st
         </div>
         <div className="relative z-10 w-full bg-slate-100 dark:bg-white/5 rounded-full h-3 mb-2 overflow-hidden shadow-inner">
           <div className={`h-3 rounded-full ${progressColor} transition-all duration-1000 shadow-md`} style={{ width: `${progressPercent}%` }}></div>
+        </div>
+        <p className="relative z-10 text-xs text-slate-500 mt-2 font-medium">
+          {progressPercent >= 100 ? 'Over budget or matched perfectly.' : `${(100 - progressPercent).toFixed(1)}% of budget remaining.`}
+        </p>
       </div>
-      <p className="relative z-10 text-xs text-slate-500 mt-2 font-medium">
-        {progressPercent >= 100 ? 'Over budget or matched perfectly.' : `${(100 - progressPercent).toFixed(1)}% of budget remaining.`}
-      </p>
-    </div>
 
       <div className="space-y-4 relative">
         <div className="flex items-center gap-3">

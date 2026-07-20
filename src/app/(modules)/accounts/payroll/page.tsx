@@ -9,11 +9,11 @@ import { Permission, Module } from "@/lib/security/permissions";
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: "Salary Records | HR Portal",
+  title: "Payroll | Accounts Portal",
 };
 
-export default async function SalaryRecordsPage() {
-  const context = { module: Module.PAYROLL, route: "/hr/payroll", httpMethod: "GET" };
+export default async function AccountsPayrollPage() {
+  const context = { module: Module.PAYROLL, route: "/accounts/payroll", httpMethod: "GET" };
   
   const auth = await requireAuthenticatedUser(context);
   if (!auth.success || !auth.profile) {
@@ -25,12 +25,12 @@ export default async function SalaryRecordsPage() {
     );
   }
 
-  const perm = await requirePermission(auth.profile, Permission.VIEW_HR_PAYROLL, context);
+  const perm = await requirePermission(auth.profile, Permission.VIEW_ACCOUNTS_PAYROLL, context);
   if (!perm.authorized) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh]">
         <h1 className="text-4xl font-bold mb-2">403 Forbidden</h1>
-        <p className="text-muted-foreground">{perm.message || "Access denied. This area is restricted to HR personnel."}</p>
+        <p className="text-muted-foreground">{perm.message || "Access denied. This area is restricted to Accounts personnel."}</p>
       </div>
     );
   }

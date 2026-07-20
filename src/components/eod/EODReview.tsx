@@ -316,12 +316,12 @@ function ReportRow({
   currentUserId?: string
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [adjustedHours, setAdjustedHours] = useState(report.adjusted_hours?.toString() || report.hours_spent.toString());
+  const [adjustedHours, setAdjustedHours] = useState(report.adjusted_hours?.toString() || (report.hours_spent ?? 0).toString());
   const [adminNote, setAdminNote] = useState(report.admin_note || "");
   const [isUpdating, setIsUpdating] = useState(false);
 
   React.useEffect(() => {
-    setAdjustedHours(report.adjusted_hours?.toString() || report.hours_spent.toString());
+    setAdjustedHours(report.adjusted_hours?.toString() || (report.hours_spent ?? 0).toString());
     setAdminNote(report.admin_note || "");
   }, [report.adjusted_hours, report.hours_spent, report.admin_note]);
 
@@ -420,7 +420,7 @@ function ReportRow({
           </div>
           <div className="w-28 flex items-center gap-1.5 text-slate-600 dark:text-slate-300/90 text-sm font-medium">
             <Clock className="w-4 h-4 shrink-0" />
-            <span>{report.adjusted_hours ?? report.hours_spent}h logged</span>
+            <span>{report.adjusted_hours || report.hours_spent || 0}h logged</span>
           </div>
 
           <div className="w-28 flex justify-center">

@@ -28,7 +28,9 @@ import {
   CalendarDays,
   Search,
   MessageSquare,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -154,6 +156,22 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
   const pendingCount = monthlyLeaves.filter((l: any) => l.status?.toLowerCase() === 'pending').length;
   const approvedCount = monthlyLeaves.filter((l: any) => l.status?.toLowerCase() === 'approved').length;
   const rejectedCount = monthlyLeaves.filter((l: any) => l.status?.toLowerCase() === 'rejected').length;
+  const cancelledCount = monthlyLeaves.filter((l: any) => l.status?.toLowerCase() === 'cancelled').length;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const next7DaysStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const onLeaveTodayCount = leaves.filter((l: any) => 
+    l.status?.toLowerCase() === 'approved' && 
+    (l.start_date ? l.start_date.split('T')[0] : '') <= todayStr && 
+    (l.end_date ? l.end_date.split('T')[0] : '') >= todayStr
+  ).length;
+
+  const upcomingLeavesCount = leaves.filter((l: any) =>
+    l.status?.toLowerCase() === 'approved' &&
+    (l.start_date ? l.start_date.split('T')[0] : '') > todayStr &&
+    (l.start_date ? l.start_date.split('T')[0] : '') <= next7DaysStr
+  ).length;
 
   // Filtering & Sorting logic: Pending requests always sorted to the top
   const filteredLeaves = leaves
@@ -247,73 +265,95 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
     <div className="space-y-10 font-sans min-h-[80vh]">
       
       {/* ── Stats Counter Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         
-        {/* Total Requests */}
-        <div className="glass-card p-6 border-white/10 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/15 transition-all duration-500" />
-          <div className="flex items-start justify-between relative z-10">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Requests</p>
-              <h3 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{totalCount}</h3>
-            </div>
-            <div className="p-3 bg-white/10 dark:bg-white/5 rounded-2xl border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
-              <Inbox className="w-5 h-5 text-indigo-500" />
-            </div>
+        {/* Pending Review */}
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <Clock className="w-5 h-5" />
           </div>
-          <div className="mt-4">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">All submitted leave applications</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Pending Approvals
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {pendingCount}
+            </p>
           </div>
         </div>
 
-        {/* Pending Review */}
-        <div className="glass-card p-6 border-white/10 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/15 transition-all duration-500" />
-          <div className="flex items-start justify-between relative z-10">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Pending Review</p>
-              <h3 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{pendingCount}</h3>
-            </div>
-            <div className="p-3 bg-white/10 dark:bg-white/5 rounded-2xl border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
-              <Clock className="w-5 h-5 text-amber-500" />
-            </div>
+        {/* On Leave Today */}
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <User className="w-5 h-5" />
           </div>
-          <div className="mt-4">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Awaiting administrator decision</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              On Leave Today
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {onLeaveTodayCount}
+            </p>
+          </div>
+        </div>
+
+        {/* Upcoming Leaves */}
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400 border border-sky-500/20">
+            <CalendarDays className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Upcoming (7 Days)
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {upcomingLeavesCount}
+            </p>
+          </div>
+        </div>
+
+        {/* Total Requests */}
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 border border-purple-500/20">
+            <Inbox className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Total Requests
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {totalCount}
+            </p>
           </div>
         </div>
 
         {/* Approved Leaves */}
-        <div className="glass-card p-6 border-white/10 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/15 transition-all duration-500" />
-          <div className="flex items-start justify-between relative z-10">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Approved Leaves</p>
-              <h3 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{approvedCount}</h3>
-            </div>
-            <div className="p-3 bg-white/10 dark:bg-white/5 rounded-2xl border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-            </div>
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
-          <div className="mt-4">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Granted and active leaves</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Approved Requests
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {approvedCount}
+            </p>
           </div>
         </div>
 
         {/* Rejected Requests */}
-        <div className="glass-card p-6 border-white/10 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-xl shadow-black/[0.02]">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/15 transition-all duration-500" />
-          <div className="flex items-start justify-between relative z-10">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Rejected Requests</p>
-              <h3 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{rejectedCount}</h3>
-            </div>
-            <div className="p-3 bg-white/10 dark:bg-white/5 rounded-2xl border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
-              <XCircle className="w-5 h-5 text-rose-500" />
-            </div>
+        <div className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 shadow-sm hover:shadow">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <XCircle className="w-5 h-5" />
           </div>
-          <div className="mt-4">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Declined leave applications</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+              Rejected Requests
+            </p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+              {rejectedCount}
+            </p>
           </div>
         </div>
 
@@ -406,7 +446,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {paginatedLeaves.map((leave, index) => {
               const profile = Array.isArray(leave.profiles) ? leave.profiles[0] : leave.profiles;
@@ -435,13 +475,13 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
                   style={{ position: 'relative', zIndex: 50 - index }}
                 >
                   <div
-                    className="relative p-6 rounded-[1.75rem] flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/[0.03] group"
+                    className="relative p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/[0.03] group"
                   >
                     {/* Premium Glassmorphic Background Layer (Bypasses WebKit/Chrome rounded backdrop-filter clipping bugs) */}
-                    <div className="absolute inset-0 -z-10 rounded-[1.75rem] border border-slate-200/50 dark:border-white/5 bg-white/70 dark:bg-slate-900/30 backdrop-blur-2xl transition-all duration-300 group-hover:bg-white/90 dark:group-hover:bg-slate-900/50 group-hover:border-indigo-500/20 dark:group-hover:border-indigo-500/20 pointer-events-none" />
+                    <div className="absolute inset-0 -z-10 rounded-xl border border-slate-200/50 dark:border-white/5 bg-white/70 dark:bg-slate-900/30 backdrop-blur-2xl transition-all duration-300 group-hover:bg-white/90 dark:group-hover:bg-slate-900/50 group-hover:border-indigo-500/20 dark:group-hover:border-indigo-500/20 pointer-events-none" />
                     
                     {/* Premium Ambient Hover Glow */}
-                    <div className="absolute inset-0 rounded-[1.75rem] bg-gradient-to-r from-indigo-500/[0.02] via-purple-500/[0.02] to-pink-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-500/[0.02] via-purple-500/[0.02] to-pink-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                     {/* Left Column: Employee Info & Reason */}
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       {/* Minimal Initials Avatar */}
@@ -502,7 +542,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
                     </div>
 
                     {/* Right Column: Divider & Status Dropdown Action selector */}
-                    <div className="flex items-center gap-6 shrink-0 pl-14 md:pl-0 self-end md:self-center">
+                    <div className="flex items-center gap-4 shrink-0 pl-14 md:pl-0 self-end md:self-center">
                       {/* Vertical Divider */}
                       <div className="hidden md:block w-px h-8 bg-slate-200 dark:bg-white/10 shrink-0" />
 
@@ -562,22 +602,24 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
           </p>
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="text-xs rounded-xl"
+              className="text-xs rounded-xl h-8 px-3 flex items-center gap-1 bg-white dark:bg-slate-900"
             >
-              Previous
+              <ChevronLeft className="w-3.5 h-3.5" /> Previous
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="text-xs rounded-xl"
+              className="text-xs rounded-xl h-8 px-3 flex items-center gap-1 bg-white dark:bg-slate-900"
             >
-              Next
+              Next <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>

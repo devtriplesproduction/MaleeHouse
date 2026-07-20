@@ -8,6 +8,8 @@ import { createElement } from 'react';
 
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfileAction } from "@/actions/auth.actions";
+import { requireAuthenticatedUser, requirePermission } from "@/lib/security/audit";
+import { Permission, Module } from "@/lib/security/permissions";
 import { getAttendanceLogsAction } from "./attendance.actions";
 import { getAllUsersAction, logAdminAuditAction } from "./admin.actions";
 import { sendLocalNotifications } from "./operations.actions";
@@ -56,6 +58,58 @@ function getStoragePathFromUrl(pdfUrl: string): string {
   const parts = pdfUrl.split('?')[0].split('/');
   return decodeURIComponent(parts[parts.length - 1]);
 }
+
+async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileId?: string) {
+  const { data: existing } = await supabaseAdmin.from('salary_slips').select('id').eq('snapshot_id', snapshotId).maybeSingle();
+  if (existing) return;
+
+  const { data: snap } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id, cycle_id, payroll_cycles(month, year, status, slip_status)').eq('id', snapshotId).maybeSingle();
+  if (!snap) return;
+
+  const cycle = snap.payroll_cycles;
+  if (!cycle || (cycle.status !== 'locked' && cycle.status !== 'paid')) return;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
+  const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
+  
+  await supabaseAdmin.from('salary_slips').insert({
+    employee_id: snap.employee_id,
+    cycle_id: snap.cycle_id,
+    snapshot_id: snapshotId,
+    pdf_url: pdfUrl,
+    status: cycle.slip_status || 'generated',
+    generated_by: profileId,
+    emailed: false,
+    shared: false
+  });
+}
+
+async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, profileId?: string) {
+  const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('month, year, status, slip_status').eq('id', cycleId).single();
+  if (!cycle || (cycle.status !== 'locked' && cycle.status !== 'paid')) return;
+
+  const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id').eq('cycle_id', cycleId);
+  if (!snaps || snaps.length === 0) return;
+
+  for (const snap of snaps) {
+    const { data: existing } = await supabaseAdmin.from('salary_slips').select('id').eq('snapshot_id', snap.id).maybeSingle();
+    if (!existing) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
+      const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
+      await supabaseAdmin.from('salary_slips').insert({
+        employee_id: snap.employee_id,
+        cycle_id: cycleId,
+        snapshot_id: snap.id,
+        pdf_url: pdfUrl,
+        status: cycle.slip_status || 'generated',
+        generated_by: profileId,
+        emailed: false,
+        shared: false
+      });
+    }
+  }
+}
+
 
 export interface PayrollCycle {
   id: string;
@@ -133,7 +187,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     const attendanceLogs = attRes.success && attRes.data ? attRes.data : [];
 
     const { createAdminClient } = await import("@/lib/supabase/admin");
-    const supabaseAdmin = createAdminClient();
+    const supabaseAdmin: any = createAdminClient();
 
     // Check if cycle is already locked
     const { data: cycles, error: cyclesError } = await supabaseAdmin
@@ -197,7 +251,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
         };
       });
 
-      return { success: true, data: enrichedSnapshots, isLocked: true };
+      return { success: true, data: enrichedSnapshots, isLocked: true, cycle: existing };
     }
 
     // Fetch all salary increments up to this month
@@ -209,6 +263,19 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
 
     // Days in Month (fixed working days = 26)
     const workingDaysLimit = 26;
+
+    // Fetch all active financial ledger entries
+    const { data: ledgerData, error: ledgerError } = await supabaseAdmin
+      .from('employee_financial_ledger')
+      .select('*')
+      .in('employee_id', employees.map((e: any) => e.id))
+      .eq('status', 'pending');
+      
+    // Fetch draft applications for the current cycle, if any
+    const { data: currentApps } = await supabaseAdmin
+      .from('payroll_adjustment_applications')
+      .select('*')
+      .eq('cycle_id', existing?.id || 'draft-cycle');
 
     const draftSnapshots: PayrollSnapshot[] = employees.map((emp: any) => {
       const empLogs = attendanceLogs.filter((l: any) => l.employee_id === emp.id);
@@ -226,7 +293,9 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       if (emp.first_name === 'Yash') console.log('Yash eods:', filteredEods, eodLogs ? eodLogs.filter((e:any) => e.user_id === emp.id) : []);
       
       // Calculate days_absent: Any working day (up to 26) not accounted for by EODs, Leaves, or Holidays
-      const accounted_days = days_present + days_field + days_paid_leave + days_unpaid_leave + standardHolidaysCount;
+      // Ponytail fix: Do not award holidays to employees with absolute zero attendance
+      const effectiveHolidays = (days_present + days_field + days_paid_leave > 0) ? standardHolidaysCount : 0;
+      const accounted_days = days_present + days_field + days_paid_leave + days_unpaid_leave + effectiveHolidays;
       const days_absent = Math.max(0, workingDaysLimit - accounted_days);
 
       // Find latest applicable increment
@@ -236,7 +305,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       const base_salary = latestIncrement ? latestIncrement.new_salary : (emp.salary || 3000);
       
       // Calculate net payable (basic prorated salary deductions for unpaid leave & absent days)
-      const totalEarnedDays = Math.min(workingDaysLimit, (days_present + days_field + days_paid_leave + standardHolidaysCount));
+      const totalEarnedDays = Math.min(workingDaysLimit, (days_present + days_field + days_paid_leave + effectiveHolidays));
       const penaltyDays = days_unpaid_leave + days_absent;
       
       const prorationFactor = workingDaysLimit > 0 ? totalEarnedDays / workingDaysLimit : 1;
@@ -245,15 +314,80 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       const basic_salary = Math.round(net_payable * 0.5);
       const hra = Math.round(net_payable * 0.2);
       const allowance = net_payable - basic_salary - hra;
-      const bonus = 0;
+      
+      const empLedgers = (ledgerData || []).filter((l: any) => l.employee_id === emp.id);
+      const empApps = (currentApps || []).filter((a: any) => a.employee_id === emp.id);
+
+      let adjustments: any[] = [];
+      let total_bonus = 0;
+      let total_other_deductions = 0;
+      let salary_advance_recovery = 0;
+      let damage_recovery = 0;
+
+      // Populate adjustments from active ledgers and any saved draft applications
+      for (const ledger of empLedgers) {
+        // Find if we have a draft application saving a specific amount
+        const draftApp = empApps.find((a: any) => a.ledger_id === ledger.id);
+        
+        let applied_amount = 0;
+        if (draftApp) {
+          applied_amount = draftApp.applied_amount;
+        } else if (ledger.adjustment_category === 'recoverable') {
+           // Default logic: recover up to remaining amount or a cap.
+           // For simplicity, we just propose 0 by default until HR sets it in Draft
+           applied_amount = 0;
+        } else if (ledger.adjustment_category === 'one_time') {
+           applied_amount = ledger.remaining_amount;
+        }
+
+        const adjustment = {
+          adjustment_type: ledger.adjustment_type,
+          adjustment_category: ledger.adjustment_category,
+          original_amount: ledger.original_amount,
+          remaining_amount: ledger.remaining_amount,
+          applied_amount: applied_amount,
+          description: ledger.description,
+          status: 'Pending'
+        };
+
+        if (applied_amount > 0) {
+           if (ledger.adjustment_type === 'bonus' || ledger.adjustment_type === 'festival_bonus') {
+             total_bonus += applied_amount;
+           } else if (ledger.adjustment_type === 'salary_advance') {
+             salary_advance_recovery += applied_amount;
+           } else if (ledger.adjustment_type === 'damage') {
+             damage_recovery += applied_amount;
+           } else {
+             total_other_deductions += applied_amount;
+           }
+        }
+        adjustments.push(adjustment);
+      }
+
+      // Add one-time draft applications that don't have a ledger yet (new drafts)
+      for (const app of empApps) {
+        if (!empLedgers.find((l: any) => l.id === app.ledger_id)) {
+           adjustments.push({
+             adjustment_type: app.adjustment_type,
+             adjustment_category: app.adjustment_category,
+             applied_amount: app.applied_amount,
+             status: 'Draft (Unsaved Ledger)'
+           });
+           
+           if (app.adjustment_type === 'bonus') total_bonus += app.applied_amount;
+           else total_other_deductions += app.applied_amount;
+        }
+      }
+
+      const bonus = total_bonus;
       const gross_salary = basic_salary + hra + allowance + bonus;
       
       const pf = 0;
       const esi = 0;
       const professional_tax = 0;
       const income_tax = 0;
-      const other_deductions = 0;
-      const total_deductions = pf + esi + professional_tax + income_tax + other_deductions;
+      const other_deductions = total_other_deductions;
+      const total_deductions = pf + esi + professional_tax + income_tax + other_deductions + salary_advance_recovery + damage_recovery;
       
       const net_salary = gross_salary - total_deductions;
 
@@ -284,11 +418,14 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
         other_deductions,
         total_deductions,
         net_salary,
+        adjustments,
+        salary_advance_recovery,
+        damage_recovery,
         calculated_at: new Date().toISOString()
       };
     });
 
-    return { success: true, data: draftSnapshots, isLocked: false };
+    return { success: true, data: draftSnapshots, isLocked: false, cycle: existing };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -298,347 +435,13 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
  * lockPayrollCycleAction
  * Freezes the draft calculation and logs it as an immutable snapshot.
  */
-export async function lockPayrollCycleAction(month: number, year: number, bankId?: string) {
-  const profile: any = await getUserProfileAction();
-  if (profile?.role !== "admin" && profile?.role !== "hr") {
-    return { success: false, error: "Only System Administrators or HR can lock payroll cycles." };
-  }
-
-  try {
-    const supabase: any = await createClient();
-    const { createAdminClient } = await import("@/lib/supabase/admin");
-    const supabaseAdmin: any = createAdminClient();
-
-    const { data: cycles, error: cycleFetchError } = await supabaseAdmin
-      .from('payroll_cycles')
-      .select('*')
-      .eq('month', month)
-      .eq('year', year);
-
-    if (cycleFetchError) throw cycleFetchError;
-
-    const existing = cycles && cycles.length > 0 ? cycles[0] : null;
-
-    if (existing) {
-      if (existing.status === "locked") {
-        return { success: false, error: "This payroll cycle is already locked and immutable." };
-      }
-      if (existing.status === "processing") {
-        return { success: false, error: "Payroll is already being processed." };
-      }
-    }
-
-    const cycleId = existing?.id || randomUUID();
-    const wasDraft = existing ? true : false;
-    let cycleLocked = false;
-    const uploadedFileNames: string[] = [];
-    
-    try {
-      // 0. ATOMIC LOCK ACQUISITION
-      if (wasDraft) {
-        // Atomically update from draft to processing to acquire lock
-        const { data: updateData, error: updateError } = await supabaseAdmin
-          .from('payroll_cycles')
-          .update({ status: 'processing', locked_by: profile.id, locked_at: new Date().toISOString() })
-          .eq('id', cycleId)
-          .eq('status', 'draft')
-          .select();
-          
-        if (updateError || !updateData || updateData.length === 0) {
-          console.error("Lock Update Error:", updateError);
-          return { success: false, error: "Payroll is already being processed." };
-        }
-      } else {
-        // Atomically insert as processing (fails if month/year exists due to unique constraint)
-        const { error: insertError } = await supabaseAdmin
-          .from('payroll_cycles')
-          .insert({
-            id: cycleId,
-            month,
-            year,
-            status: 'processing',
-            locked_by: profile.id,
-            locked_at: new Date().toISOString(),
-            bank_id: bankId || null,
-          });
-          
-        if (insertError) {
-          console.error("Lock Insert Error:", insertError);
-          return { success: false, error: "Payroll is already being processed." };
-        }
-      }
-
-      cycleLocked = true; // Mark lock acquired for rollback purposes
-
-      // 1. Fetch the draft computations to freeze them (happens AFTER securing the lock)
-      const draftRes = await calculateMonthlyPayrollAction(month, year);
-      if (!draftRes.success || !draftRes.data) {
-        throw new Error("Failed to generate payroll calculation for freeze.");
-      }
-
-      const frozenSnapshots: PayrollSnapshot[] = draftRes.data.map((draft: any) => ({
-        ...draft,
-        id: randomUUID(),
-        cycle_id: cycleId,
-        calculated_at: new Date().toISOString()
-      }));
-
-      // 3. Write snapshot
-      const { error: snapshotsInsertError } = await supabaseAdmin
-        .from('payroll_snapshots')
-        .insert(frozenSnapshots);
-
-      if (snapshotsInsertError) throw new Error(`Failed to insert payroll snapshots: ${snapshotsInsertError.message}`);
-
-      // 3.4 Ensure salary_slips bucket exists
-      const { data: buckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
-      if (bucketsError) throw new Error("Validation Error: Storage bucket is not available.");
-      const bucketExists = buckets.some((b: any) => b.name === 'salary_slips');
-      if (!bucketExists) {
-        const { error: createBucketError } = await supabaseAdmin.storage.createBucket('salary_slips', { public: true });
-        if (createBucketError) throw new Error("Validation Error: Storage bucket is not available.");
-      }
-
-      // 3.5 Generate Salary Slips (PDFs) and Store in salary_slips table
-      const salarySlipsToInsert = [];
-
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      
-      for (const snap of frozenSnapshots) {
-        let uploadData, uploadError;
-        let fileName = `${year}/${month}/${snap.employee_id}/salary-slip.pdf`;
-        try {
-          const res = await fetch(`${appUrl}/api/pdf`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ snap, month, year })
-          });
-          
-          if (!res.ok) throw new Error(`PDF API returned ${res.status}`);
-          
-          const pdfBuffer = await res.arrayBuffer();
-          
-          const result = await supabaseAdmin.storage
-            .from('salary_slips')
-            .upload(fileName, pdfBuffer, {
-              contentType: 'application/pdf',
-              upsert: false
-            });
-          uploadData = result.data;
-          uploadError = result.error;
-        } catch (err: any) {
-          uploadError = err;
-          console.error(`[lockPayrollCycleAction] Caught generation/upload exception for ${snap.employee_id}:`, err);
-        }
-          
-        if (uploadError) {
-          console.error(`[lockPayrollCycleAction] Error processing salary slip for ${snap.employee_id}:`, uploadError);
-          throw new Error(`Failed to process salary slip for ${snap.employee_name}: ${uploadError.message || 'Unknown error'}`);
-        }
-
-        let pdfUrl = null;
-        if (uploadData) {
-          uploadedFileNames.push(fileName);
-          const { data: publicUrlData } = supabaseAdmin.storage.from('salary_slips').getPublicUrl(fileName);
-          pdfUrl = publicUrlData.publicUrl;
-        }
-
-        salarySlipsToInsert.push({
-          employee_id: snap.employee_id,
-          cycle_id: cycleId,
-          snapshot_id: snap.id,
-          pdf_url: pdfUrl,
-          generated_by: profile.id
-        });
-        
-        await logPayrollEvent(
-          "SALARY_SLIP_GENERATED",
-          snap.employee_id,
-          { employee_id: snap.employee_id, cycle_id: cycleId, snapshot_id: snap.id, month, year },
-          "info"
-        );
-      }
-
-      if (salarySlipsToInsert.length > 0) {
-        const { error: slipsInsertError } = await supabaseAdmin
-          .from('salary_slips')
-          .insert(salarySlipsToInsert);
-        if (slipsInsertError) {
-          throw new Error(`Error inserting salary slips: ${slipsInsertError.message}`);
-        }
-      }
-
-      // 4. Finalize the Lock
-      const { error: finalizeError } = await supabaseAdmin
-        .from('payroll_cycles')
-        .update({ status: 'locked' })
-        .eq('id', cycleId);
-
-      if (finalizeError) throw new Error(`Failed to finalize payroll lock: ${finalizeError.message}`);
-
-      // 5. Admin Audit Logging
-      await logPayrollEvent(
-        "PAYROLL_CYCLE_LOCKED",
-        null,
-        { month, year, snapshot_count: frozenSnapshots.length, cycle_id: cycleId },
-        "critical"
-      );
-
-      revalidatePath("/admin/payroll");
-      revalidatePath("/hr/payroll");
-
-      if (bankId) {
-        const { syncBankBalance } = await import("@/actions/bank.actions");
-        await syncBankBalance(bankId);
-        const { flagBackdatedReconciliationsAction } = await import("@/actions/reconciliation.actions");
-        const transactionDate = new Date(year, month, 0).toISOString().split('T')[0];
-        await flagBackdatedReconciliationsAction(bankId, transactionDate, "Payroll Cycle Locked");
-      }
-
-      // Send notifications for generated salary slips
-      try {
-        console.log(`[lockPayrollCycleAction] Triggering salary slip notifications for cycle ${cycleId}...`);
-        await notifySalarySlipsAction(cycleId);
-      } catch (notifyErr) {
-        console.error("[lockPayrollCycleAction] Failed to trigger notifications, but lock was successful:", notifyErr);
-      }
-
-      return { success: true, message: `Payroll cycle for ${month}/${year} locked successfully.` };
-    } catch (error: any) {
-      console.error("[lockPayrollCycleAction] Transaction aborted, initiating rollback:", error);
-      
-      // Rollback Uploaded Files
-      if (uploadedFileNames.length > 0) {
-        console.log(`[lockPayrollCycleAction] Rolling back ${uploadedFileNames.length} uploaded files...`);
-        try {
-          await supabaseAdmin.storage.from('salary_slips').remove(uploadedFileNames);
-        } catch (storageErr) {
-          console.error("[lockPayrollCycleAction] Rollback of storage files failed:", storageErr);
-        }
-      }
-      
-      // Rollback Database Changes
-      if (cycleLocked) {
-        console.log(`[lockPayrollCycleAction] Rolling back database cycle ${cycleId}...`);
-        try {
-          if (wasDraft) {
-            // Revert back to draft and delete any partial snapshots inserted during processing
-            await supabaseAdmin.from('payroll_cycles').update({ status: 'draft', locked_by: null, locked_at: null }).eq('id', cycleId);
-            await supabaseAdmin.from('payroll_snapshots').delete().eq('cycle_id', cycleId);
-          } else {
-            // Delete the completely new cycle (cascades to snapshots and slips)
-            await supabaseAdmin.from('payroll_cycles').delete().eq('id', cycleId);
-          }
-        } catch (dbErr) {
-          console.error("[lockPayrollCycleAction] Rollback of database cycle failed:", dbErr);
-        }
-      }
-
-      return { success: false, error: error.message };
-    }
-  } catch (error: any) {
-    console.error("[lockPayrollCycleAction] Fatal Error:", error);
-    return { success: false, error: error.message };
-  }
-}
+export async function lockPayrollCycleAction(...args: any[]) { return { success: false, error: "Deprecated. Use approveAndLockPayrollAction.", message: "" }; }
 
 /**
  * unlockPayrollCycleAction
  * Removes the frozen snapshot and reverts the payroll cycle back to draft mode.
  */
-export async function unlockPayrollCycleAction(month: number, year: number) {
-  const profile: any = await getUserProfileAction();
-  if (profile?.role !== "admin" && profile?.role !== "hr") {
-    return { success: false, error: "Only System Administrators or HR can unlock payroll cycles." };
-  }
-
-  try {
-    const supabase: any = await createClient();
-    const { createAdminClient } = await import("@/lib/supabase/admin");
-    const supabaseAdmin: any = createAdminClient();
-
-    const { data: cycles, error: cycleFetchError } = await supabaseAdmin
-      .from('payroll_cycles')
-      .select('*')
-      .eq('month', month)
-      .eq('year', year);
-
-    if (cycleFetchError) throw cycleFetchError;
-
-    const existing = cycles && cycles.length > 0 ? cycles[0] : null;
-
-    if (!existing || existing.status !== "locked") {
-      return { success: false, error: "This payroll cycle is not locked." };
-    }
-
-    // 0. Clean up storage files for this cycle
-    const { data: slipsToDelete } = await supabaseAdmin
-      .from('salary_slips')
-      .select('pdf_url, employee_id, snapshot_id, cycle_id')
-      .eq('cycle_id', existing.id);
-
-    if (slipsToDelete && slipsToDelete.length > 0) {
-      for (const s of slipsToDelete) {
-        await logPayrollEvent("SALARY_SLIP_DELETED", s.employee_id, { employee_id: s.employee_id, cycle_id: s.cycle_id, snapshot_id: s.snapshot_id, month, year }, "warning");
-      }
-      
-      const filePaths = slipsToDelete
-        .map((s: any) => {
-          if (!s.pdf_url) return null;
-          return getStoragePathFromUrl(s.pdf_url);
-        })
-        .filter(Boolean);
-        
-      if (filePaths.length > 0) {
-        const { error: removeError } = await supabaseAdmin.storage
-          .from('salary_slips')
-          .remove(filePaths);
-        if (removeError) {
-          console.error("[unlockPayrollCycleAction] Failed to delete storage files:", removeError);
-        }
-      }
-    }
-
-    // 1. Delete snapshots
-    const { error: snapshotsDeleteError } = await supabaseAdmin
-      .from('payroll_snapshots')
-      .delete()
-      .eq('cycle_id', existing.id);
-
-    if (snapshotsDeleteError) throw snapshotsDeleteError;
-
-    // 2. Delete the cycle record (this returns it to draft implicitly)
-    const { error: cycleDeleteError } = await supabaseAdmin
-      .from('payroll_cycles')
-      .delete()
-      .eq('id', existing.id);
-
-    if (cycleDeleteError) throw cycleDeleteError;
-
-    // 3. Admin Audit Logging
-    await logPayrollEvent(
-      "PAYROLL_CYCLE_UNLOCKED",
-      null,
-      { month, year, cycle_id: existing.id },
-      "critical"
-    );
-
-    revalidatePath("/admin/payroll");
-    revalidatePath("/hr/payroll");
-
-    if (existing.bank_id) {
-      const { syncBankBalance } = await import("@/actions/bank.actions");
-      await syncBankBalance(existing.bank_id);
-      const { flagBackdatedReconciliationsAction } = await import("@/actions/reconciliation.actions");
-      const transactionDate = new Date(year, month, 0).toISOString().split('T')[0];
-      await flagBackdatedReconciliationsAction(existing.bank_id, transactionDate, "Payroll Cycle Unlocked");
-    }
-
-    return { success: true, message: `Payroll cycle for ${month}/${year} unlocked successfully.` };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
+export async function unlockPayrollCycleAction(...args: any[]) { return { success: false, error: "Deprecated.", message: "" }; }
 
 /**
  * getMySalarySlipsAction
@@ -666,7 +469,7 @@ export async function getMySalarySlipsAction() {
         snapshot_id,
         cycle:payroll_cycles(month, year)
       `)
-      .eq('employee_id', profile.id)
+      .eq('employee_id', (profile).id)
       .order('generated_at', { ascending: false });
 
     if (error) throw error;
@@ -702,6 +505,9 @@ export async function emailSalarySlipAction(snapshotId: string) {
 
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const supabaseAdmin: any = createAdminClient();
+
+    // Auto-repair missing record
+    await ensureSlipExists(supabaseAdmin, snapshotId, profile?.id);
 
     // 1. Fetch the slip and employee email
     const { data: slip, error: slipError } = await supabaseAdmin
@@ -745,7 +551,7 @@ export async function emailSalarySlipAction(snapshotId: string) {
     // 5. Update emailed = true and tracking fields
     const { error: updateError } = await supabaseAdmin
       .from('salary_slips')
-      .update({ emailed: true, emailed_at: new Date().toISOString(), emailed_by: profile.id })
+      .update({ emailed: true, emailed_at: new Date().toISOString(), emailed_by: (profile).id })
       .eq('id', slip.id);
 
     if (updateError) {
@@ -773,6 +579,9 @@ export async function generateSignedSalarySlipUrlAction(snapshotId: string, expi
 
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const supabaseAdmin: any = createAdminClient();
+
+    // Auto-repair missing record
+    await ensureSlipExists(supabaseAdmin, snapshotId, profile?.id);
 
     const { data: slip, error: slipError } = await supabaseAdmin
       .from('salary_slips')
@@ -905,12 +714,15 @@ export async function getSalarySlipUrlAction(snapshotId: string, employeeId: str
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
 
-    if (!['admin', 'hr'].includes(profile.role?.toLowerCase()) && profile.id !== employeeId) {
+    if (!['admin', 'hr'].includes(profile.role?.toLowerCase()) && (profile).id !== employeeId) {
       return { success: false, error: 'Validation Error: Employee does not have permission.' };
     }
 
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const supabaseAdmin: any = createAdminClient();
+
+    // Auto-repair missing record
+    await ensureSlipExists(supabaseAdmin, snapshotId, profile?.id);
 
     const { data: slip, error } = await supabaseAdmin
       .from('salary_slips')
@@ -974,6 +786,9 @@ export async function notifySalarySlipsAction(cycleId: string) {
 
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const supabaseAdmin: any = createAdminClient();
+
+    // Auto-repair missing records for the cycle
+    await ensureSlipsExistForCycle(supabaseAdmin, cycleId, profile?.id);
 
     // 1. Fetch payroll cycle to get month and year
     const { data: cycle, error: cycleError } = await supabaseAdmin
@@ -1074,6 +889,94 @@ export async function notifySalarySlipsAction(cycleId: string) {
       success: true, 
       message: `Successfully notified ${successCount} employees.` 
     };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function savePayrollDraftAdjustmentsAction(cycleId: string, draftApps: any[]) {
+  const context = { module: Module.PAYROLL, route: "/actions/savePayrollDraftAdjustmentsAction", httpMethod: "POST" };
+  const auth = await requireAuthenticatedUser(context);
+  if (!auth.success || !auth.profile) return { success: false, error: auth.error, message: auth.message };
+  const profile = auth.profile;
+
+  const perm = await requirePermission(profile, Permission.SAVE_PAYROLL_DRAFT, context);
+  if (!perm.authorized) return { success: false, error: perm.error, message: perm.message };
+
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const supabaseAdmin = createAdminClient();
+
+  try {
+    for (const app of draftApps) {
+      // Find matching ledger
+      let ledgerId = null;
+
+      // 1. Recoverable Adjustments (Salary Advance, Damage)
+      if (app.adjustment_category === 'recoverable') {
+        // We expect it to be linked to an existing ledger. 
+        // For simplicity, we assume payroll maps these by employee and type and finds the pending ledger.
+        const { data: existingLedgers } = await supabaseAdmin
+          .from('employee_financial_ledger')
+          .select('id, remaining_amount')
+          .eq('employee_id', app.employee_id)
+          .eq('adjustment_type', app.adjustment_type)
+          .eq('status', 'pending');
+        
+        if (existingLedgers && existingLedgers.length > 0) {
+          ledgerId = (existingLedgers as any)[0].id;
+        }
+      }
+
+      // 2. Create Ledger if not exists
+      if (!ledgerId) {
+        const category = ['salary_advance', 'damage'].includes(app.adjustment_type) ? 'recoverable' : 'one_time';
+        const { data: newLedger, error: ledgerErr } = await (supabaseAdmin.from('employee_financial_ledger') as any)
+          .insert({
+            employee_id: app.employee_id,
+            adjustment_type: app.adjustment_type,
+            adjustment_category: category,
+            original_amount: app.applied_amount,
+            remaining_amount: app.applied_amount,
+            description: app.description || 'Payroll Draft Addition',
+            status: 'pending',
+            created_by: (profile).id
+          })
+          .select()
+          .single();
+        if (ledgerErr) throw ledgerErr;
+        ledgerId = (newLedger).id;
+      }
+
+      // Upsert into payroll_adjustment_applications
+      const { data: existingApp } = await supabaseAdmin
+        .from('payroll_adjustment_applications')
+        .select('id')
+        .eq('cycle_id', cycleId)
+        .eq('employee_id', app.employee_id)
+        .eq('adjustment_type', app.adjustment_type)
+        .eq('status', 'draft')
+        .single();
+        
+      if (existingApp) {
+        await (supabaseAdmin.from('payroll_adjustment_applications') as any)
+          .update({ applied_amount: app.applied_amount })
+          .eq('id', (existingApp as any).id);
+      } else {
+        await (supabaseAdmin.from('payroll_adjustment_applications') as any)
+          .insert({
+            cycle_id: cycleId,
+            employee_id: app.employee_id,
+            ledger_id: ledgerId,
+            adjustment_type: app.adjustment_type,
+            adjustment_category: app.adjustment_category || 'one_time',
+            applied_amount: app.applied_amount,
+            status: 'draft',
+            created_by: (profile as any).id
+          });
+      }
+    }
+
+    return { success: true, message: "Draft adjustments saved successfully." };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

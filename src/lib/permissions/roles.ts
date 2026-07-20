@@ -27,6 +27,7 @@ export const PATH_PERMISSIONS: Record<string, Role[]> = {
   "/sales": ["admin", "sales"],
   "/clients": ["admin", "sales"],
   "/accounts/audit": ["admin"],
+  "/accounts/payroll": ["admin", "accountant"],
   "/accounts": ["admin", "accountant", "sales"], // Sales can view accounts pipeline
   "/operations": ["admin", "engineer", "cad", "field"],
   "/review": ["admin", "engineer"],
