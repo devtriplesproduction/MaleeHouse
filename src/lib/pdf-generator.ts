@@ -511,6 +511,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
               <div class="info-card">
                 <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Client Bill To:</div>
                 <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.2;">${project.client_name}</div>
+                ${project.gst_number ? `<div style="font-size: 9.5px; color: #64748b; margin-top: 3px; font-weight: 600;">GSTIN: ${project.gst_number}</div>` : ''}
                 <div style="font-size: 10px; color: #64748b; margin-top: 3px; font-weight: 500;">Authorized Project Engagement</div>
               </div>
               <div class="info-card">
@@ -605,23 +606,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
               <p style="font-size: 10px; color: #94a3b8; font-weight: 600; margin: 0;">Quote Ref: #${quotation.quotation_number}</p>
             </div>
             
-            <!-- Appendix clauses -->
-            ${clauses.length > 0 ? `
-              <div style="margin-bottom: 20px;">
-                <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;">Contractual Terms &amp; Clauses</h3>
-                <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
-                  ${clausesHtml}
-                </div>
-              </div>
-            ` : `
-              <div style="margin-bottom: 20px;">
-                <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;">Contractual Terms &amp; Clauses</h3>
-                <div style="font-size: 9.5px; color: #64748b; line-height: 1.5;">
-                  <p><strong>1. Validity:</strong> This quotation is valid for a period of 30 days from the date of issue.</p>
-                  <p><strong>2. Payment Schedule:</strong> 50% mobilization advance is required for survey deployment. Balance 50% is due upon deliverable release.</p>
-                </div>
-              </div>
-            `}
+
             
             <!-- Privacy Statement -->
             <div style="border-top: 1px solid #f1f5f9; padding-top: 15px; margin-bottom: 20px;">
@@ -637,6 +622,10 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
               <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Quotation Notes</h3>
               <div style="font-size: 9.5px; color: #475569; font-weight: 500; line-height: 1.5; padding-left: 8px; border-left: 2.5px solid #4f46e5; background-color: #fafafa; padding-top: 6px; padding-bottom: 6px;">
                 ${(quotation.notes || 'Prices are valid for 30 days. 50% advance required for mobilization.').split('\n').map((p: string) => p.trim() ? `<p style="margin: 0 0 6px 0;">${p}</p>` : '').join('')}
+                ${clauses && clauses.length > 0 ? clauses.map((c: any) => `<p style="margin: 0 0 6px 0;"><strong style="color: #1e293b; text-transform: uppercase;">${c.title || c.clause_title}:</strong> ${c.content || c.clause_content}</p>`).join('') : `
+                  <p style="margin: 0 0 6px 0;"><strong style="color: #1e293b; text-transform: uppercase;">Validity:</strong> This quotation is valid for a period of 30 days from the date of issue.</p>
+                  <p style="margin: 0 0 6px 0;"><strong style="color: #1e293b; text-transform: uppercase;">Payment Schedule:</strong> 50% mobilization advance is required for survey deployment. Balance 50% is due upon deliverable release.</p>
+                `}
               </div>
             </div>
             
@@ -826,6 +815,7 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
                     <h2 class="text-sm font-semibold text-slate-800 leading-tight">${project?.client_name || 'Client Name'}</h2>
                     <p class="text-xs text-slate-500 font-medium mt-0.5">${project?.client_contact || 'Authorized project engagement'}</p>
+                    ${project?.gst_number ? `<p class="text-[10px] text-slate-500 font-medium mt-1 uppercase font-semibold">GSTIN: ${project.gst_number}</p>` : ''}
                  </div>
                  <div>
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>

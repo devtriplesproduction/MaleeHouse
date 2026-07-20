@@ -21,6 +21,7 @@ interface ClientReceiptViewerProps {
     dateCleared: string;
     originalId: string;
     projectId?: string;
+    clientGstNumber?: string | null;
   };
   companySettings: CompanySettings | null;
 }
@@ -124,11 +125,14 @@ export function ClientReceiptViewer({ receipt, companySettings }: ClientReceiptV
 
               {/* Client Bill To & Project info */}
               <div className="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
-                 <div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Billed To:</p>
-                    <h2 className="text-sm font-semibold text-slate-800 leading-tight">{receipt.clientName}</h2>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">Authorized client representative</p>
-                 </div>
+                  <div>
+                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Billed To:</p>
+                     <h2 className="text-sm font-semibold text-slate-800 leading-tight">{receipt.clientName}</h2>
+                     <p className="text-xs text-slate-500 font-medium mt-0.5">Authorized client representative</p>
+                     {receipt.clientGstNumber && (
+                        <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase font-semibold">GSTIN: {receipt.clientGstNumber}</p>
+                     )}
+                  </div>
                  <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>
                     <h2 className="text-sm font-semibold text-slate-800 leading-tight">{receipt.projectName}</h2>

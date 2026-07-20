@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { createQuotationAction, createQuotationRevisionAction, updateDraftQuotationAction, getQuotationTemplatesAction, saveQuotationTemplateAction } from '@/actions/quotation.actions';
 import { getStaffMembersAction, getUserProfileAction } from '@/actions/auth.actions';
+import { getBankAccountsAction } from '@/actions/bank.actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -112,11 +113,14 @@ export function QuotationBuilderEngine({
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [activeClauses, setActiveClauses] = useState<any[]>(() =>
-    existingQuotation?.terms
+  const [activeClauses, setActiveClauses] = useState<any[]>(() => {
+    if (existingQuotation?.clauses && Array.isArray(existingQuotation.clauses) && existingQuotation.clauses.length > 0) {
+      return existingQuotation.clauses;
+    }
+    return existingQuotation?.terms
       ? [{ id: 'cls-exist', title: 'Terms & Conditions', content: existingQuotation.terms }]
-      : []
-  );
+      : [];
+  });
 
   // ── Bootstrap ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -151,16 +155,14 @@ export function QuotationBuilderEngine({
     });
 
     // 4. Fetch banks
-    import('@/actions/bank.actions').then(({ getBankAccountsAction }) => {
-      getBankAccountsAction().then(res => {
-        if (res.success && res.data) {
-          setBanks(res.data);
-          if (!existingQuotation?.bank_id) {
-            const defaultBank = res.data.find((b: any) => b.is_default);
-            if (defaultBank) setSelectedBank(defaultBank.id);
-          }
+    getBankAccountsAction().then(res => {
+      if (res && res.success && res.data) {
+        setBanks(res.data);
+        if (!existingQuotation?.bank_id) {
+          const defaultBank = res.data.find((b: any) => b.is_default);
+          if (defaultBank) setSelectedBank(defaultBank.id);
         }
-      });
+      }
     });
   }, [existingQuotation]);
 

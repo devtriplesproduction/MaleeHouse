@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom';
 import { createInvoiceAction, markInvoiceAsSentAction } from '@/actions/finance.actions';
 import { createClient } from '@/lib/supabase/client';
 import { getCompanySettingsAction } from '@/actions/settings.actions';
+import { getBankAccountsAction } from '@/actions/bank.actions';
 import { toast } from 'sonner';
 import { Mail, Link2, CheckCircle2 } from 'lucide-react';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
@@ -98,9 +99,8 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
       if (!projectData) fetchProject();
 
       const fetchBanks = async () => {
-        const { getBankAccountsAction } = await import('@/actions/bank.actions');
         const res = await getBankAccountsAction();
-        if (res.success && res.data) {
+        if (res && res.success && res.data) {
           setBanks(res.data as any[]);
           const defaultBank = (res.data as any[]).find((b: any) => b.is_default);
           if (defaultBank) {

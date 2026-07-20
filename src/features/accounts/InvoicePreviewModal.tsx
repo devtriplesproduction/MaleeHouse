@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { createPortal } from 'react-dom';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
+import { getBankAccountsAction } from '@/actions/bank.actions';
 import { markInvoiceAsSentAction } from '@/actions/finance.actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -38,15 +39,13 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
 
   React.useEffect(() => {
     setMounted(true);
-    import('@/actions/bank.actions').then(m => {
-      m.getBankAccountsAction().then(res => {
-        if (res && res.success && res.data) {
-          setBanks(res.data);
-          if (invoice.bank_id) {
-            setBank(res.data.find((b: any) => b.id === invoice.bank_id) || null);
-          }
+    getBankAccountsAction().then(res => {
+      if (res && res.success && res.data) {
+        setBanks(res.data);
+        if (invoice.bank_id) {
+          setBank(res.data.find((b: any) => b.id === invoice.bank_id) || null);
         }
-      }).catch(console.error);
+      }
     }).catch(console.error);
   }, [invoice.bank_id]);
 

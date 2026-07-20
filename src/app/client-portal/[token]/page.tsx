@@ -55,6 +55,13 @@ interface QuotationData {
   clauses?: any[];
   bank?: any;
   client_details?: any;
+  project?: {
+    id: string;
+    name: string;
+    client_name: string;
+    status: string;
+    gst_number?: string | null;
+  } | null;
 }
 
 export default function ClientPortalPage() {
@@ -192,7 +199,16 @@ export default function ClientPortalPage() {
 
   const handleDownload = () => {
     if (!quotation) return;
-    generateQuotationPDF(quotation, { name: quotation.project_name, client_name: quotation.client_name }, companySettings, quotation.bank);
+    generateQuotationPDF(
+      quotation, 
+      { 
+        name: quotation.project_name, 
+        client_name: quotation.client_name,
+        gst_number: quotation.project?.gst_number
+      }, 
+      companySettings, 
+      quotation.bank
+    );
   };
 
   if (loading) {
@@ -330,10 +346,13 @@ export default function ClientPortalPage() {
 
                     {/* Client Bill To & Project info */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/50 text-slate-700">
-                       <div>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
-                          <h2 className="text-xs font-semibold text-slate-800 leading-tight">{quotation.client_name}</h2>
-                       </div>
+                        <div>
+                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
+                           <h2 className="text-xs font-semibold text-slate-800 leading-tight">{quotation.client_name}</h2>
+                           {quotation.project?.gst_number && (
+                              <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase font-semibold">GSTIN: {quotation.project.gst_number}</p>
+                           )}
+                        </div>
                        <div>
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>
                           <h2 className="text-xs font-semibold text-slate-800 leading-tight">{quotation.project_name}</h2>
@@ -419,24 +438,7 @@ export default function ClientPortalPage() {
                        <p className="text-xs text-slate-400 font-medium">Quote Ref: #{quotation.quotation_number}</p>
                     </div>
 
-                    {/* Dynamic Terms & Conditions */}
-                    {clauses.length > 0 && (
-                      <div className="space-y-3">
-                         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Contractual Terms & Clauses</h3>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5 text-[11px] leading-relaxed text-slate-500">
-                            {clauses.map((clause: any, index: number) => (
-                               <div key={index} className="space-y-1">
-                                  <p className="font-semibold text-slate-800 uppercase tracking-wide text-[9.5px]">
-                                     {index + 1}. {clause.title || clause.clause_title}
-                                  </p>
-                                  <p className="pl-3 border-l border-slate-200 text-slate-500 font-medium">
-                                     {clause.content || clause.clause_content}
-                                  </p>
-                               </div>
-                            ))}
-                         </div>
-                      </div>
-                    )}
+
 
                     {/* Privacy & Data Protection Policy */}
                     <div className="border-t border-slate-100 pt-5 space-y-2.5">
@@ -457,61 +459,84 @@ export default function ClientPortalPage() {
                     <div className="border-t border-slate-100 pt-5 space-y-3">
                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quotation Notes</h3>
                        <div className="space-y-3 pl-3 border-l-2 border-indigo-500">
-                          {(() => {
-                             const terms = quotation.terms || 'Prices are valid for 30 days. 50% mobilization advance required for mobilization.';
-                             const headers = [
-                                "VALIDITY OF QUOTATION",
-                                "MOBILIZATION & ACCESS",
-                                "PAYMENT SCHEDULE",
-                                "ACCURACY & EXCLUSIONS",
-                                "FORCE MAJEURE"
-                             ];
-                             const positions: { header: string; index: number }[] = [];
-                             headers.forEach((h: any) => {
-                                const idx = terms.indexOf(h + ":");
-                                if (idx !== -1) {
-                                   positions.push({ header: h, index: idx });
-                                }
-                             });
-                             positions.sort((a: any, b: any) => a.index - b.index);
-                             
-                             if (positions.length === 0) {
-                                const paragraphs = terms.split(/\n\n+/).map((p: string) => p.trim()).filter(Boolean);
-                                if (paragraphs.length > 1) {
-                                   return paragraphs.map((p: string) => {
-                                      const colonIdx = p.indexOf(":");
-                                      if (colonIdx > 0 && colonIdx < 30) {
-                                         return {
-                                            title: p.slice(0, colonIdx).trim(),
-                                            content: p.slice(colonIdx + 1).trim()
-                                         };
-                                      }
-                                      return { title: "Note", content: p };
-                                   });
-                                }
-                                return [{ title: "Note", content: terms.trim() }];
-                             }
-                             
-                             const result: { title: string; content: string }[] = [];
-                             for (let i = 0; i < positions.length; i++) {
-                                const current = positions[i];
-                                const next = positions[i + 1];
-                                const startIdx = current.index + current.header.length + 1;
-                                const endIdx = next ? next.index : terms.length;
-                                const content = terms.slice(startIdx, endIdx).trim();
-                                result.push({
-                                   title: current.header,
-                                   content: content
+                          {(quotation.notes || 'Prices are valid for 30 days. 50% mobilization advance required for mobilization.').split('\n').map((paragraph: string, idx: number) => 
+                             paragraph.trim() ? (
+                                <div key={idx} className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                   {paragraph}
+                                </div>
+                             ) : null
+                          )}
+                          {clauses && clauses.length > 0 ? (
+                             clauses.map((clause: any, index: number) => (
+                                <div key={index} className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                   <strong className="text-slate-800 uppercase tracking-wide">{clause.title || clause.clause_title}:</strong> {clause.content || clause.clause_content}
+                                </div>
+                             ))
+                          ) : (
+                             // Legacy fallback parsing
+                             (() => {
+                                const terms = quotation.terms || '';
+                                if (!terms) return null;
+                                const headers = [
+                                   "VALIDITY OF QUOTATION",
+                                   "MOBILIZATION & ACCESS",
+                                   "PAYMENT SCHEDULE",
+                                   "ACCURACY & EXCLUSIONS",
+                                   "FORCE MAJEURE"
+                                ];
+                                const positions: { header: string; index: number }[] = [];
+                                headers.forEach((h: any) => {
+                                   const idx = terms.indexOf(h + ":");
+                                   if (idx !== -1) {
+                                      positions.push({ header: h, index: idx });
+                                   }
                                 });
-                             }
-                             return result;
-                          })().map((note: any, index: number) => (
-                              <div key={index} className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                 <strong className="text-slate-800 uppercase tracking-wide">{note.title}:</strong> {note.content}
-                              </div>
-                           ))}
-                        </div>
-                     </div>
+                                positions.sort((a: any, b: any) => a.index - b.index);
+                                
+                                if (positions.length === 0) {
+                                   const paragraphs = terms.split(/\n\n+/).map((p: string) => p.trim()).filter(Boolean);
+                                   if (paragraphs.length > 1) {
+                                      return paragraphs.map((p: string, idx: number) => {
+                                         const colonIdx = p.indexOf(":");
+                                         if (colonIdx > 0 && colonIdx < 30) {
+                                            return (
+                                               <div key={idx} className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                                  <strong className="text-slate-800 uppercase tracking-wide">{p.slice(0, colonIdx).trim()}:</strong> {p.slice(colonIdx + 1).trim()}
+                                               </div>
+                                            );
+                                         }
+                                         return (
+                                            <div key={idx} className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                               {p}
+                                            </div>
+                                         );
+                                      });
+                                   }
+                                   return (
+                                      <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                         {terms}
+                                      </div>
+                                   );
+                                }
+                                
+                                const result: any[] = [];
+                                for (let i = 0; i < positions.length; i++) {
+                                   const current = positions[i];
+                                   const next = positions[i + 1];
+                                   const startIdx = current.index + current.header.length + 1;
+                                   const endIdx = next ? next.index : terms.length;
+                                   const content = terms.slice(startIdx, endIdx).trim();
+                                   result.push(
+                                      <div key={i} className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                         <strong className="text-slate-800 uppercase tracking-wide">{current.header}:</strong> {content}
+                                      </div>
+                                   );
+                                }
+                                return result;
+                             })()
+                          )}
+                       </div>
+                    </div>
 
                      {/* Payment Details */}
                      {quotation.bank && (

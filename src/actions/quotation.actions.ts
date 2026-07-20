@@ -449,14 +449,14 @@ export async function getProjectQuotationsAction(projectId: string, _cacheBuster
     if (projectId.startsWith('QUO-')) {
       const { data: standalone } = await supabase
         .from('quotations')
-        .select('*, project:projects(id, name, client_name, status)')
+        .select('*, project:projects(id, name, client_name, status, gst_number)')
         .eq('id', projectId);
       return { success: true, data: normalizeData(standalone || []) };
     }
 
     const { data: projectQuotations } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status)')
+      .select('*, project:projects(id, name, client_name, status, gst_number)')
       .eq('project_id', projectId)
       .order('created_at', { ascending: false });
 
@@ -474,7 +474,7 @@ export async function getQuotationByIdAction(id: string): Promise<ActionResponse
     const supabase: any = await createClient();
     const { data: quotation } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status)')
+      .select('*, project:projects(id, name, client_name, status, gst_number)')
       .eq('id', id)
       .single();
 
@@ -498,7 +498,7 @@ export async function getAllQuotationsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: sorted } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status, project_milestones(id))')
+      .select('*, project:projects(id, name, client_name, status, gst_number, project_milestones(id))')
       .order('created_at', { ascending: false });
 
     return { success: true, data: normalizeData(sorted || []) };
@@ -830,7 +830,7 @@ export async function getQuotationByTokenAction(token: string): Promise<ActionRe
       data: {
         ...quotation,
         bank: bankDetails,
-        project: project ? { id: project.id, name: project.name, client_name: project.client_name, status: project.status } : null
+        project: project ? { id: project.id, name: project.name, client_name: project.client_name, status: project.status, gst_number: project.gst_number } : null
       }
     };
   } catch (error: any) {
@@ -840,8 +840,17 @@ export async function getQuotationByTokenAction(token: string): Promise<ActionRe
 
 export async function updateDraftQuotationAction(id: string, payload: CreateQuotationInput): Promise<ActionResponse> {
   try {
+    const validated = createQuotationSchema.safeParse(payload);
+    if (!validated.success) {
+      return { success: false, error: validated.error.errors[0]?.message || 'Validation failed' };
+    }
+
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
 
     const supabase: any = await createClient();
     
@@ -849,21 +858,23 @@ export async function updateDraftQuotationAction(id: string, payload: CreateQuot
     if (!existing) return { success: false, error: 'Quotation not found' };
     if (existing.status !== 'Draft') return { success: false, error: 'Only Draft quotations can be updated directly.' };
 
-    const compiledTerms = payload.clauses?.map((c: any) => `${(c.title || '').toUpperCase()}:\n${c.content || ''}`).join('\n\n') || payload.terms || '';
+    const compiledTerms = validated.data.clauses?.map((c: any) => `${(c.title || '').toUpperCase()}:\n${c.content || ''}`).join('\n\n') || validated.data.terms || '';
 
     const updatePayload = {
-      client_details: (payload as any).client_details || null,
-      items: payload.items || [],
-      subtotal: payload.subtotal || 0,
-      discount_pct: (payload as any).discount_pct || 0,
-      discount_amount: (payload as any).discount_amount || 0,
-      gst_rate: payload.gst_rate || 18,
-      gst_amount: payload.gst_amount || 0,
-      total_amount: payload.total_amount || 0,
-      notes: payload.notes || '',
+      client_details: validated.data.client_details || null,
+      items: validated.data.items || [],
+      subtotal: validated.data.subtotal || 0,
+      discount_pct: validated.data.discount_pct || 0,
+      discount_amount: validated.data.discount_amount || 0,
+      gst_rate: validated.data.gst_rate || 18,
+      gst_amount: validated.data.gst_amount || 0,
+      total_amount: validated.data.total_amount || 0,
+      notes: validated.data.notes || '',
       terms: compiledTerms,
-      clauses: payload.clauses || [],
-      internal_notes: payload.internal_notes || '',
+      clauses: validated.data.clauses || [],
+      internal_notes: validated.data.internal_notes ? JSON.stringify(validated.data.internal_notes) : null,
+      bank_id: validated.data.bank_id || null,
+      assigned_to: validated.data.assigned_to || null,
       updated_at: new Date().toISOString()
     };
 
@@ -886,6 +897,6 @@ export async function updateDraftQuotationAction(id: string, payload: CreateQuot
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message || String(error) };
   }
 }

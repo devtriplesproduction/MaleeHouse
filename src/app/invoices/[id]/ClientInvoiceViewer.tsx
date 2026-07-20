@@ -168,6 +168,9 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
                         <h2 className="text-sm font-semibold text-slate-800 leading-tight">{invoice.projects?.client_name || 'Client Name'}</h2>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">{invoice.projects?.client_contact || 'Authorized project engagement'}</p>
+                        {invoice.projects?.gst_number && (
+                           <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase font-semibold">GSTIN: {invoice.projects.gst_number}</p>
+                        )}
                      </div>
                      <div>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>

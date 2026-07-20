@@ -30,7 +30,7 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
     // Search exact ID first, fallback to partial match for legacy URLs
     let { data, error } = await supabase
       .from('milestones')
-      .select('*, projects(name, client_name)')
+      .select('*, projects(name, client_name, gst_number)')
       .eq('id', params.id)
       .maybeSingle();
 
@@ -38,7 +38,7 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
        // Legacy fallback
        const fallbackRes = await supabase
          .from('milestones')
-         .select('*, projects(name, client_name)')
+         .select('*, projects(name, client_name, gst_number)')
          .ilike('id', `%${searchId}%`)
          .limit(1)
          .maybeSingle();
@@ -64,12 +64,13 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
       amount: milestone.amount,
       dateCleared: milestone.updated_at || milestone.created_at,
       originalId: milestone.id,
-      projectId: milestone.project_id
+      projectId: milestone.project_id,
+      clientGstNumber: milestone.projects?.gst_number
     };
   } else if (queryType === 'invoice') {
     let { data, error } = await supabase
       .from('invoices')
-      .select('*, projects(name, client_name, id)')
+      .select('*, projects(name, client_name, id, gst_number)')
       .eq('id', params.id)
       .maybeSingle();
 
@@ -77,7 +78,7 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
        // Legacy fallback: invoice numbers might just be numeric or have INV-
        const fallbackRes = await supabase
          .from('invoices')
-         .select('*, projects(name, client_name, id)')
+         .select('*, projects(name, client_name, id, gst_number)')
          .ilike('invoice_number', `%${searchId}%`)
          .limit(1)
          .maybeSingle();
@@ -103,7 +104,8 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
       amount: invoice.total_amount,
       dateCleared: invoice.created_at, // Use created_at or updated_at for invoices too
       originalId: invoice.id,
-      projectId: invoice.projects?.id
+      projectId: invoice.projects?.id,
+      clientGstNumber: invoice.projects?.gst_number
     };
   } else {
     notFound();

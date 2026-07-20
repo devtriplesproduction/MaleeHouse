@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { createPortal } from 'react-dom';
 import { generateQuotationPDF } from '@/lib/pdf-generator';
 import { getCompanySettingsAction, CompanySettings } from '@/actions/settings.actions';
+import { getBankAccountsAction } from '@/actions/bank.actions';
 
 interface QuotationPreviewProps {
   quotation: any;
@@ -30,12 +31,10 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
     setMounted(true);
     getCompanySettingsAction().then(setCompanySettings);
     if (quotation.bank_id) {
-      import('@/actions/bank.actions').then(m => {
-        m.getBankAccountsAction().then(res => {
-          if (res.success && res.data) {
-            setBank(res.data.find((b: any) => b.id === quotation.bank_id) || null);
-          }
-        });
+      getBankAccountsAction().then(res => {
+        if (res && res.success && res.data) {
+          setBank(res.data.find((b: any) => b.id === quotation.bank_id) || null);
+        }
       });
     }
   }, [quotation.bank_id]);
@@ -148,6 +147,9 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
                     <h2 className="text-sm font-semibold text-slate-800 leading-tight">{project.client_name}</h2>
                     <p className="text-xs text-slate-500 font-medium mt-0.5">{project.client_contact || 'Authorized project engagement'}</p>
+                    {project.gst_number && (
+                       <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase font-semibold">GSTIN: {project.gst_number}</p>
+                    )}
                  </div>
                  <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>
@@ -249,24 +251,7 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                  <p className="text-xs text-slate-400 font-medium">Quote Ref: #{quotation.quotation_number}</p>
               </div>
 
-              {/* Dynamic Terms & Conditions / Policy Clauses */}
-              {clauses.length > 0 && (
-                <div className="space-y-3.5">
-                   <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Contractual Terms & Clauses</h3>
-                   <div className="grid grid-cols-1 gap-y-3.5 text-[11px] leading-relaxed text-slate-500">
-                      {clauses.map((clause: any, index: number) => (
-                         <div key={index} className="space-y-1">
-                            <p className="font-semibold text-slate-800 uppercase tracking-wide text-[9.5px]">
-                               {index + 1}. {clause.title || clause.clause_title}
-                            </p>
-                            <p className="pl-3 border-l border-slate-200 text-slate-500 font-medium whitespace-pre-wrap">
-                               {clause.content || clause.clause_content}
-                            </p>
-                         </div>
-                      ))}
-                   </div>
-                </div>
-              )}
+
 
               {/* Privacy & Data Protection Policy Statement */}
               <div className="border-t border-slate-100 pt-6 space-y-3">
@@ -298,6 +283,11 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                           </div>
                        ) : null
                     )}
+                    {clauses.map((clause: any, index: number) => (
+                       <div key={index} className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                          <strong className="text-slate-800 uppercase tracking-wide">{clause.title || clause.clause_title}:</strong> {clause.content || clause.clause_content}
+                       </div>
+                    ))}
                  </div>
               </div>
 

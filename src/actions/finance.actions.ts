@@ -390,7 +390,7 @@ export async function getInvoiceByIdAction(invoiceId: string): Promise<ActionRes
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('invoices')
-      .select('*, projects(name, client_name, budget, payments(amount, status)), payments(amount, status)')
+      .select('*, projects(name, client_name, budget, payments(amount, status), gst_number), payments(amount, status)')
       .eq('id', invoiceId)
       .single();
 
