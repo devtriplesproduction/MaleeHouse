@@ -45,17 +45,6 @@ export function AccountsSidebar() {
     },
 
     {
-      title: "Workplace",
-      icon: Users,
-      subLinks: [
-        { title: "Announcements", href: "/announcements", icon: Megaphone },
-        { title: "EOD Reports", href: "/eod", icon: Clock },
-        { title: "My Attendance", href: "/attendance", icon: CalendarCheck },
-        { title: "Apply Leave", href: "/leaves", icon: PlaneTakeoff },
-      ]
-    },
-
-    {
       title: "Projects",
       icon: FolderKanban,
       subLinks: [
@@ -75,6 +64,17 @@ export function AccountsSidebar() {
         { title: "Payroll", href: "/accounts/payroll", icon: FileText },
         { title: "Reconciliation", href: "/accounts/reconciliation", icon: Scale },
         { title: "Financial Reports", href: "/accounts/reports", icon: BarChart2 },
+      ]
+    },
+
+    {
+      title: "Workplace",
+      icon: Users,
+      subLinks: [
+        { title: "Announcements", href: "/announcements", icon: Megaphone },
+        { title: "EOD Reports", href: "/eod", icon: Clock },
+        { title: "My Attendance", href: "/attendance", icon: CalendarCheck },
+        { title: "Apply Leave", href: "/leaves", icon: PlaneTakeoff },
       ]
     },
 
