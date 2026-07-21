@@ -142,13 +142,14 @@ export function FileUploader({ projectId, open, onOpenChange }: FileUploaderProp
                 id="file-input"
                 type="file" 
                 className="hidden" 
+                accept=".pdf,image/*,.csv,text/csv,.kml,.dwg"
                 onChange={onFileSelect}
               />
               <div className="p-4 bg-indigo-500/10 rounded-full text-indigo-500">
                 <Upload className="w-6 h-6" />
               </div>
               <p className="text-sm font-medium">Drag & drop or click to upload</p>
-              <p className="text-xs text-gray-500 text-center">Support for Blueprints, PDF, Images, and CSV</p>
+              <p className="text-xs text-gray-500 text-center">Support for Blueprints, PDF, Images, CSV, KML, and DWG</p>
             </div>
           ) : (
             <div className="glass-card p-4 border-white/10 flex items-center justify-between animate-in zoom-in-95 duration-200">

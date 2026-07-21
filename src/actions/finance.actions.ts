@@ -409,7 +409,7 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    let query = supabase.from('invoices').select('*, projects(name, client_name, budget, payments(amount, status)), payments(amount, status)');
+    let query = supabase.from('invoices').select('*, projects(name, client_name, budget, deleted_at, payments(amount, status)), payments(amount, status)');
 
     if (projectId) {
       query = query.eq('project_id', projectId);
@@ -424,7 +424,8 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data: normalizeData(data) };
+    const activeData = data.filter((item: any) => item.projects?.deleted_at === null);
+    return { success: true, data: normalizeData(activeData) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -438,7 +439,7 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    let query = supabase.from('payments').select('*, projects(name, client_name), bank_accounts(bank_name)');
+    let query = supabase.from('payments').select('*, projects(name, client_name, deleted_at), bank_accounts(bank_name)');
 
     if (projectId) {
       query = query.eq('project_id', projectId);
@@ -453,7 +454,8 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data: normalizeData(data) };
+    const activeData = data.filter((item: any) => item.projects?.deleted_at === null);
+    return { success: true, data: normalizeData(activeData) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -796,7 +798,7 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved), invoices(id, status, payments(status))')
+      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved, deleted_at), invoices(id, status, payments(status))')
       .order('due_date', { ascending: true });
 
     if (error) {
@@ -804,8 +806,11 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
       return { success: false, error: error.message };
     }
 
+    // Filter out milestones associated with deleted projects
+    const activeData = data.filter((m: any) => m.projects?.deleted_at === null);
+
     // Compute UI status based on pending payments linked through invoices
-    const processedData = data.map((m: any) => {
+    const processedData = activeData.map((m: any) => {
       let isVerificationPending = false;
       if (m.invoices && Array.isArray(m.invoices)) {
         for (const inv of m.invoices) {
@@ -1349,7 +1354,7 @@ export async function getProjectProfitabilityAction(): Promise<{ success: boolea
     const supabase: any = await createClient();
 
     const [projectsRes, invoicesRes, expensesRes] = await Promise.all([
-      supabase.from('projects').select('id, name'),
+      supabase.from('projects').select('id, name').is('deleted_at', null),
       supabase.from('invoices').select('project_id, total_amount, status'),
       supabase.from('expenses').select('project_id, amount')
     ]);
@@ -1468,7 +1473,7 @@ export async function getProjectBillingSummaryAction(): Promise<ActionResponse> 
 
     const supabase: any = await createClient();
 
-    let query = supabase.from('projects').select('id, name, client_name, budget, status');
+    let query = supabase.from('projects').select('id, name, client_name, budget, status').is('deleted_at', null);
     
     // Apply role-based filtering if needed (like in getInvoicesAction)
     if (auth.role !== 'admin' && auth.role !== 'accountant') {

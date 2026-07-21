@@ -21,7 +21,7 @@ export default async function AccountantDashboardPage() {
   const [intakeRes, quotationsRes, projectsRes, milestonesRes, overviewRes, profitRes, eodRes] = await Promise.all([
     getQuotationIntakeQueueAction(),
     supabase.from('quotations').select('id, status, created_at, updated_at, total_amount'),
-    supabase.from('projects').select('id, status, created_at, deleted_at'),
+    supabase.from('projects').select('id, status, created_at, deleted_at').is('deleted_at', null),
     getAllMilestonesAction(),
     getFinancialOverviewAction(),
     getProjectProfitabilityAction(),
