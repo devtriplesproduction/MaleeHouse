@@ -260,7 +260,6 @@ export function UserManagementTable({ initialUsers, defaultTab = "directory" }: 
       const matchesSearch = fullName.includes(search) || email.includes(search) || employeeId.includes(search);
       const matchesDept = selectedDept === "all" || u.department === selectedDept;
       const matchesStatus = selectedStatus === "all" || u.status === selectedStatus;
-
       // Exclude system admin from personnel directory
       return matchesSearch && matchesDept && matchesStatus && u.role !== 'admin';
     });
