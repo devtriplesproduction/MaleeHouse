@@ -522,6 +522,10 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
                         <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                         <span>{safeFormatDate(leave.start_date)} – {safeFormatDate(leave.end_date)}</span>
                       </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 mb-1">
+                        <Clock className="w-3.5 h-3.5 shrink-0" />
+                        <span>Applied on: {safeFormatDate(leave.created_at)}</span>
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="glass" className="text-indigo-800 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/10 text-xs font-semibold px-2.5 py-0.5 shadow-sm shadow-indigo-500/[0.02]">
                           {days} {days === 1 ? 'day' : 'days'}

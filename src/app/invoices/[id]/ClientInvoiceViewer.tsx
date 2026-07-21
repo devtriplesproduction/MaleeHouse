@@ -141,7 +141,9 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                      </div>
 
                      <div className="text-right space-y-4">
-                        <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">Invoice</h1>
+                        <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">
+                          {amountPaid > 0 ? 'Tax Invoice' : 'Proforma Invoice'}
+                        </h1>
                         
                         <div className="space-y-2 text-xs">
                            <div className="flex flex-col items-end">
@@ -246,7 +248,7 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
             </div>
 
             {/* PAGE 2: Project Financial Summary */}
-            {projectBudget > 0 && invoice.milestone_id && (
+            {projectBudget > 0 && invoice.milestone_id && amountPaid === 0 && (
                <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative mt-6 min-h-[500px]">
                   <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 2 of 2</div>
                   <div className="space-y-6 flex-1 mt-4">

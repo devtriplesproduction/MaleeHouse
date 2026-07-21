@@ -8,7 +8,7 @@ export interface Database {
       employee_status: 'active' | 'probation' | 'onboarding_pending' | 'invited' | 'suspended' | 'resigned' | 'terminated'
       field_report_status: 'submitted' | 'acknowledged' | 'resolved'
       field_report_type: 'progress' | 'completion' | 'issue'
-      invoice_status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+      invoice_status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'accepted' | 'rejected' | 'in_review'
       leave_status: 'pending' | 'approved' | 'rejected' | 'cancelled'
       leave_type: 'sick' | 'casual' | 'earned' | 'maternity' | 'paternity' | 'other'
       milestone_status: 'pending' | 'invoiced' | 'paid'

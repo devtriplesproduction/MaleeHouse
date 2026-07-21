@@ -186,6 +186,9 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                              <td className="py-4 text-xs font-semibold text-slate-400">{i + 1}</td>
                              <td className="py-4">
                                 <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">{item.service_name}</p>
+                                {item.hsn_code && (
+                                   <p className="text-[9px] text-indigo-500 font-bold uppercase mt-0.5 tracking-wider">HSN/SAC: {item.hsn_code}</p>
+                                )}
                                 <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">{item.description || 'Professional survey services as per client requirements.'}</p>
                              </td>
                              <td className="py-4 text-center text-xs font-semibold text-slate-800">{item.quantity}</td>

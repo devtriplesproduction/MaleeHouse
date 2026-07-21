@@ -41,7 +41,7 @@ export const DEPARTMENTS: DepartmentConfig[] = [
     name: "Design Department",
     designations: [
       { id: "cad_eng", name: "CAD Engineer", systemRole: "cad" },
-      { id: "lidar_specialist", name: "Lidar Specialist", systemRole: "engineer" },
+      { id: "lidar_specialist", name: "Lidar Specialist", systemRole: "cad" },
     ]
   }
 ];

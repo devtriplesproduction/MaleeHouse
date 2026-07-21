@@ -292,9 +292,8 @@ export async function clientUpdateQuotationStatusAction(
       const normalizedInput = approverPhone?.replace(/\D/g, '');
       const normalizedRecord = project?.client_contact?.replace(/\D/g, '');
       const inputLast10 = normalizedInput?.slice(-10);
-      const recordLast10 = normalizedRecord?.slice(-10);
       
-      if (!recordLast10 || inputLast10 !== recordLast10) {
+      if (!inputLast10 || inputLast10.length < 10 || !normalizedRecord || !normalizedRecord.includes(inputLast10)) {
         return { success: false, error: "The entered mobile number does not match the registered client contact." };
       }
     }
@@ -498,10 +497,12 @@ export async function getAllQuotationsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: sorted } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status, gst_number, project_milestones(id))')
+      .select('*, project:projects(id, name, client_name, status, gst_number, project_milestones(id), deleted_at)')
       .order('created_at', { ascending: false });
 
-    return { success: true, data: normalizeData(sorted || []) };
+    const activeQuotations = (sorted || []).filter((q: any) => !q.project || !q.project.deleted_at);
+
+    return { success: true, data: normalizeData(activeQuotations) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

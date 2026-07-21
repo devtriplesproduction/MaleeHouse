@@ -125,7 +125,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
 
   const [formData, setFormData] = useState({
     tasks_completed: targetReport?.tasks_completed || '',
-    hours_spent: targetReport?.hours_spent?.toString() || '8.5',
+    hours_spent: targetReport?.hours_spent?.toString() || '',
     blockers: targetReport?.blockers || '',
     work_location: 'office' as 'office' | 'field'
   });
@@ -135,14 +135,14 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
     if (targetReport) {
       setFormData({
         tasks_completed: targetReport.tasks_completed || '',
-        hours_spent: targetReport.hours_spent?.toString() || '8.5',
+        hours_spent: targetReport.hours_spent?.toString() || '',
         blockers: targetReport.blockers || '',
         work_location: targetReport.work_location || 'office'
       });
     } else {
       setFormData({
         tasks_completed: '',
-        hours_spent: '8.5',
+        hours_spent: '',
         blockers: '',
         work_location: 'office'
       });
@@ -204,7 +204,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
         toast.success(isSubmittingForOther ? 'EOD Report published on behalf of employee!' : 'EOD Report published successfully!');
         setFormData({
           tasks_completed: '',
-          hours_spent: '8.5',
+          hours_spent: '',
           blockers: '',
           work_location: 'office'
         });
@@ -439,7 +439,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                       type="number"
                       step="0.01"
                       max="12"
-                      placeholder="e.g. 8.5"
+                      placeholder="8.5"
                       value={formData.hours_spent}
                       onChange={(e) => setFormData({ ...formData, hours_spent: e.target.value })}
                       disabled={hasSubmitted}
