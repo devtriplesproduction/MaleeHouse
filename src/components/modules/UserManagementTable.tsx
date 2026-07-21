@@ -261,7 +261,8 @@ export function UserManagementTable({ initialUsers, defaultTab = "directory" }: 
       const matchesDept = selectedDept === "all" || u.department === selectedDept;
       const matchesStatus = selectedStatus === "all" || u.status === selectedStatus;
 
-      return matchesSearch && matchesDept && matchesStatus;
+      // Exclude system admin from personnel directory
+      return matchesSearch && matchesDept && matchesStatus && u.role !== 'admin';
     });
   }, [users, searchTerm, selectedDept, selectedStatus]);
 
@@ -605,7 +606,6 @@ export function UserManagementTable({ initialUsers, defaultTab = "directory" }: 
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Department</th>
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Contact</th>
                     <th className="px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Status</th>
-                    <th className="px-4 py-3.5" />
                   </tr>
                 </thead>
                 <tbody>
@@ -694,79 +694,6 @@ export function UserManagementTable({ initialUsers, defaultTab = "directory" }: 
                             <span className={cn("w-1.5 h-1.5 rounded-full", user.is_active ? "bg-emerald-500" : "bg-slate-400")} />
                             {user.status?.replace("_", " ") || (user.is_active ? "Active" : "Suspended")}
                           </span>
-                        </td>
-
-                        <td className="px-4 py-4 text-right">
-                          <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenuUserId(activeMenuUserId === user.id ? null : user.id);
-                              }}
-                              className={cn(
-                                "p-2 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-indigo-500 rounded-xl transition-all",
-                                activeMenuUserId === user.id ? "bg-slate-100 dark:bg-white/10 text-indigo-500" : ""
-                              )}
-                              title="Actions"
-                            >
-                              <MoreVertical className="w-4.5 h-4.5" />
-                            </button>
-
-                            {activeMenuUserId === user.id && (
-                              <>
-                                {/* Overlay/Backdrop to close dropdown when clicked outside */}
-                                <div
-                                  className="fixed inset-0 z-[9999]"
-                                  onClick={() => setActiveMenuUserId(null)}
-                                />
-                                <div className="absolute right-6 top-12 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
-                                  <button
-                                    onClick={() => {
-                                      setActiveMenuUserId(null);
-                                      setSelectedEmployee(user);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
-                                  >
-                                    <Edit3 className="w-4 h-4 text-slate-500" />
-                                    <span>Edit Profile</span>
-                                  </button>
-
-                                  <button
-                                    onClick={(e) => {
-                                      setActiveMenuUserId(null);
-                                      handleToggleStatus(user.id, user.is_active, e);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
-                                  >
-                                    {user.is_active ? (
-                                      <>
-                                        <UserX className="w-4 h-4 text-slate-500" />
-                                        <span>Set Inactive</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Check className="w-4 h-4 text-slate-500" />
-                                        <span>Set Active</span>
-                                      </>
-                                    )}
-                                  </button>
-
-                                  <div className="my-1.5 border-t border-slate-200" />
-
-                                  <button
-                                    onClick={(e) => {
-                                      setActiveMenuUserId(null);
-                                      handleDeleteEmployee(user.id, `${user.first_name} ${user.last_name}`, e);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-rose-500" />
-                                    <span>Delete</span>
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
                         </td>
                       </tr>
                     ))

@@ -204,6 +204,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
   if (!isOpen || !employee) return null;
 
   const handleClose = () => {
+    let hasChanges = false;
     if (initialFormData) {
       const normalize = (obj: any) => JSON.stringify(
         Object.keys(obj).sort().reduce((acc: any, key: string) => {
@@ -212,10 +213,21 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         }, {})
       );
       if (normalize(formData) !== normalize(initialFormData)) {
-        setShowCloseConfirm(true);
-        return;
+        hasChanges = true;
       }
     }
+
+    // Check for other unsaved modifications
+    if (selectedAvatar !== (employee?.profile_photo || "")) hasChanges = true;
+    if (pendingHike !== null) hasChanges = true;
+    if (showInlineHikeForm && incrementInput.trim() !== "") hasChanges = true;
+    if (JSON.stringify(documentsList) !== JSON.stringify(employee?.documents || [])) hasChanges = true;
+
+    if (hasChanges) {
+      setShowCloseConfirm(true);
+      return;
+    }
+    
     onClose();
   };
 
@@ -1187,6 +1199,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Min. 6 characters"
+                        autoComplete="new-password"
                         className="w-full h-11 px-4 pr-11 bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-rose-500 outline-none transition-all"
                       />
                       <button
@@ -1206,6 +1219,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Re-enter new password"
+                        autoComplete="new-password"
                         className="w-full h-11 px-4 pr-11 bg-white dark:bg-[#0a0d16] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-rose-500 outline-none transition-all"
                       />
                       <button

@@ -133,7 +133,7 @@ export default function ProjectOverviewTab({
       // Both accountant/admin and engineer can edit coordinates, summary, and target date
       payload.site_coordinates = siteCoordinates;
       payload.survey_requirements = surveyRequirements;
-      payload.target_completion_date = targetCompletionDate;
+      payload.target_completion_date = targetCompletionDate || null;
 
       const res = await updateProjectAction(project.id, payload);
       if (res?.success) {

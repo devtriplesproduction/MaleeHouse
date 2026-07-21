@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface QuotationItem {
   service_name: string;
+  hsn_code?: string;
   description?: string;
   quantity: number;
   unit_price: number;
@@ -199,12 +200,14 @@ export default function ClientPortalPage() {
 
   const handleDownload = () => {
     if (!quotation) return;
+    const clientName = quotation.project?.client_name || quotation.client_details?.company_name || 'Client';
+    const projectName = quotation.project?.name || quotation.client_details?.project_title || 'Standalone Quotation';
     generateQuotationPDF(
       quotation, 
       { 
-        name: quotation.project_name, 
-        client_name: quotation.client_name,
-        gst_number: quotation.project?.gst_number
+        name: projectName, 
+        client_name: clientName,
+        gst_number: quotation.project?.gst_number || quotation.client_details?.gst_number
       }, 
       companySettings, 
       quotation.bank
@@ -238,6 +241,9 @@ export default function ClientPortalPage() {
   const discountAmount = quotation.discount_amount || 0;
   const discountPercentage = quotation.discount_pct || quotation.discount_percentage || 0;
   const clauses = quotation.clauses || [];
+
+  const clientName = quotation.project?.client_name || quotation.client_details?.company_name || 'Client';
+  const projectName = quotation.project?.name || quotation.client_details?.project_title || 'Standalone Quotation';
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
@@ -348,14 +354,14 @@ export default function ClientPortalPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/50 text-slate-700">
                         <div>
                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
-                           <h2 className="text-xs font-semibold text-slate-800 leading-tight">{quotation.client_name}</h2>
-                           {quotation.project?.gst_number && (
-                              <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase font-semibold">GSTIN: {quotation.project.gst_number}</p>
+                           <h2 className="text-xs font-semibold text-slate-800 leading-tight">{clientName}</h2>
+                           {(quotation.project?.gst_number || quotation.client_details?.gst_number) && (
+                              <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase font-semibold">GSTIN: {quotation.project?.gst_number || quotation.client_details?.gst_number}</p>
                            )}
                         </div>
                        <div>
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>
-                          <h2 className="text-xs font-semibold text-slate-800 leading-tight">{quotation.project_name}</h2>
+                          <h2 className="text-xs font-semibold text-slate-800 leading-tight">{projectName}</h2>
                        </div>
                     </div>
 
@@ -377,6 +383,9 @@ export default function ClientPortalPage() {
                                    <td className="py-3.5 text-xs font-semibold text-slate-400">{i + 1}</td>
                                    <td className="py-3.5">
                                       <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">{item.service_name}</p>
+                                      {item.hsn_code && (
+                                         <p className="text-[9px] text-indigo-500 font-bold uppercase mt-0.5 tracking-wider">HSN/SAC: {item.hsn_code}</p>
+                                      )}
                                       <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{item.description || 'Professional survey services as per client requirements.'}</p>
                                    </td>
                                    <td className="py-3.5 text-center text-xs font-semibold text-slate-800">{item.quantity}</td>

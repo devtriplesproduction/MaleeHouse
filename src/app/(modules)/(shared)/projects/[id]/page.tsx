@@ -213,7 +213,7 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
     getAccountantOwnerAction(params.id).catch(() => ({ success: true, data: null })),
     getProjectIssuesAction(params.id),
     supabase.from('activity_logs').select('*, actor_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
-    supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role')
+    supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role, designation')
   ]);
 
   const history = historyRes.data || [];

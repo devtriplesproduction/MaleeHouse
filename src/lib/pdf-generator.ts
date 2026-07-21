@@ -240,6 +240,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
       <td style="font-weight: 600; color: #94a3b8; padding: 12px 8px; font-size: 11px;">${i + 1}</td>
       <td style="padding: 12px 8px;">
         <div style="font-weight: 700; color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: -0.01em;">${item.service_name}</div>
+        ${item.hsn_code ? `<div style="font-size: 9px; font-weight: 700; color: #4f46e5; text-transform: uppercase; margin-top: 2px;">HSN/SAC: ${item.hsn_code}</div>` : ''}
         <div style="color: #64748b; font-size: 10px; margin-top: 3px; line-height: 1.4;">${item.description || 'Professional services as per technical scope.'}</div>
       </td>
       <td style="text-align: center; font-weight: 600; color: #0f172a; padding: 12px 8px; font-size: 11px;">${item.quantity}</td>
@@ -788,7 +789,9 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
                  </div>
 
                  <div class="text-right space-y-4">
-                    <h1 class="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">Invoice</h1>
+                    <h1 class="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">
+                      ${amountPaid > 0 ? 'Tax Invoice' : 'Proforma Invoice'}
+                    </h1>
                     
                     <div class="space-y-2 text-xs">
                        <div class="flex flex-col items-end">
@@ -925,7 +928,7 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
                  </div>
 
                  <!-- Project Totals -->
-                 ${projectBudget > 0 ? `
+                 ${projectBudget > 0 && amountPaid === 0 ? `
                    <div class="pt-4 mt-2 border-t border-slate-200">
                      <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-2">Project Financial Summary</p>
                      <div class="space-y-1.5">

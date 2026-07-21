@@ -508,7 +508,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                           )}
                         >
                           <FilePlus className="w-3.5 h-3.5" />
-                          Create Invoice
+                          Create PF Invoice
                         </button>
 
                         <button

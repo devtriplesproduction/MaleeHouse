@@ -332,8 +332,8 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
                       </button>
                     )}
 
-                    {/* Delete — only Draft */}
-                    {isAccountant && isDraft && !isConfirmingDelete && (
+                    {/* Delete */}
+                    {isAccountant && !isConfirmingDelete && (
                       <button onClick={() => setConfirmDelete(q.id)}
                         title="Delete quotation"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-[11px] font-medium text-rose-500 hover:bg-rose-100 transition-all">
@@ -342,7 +342,7 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
                     )}
 
                     {/* Delete confirm */}
-                    {isAccountant && isDraft && isConfirmingDelete && (
+                    {isAccountant && isConfirmingDelete && (
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-rose-500 font-medium">Sure?</span>
                         <button

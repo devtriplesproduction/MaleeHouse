@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const quotationItemSchema = z.object({
   service_name: z.string().min(1, 'Service name is required'),
+  hsn_code: z.string().optional(),
   description: z.string().optional(),
   quantity: z.number().min(1, 'Quantity must be at least 1'),
   unit_price: z.number().min(0, 'Unit price cannot be negative'),

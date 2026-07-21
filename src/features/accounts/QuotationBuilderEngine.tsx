@@ -559,11 +559,18 @@ export function QuotationBuilderEngine({
                       </button>
                     </div>
 
-                    <div className="col-span-12 pt-1.5 border-t border-slate-200/50 dark:border-white/5">
-                      <textarea value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
-                        placeholder="Description (optional)…"
-                        rows={2}
-                        className="w-full bg-transparent border-none px-1 text-[11px] text-slate-400 outline-none focus:text-slate-600 dark:focus:text-slate-300 resize-none font-medium leading-relaxed" />
+                    <div className="col-span-12 mt-1 pt-3 border-t border-slate-200/50 dark:border-white/5 grid grid-cols-12 gap-3">
+                      <div className="col-span-4 sm:col-span-3">
+                        <input value={item.hsn_code || ''} onChange={e => updateItem(idx, 'hsn_code', e.target.value)}
+                          placeholder="HSN/SAC Code"
+                          className="flat-input h-8 text-xs font-medium" />
+                      </div>
+                      <div className="col-span-8 sm:col-span-9">
+                        <textarea value={item.description || ''} onChange={e => updateItem(idx, 'description', e.target.value)}
+                          placeholder="Description (optional)…"
+                          rows={1}
+                          className="flat-input min-h-[32px] py-1.5 text-xs font-medium resize-y leading-relaxed" />
+                      </div>
                     </div>
                   </motion.div>
                 ))}

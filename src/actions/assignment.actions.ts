@@ -101,7 +101,8 @@ export async function removeUserFromProjectAction(assignmentId: string, projectI
     const { error } = await supabase
       .from('project_assignments')
       .delete()
-      .eq('id', assignmentId)
+      .eq('project_id', projectId)
+      .or(`id.eq.${assignmentId},user_id.eq.${assignmentId}`)
 
     if (error) return { success: false, error: error.message }
 

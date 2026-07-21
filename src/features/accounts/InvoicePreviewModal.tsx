@@ -227,7 +227,9 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                  </div>
 
                  <div className="text-right space-y-4">
-                    <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">Invoice</h1>
+                    <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">
+                      {amountPaid > 0 ? 'Tax Invoice' : 'Proforma Invoice'}
+                    </h1>
                     
                     <div className="space-y-2 text-xs">
                        <div className="flex flex-col items-end">
@@ -365,7 +367,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                  </div>
 
                  {/* Project Totals */}
-                 {projectBudget > 0 && (
+                 {projectBudget > 0 && amountPaid === 0 && (
                    <div className="pt-4 mt-2 border-t border-slate-200">
                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-2">Project Financial Summary</p>
                      <div className="space-y-1.5">
