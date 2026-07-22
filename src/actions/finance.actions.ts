@@ -63,6 +63,34 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
     const total_amount = amount + gst_amount;
 
     const supabase: any = await createClient();
+
+    if (payload.milestone_id) {
+      const { data: milestone } = await supabase
+        .from('project_milestones')
+        .select('amount, due_date')
+        .eq('id', payload.milestone_id)
+        .single();
+        
+      if (milestone) {
+        const { data: existingInvoices } = await supabase
+          .from('invoices')
+          .select('status, amount, due_date')
+          .eq('milestone_id', payload.milestone_id)
+          .order('created_at', { ascending: false });
+          
+        const activeProforma = existingInvoices?.find((inv: any) => 
+          Number(inv.amount) === Number(milestone.amount) &&
+          inv.due_date === milestone.due_date &&
+          inv.status !== 'cancelled' && 
+          inv.status !== 'rejected'
+        );
+        
+        if (activeProforma) {
+          return { success: false, error: 'An active Invoice already exists for the current milestone configuration.' };
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from('invoices')
       .insert({
@@ -409,7 +437,7 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    let query = supabase.from('invoices').select('*, projects(name, client_name, budget, deleted_at, payments(amount, status)), payments(amount, status)');
+    let query = supabase.from('invoices').select('*, projects(name, client_name, budget, deleted_at, payments(amount, status)), payments(amount, status), project_milestones(title, sort_order)');
 
     if (projectId) {
       query = query.eq('project_id', projectId);
@@ -520,6 +548,7 @@ export async function getAccountantOwnerAction(projectId: string): Promise<Actio
 export async function createMilestonesAction(
   projectId: string,
   milestones: Array<{
+    id?: string;
     title: string;
     description?: string;
     amount: number;
@@ -610,32 +639,99 @@ export async function createMilestonesAction(
       }
     }
 
-    await supabase.from('project_milestones').delete().eq('project_id', projectId);
-
-    const dbMilestones = milestones.map((m: any) => ({
-      id: `mil-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      project_id: projectId,
-      title: m.title,
-      description: m.description,
-      amount: m.amount,
-      due_date: m.due_date,
-      linked_stage: m.linked_stage,
-      is_activation_gate: m.is_activation_gate,
-      status: 'pending'
-    }));
-
-    const { data, error } = await supabase
+    // Upsert and Soft-Delete Logic
+    const { data: existingMilestones } = await supabase
       .from('project_milestones')
-      .insert(dbMilestones)
-      .select();
+      .select('id, status')
+      .eq('project_id', projectId);
+      
+    const existingMilestoneIds = (existingMilestones || []).map((m: any) => m.id);
+    const incomingIds = milestones.map((m: any) => m.id).filter((id: string) => id && !id.startsWith('temp-'));
 
-    if (error) return { success: false, error: error.message };
+    const missingMilestoneIds = existingMilestoneIds.filter((id: string) => !incomingIds.includes(id));
+    
+    if (missingMilestoneIds.length > 0) {
+      const { data: associatedInvoices } = await supabase
+        .from('invoices')
+        .select('id, milestone_id')
+        .in('milestone_id', missingMilestoneIds);
+
+      const invoiceMilestoneIds = (associatedInvoices || []).map((i: any) => i.milestone_id);
+      
+      const milestonesToArchive = missingMilestoneIds.filter((id: string) => invoiceMilestoneIds.includes(id));
+      if (milestonesToArchive.length > 0) {
+        for (const id of milestonesToArchive) {
+          const { data: mData } = await supabase.from('project_milestones').select('title').eq('id', id).single();
+          if (mData) {
+            await supabase
+              .from('project_milestones')
+              .update({ 
+                title: mData.title.includes('[Archived]') ? mData.title : `${mData.title} [Archived]`,
+                sort_order: -1
+              })
+              .eq('id', id);
+          }
+        }
+      }
+      
+      const milestonesToDelete = missingMilestoneIds.filter((id: string) => !invoiceMilestoneIds.includes(id));
+      if (milestonesToDelete.length > 0) {
+        await supabase
+          .from('project_milestones')
+          .delete()
+          .in('id', milestonesToDelete);
+      }
+    }
+
+    const updates = [];
+    const inserts = [];
+
+    for (const m of milestones) {
+      const isExisting = m.id && !m.id.startsWith('temp-') && existingMilestoneIds.includes(m.id);
+      const dbItem = {
+        project_id: projectId,
+        title: m.title,
+        description: m.description,
+        amount: m.amount,
+        due_date: m.due_date,
+        linked_stage: m.linked_stage,
+        is_activation_gate: m.is_activation_gate,
+      };
+
+      if (isExisting) {
+        updates.push({ id: m.id, ...dbItem });
+      } else {
+        inserts.push({
+          id: `mil-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          ...dbItem,
+          status: 'pending'
+        });
+      }
+    }
+
+    if (inserts.length > 0) {
+      const { error: insertError } = await supabase.from('project_milestones').insert(inserts);
+      if (insertError) return { success: false, error: insertError.message };
+    }
+    
+    if (updates.length > 0) {
+      for (const update of updates) {
+        const { id, ...rest } = update;
+        const { error: updateError } = await supabase.from('project_milestones').update(rest).eq('id', id);
+        if (updateError) return { success: false, error: updateError.message };
+        
+        // Keep linked invoices in sync if due date changes
+        if (rest.due_date !== undefined) {
+          await supabase.from('invoices').update({ due_date: rest.due_date }).eq('milestone_id', id);
+        }
+      }
+    }
 
     await supabase.from('workflow_history').insert({
       id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: projectId,
       changed_by: profile.id,
-      comment: `Created ${milestones.length} milestone(s) totaling ${sum.toFixed(2)}`,
+      comment: `Updated milestone configuration totaling ${sum.toFixed(2)}`,
       created_at: new Date().toISOString()
     });
 
@@ -643,14 +739,21 @@ export async function createMilestonesAction(
       id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: projectId,
       user_id: profile.id,
-      action: 'MILESTONES_CREATED',
+      action: 'MILESTONES_UPDATED',
       details: { count: milestones.length, total: sum },
       created_at: new Date().toISOString()
     });
 
     await revalidateAccountsPaths(projectId);
 
-    return { success: true, data: normalizeData(data) };
+    // Fetch the final dataset to return
+    const { data: finalData } = await supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('project_id', projectId)
+      .neq('status', 'archived');
+
+    return { success: true, data: normalizeData(finalData) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -665,6 +768,7 @@ export async function getMilestonesAction(projectId: string): Promise<ActionResp
       .from('project_milestones')
       .select('*')
       .eq('project_id', projectId)
+      .not('title', 'ilike', '%[Archived]%')
       .order('created_at', { ascending: true });
 
     if (error) return { success: false, error: error.message };
@@ -798,7 +902,7 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved, deleted_at), invoices(id, status, payments(status))')
+      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved, deleted_at), invoices(id, status, created_at, amount, due_date, payments(status))')
       .order('due_date', { ascending: true });
 
     if (error) {

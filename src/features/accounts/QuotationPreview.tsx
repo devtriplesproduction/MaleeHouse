@@ -15,7 +15,7 @@ import { createPortal } from 'react-dom';
 import { generateQuotationPDF } from '@/lib/pdf-generator';
 import { getCompanySettingsAction, CompanySettings } from '@/actions/settings.actions';
 import { getBankAccountsAction } from '@/actions/bank.actions';
-
+import { QuotationItem } from '@/validations/quotation.schema';
 interface QuotationPreviewProps {
   quotation: any;
   project: any;
@@ -181,7 +181,7 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
-                       {items.map((item: any, i: number) => (
+                       {items.map((item: QuotationItem, i: number) => (
                           <tr key={i} className="align-top">
                              <td className="py-4 text-xs font-semibold text-slate-400">{i + 1}</td>
                              <td className="py-4">
@@ -191,7 +191,7 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                                 )}
                                 <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">{item.description || 'Professional survey services as per client requirements.'}</p>
                              </td>
-                             <td className="py-4 text-center text-xs font-semibold text-slate-800">{item.quantity}</td>
+                             <td className="py-4 text-center text-xs font-semibold text-slate-800">{item.quantity} {item.unit || ''}</td>
                              <td className="py-4 text-right text-xs font-medium text-slate-800 nums">INR {(item.unit_price ?? 0).toLocaleString('en-IN')}</td>
                              <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">INR {(item.total ?? 0).toLocaleString('en-IN')}</td>
                           </tr>

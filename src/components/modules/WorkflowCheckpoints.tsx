@@ -114,7 +114,7 @@ export function WorkflowCheckpoints({ projectStatus, teamMembers, files }: Workf
       role: 'Engineer',
       icon: CheckCircle2,
       description: 'Final blueprint quality check and review clearance.',
-      statusKey: ['cad_finalization']
+      statusKey: ['final_review']
     },
     {
       id: 9,
@@ -144,7 +144,7 @@ export function WorkflowCheckpoints({ projectStatus, teamMembers, files }: Workf
         return fieldEngineers.length > 0 ? 6 : 5;
       case 'data_sync':
         return 7;
-      case 'cad_finalization':
+      case 'final_review':
         return 8;
       case 'completed':
       case 'archived':

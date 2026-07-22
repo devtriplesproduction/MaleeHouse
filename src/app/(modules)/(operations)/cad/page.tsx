@@ -98,7 +98,7 @@ export default async function CADDashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
               <Zap className="w-4 h-4 text-blue-500" />
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">My Active Assignments</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Available & Active Tasks</h2>
             </div>
             
             <Tabs defaultValue="active" className="space-y-4">

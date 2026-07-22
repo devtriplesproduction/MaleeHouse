@@ -5,6 +5,7 @@ export const quotationItemSchema = z.object({
   hsn_code: z.string().optional(),
   description: z.string().optional(),
   quantity: z.number().min(1, 'Quantity must be at least 1'),
+  unit: z.string().optional(),
   unit_price: z.number().min(0, 'Unit price cannot be negative'),
   total: z.number().min(0),
 });

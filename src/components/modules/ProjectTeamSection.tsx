@@ -147,7 +147,11 @@ export function ProjectTeamSection({ projectId, assignments, staff, canAssign }:
                 placeholder="Select..."
               >
                 {staff
-                  .filter((s: any) => s.role === selectedRole || s.designation === selectedRole)
+                  .filter((s: any) => {
+                    const matches = s.role === selectedRole || s.designation === selectedRole;
+                    if (selectedRole === 'cad' && s.designation === 'lidar_specialist') return false;
+                    return matches;
+                  })
                   .map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.first_name} {s.last_name}

@@ -14,14 +14,14 @@ export const PERMISSIONS = {
 
   // Workflow Stages Configuration
   STAGE_UPDATE: {
-    admin: ["*", "cad_finalization"],
+    admin: ["*", "final_review"],
     sales: ["lead_created", "quotation_requested", "quotation_sent", "payment_pending"],
     accountant: ["quotation_sent", "payment_pending", "payment_done", "ready_for_dispatch", "project_created", "quotation_requested"],
     engineer: [
       "data_collection", "prototype", "field_work", "data_sync",
-      "field_assigned", "cad_approved", "review", "payment_pending", "completed", "cad_finalization"
+      "field_assigned", "cad_approved", "review", "payment_pending", "completed", "final_review"
     ],
-    cad: ["prototype", "cad_revision", "cad_submitted", "data_sync", "review", "field_assigned", "field_work", "completed", "cad_finalization"],
+    cad: ["prototype", "cad_revision", "cad_submitted", "data_sync", "review", "field_assigned", "field_work", "completed", "final_review"],
     field: ["field_work", "field_assigned", "field_in_progress", "field_completed", "data_sync"],
     hr: [],
   } as Record<Role, string[]>,

@@ -82,8 +82,8 @@ export function CADRevisionPanel({
   const latestRevision = revisions[0];
   
   const rejectedCount = revisions.filter((r: any) => r.status === "rejected").length;
-  const isEscalationHold = rejectedCount >= 3 && !bypassActive;
-  const hasEscalatedRevisions = revisions.length >= 3 && revisions.some((r: any) => r.status === "pending_review");
+  const isEscalationHold = rejectedCount >= 10 && !bypassActive;
+  const hasEscalatedRevisions = revisions.length >= 10 && revisions.some((r: any) => r.status === "pending_review");
 
   const handleApprove = () => {
     if (!activeAction) return;
@@ -164,7 +164,7 @@ export function CADRevisionPanel({
             <div className="space-y-1">
               <p className="text-xs font-black text-white uppercase tracking-widest">REVISION LIMIT REACHED (Escalation Hold Active)</p>
               <p className="text-sm text-slate-400 leading-normal">
-                This project has reached 3 CAD rejections and is currently locked under Escalation Hold.
+                This project has reached 10 CAD rejections and is currently locked under Escalation Hold.
                 Further prototype uploads are disabled. An Admin or Lead Engineer must verify alignment parameters first.
               </p>
             </div>
@@ -188,7 +188,7 @@ export function CADRevisionPanel({
           <div className="space-y-0.5">
             <p className="text-xs font-bold text-white uppercase tracking-wider">REVISION LIMIT REACHED (Escalated Review Active)</p>
             <p className="text-sm text-slate-400 leading-normal">
-              This project has reached V3 drafting limits. Escalated review has been triggered for Admins and Lead Engineers.
+              This project has reached V10 drafting limits. Escalated review has been triggered for Admins and Lead Engineers.
             </p>
           </div>
         </div>

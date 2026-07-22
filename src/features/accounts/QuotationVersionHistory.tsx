@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  History, 
-  ChevronDown, 
-  Clock, 
+import {
+  History,
+  ChevronDown,
+  Clock,
   User,
   Package,
   Loader2,
@@ -166,7 +166,7 @@ export function QuotationVersionHistory({ quotationId, currentVersion }: Quotati
                               <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/5 text-xs border border-slate-100 dark:border-white/5">
                                 <span className="font-semibold text-slate-700 dark:text-slate-300 truncate">{item.service_name}</span>
                                 <span className="nums font-medium text-slate-500 dark:text-slate-400 shrink-0 ml-4">
-                                  {item.quantity} × INR {Number(item.unit_price).toLocaleString('en-IN')}
+                                  {item.quantity} {item.unit || ''} × INR {Number(item.unit_price).toLocaleString('en-IN')}
                                 </span>
                               </div>
                             ))}

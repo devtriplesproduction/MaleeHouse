@@ -22,7 +22,7 @@ export async function uploadFileToServerAction(
       'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg',
       'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'rtf',
       'zip', 'rar', '7z', 'tar', 'gz',
-      'dwg', 'dxf', 'rvt', 'skp'
+      'dwg', 'dxf', 'rvt', 'skp', 'kml', 'kmz'
     ];
 
     const fileExt = file.name.split('.').pop()?.toLowerCase() || '';

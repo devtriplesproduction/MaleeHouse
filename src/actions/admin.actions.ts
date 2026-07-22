@@ -478,27 +478,24 @@ export async function deleteEmployeeAction(userId: string) {
     const supabaseAdmin: any = createAdminClient()
     const { data: deletedUser } = await (supabaseAdmin as any).from('profiles').select('email, first_name, last_name').eq('id', userId).maybeSingle()
 
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
-    if (authError && !authError.message.includes('User not found')) {
-      return { success: false, error: authError.message }
-    }
+    // Soft delete: We do NOT delete from auth.users or profiles. 
+    // We update the profile to be terminated and inactive.
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({ 
+        is_active: false, 
+        status: 'terminated', 
+        deleted_at: new Date().toISOString(), 
+        updated_at: new Date().toISOString() 
+      } as any)
+      .eq('id', userId)
 
-    // Delete dependent records first to avoid FK constraint violations
-    await Promise.all([
-      (supabaseAdmin as any).from('notifications').delete().eq('user_id', userId),
-      (supabaseAdmin as any).from('project_assignments').delete().eq('user_id', userId),
-      (supabaseAdmin as any).from('eod_reports').delete().eq('user_id', userId),
-      (supabaseAdmin as any).from('leaves').delete().eq('user_id', userId),
-      (supabaseAdmin as any).from('attendance_logs').delete().eq('user_id', userId),
-    ])
-
-    const { error: profileError } = await (supabaseAdmin as any).from('profiles').delete().eq('id', userId)
-    if (profileError) return { success: false, error: `Profile deletion failed: ${profileError.message}` }
+    if (profileError) return { success: false, error: `Profile archiving failed: ${profileError.message}` }
 
     await logAdminAuditAction({
-      action: 'USER_DELETED_PERMANENTLY',
-      details: { email: deletedUser?.email, name: `${deletedUser?.first_name} ${deletedUser?.last_name}` },
-      severity: 'critical',
+      action: 'USER_ARCHIVED_SOFT_DELETE',
+      details: { email: deletedUser?.email, name: `${deletedUser?.first_name} ${deletedUser?.last_name}`, note: 'User was soft deleted' },
+      severity: 'warning',
       targetUserId: userId,
     })
 

@@ -15,9 +15,10 @@ interface PremiumDatePickerProps {
   side?: 'bottom' | 'right';
   disabled?: boolean;
   triggerClassName?: string;
+  minDate?: string | Date;
 }
 
-export function PremiumDatePicker({ value, onChange, className, align = 'left', side = 'bottom', disabled = false, triggerClassName }: PremiumDatePickerProps) {
+export function PremiumDatePicker({ value, onChange, className, align = 'left', side = 'bottom', disabled = false, triggerClassName, minDate }: PremiumDatePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [currentMonth, setCurrentMonth] = React.useState(value ? new Date(value) : new Date());
   const [mounted, setMounted] = React.useState(false);
@@ -217,19 +218,29 @@ export function PremiumDatePicker({ value, onChange, className, align = 'left', 
               const isSelected = selectedDate && isSameDay(day, selectedDate);
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isToday = isSameDay(day, new Date());
+              
+              const minDateObj = minDate ? new Date(minDate) : null;
+              if (minDateObj) minDateObj.setHours(0, 0, 0, 0);
+              const isBeforeMinDate = minDateObj ? day.getTime() < minDateObj.getTime() : false;
 
               return (
                 <button
                   key={idx}
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); handleDateSelect(day); }}
+                  disabled={isBeforeMinDate}
+                  onClick={(e) => { 
+                    if (isBeforeMinDate) return;
+                    e.stopPropagation(); 
+                    handleDateSelect(day); 
+                  }}
                   className={cn(
                     "h-8 w-8 rounded-lg text-sm transition-all flex items-center justify-center relative",
                     !isCurrentMonth && "opacity-20",
-                    isSelected 
+                    isBeforeMinDate && "opacity-30 cursor-not-allowed",
+                    !isBeforeMinDate && isSelected 
                       ? "bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-600/20" 
-                      : "hover:bg-indigo-500/10 text-slate-600 dark:text-slate-400 hover:text-indigo-600",
-                    isToday && !isSelected && "after:content-[''] after:absolute after:bottom-1 after:w-1 after:h-1 after:bg-indigo-500 after:rounded-full"
+                      : !isBeforeMinDate && "hover:bg-indigo-500/10 text-slate-600 dark:text-slate-400 hover:text-indigo-600",
+                    isToday && !isSelected && !isBeforeMinDate && "after:content-[''] after:absolute after:bottom-1 after:w-1 after:h-1 after:bg-indigo-500 after:rounded-full"
                   )}
                 >
                   {format(day, "d")}

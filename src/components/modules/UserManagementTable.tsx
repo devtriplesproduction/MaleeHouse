@@ -259,7 +259,11 @@ export function UserManagementTable({ initialUsers, defaultTab = "directory" }: 
 
       const matchesSearch = fullName.includes(search) || email.includes(search) || employeeId.includes(search);
       const matchesDept = selectedDept === "all" || u.department === selectedDept;
-      const matchesStatus = selectedStatus === "all" || u.status === selectedStatus;
+      
+      // If "all" is selected, hide terminated and resigned users by default so they appear "deleted"
+      const isDeletedStatus = u.status === 'terminated' || u.status === 'resigned' || u.status === 'archived';
+      const matchesStatus = selectedStatus === "all" ? !isDeletedStatus : u.status === selectedStatus;
+      
       // Exclude system admin from personnel directory
       return matchesSearch && matchesDept && matchesStatus && u.role !== 'admin';
     });
@@ -590,7 +594,7 @@ export function UserManagementTable({ initialUsers, defaultTab = "directory" }: 
                   <SelectItem value="invited">Invited</SelectItem>
                   <SelectItem value="onboarding_pending">Onboarding Pending</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
                 </Select>
               </div>
             </div>

@@ -243,7 +243,7 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
         ${item.hsn_code ? `<div style="font-size: 9px; font-weight: 700; color: #4f46e5; text-transform: uppercase; margin-top: 2px;">HSN/SAC: ${item.hsn_code}</div>` : ''}
         <div style="color: #64748b; font-size: 10px; margin-top: 3px; line-height: 1.4;">${item.description || 'Professional services as per technical scope.'}</div>
       </td>
-      <td style="text-align: center; font-weight: 600; color: #0f172a; padding: 12px 8px; font-size: 11px;">${item.quantity}</td>
+      <td style="text-align: center; font-weight: 600; color: #0f172a; padding: 12px 8px; font-size: 11px;">${item.quantity} ${item.unit || ''}</td>
       <td style="text-align: right; font-weight: 600; font-family: monospace; color: #334155; padding: 12px 8px; font-size: 11px;">INR ${Number(item.unit_price).toLocaleString('en-IN')}</td>
       <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a; padding: 12px 8px; font-size: 11px;">INR ${Number(item.total).toLocaleString('en-IN')}</td>
     </tr>

@@ -107,7 +107,7 @@ const WORKFLOW_STAGES: StageConfig[] = [
     description: 'CAD Specialist uploads the final completed drawings for delivery.',
     responsibleRole: 'cad',
     responsibleLabel: 'CAD Specialist',
-    statusKey: 'cad_finalization',
+    statusKey: 'final_review',
     nextStatusKey: 'completed'
   },
   {
@@ -155,7 +155,7 @@ export default function ProjectWorkflowTab({
         return 5;
       case 'data_sync':
         return 6;
-      case 'cad_finalization':
+      case 'final_review':
         return 7;
       case 'completed':
       case 'archived':

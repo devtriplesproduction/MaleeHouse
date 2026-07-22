@@ -345,6 +345,7 @@ export function ProjectFinanceTabContent({
 
     // Validate amount sum maps to quote total if required
     const payload = milestoneItems.map((item: any) => ({
+      id: item.id || undefined,
       title: item.title,
       description: item.description,
       amount: parseFloat(item.amount) || 0,
@@ -385,12 +386,12 @@ export function ProjectFinanceTabContent({
     }
   };
 
-  // 4. Invoicing triggers for Milestones/Visits
   const handleGenerateInvoice = async (
     targetId: string,
     type: "milestone" | "visit",
     title: string,
     amount: number,
+    dueDate?: string,
   ) => {
     if (
       !confirm(
@@ -409,6 +410,7 @@ export function ProjectFinanceTabContent({
         invoice_number: invoiceNo,
         amount: amount,
         gst_rate: 18,
+        due_date: dueDate,
         notes: `Milestone/Visit specific tax invoice.`,
         milestone_id: type === "milestone" ? targetId : undefined,
         visit_id: type === "visit" ? targetId : undefined,
@@ -593,12 +595,30 @@ export function ProjectFinanceTabContent({
             </p>
           </div>
 
-          {isAccountant && milestones.length === 0 && !showMilestoneForm && (
+          {isAccountant && !showMilestoneForm && (
             <button
-              onClick={() => setShowMilestoneForm(true)}
+              onClick={() => {
+                if (milestones.length > 0) {
+                  const qTotal = quotation && quotation.status === 'Approved' ? Number(quotation.total_amount || 0) : (quotation ? Number(quotation.total_amount || 0) : 0);
+                  setMilestoneItems(milestones.map((m: any) => {
+                    const mAmount = Number(m.amount) || 0;
+                    return {
+                      id: m.id,
+                      title: m.title,
+                      description: m.description || "",
+                      percentage: qTotal > 0 ? ((mAmount / qTotal) * 100).toFixed(2) : "",
+                      amount: m.amount || "",
+                      due_date: m.due_date ? new Date(m.due_date).toISOString().split('T')[0] : "",
+                      linked_stage: m.linked_stage || "",
+                      is_activation_gate: m.is_activation_gate || false,
+                    };
+                  }));
+                }
+                setShowMilestoneForm(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition"
             >
-              <Plus className="w-4 h-4" /> Structure Milestones
+              <Plus className="w-4 h-4" /> {milestones.length === 0 ? "Structure Milestones" : "Edit Milestones"}
             </button>
           )}
         </div>
@@ -883,6 +903,7 @@ export function ProjectFinanceTabContent({
                                 "milestone",
                                 m.title,
                                 m.amount,
+                                m.due_date
                               )
                             }
                             disabled={isSubmitting}

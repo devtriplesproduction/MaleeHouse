@@ -31,6 +31,7 @@ export interface Milestone {
   linked_stage?: string | null;
   is_activation_gate: boolean;
   status: 'pending' | 'paid' | 'hold';
+  updated_at: string;
   projects?: {
     name: string;
     client_name: string;
@@ -40,6 +41,9 @@ export interface Milestone {
   invoices?: {
     id: string;
     status: string;
+    created_at: string;
+    amount: number;
+    due_date: string | null;
     payments?: { status: string }[];
   }[];
 }
@@ -57,6 +61,16 @@ const formatCurrency = (amount: number) => {
 };
 
 export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidgetProps) {
+  const getActiveInvoice = (m: Milestone) => {
+    if (!m.invoices || m.invoices.length === 0) return null;
+    return m.invoices.find((inv: any) => 
+      Number(inv.amount) === Number(m.amount) && 
+      inv.due_date === m.due_date && 
+      inv.status !== 'cancelled' && 
+      inv.status !== 'rejected'
+    ) || null;
+  };
+
   const router = useRouter();
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
@@ -77,7 +91,7 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
   useEffect(() => {
     const needsGeneration = milestones.some(m => {
       if (m.status === 'paid') return false;
-      if (m.invoices && m.invoices.length > 0) return false;
+      if (getActiveInvoice(m)) return false;
       if (!m.due_date) return false;
       
       const date = new Date(m.due_date);
@@ -101,8 +115,8 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
     return milestones
       .filter((m) => m.status !== 'paid')
       .sort((a: any, b: any) => {
-        const aHasInvoice = a.invoices && a.invoices.length > 0;
-        const bHasInvoice = b.invoices && b.invoices.length > 0;
+        const aHasInvoice = !!getActiveInvoice(a);
+        const bHasInvoice = !!getActiveInvoice(b);
         
         if (aHasInvoice && !bHasInvoice) return -1;
         if (!aHasInvoice && bHasInvoice) return 1;
@@ -175,7 +189,8 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
             const dueStatus = getDueStatus(m.due_date);
             const isProjectFrozen = m.projects?.is_frozen || m.projects?.status === 'on_hold';
             const isOverdue = m.due_date && differenceInDays(new Date(m.due_date), new Date()) < 0;
-            const hasInvoice = m.invoices && m.invoices.length > 0;
+            const activeInvoice = getActiveInvoice(m);
+            const hasInvoice = !!activeInvoice;
 
             const cardClasses = cn(
               'bg-white dark:bg-[#0f121b] border rounded-2xl p-4 transition-all duration-300 flex items-center justify-between group hover:shadow-md hover:border-slate-300 dark:hover:border-white/10 cursor-pointer',
@@ -240,10 +255,10 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
                   <div className="text-right">
                     <p className="text-sm font-bold text-slate-900 dark:text-white nums flex items-center justify-end gap-1.5">
                       {formatCurrency(m.amount)}
-                      {m.invoices && m.invoices.length > 0 ? (
-                        m.invoices[0].status === 'sent' ? (
+                      {hasInvoice && activeInvoice ? (
+                        activeInvoice.status === 'sent' ? (
                           <span className="text-[8px] leading-none py-0.5 px-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-sm uppercase tracking-widest font-extrabold" title="Invoice sent to client">SENT</span>
-                        ) : m.invoices[0].status === 'paid' ? (
+                        ) : activeInvoice.status === 'paid' ? (
                           <span className="text-[8px] leading-none py-0.5 px-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-sm uppercase tracking-widest font-extrabold" title="Invoice paid">PAID</span>
                         ) : (
                           <span className="text-[8px] leading-none py-0.5 px-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-sm uppercase tracking-widest font-extrabold" title="Invoice generated and ready to send">READY</span>
@@ -270,7 +285,7 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
               return (
                 <div
                   key={m.id}
-                  onClick={() => handleInvoiceClick(m.invoices![0].id)}
+                  onClick={() => activeInvoice && handleInvoiceClick(activeInvoice.id)}
                   className={cardClasses}
                 >
                   {cardContent}

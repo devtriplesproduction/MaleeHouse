@@ -117,8 +117,8 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         joining_date: employee.joining_date || "",
         location: employee.location || "office",
         reporting_manager_id: employee.reporting_manager_id || null,
-        
-        
+
+
         office_location: employee.office_location || "Singapore",
         operational_zone: employee.operational_zone || "Central Business District",
         approval_authority: !!employee.approval_authority,
@@ -128,7 +128,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         role: employee.role || "employee",
         status: employee.status || "active",
         employee_id: employee.employee_id || ""
-      
+
       };
       setFormData(initialData);
       setInitialFormData(initialData);
@@ -146,13 +146,13 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
           getLastSalaryIncrementAction(employee.id),
           getSalaryIncrementHistoryAction(employee.id)
         ]);
-        
+
         if (lastRes.success) {
           setLastIncrement(lastRes.data);
         } else {
           setLastIncrement(null);
         }
-        
+
         if (histRes.success) {
           setIncrementHistory(histRes.data || []);
         } else {
@@ -227,7 +227,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
       setShowCloseConfirm(true);
       return;
     }
-    
+
     onClose();
   };
 
@@ -264,7 +264,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
           description: "All changes committed safely to personnel DB.",
           variant: "success"
         });
-        setInitialFormData({...formData});
+        setInitialFormData({ ...formData });
         if (onSuccess) onSuccess();
       } else {
         toast({
@@ -540,7 +540,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
           {/* TAB 1: PERSONAL DETAILS */}
           {activeTab === "personal" && (
             <div className="space-y-6 animate-in fade-in duration-300">
-              
+
 
 
 
@@ -641,7 +641,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
           {/* TAB 2: PROFESSIONAL DETAILS */}
           {activeTab === "professional" && (
             <div className="space-y-6 animate-in fade-in duration-300">
-              
+
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-1">
@@ -728,7 +728,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
 
 
 
-                          </div>
+            </div>
           )}
 
           {/* TAB 3: DOCUMENTS REPOSITORY */}
@@ -769,50 +769,50 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                          {(() => {
-                            const u = doc.url || doc.file_url || doc.file_path || doc.path || doc.link || doc.publicUrl || doc.src || doc.source || doc.file;
-                            if (u) {
-                              return (
-                                <>
-                                  <button
-                                    onClick={() => setPreviewDoc(doc)}
-                                    className="p-2.5 bg-slate-50 dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
-                                    title="Preview document"
-                                  >
-                                    <Eye className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-                                  </button>
-                                  <a
-                                    href={u}
-                                    download={doc.label || doc.name || "document"}
-                                    target="_blank"
-                                    rel="noreferrer noopener"
-                                    className="p-2.5 bg-slate-50 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-xl transition-all flex items-center justify-center"
-                                    title="Download document"
-                                  >
-                                    <Download className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-                                  </a>
-                                </>
-                              );
-                            }
+                        {(() => {
+                          const u = doc.url || doc.file_url || doc.file_path || doc.path || doc.link || doc.publicUrl || doc.src || doc.source || doc.file;
+                          if (u) {
                             return (
-                                <>
-                                  <button
-                                    disabled
-                                    className="p-2.5 bg-slate-50 dark:bg-white/5 opacity-50 cursor-not-allowed rounded-xl transition-all"
-                                    title="File data is missing from database"
-                                  >
-                                    <Eye className="w-4 h-4 text-slate-400" />
-                                  </button>
-                                  <button
-                                    disabled
-                                    className="p-2.5 bg-slate-50 dark:bg-white/5 opacity-50 cursor-not-allowed rounded-xl transition-all flex items-center justify-center"
-                                    title="File data is missing from database"
-                                  >
-                                    <Download className="w-4 h-4 text-slate-400" />
-                                  </button>
-                                </>
+                              <>
+                                <button
+                                  onClick={() => setPreviewDoc(doc)}
+                                  className="p-2.5 bg-slate-50 dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
+                                  title="Preview document"
+                                >
+                                  <Eye className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+                                </button>
+                                <a
+                                  href={u}
+                                  download={doc.label || doc.name || "document"}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  className="p-2.5 bg-slate-50 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-xl transition-all flex items-center justify-center"
+                                  title="Download document"
+                                >
+                                  <Download className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+                                </a>
+                              </>
                             );
-                          })()}
+                          }
+                          return (
+                            <>
+                              <button
+                                disabled
+                                className="p-2.5 bg-slate-50 dark:bg-white/5 opacity-50 cursor-not-allowed rounded-xl transition-all"
+                                title="File data is missing from database"
+                              >
+                                <Eye className="w-4 h-4 text-slate-400" />
+                              </button>
+                              <button
+                                disabled
+                                className="p-2.5 bg-slate-50 dark:bg-white/5 opacity-50 cursor-not-allowed rounded-xl transition-all flex items-center justify-center"
+                                title="File data is missing from database"
+                              >
+                                <Download className="w-4 h-4 text-slate-400" />
+                              </button>
+                            </>
+                          );
+                        })()}
                         <button
                           onClick={() => removeFile(doc.id)}
                           className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl transition-all"
@@ -861,7 +861,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     const u = previewDoc.url || previewDoc.file_url || previewDoc.file_path || previewDoc.path || previewDoc.link || previewDoc.publicUrl || previewDoc.src || previewDoc.source || previewDoc.file || '';
                     const isImg = u.startsWith('data:image') || u.match(/\.(jpeg|jpg|gif|png|webp)$/i);
                     const isPdf = u.startsWith('data:application/pdf') || u.match(/\.pdf$/i);
-                    
+
                     if (isImg) {
                       return (
                         <div className="w-full h-[70vh] bg-slate-50/50 dark:bg-black/20 flex items-center justify-center p-4">
@@ -898,7 +898,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     Hike of ₹{pendingHike.newSalary.toLocaleString('en-IN')} is staged but <strong>not saved yet</strong>. Click <strong>Save Changes</strong> below to commit.
                   </p>
                   <button
-                    onClick={() => { setPendingHike(null); setFormData((prev: any) => ({...prev, salary: pendingHike.previousSalary})); }}
+                    onClick={() => { setPendingHike(null); setFormData((prev: any) => ({ ...prev, salary: pendingHike.previousSalary })); }}
                     className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline shrink-0"
                   >
                     Undo
@@ -921,8 +921,8 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                     }}
                     className={cn(
                       "h-[46px] px-4 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-md",
-                      showInlineHikeForm 
-                        ? "bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 shadow-none" 
+                      showInlineHikeForm
+                        ? "bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 shadow-none"
                         : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20"
                     )}
                   >
@@ -935,7 +935,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               {showInlineHikeForm ? (
                 <div className="p-6 bg-slate-50 dark:bg-white/[0.02] border border-indigo-100 dark:border-indigo-500/20 rounded-3xl animate-in fade-in slide-in-from-top-4 duration-300">
                   <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-6">Apply Salary Increment</h4>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Previous Salary (₹)</label>
@@ -981,7 +981,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                       const newSalaryInput = parseFloat(incrementInput);
                       const currentSalary = formData.salary || 0;
                       const isValid = !isNaN(newSalaryInput) && newSalaryInput > currentSalary;
-                      
+
                       return (
                         <Button
                           onClick={() => {
@@ -992,7 +992,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                               previousSalary: currentSalary,
                               effectiveDate: incrementEffectiveDate
                             });
-                            setFormData((prev: any) => ({...prev, salary: newSalaryInput}));
+                            setFormData((prev: any) => ({ ...prev, salary: newSalaryInput }));
                             setShowInlineHikeForm(false);
                             setIncrementInput("");
                             setIncrementEffectiveDate("");
@@ -1010,81 +1010,81 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 </div>
               ) : (
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Current Salary */}
-                <div className="bg-slate-50 dark:bg-[#0d1222] border border-slate-200 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center items-center relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center mb-3 text-indigo-600 dark:text-indigo-400 relative z-10">
-                    <IndianRupee className="w-5 h-5" />
-                  </div>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Current Salary</p>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white relative z-10">₹{(formData.salary || 0).toLocaleString('en-IN')}</h3>
-                </div>
-
-                {/* Next Hike */}
-                {(() => {
-                  const baseDate = lastIncrement
-                    ? new Date(lastIncrement.effective_date)
-                    : employee?.joining_date
-                    ? new Date(employee.joining_date)
-                    : null;
-                  const nextHikeDate = baseDate
-                    ? new Date(new Date(baseDate).setFullYear(new Date(baseDate).getFullYear() + 1))
-                    : null;
-                  const isOverdue = nextHikeDate && new Date() > nextHikeDate;
-                  const daysLeft = nextHikeDate
-                    ? Math.ceil((nextHikeDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-                    : null;
-
-                  return (
-                    <div className={`rounded-2xl p-5 flex flex-col justify-center items-center border relative overflow-hidden group ${isOverdue ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20'}`}>
-                      <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110 ${isOverdue ? 'bg-rose-500/10' : 'bg-emerald-500/10'}`} />
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 relative z-10 ${isOverdue ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
-                        <Calendar className="w-5 h-5" />
-                      </div>
-                      <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10 ${isOverdue ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        {isOverdue ? 'Hike Overdue' : 'Next Hike'}
-                      </p>
-                      {nextHikeDate ? (
-                        <>
-                          <h3 className={`text-lg font-bold relative z-10 ${isOverdue ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-800 dark:text-emerald-200'}`}>
-                            {nextHikeDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </h3>
-                          <p className={`text-[11px] font-semibold mt-1 relative z-10 ${isOverdue ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600/80 dark:text-emerald-400/80'}`}>
-                            {isOverdue ? `${Math.abs(daysLeft!)} days overdue` : `in ${daysLeft} days`}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 relative z-10">Not set</p>
-                      )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Current Salary */}
+                  <div className="bg-slate-50 dark:bg-[#0d1222] border border-slate-200 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center items-center relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center mb-3 text-indigo-600 dark:text-indigo-400 relative z-10">
+                      <IndianRupee className="w-5 h-5" />
                     </div>
-                  );
-                })()}
-
-                {/* Last Hike */}
-                <div className="bg-slate-50 dark:bg-[#0d1222] border border-slate-200 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center items-center relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 dark:bg-violet-500/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
-                  <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center mb-3 text-violet-600 dark:text-violet-400 relative z-10">
-                    <TrendingUp className="w-5 h-5" />
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Current Salary</p>
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white relative z-10">₹{(formData.salary || 0).toLocaleString('en-IN')}</h3>
                   </div>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Last Hike</p>
-                  {lastIncrement ? (
-                    <>
-                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white relative z-10">+₹{parseFloat(lastIncrement.increment_amount).toLocaleString('en-IN')}</h3>
-                      <p className="text-[11px] font-semibold text-slate-400 mt-1 relative z-10">
-                        {new Date(lastIncrement.effective_date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 relative z-10">No history yet</p>
-                  )}
+
+                  {/* Next Hike */}
+                  {(() => {
+                    const baseDate = lastIncrement
+                      ? new Date(lastIncrement.effective_date)
+                      : employee?.joining_date
+                        ? new Date(employee.joining_date)
+                        : null;
+                    const nextHikeDate = baseDate
+                      ? new Date(new Date(baseDate).setFullYear(new Date(baseDate).getFullYear() + 1))
+                      : null;
+                    const isOverdue = nextHikeDate && new Date() > nextHikeDate;
+                    const daysLeft = nextHikeDate
+                      ? Math.ceil((nextHikeDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                      : null;
+
+                    return (
+                      <div className={`rounded-2xl p-5 flex flex-col justify-center items-center border relative overflow-hidden group ${isOverdue ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20'}`}>
+                        <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110 ${isOverdue ? 'bg-rose-500/10' : 'bg-emerald-500/10'}`} />
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 relative z-10 ${isOverdue ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+                          <Calendar className="w-5 h-5" />
+                        </div>
+                        <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10 ${isOverdue ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {isOverdue ? 'Hike Overdue' : 'Next Hike'}
+                        </p>
+                        {nextHikeDate ? (
+                          <>
+                            <h3 className={`text-lg font-bold relative z-10 ${isOverdue ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-800 dark:text-emerald-200'}`}>
+                              {nextHikeDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </h3>
+                            <p className={`text-[11px] font-semibold mt-1 relative z-10 ${isOverdue ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600/80 dark:text-emerald-400/80'}`}>
+                              {isOverdue ? `${Math.abs(daysLeft!)} days overdue` : `in ${daysLeft} days`}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 relative z-10">Not set</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Last Hike */}
+                  <div className="bg-slate-50 dark:bg-[#0d1222] border border-slate-200 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center items-center relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 dark:bg-violet-500/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+                    <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center mb-3 text-violet-600 dark:text-violet-400 relative z-10">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 relative z-10">Last Hike</p>
+                    {lastIncrement ? (
+                      <>
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white relative z-10">+₹{parseFloat(lastIncrement.increment_amount).toLocaleString('en-IN')}</h3>
+                        <p className="text-[11px] font-semibold text-slate-400 mt-1 relative z-10">
+                          {new Date(lastIncrement.effective_date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 relative z-10">No history yet</p>
+                    )}
+                  </div>
                 </div>
-              </div>
               )}
 
               <div className="pt-2">
                 <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4">Salary Increment History</h4>
-                
+
                 {isLoadingIncrement ? (
                   <div className="flex justify-center items-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
@@ -1285,7 +1285,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               className="gap-2 text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-500/20 dark:text-rose-400 dark:hover:bg-rose-500/10"
             >
               {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Delete Account
+              Terminate Employee
             </Button>
           </div>
 
@@ -1315,7 +1315,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
               </Button>
               <Button variant="primary" className="flex-1 bg-amber-500 hover:bg-amber-600 border-none text-white" onClick={() => {
                 // Reset form back to original, clear any staged hike
-                if (initialFormData) setFormData({...initialFormData});
+                if (initialFormData) setFormData({ ...initialFormData });
                 setPendingHike(null);
                 setShowInlineHikeForm(false);
                 setShowCloseConfirm(false);

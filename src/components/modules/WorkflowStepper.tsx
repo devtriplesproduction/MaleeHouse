@@ -26,7 +26,7 @@ const STAGES = [
   { id: 'project_created', label: 'Assigned' },
   { id: 'data_collection', label: 'Field' },
   { id: 'data_sync', label: 'Survey' },
-  { id: 'cad_finalization', label: 'Draft' },
+  { id: 'final_review', label: 'Draft' },
   { id: 'completed', label: 'Done' },
 ];
 

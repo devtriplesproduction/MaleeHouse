@@ -51,7 +51,25 @@ export interface MilestonePayment {
     dispatch_override_requested: boolean;
     dispatch_override_approved: boolean;
   } | null;
+  invoices?: {
+    id: string;
+    status: string;
+    created_at: string;
+    amount: number;
+    due_date: string | null;
+    payments?: { status: string }[];
+  }[];
 }
+
+const getActiveInvoice = (m: MilestonePayment) => {
+  if (!m.invoices || m.invoices.length === 0) return null;
+  return m.invoices.find((inv: any) => 
+    Number(inv.amount) === Number(m.amount) && 
+    inv.due_date === m.due_date && 
+    inv.status !== 'cancelled' && 
+    inv.status !== 'rejected'
+  ) || null;
+};
 
 interface MilestonePaymentsTableProps {
   milestones: MilestonePayment[];
@@ -500,11 +518,11 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                             setSelectedInvoiceMilestone(m);
                             setInvoiceModalOpen(true);
                           }}
-                          disabled={isProjectFrozen}
-                          title={isProjectFrozen ? "Project is frozen. Resume project to create invoice." : "Create Invoice"}
+                          disabled={isProjectFrozen || !!getActiveInvoice(m)}
+                          title={isProjectFrozen ? "Project is frozen. Resume project to create invoice." : getActiveInvoice(m) ? "Active invoice already exists for this configuration" : "Create Invoice"}
                           className={cn(
                             "h-8 px-3 rounded-lg text-xs font-semibold border border-indigo-600 text-indigo-600 dark:border-indigo-500/50 dark:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
-                            isProjectFrozen && "opacity-50 cursor-not-allowed active:scale-100"
+                            (isProjectFrozen || !!getActiveInvoice(m)) && "opacity-50 cursor-not-allowed active:scale-100"
                           )}
                         >
                           <FilePlus className="w-3.5 h-3.5" />

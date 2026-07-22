@@ -32,6 +32,10 @@ interface Invoice {
     name: string;
     client_name: string;
   } | null;
+  project_milestones?: {
+    title: string;
+    sort_order: number | null;
+  } | null;
 }
 
 interface InvoiceTableProps {
@@ -119,6 +123,11 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
                   <div className="flex flex-col justify-center">
                     <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block mb-1.5" title={invoice.projects?.name || 'Standalone Assignment'}>
                       {invoice.projects?.name || 'Standalone Assignment'}
+                      {invoice.project_milestones?.title?.includes('[Archived]') && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          Archived Milestone
+                        </span>
+                      )}
                     </span>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
                       <span className="flex items-center gap-1.5">

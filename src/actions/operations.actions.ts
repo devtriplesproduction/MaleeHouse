@@ -360,7 +360,8 @@ export async function submitCADRevisionAction(
   projectId: string,
   fileName: string,
   fileUrl: string,
-  revisionNotes: string
+  revisionNotes: string,
+  revisionType: "prototype" | "final" = "prototype"
 ): Promise<OpResponse<CADRevision>> {
   try {
     const profile: any = await getUserProfileAction();
@@ -380,10 +381,10 @@ export async function submitCADRevisionAction(
     const { data: project } = await supabase.from('projects').select('*').eq('id', projectId).single();
     const rejectedCount = (projectRevisions || []).filter((r: any) => r.status === "rejected").length;
 
-    if (rejectedCount >= 3 && !project?.bypass_active) {
+    if (rejectedCount >= 10 && !project?.bypass_active) {
       return {
         success: false,
-        error: "REVISION LIMIT REACHED (Escalated Review Active): This project has reached the limit of 3 CAD rejections and is currently locked under Escalation Hold. An Admin or Lead Engineer must verify alignment mismatch parameters before further prototype submissions."
+        error: "REVISION LIMIT REACHED (Escalated Review Active): This project has reached the limit of 10 CAD rejections and is currently locked under Escalation Hold. An Admin or Lead Engineer must verify alignment mismatch parameters before further prototype submissions."
       };
     }
 
@@ -393,12 +394,12 @@ export async function submitCADRevisionAction(
       id: generateId("cad"),
       project_id: projectId,
       submitted_by: profile.id,
-      title: "Initial CAD Prototype",
+      title: revisionType === "final" ? "Final CAD Deliverable" : "CAD Prototype",
       description: revisionNotes,
       files: [{ name: fileName, url: fileUrl }],
       revision_number: revisionNumber,
       status: "pending_review",
-      revision_type: "prototype"
+      revision_type: revisionType
     };
 
     const { error: insertError } = await supabase.from('cad_revisions').insert(newRevision);
@@ -417,7 +418,7 @@ export async function submitCADRevisionAction(
     const engineerIds = (engineers || []).map((eng: any) => eng.id);
     await sendLocalNotifications(
       engineerIds,
-      "CAD Revision Submitted",
+      revisionType === "final" ? "Final CAD Deliverable Submitted" : "CAD Revision Submitted",
       `Revision #${revisionNumber} for "${projectName}" is ready for review.`,
       "approval",
       projectId
@@ -484,7 +485,7 @@ export async function approveCADRevisionAction(
 
     const { data: project } = await supabase.from('projects').select('status').eq('id', projectId).single();
 
-    if (project?.status === "data_sync" || project?.status === "cad_finalization") {
+    if (project?.status === "data_sync" || project?.status === "final_review") {
       await updateProjectStageAction(projectId, "completed", "Final CAD Deliverable Approved. Delivered to Client.");
     } else {
       await updateProjectStageAction(projectId, "field_work", "CAD Revision Approved. Field Engineer automatically transitioned to work.");
@@ -828,7 +829,7 @@ export async function reviewFieldSurveyAction(
       return { success: false, error: "Only CAD can review field surveys." };
 
     if (isApproved) {
-      const stRes = await updateProjectStageAction(projectId, "cad_finalization", `Field Survey Accepted. Ready for Final CAD. Notes: ${reviewNotes}`);
+      const stRes = await updateProjectStageAction(projectId, "final_review", `Field Survey Accepted. Ready for Final CAD. Notes: ${reviewNotes}`);
       if (!stRes.success) return stRes;
       await logActivity(projectId, profile?.id || "sys", "FIELD_SURVEY_APPROVED", { reviewNotes });
     } else {
@@ -880,7 +881,7 @@ export async function engineerApproveSurveyDataAction(
       return { success: false, error: "Only Engineers can validate field data." };
 
     if (isApproved) {
-      await updateProjectStageAction(projectId, "cad_finalization", `Engineer Data Validated. Ready for CAD Finalization. Notes: ${reviewNotes}`);
+      await updateProjectStageAction(projectId, "final_review", `Engineer Data Validated. Ready for CAD Finalization. Notes: ${reviewNotes}`);
       await logActivity(projectId, profile.id, "ENGINEER_DATA_APPROVED", { reviewNotes });
     } else {
       await updateProjectStageAction(projectId, "field_work", `Engineer Data Validation Rejected. Reason: ${reviewNotes}`);

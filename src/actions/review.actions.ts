@@ -226,7 +226,7 @@ export async function engineerReviewFinalCADAction(
       }
 
       const commentText = `Final deliverable rejected by Engineer. Reason: ${rejectionReason}. Comments: ${comments || 'None'}. Instructions: ${revisionInstructions || 'None'}`;
-      const stageResponse = await updateProjectStageAction(projectId, 'cad_finalization', commentText);
+      const stageResponse = await updateProjectStageAction(projectId, 'final_review', commentText);
       if (!stageResponse.success) {
         return { success: false, error: stageResponse.error || "Failed to update workflow stage to CAD Finalization." };
       }

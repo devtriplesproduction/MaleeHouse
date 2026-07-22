@@ -513,7 +513,8 @@ export function OperationsFileUploadPanel({
         projectId,
         latestFinal.file_name,
         latestFinal.file_url,
-        'Final CAD Deliverable submission'
+        'Final CAD Deliverable submission',
+        'final'
       );
 
       if (!revRes.success) {
@@ -527,7 +528,7 @@ export function OperationsFileUploadPanel({
 
       const stageRes = await updateProjectStageAction(
         projectId,
-        'cad_finalization',
+        'final_review',
         'CAD Final Deliverable submitted for engineering validation.'
       );
 
@@ -1195,7 +1196,7 @@ export function OperationsFileUploadPanel({
           )}
 
           {/* Engineer Final Deliverable Validation Buttons */}
-          {(isEngineer || isAdmin) && projectStatus === "cad_finalization" && finalDocs.length > 0 && (
+          {(isEngineer || isAdmin) && projectStatus === "final_review" && finalDocs.length > 0 && (
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => handleReviewFinalDeliverableInline(true)}
@@ -1217,7 +1218,7 @@ export function OperationsFileUploadPanel({
           )}
 
           {/* Submit Final Report Button */}
-          {isCad && projectStatus === "cad_finalization" && (
+          {isCad && projectStatus === "final_review" && (
             <button
               onClick={handleSubmitFinalReport}
               disabled={isPending || finalDocs.length === 0}

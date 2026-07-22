@@ -82,13 +82,13 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
           let activeBudget = Number(project.budget) || 0;
           let projectGstRate = 18;
           if (project.quotations && project.quotations.length > 0) {
-            const approvedQuotation = project.quotations.find((q: any) => q.status === 'approved');
+            const approvedQuotation = project.quotations.find((q: any) => q.status?.toLowerCase() === 'approved');
             if (approvedQuotation) {
               activeBudget = activeBudget === 0 ? Number(approvedQuotation.total_amount) : activeBudget;
-              if (approvedQuotation.gst_rate !== undefined) projectGstRate = Number(approvedQuotation.gst_rate);
+              if (approvedQuotation.gst_rate !== undefined && approvedQuotation.gst_rate !== null) projectGstRate = Number(approvedQuotation.gst_rate);
             } else {
               activeBudget = activeBudget === 0 ? Math.max(...project.quotations.map((q: any) => Number(q.total_amount))) : activeBudget;
-              if (project.quotations[0].gst_rate !== undefined) projectGstRate = Number(project.quotations[0].gst_rate);
+              if (project.quotations[0].gst_rate !== undefined && project.quotations[0].gst_rate !== null) projectGstRate = Number(project.quotations[0].gst_rate);
             }
           }
           project.calculated_budget = activeBudget;
@@ -126,6 +126,8 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
     }
   }, [initialAmount, milestoneDueDate, open]);
 
+  const [isDuplicateError, setIsDuplicateError] = useState(false);
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -147,6 +149,9 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
         onSuccess?.();
       } else {
         toast.error(result.error || 'Failed to create invoice');
+        if (result.error?.includes('active Invoice already exists')) {
+          setIsDuplicateError(true);
+        }
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -418,10 +423,13 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
             </div>             {/* Bottom Actions Area */}
              {!createdInvoice && (
                 <div className="mt-8 flex justify-end pb-8">
-                   <Button 
+                    <Button 
                       onClick={handleSubmit}
-                      disabled={loading || formData.amount <= 0}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-6 h-12 text-sm font-bold gap-2 rounded-xl transition-all shadow-xl shadow-indigo-600/20"
+                      disabled={loading || formData.amount <= 0 || isDuplicateError}
+                      className={cn(
+                        "text-white px-10 py-6 h-12 text-sm font-bold gap-2 rounded-xl transition-all shadow-xl shadow-indigo-600/20",
+                        isDuplicateError ? "bg-slate-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+                      )}
                    >
                       {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <FilePlus className="w-5 h-5" />}
                       Create Official Invoice

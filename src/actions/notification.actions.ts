@@ -221,7 +221,7 @@ export async function getNotificationsAction() {
       'field_assigned',     // 4 (engineer)
       'field_work',         // 5 (field)
       'data_sync',          // 6 (cad)
-      'cad_finalization',   // 7 (cad)
+      'final_review',   // 7 (cad)
       'completed'           // 8 (admin)
     ];
 

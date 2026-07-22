@@ -13,6 +13,7 @@ import { getBankAccountsAction } from '@/actions/bank.actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { QuotationItem } from '@/validations/quotation.schema';
 
 // ─── Service catalogue ────────────────────────────────────────────────────────
 const SERVICE_DESCRIPTIONS: Record<string, string> = {
@@ -30,21 +31,25 @@ const SERVICE_DESCRIPTIONS: Record<string, string> = {
 };
 const ALL_PRESET_SERVICES = Object.keys(SERVICE_DESCRIPTIONS);
 
-function serviceToLineItem(name: string) {
-  return { service_name: name, description: SERVICE_DESCRIPTIONS[name] ?? '', quantity: 1, unit_price: 0, total: 0 };
+function serviceToLineItem(name: string): QuotationItem {
+  return { service_name: name, description: SERVICE_DESCRIPTIONS[name] ?? '', quantity: 1, unit: '', unit_price: 0, total: 0 };
 }
 
-function buildInitialItems(project: any, existingQuotation?: any) {
+function buildInitialItems(project: any, existingQuotation?: any): QuotationItem[] {
   if (existingQuotation?.items?.length) {
     return existingQuotation.items.map((item: any) => ({
-      ...item,
+      service_name: item.service_name || '',
+      description: item.description || '',
       quantity: item.quantity ?? item.default_quantity ?? 1,
+      unit: item.unit ?? '',
       unit_price: item.unit_price ?? item.default_unit_price ?? 0,
+      total: item.total || 0,
+      hsn_code: item.hsn_code,
     }));
   }
   const projectServices: string[] = Array.isArray(project?.services) ? project.services : [];
   if (projectServices.length > 0) return projectServices.map(serviceToLineItem);
-  return [{ service_name: '', description: '', quantity: 1, unit_price: 0, total: 0 }];
+  return [{ service_name: '', description: '', quantity: 1, unit: '', unit_price: 0, total: 0 }];
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -77,7 +82,7 @@ export function QuotationBuilderEngine({
   const [revisionReason, setRevisionReason] = useState('');
 
   // Line items
-  const [items, setItems] = useState<any[]>(() => buildInitialItems(project, existingQuotation));
+  const [items, setItems] = useState<QuotationItem[]>(() => buildInitialItems(project, existingQuotation));
 
   // Discount
   const [discountPct, setDiscountPct] = useState<number>(existingQuotation?.discount_pct ?? 0);
@@ -231,15 +236,15 @@ export function QuotationBuilderEngine({
   };
 
   // ── Line items ──────────────────────────────────────────────────────────────
-  const addItem = () => setItems(prev => [...prev, { service_name: '', description: '', quantity: 1, unit_price: 0, total: 0 }]);
+  const addItem = () => setItems(prev => [...prev, { service_name: '', description: '', quantity: 1, unit: '', unit_price: 0, total: 0 }]);
   const removeItem = (i: number) => items.length > 1 && setItems(prev => prev.filter((_, idx) => idx !== i));
 
   const addPreset = (name: string) => {
-    if (items.some((it: any) => it.service_name === name)) { toast.info(`"${name}" is already in the list.`); return; }
+    if (items.some((it) => it.service_name === name)) { toast.info(`"${name}" is already in the list.`); return; }
     setItems(prev => [...prev, serviceToLineItem(name)]);
   };
 
-  const updateItem = (index: number, field: string, value: any) => {
+  const updateItem = <K extends keyof QuotationItem>(index: number, field: K, value: QuotationItem[K]) => {
     setItems(prev => {
       const n = [...prev];
       n[index] = { ...n[index], [field]: value };
@@ -251,7 +256,7 @@ export function QuotationBuilderEngine({
   };
 
   // ── Financials ──────────────────────────────────────────────────────────────
-  const subtotal = items.reduce((s: any, i: any) => s + (i.total || 0), 0);
+  const subtotal = items.reduce((s, i) => s + (i.total || 0), 0);
   const discountPctVal = Math.min(Math.max(Number(discountPct) || 0, 0), 100);
   const discountAmt = (subtotal * discountPctVal) / 100;
   const afterDiscount = subtotal - discountAmt;
@@ -265,7 +270,7 @@ export function QuotationBuilderEngine({
     try {
       if (isScratch && !clientDetails.company_name.trim()) { toast.error('Company name is required.'); return; }
       if (isScratch && !clientDetails.project_title.trim()) { toast.error('Project / quotation title is required.'); return; }
-      if (items.some((i: any) => !(i.service_name || i.name)?.trim())) { toast.error('All line items require a service name.'); return; }
+      if (items.some((i) => !(i.service_name)?.trim())) { toast.error('All line items require a service name.'); return; }
       if (isRevision && !revisionReason.trim()) { toast.error('Revision reason is required.'); return; }
 
       setLoading(true);
@@ -278,7 +283,7 @@ export function QuotationBuilderEngine({
           ...(isScratch ? clientDetails : existingQuotation?.client_details || {}),
           gst_type: gstType.startsWith('CGST_SGST') ? 'CGST_SGST' : (gstType.startsWith('IGST') ? 'IGST' : 'NO_GST')
         },
-        items: items.map((i: any) => ({ ...i, total: Number(i.total) || 0 })),
+        items: items.map((i) => ({ ...i, total: Number(i.total) || 0 })),
         discount_pct: discountPctVal,
         discount_amount: discountAmt,
         subtotal,
@@ -326,8 +331,8 @@ export function QuotationBuilderEngine({
   };
 
   // Presets not yet in items
-  const selectedNames = new Set(items.map((i: any) => i.service_name));
-  const unusedPresets = ALL_PRESET_SERVICES.filter((s: any) => !selectedNames.has(s));
+  const selectedNames = new Set(items.map((i) => i.service_name));
+  const unusedPresets = ALL_PRESET_SERVICES.filter((s) => !selectedNames.has(s));
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
@@ -518,8 +523,9 @@ export function QuotationBuilderEngine({
             <div className="p-5 space-y-3">
               {/* Column headers */}
               <div className="grid grid-cols-12 gap-3 px-1">
-                <span className="col-span-5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Service</span>
-                <span className="col-span-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 text-center">Qty</span>
+                <span className="col-span-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Service</span>
+                <span className="col-span-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 text-center">Qty</span>
+                <span className="col-span-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 text-center">Unit</span>
                 <span className="col-span-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Rate (₹)</span>
                 <span className="col-span-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 text-right">Total</span>
                 <span className="col-span-1" />
@@ -531,14 +537,19 @@ export function QuotationBuilderEngine({
                     initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
                     className="grid grid-cols-12 gap-3 items-start p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-indigo-300 dark:hover:border-indigo-500/20 transition-all">
 
-                    <div className="col-span-5">
+                    <div className="col-span-4">
                       <input value={item.service_name} onChange={e => updateItem(idx, 'service_name', e.target.value)}
                         placeholder="Service name…" className="flat-input h-9 text-xs font-medium" />
                     </div>
 
-                    <div className="col-span-2">
+                    <div className="col-span-1">
                       <input type="number" min={1} value={item.quantity === 0 ? '' : item.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
-                        placeholder="1" className="flat-input h-9 text-xs font-medium text-center no-spin" />
+                        placeholder="1" className="flat-input h-9 text-xs font-medium text-center no-spin px-1" />
+                    </div>
+
+                    <div className="col-span-2">
+                      <input value={item.unit || ''} onChange={e => updateItem(idx, 'unit', e.target.value)}
+                        placeholder="Unit" className="flat-input h-9 text-xs font-medium text-center px-1" />
                     </div>
 
                     <div className="col-span-2">

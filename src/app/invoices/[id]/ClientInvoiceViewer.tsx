@@ -50,7 +50,7 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
 
   let projectBudget = Number(invoice.projects?.budget) || 0;
   if (projectBudget === 0 && invoice.projects?.quotations && invoice.projects.quotations.length > 0) {
-    const approvedQuotation = invoice.projects.quotations.find((q: any) => q.status === 'approved');
+    const approvedQuotation = invoice.projects.quotations.find((q: any) => q.status?.toLowerCase() === 'approved');
     if (approvedQuotation) {
       projectBudget = Number(approvedQuotation.total_amount);
     } else {

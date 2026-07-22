@@ -177,7 +177,8 @@ function ProjectMilestonesContent() {
         });
         setMilestones(loadedMilestones);
       } else {
-        toast.error("Could not fetch existing milestones.");
+        console.error("Milestones fetch failed:", msRes);
+        toast.error("Could not fetch existing milestones: " + (msRes?.error || "Unknown error"));
       }
 
       if (visitsRes?.success && visitsRes.data) {
@@ -245,7 +246,9 @@ function ProjectMilestonesContent() {
     if (!selectedProject) return;
 
     // Validate
-    for (let m of milestones) {
+    let previousDate: Date | null = null;
+    for (let i = 0; i < milestones.length; i++) {
+      const m = milestones[i];
       if (!m.title.trim()) {
         toast.error("All milestones must have a title.");
         return;
@@ -254,6 +257,17 @@ function ProjectMilestonesContent() {
         toast.error("Milestone amounts cannot be negative.");
         return;
       }
+      if (!m.due_date) {
+        toast.error(`Milestone "${m.title || `Row ${i + 1}`}" is missing a due date.`);
+        return;
+      }
+
+      const currentDate = new Date(m.due_date);
+      if (previousDate && currentDate < previousDate) {
+        toast.error(`Due date for milestone "${m.title || `Row ${i + 1}`}" cannot be earlier than the previous milestone's date.`);
+        return;
+      }
+      previousDate = currentDate;
     }
 
     const qTotal = selectedProject?.contract_value ? Number(selectedProject.contract_value) : 0;
@@ -292,6 +306,7 @@ function ProjectMilestonesContent() {
       }
 
       const payload = milestones.map((m: any) => ({
+        id: m.id || undefined,
         title: m.title,
         description: m.description || "",
         amount: Number(m.amount) || 0,
@@ -734,12 +749,13 @@ function ProjectMilestonesContent() {
                                         </div>
                                       </div>
                                       <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Due Date (Optional)</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Due Date</label>
                                         <PremiumDatePicker
                                           value={m.due_date?.split('T')[0] || ""}
                                           onChange={(date) => updateMilestone(idx, 'due_date', date)}
                                           side="right"
                                           triggerClassName="h-9 rounded-lg bg-slate-50 dark:bg-white/5 text-xs"
+                                          minDate={idx > 0 && milestones[idx - 1].due_date ? milestones[idx - 1].due_date : undefined}
                                         />
                                       </div>
                                     </div>

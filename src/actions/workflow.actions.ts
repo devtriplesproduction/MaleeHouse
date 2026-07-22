@@ -395,15 +395,15 @@ async function validateStageTransition(
           };
         }
 
-        // Gate 4: Workflow must have gone through at least cad_finalization or data_sync
+        // Gate 4: Workflow must have gone through at least final_review or data_sync
         const { data: historyCheck } = await supabase
           .from("workflow_history")
           .select("id")
           .eq("project_id", projectId)
-          .in("to_stage", ["data_sync", "cad_finalization"])
+          .in("to_stage", ["data_sync", "final_review"])
           .limit(1);
         const { data: projectInfo } = await supabase.from("projects").select("status").eq("id", projectId).single();
-        if (!["data_sync", "cad_finalization"].includes(projectInfo?.status || "") && (!historyCheck || historyCheck.length === 0)) {
+        if (!["data_sync", "final_review"].includes(projectInfo?.status || "") && (!historyCheck || historyCheck.length === 0)) {
           return {
             success: false,
             error: "Cannot complete project: Project must pass through Survey Validation / CAD Finalization first."
@@ -473,7 +473,7 @@ export async function transitionWorkflowAction(
       "field_assigned",
       "field_work",
       "data_sync",
-      "cad_finalization",
+      "final_review",
       "completed",
       "archived"
     ];
