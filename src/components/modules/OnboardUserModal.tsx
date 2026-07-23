@@ -101,7 +101,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
       department_head: false,
       reporting_manager: "",
       email: "",
-      employee_id: "",
+      employee_id: "AUTO",
       password: "",
       confirm_password: "",
     }
@@ -114,20 +114,6 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
 
   const phoneNumber = watch("phone_number");
 
-  // Auto-generate employee ID based on phone number
-  useEffect(() => {
-    if (phoneNumber) {
-      const digits = phoneNumber.replace(/\D/g, '');
-      if (digits.length >= 5) {
-        const last5 = digits.slice(-5);
-        setValue("employee_id", `EMP-${last5}`);
-      } else {
-        setValue("employee_id", `EMP-${digits.padEnd(5, '0')}`);
-      }
-    } else if (isOpen) {
-      setValue("employee_id", `EMP-${Math.floor(10000 + Math.random() * 90000)}`); // Fallback if no phone
-    }
-  }, [phoneNumber, isOpen, setValue]);
 
   // Manually register fields that don't have native inputs
   useEffect(() => {

@@ -291,7 +291,7 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
     }
 
     const supabase: any = await createClient();
-    const { data: payment, error: fetchErr } = await supabase.from('payments').select('*').eq('id', paymentId).single();
+    const { data: payment, error: fetchErr } = await supabase.from('payments').select('id, project_id, invoice_id, amount, bank_id, payment_date, created_at').eq('id', paymentId).single();
     if (fetchErr || !payment) return { success: false, error: 'Payment not found' };
 
     const lockCheck = await verifyProjectNotLocked(payment.project_id);
@@ -347,7 +347,7 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
         }
       }
 
-      const { data: project } = await supabase.from('projects').select('*').eq('id', payment.project_id).single();
+      const { data: project } = await supabase.from('projects').select('id, status, is_frozen, freeze_reason').eq('id', payment.project_id).single();
 
       if (isActivationGatePaid || !project || ['lead_created', 'quotation_sent', 'payment_pending', 'payment_done'].includes(project.status)) {
         const stageRes = await updateProjectStageAction(payment.project_id, 'ready_for_dispatch', 'Payment verified. Project ready for dispatch.');
@@ -365,7 +365,7 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
         await unfreezeProjectAction(payment.project_id, 'Payment verification complete. Auto-unfreezing project.');
       }
 
-      const { data: currentFinance } = await supabase.from('project_finances').select('*').eq('project_id', payment.project_id).maybeSingle();
+      const { data: currentFinance } = await supabase.from('project_finances').select('id, project_id, total_paid_amount').eq('project_id', payment.project_id).maybeSingle();
       if (currentFinance) {
         await supabase.from('project_finances').update({
           total_paid_amount: Number(currentFinance.total_paid_amount) + Number(payment.amount),
@@ -528,7 +528,7 @@ export async function getAccountantOwnerAction(projectId: string): Promise<Actio
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_accounts_owners')
-      .select('*')
+      .select('id, project_id, accountant_id, assigned_at')
       .eq('project_id', projectId)
       .maybeSingle();
 
@@ -749,7 +749,7 @@ export async function createMilestonesAction(
     // Fetch the final dataset to return
     const { data: finalData } = await supabase
       .from('project_milestones')
-      .select('*')
+      .select('id, project_id, title, description, amount, due_date, status, linked_stage, is_activation_gate, is_compulsory, sort_order, created_at, updated_at')
       .eq('project_id', projectId)
       .neq('status', 'archived');
 
@@ -766,7 +766,7 @@ export async function getMilestonesAction(projectId: string): Promise<ActionResp
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*')
+      .select('id, project_id, title, description, amount, due_date, status, linked_stage, is_activation_gate, is_compulsory, sort_order, created_at, updated_at')
       .eq('project_id', projectId)
       .not('title', 'ilike', '%[Archived]%')
       .order('created_at', { ascending: true });
@@ -956,7 +956,7 @@ export async function updateMilestoneStatusAction(
 
     const { data: milestone, error: fetchErr } = await supabase
       .from('project_milestones')
-      .select('*')
+      .select('id, project_id, is_activation_gate, linked_stage, title')
       .eq('id', milestoneId)
       .single();
 
@@ -1022,7 +1022,7 @@ export async function rescheduleMilestoneAction(
 
     const { data: milestone, error: fetchErr } = await supabase
       .from('project_milestones')
-      .select('*')
+      .select('id, project_id')
       .eq('id', milestoneId)
       .single();
 
@@ -1192,7 +1192,7 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
     if (validProjectIds.length > 0) {
       const { data: currentFinances } = await supabase
         .from('project_finances')
-        .select('*')
+        .select('id, project_id, total_quoted_amount, total_invoiced_amount, total_paid_amount, currency, updated_at')
         .in('project_id', validProjectIds);
 
       const financeMap = new Map((currentFinances || []).map((f: any) => [f.project_id, f]));
@@ -1290,10 +1290,10 @@ export async function getFinancialOverviewAction(): Promise<{ success: boolean; 
 
     // Fetch all relevant data
     const [paymentsRes, expensesRes, invoicesRes, visitsRes] = await Promise.all([
-      supabase.from('payments').select('*'),
-      supabase.from('expenses').select('*'),
-      supabase.from('invoices').select('*'),
-      supabase.from('project_visits').select('*')
+      supabase.from('payments').select('amount, status, payment_date, created_at'),
+      supabase.from('expenses').select('amount, status, expense_date, created_at'),
+      supabase.from('invoices').select('total_amount, status'),
+      supabase.from('project_visits').select('visit_cost, scheduled_date, created_at')
     ]);
 
     const payments = paymentsRes.data || [];
@@ -1531,7 +1531,7 @@ export async function getProjectFinancesAction(projectId: string): Promise<Actio
     if (!access.isAllowed) return { success: false, error: 'Access denied' };
 
     const supabase = await createClient();
-    const { data, error } = await supabase.from('project_finances').select('*').eq('project_id', projectId).maybeSingle();
+    const { data, error } = await supabase.from('project_finances').select('id, project_id, total_quoted_amount, total_invoiced_amount, total_paid_amount, currency, updated_at').eq('project_id', projectId).maybeSingle();
 
     if (error) return { success: false, error: error.message };
     return { success: true, data: normalizeData(data) };
