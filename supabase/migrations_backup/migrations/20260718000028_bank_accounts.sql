@@ -65,4 +65,4 @@ CREATE POLICY "Enable delete for admin and accountant" ON public.bank_accounts
 CREATE TRIGGER update_bank_accounts_updated_at
     BEFORE UPDATE ON public.bank_accounts
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+    EXECUTE FUNCTION update_updated_at_column();

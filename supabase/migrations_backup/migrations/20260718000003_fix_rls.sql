@@ -86,3 +86,4 @@ CREATE POLICY "Participants can upload files" ON files
     get_user_role() = 'accountant'
   );
 
+  
