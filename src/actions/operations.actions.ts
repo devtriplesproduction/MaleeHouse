@@ -294,7 +294,7 @@ export async function removeTeamMemberAction(
       return { success: false, error: "Only Admins and Engineers can remove team members." };
 
     const supabase: any = await createClient();
-    const { data: assignment } = await supabase.from('project_assignments').select('*').eq('id', assignmentId).single();
+    const { data: assignment } = await supabase.from('project_assignments').select('user_id, role').eq('id', assignmentId).limit(1).single();
     if (!assignment) return { success: false, error: "Assignment not found." };
 
     await supabase.from('project_assignments').delete().eq('id', assignmentId);
@@ -317,7 +317,7 @@ export async function removeTeamMemberAction(
 export async function getTeamAssignmentsAction(projectId: string): Promise<OpResponse<any[]>> {
   try {
     const supabase: any = await createClient();
-    const { data: assignments } = await supabase.from('project_assignments').select('*').eq('project_id', projectId);
+    const { data: assignments } = await supabase.from('project_assignments').select('id, project_id, user_id, role, assigned_by, assigned_at, removed_at').eq('project_id', projectId);
     
     const userIds = Array.from(new Set((assignments || []).map((a: any) => a.user_id))).filter(Boolean);
     
@@ -376,9 +376,9 @@ export async function submitCADRevisionAction(
     if (!accessCheck.isAllowed) return { success: false, error: accessCheck.error || "Access denied." };
 
     const supabase: any = await createClient();
-    const { data: projectRevisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
+    const { data: projectRevisions } = await supabase.from('cad_revisions').select('status').eq('project_id', projectId);
 
-    const { data: project } = await supabase.from('projects').select('*').eq('id', projectId).single();
+    const { data: project } = await supabase.from('projects').select('bypass_active').eq('id', projectId).limit(1).single();
     const rejectedCount = (projectRevisions || []).filter((r: any) => r.status === "rejected").length;
 
     if (rejectedCount >= 10 && !project?.bypass_active) {
@@ -424,9 +424,21 @@ export async function submitCADRevisionAction(
       projectId
     );
 
+    const returnedRevision: CADRevision = {
+      id: newRevision.id,
+      project_id: newRevision.project_id,
+      submitted_by: newRevision.submitted_by,
+      file_name: fileName,
+      file_url: fileUrl,
+      revision_number: newRevision.revision_number,
+      revision_notes: revisionNotes,
+      status: newRevision.status as any,
+      created_at: new Date().toISOString()
+    };
+
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/cad");
-    return { success: true, error: null, data: newRevision as any };
+    return { success: true, error: null, data: returnedRevision };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to submit CAD revision." };
   }
@@ -465,7 +477,7 @@ export async function approveCADRevisionAction(
     }).eq('id', revisionId);
     if (updateError) return { success: false, error: "CAD revision not found." };
 
-    const { data: revision } = await supabase.from('cad_revisions').select('*').eq('id', revisionId).single();
+    const { data: revision } = await supabase.from('cad_revisions').select('submitted_by').eq('id', revisionId).limit(1).single();
     const projectName = await getProjectName(projectId);
 
     await logActivity(projectId, profile.id, "CAD_APPROVED", {
@@ -523,7 +535,7 @@ export async function rejectCADRevisionAction(
     }).eq('id', revisionId);
     if (updateError) return { success: false, error: "CAD revision not found." };
 
-    const { data: revision } = await supabase.from('cad_revisions').select('*').eq('id', revisionId).single();
+    const { data: revision } = await supabase.from('cad_revisions').select('submitted_by').eq('id', revisionId).limit(1).single();
     const projectName = await getProjectName(projectId);
 
     await logActivity(projectId, profile.id, "CAD_REJECTED", {
@@ -590,7 +602,7 @@ export async function bypassCADEscalationAction(projectId: string): Promise<OpRe
 export async function getCADRevisionsAction(projectId: string): Promise<OpResponse<CADRevision[]>> {
   try {
     const supabase: any = await createClient();
-    const { data: revisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
+    const { data: revisions } = await supabase.from('cad_revisions').select('id, project_id, submitted_by, title, description, files, revision_number, status, revision_type, review_notes, reviewed_by, reviewed_at, submitted_at, updated_at').eq('project_id', projectId);
     
     const userIds = Array.from(new Set((revisions || []).flatMap((r: any) => [r.submitted_by, r.reviewed_by]))).filter(Boolean);
     let profiles: any[] = [];
@@ -602,6 +614,10 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
 
     const data = (revisions || []).map((r: any) => ({
       ...r,
+      revision_notes: r.description,
+      file_name: r.files?.[0]?.name,
+      file_url: r.files?.[0]?.url,
+      created_at: r.submitted_at,
       submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
       reviewed_by_profile: r.reviewed_by ? (profileMap.get(r.reviewed_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" }) : null,
     }));
@@ -675,8 +691,19 @@ export async function submitFieldReportAction(
       created_at: new Date().toISOString(),
     };
 
+    const dbReport = {
+      id: report.id,
+      project_id: report.project_id,
+      submitted_by: report.submitted_by,
+      report_type: report.report_type,
+      content: description,
+      issues_identified: locationNotes,
+      status: report.status,
+      created_at: report.created_at,
+    };
+
     const supabase: any = await createClient();
-    await supabase.from('field_reports').insert(report);
+    await supabase.from('field_reports').insert(dbReport);
 
     const actionMap = {
       progress: "FIELD_PROGRESS_REPORTED",
@@ -714,7 +741,7 @@ export async function submitFieldReportAction(
 export async function getFieldReportsAction(projectId: string): Promise<OpResponse<FieldReport[]>> {
   try {
     const supabase: any = await createClient();
-    const { data: reports } = await supabase.from('field_reports').select('*').eq('project_id', projectId);
+    const { data: reports } = await supabase.from('field_reports').select('id, project_id, submitted_by, report_type, report_date, content, issues_identified, attachments, status, acknowledged_by, acknowledged_at, location_lat, location_lng, created_at, updated_at').eq('project_id', projectId);
     
     const userIds = Array.from(new Set((reports || []).map((r: any) => r.submitted_by))).filter(Boolean);
     let profiles: any[] = [];
@@ -726,6 +753,9 @@ export async function getFieldReportsAction(projectId: string): Promise<OpRespon
 
     const data = (reports || []).map((r: any) => ({
       ...r,
+      description: r.content,
+      location_notes: r.issues_identified,
+      site_photos: r.attachments,
       submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
     }));
     data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -1019,8 +1049,8 @@ export async function getOperationsQueueAction() {
     ];
 
     let [{ data: projects }, { data: assignments }] = await Promise.all([
-      supabase.from('projects').select('*').is('deleted_at', null).in('status', operationalStages),
-      supabase.from('project_assignments').select('*')
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, target_completion_date, follow_up_date, is_frozen, bypass_active, created_at, updated_at').is('deleted_at', null).in('status', operationalStages),
+      supabase.from('project_assignments').select('id, project_id, user_id, role, assigned_by, assigned_at, removed_at')
     ]);
 
     if (!projects) projects = [];
@@ -1074,7 +1104,7 @@ export async function getMyAssignedProjectsAction() {
     if (!profile) return { success: false, error: "Unauthorized.", data: [] };
 
     const supabase: any = await createClient();
-    const { data: assignments } = await supabase.from('project_assignments').select('*').eq('user_id', profile.id);
+    const { data: assignments } = await supabase.from('project_assignments').select('project_id, role, assigned_at').eq('user_id', profile.id);
     const assignedProjectIds = new Set((assignments || []).map((a: any) => a.project_id));
     
     // Include unassigned projects in 'project_created' phase for engineers (and admins) to claim/view
@@ -1129,7 +1159,7 @@ export async function getMyAssignedProjectsAction() {
 
     let projects = [];
     if (projectIdsArray.length > 0) {
-      const res = await supabase.from('projects').select('*').is('deleted_at', null).in('id', projectIdsArray);
+      const res = await supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, target_completion_date, follow_up_date, is_frozen, bypass_active, created_at, updated_at').is('deleted_at', null).in('id', projectIdsArray);
       projects = res.data || [];
     }
 
@@ -1153,7 +1183,7 @@ export async function getMyAssignedProjectsAction() {
 export async function getProjectActivityAction(projectId: string) {
   try {
     const supabase: any = await createClient();
-    const { data: activityLogs } = await supabase.from('activity_logs').select('*').eq('project_id', projectId);
+    const { data: activityLogs } = await supabase.from('activity_logs').select('id, project_id, user_id, action, details, created_at').eq('project_id', projectId);
 
     const userIds = Array.from(new Set()).filter(Boolean);
     const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
@@ -1182,7 +1212,7 @@ export async function getFieldVisitsAction(projectId: string): Promise<OpRespons
     if (!profile) return { success: false, error: "Unauthorized.", data: [] };
 
     const supabase: any = await createClient();
-    const { data, error } = await supabase.from('project_visits').select('*').eq('project_id', projectId).order('scheduled_date', { ascending: false });
+    const { data, error } = await supabase.from('project_visits').select('id, project_id, scheduled_date, status, purpose, assigned_team, visit_cost, is_billable, created_at, updated_at').eq('project_id', projectId).order('scheduled_date', { ascending: false });
     if (error) return { success: false, error: error.message };
     
     const mapped = (data || []).map((v: any) => ({
@@ -1200,7 +1230,7 @@ export async function getFieldVisitsAction(projectId: string): Promise<OpRespons
 export async function getDeliveryChecklistAction(projectId: string): Promise<OpResponse<any>> {
   try {
     const supabase: any = await createClient();
-    const { data, error } = await supabase.from('delivery_checklist').select('*').eq('project_id', projectId).maybeSingle();
+    const { data, error } = await supabase.from('delivery_checklist').select('id, project_id, qc_approved, deliverables_uploaded, client_acknowledged, final_payment_cleared, updated_at').eq('project_id', projectId).limit(1).maybeSingle();
     if (error) return { success: false, error: error.message };
     return { success: true, error: null, data: data || null };
   } catch (err: any) {
