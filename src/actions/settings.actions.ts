@@ -158,7 +158,7 @@ export async function getSystemHealthAction() {
 export async function getCompanySettingsAction(): Promise<CompanySettings> {
   try {
     const supabase: any = await createClient();
-    const { data, error } = await supabase.from('company_settings').select('*').limit(1);
+    const { data, error } = await supabase.from('company_settings').select('id, company_name, gst_number, pan_number, address, email, phone, website, logo_url').limit(1);
 
     if (data && data.length > 0) {
       return data[0] as CompanySettings;

@@ -22,7 +22,7 @@ export function ProjectReportButton({ projectId }: ProjectReportButtonProps) {
       // Fetch full project data
       const { data: project } = await supabase
         .from('projects')
-        .select('*')
+        .select('id, project_number, status, budget')
         .eq('id', projectId)
         .single();
 
@@ -35,7 +35,7 @@ export function ProjectReportButton({ projectId }: ProjectReportButtonProps) {
       // Fetch tasks
       const { data: tasks } = await supabase
         .from('tasks')
-        .select('*')
+        .select('id, project_id, title, description, status, assigned_to, created_by, created_at, due_date')
         .eq('project_id', projectId);
 
       if (project && team && tasks) {

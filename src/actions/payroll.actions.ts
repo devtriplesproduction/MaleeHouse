@@ -214,7 +214,7 @@ export interface PayrollSnapshot {
 export async function getPayrollCyclesAction() {
   try {
     const supabase: any = await createClient();
-    const { data: cycles, error } = await supabase.from('payroll_cycles').select('*');
+    const { data: cycles, error } = await supabase.from('payroll_cycles').select('id, month, year, status, batch_number, slip_status, payment_status, created_at, submitted_at');
     if (error) throw error;
     return { success: true, data: normalizeData(cycles) };
   } catch (error: any) {
@@ -248,7 +248,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     // Check if cycle is already locked
     const { data: cycles, error: cyclesError } = await supabaseAdmin
       .from('payroll_cycles')
-      .select('*')
+      .select('id, month, year, status, batch_number, slip_status, payment_status, created_at, submitted_at')
       .eq('month', month)
       .eq('year', year);
 
@@ -590,18 +590,18 @@ export async function emailSalarySlipAction(snapshotId: string) {
     // 2. Extract filename from URL (we used public URL)
     const fileName = getStoragePathFromUrl(slip.pdf_url);
 
-    // 3. Download the file from storage securely
+    // 3. Generate a signed URL for the file from storage securely
     const { data: fileData, error: downloadError } = await supabaseAdmin.storage
       .from('salary_slips')
-      .download(fileName);
+      .createSignedUrl(fileName, 60 * 60);
 
     if (downloadError || !fileData) {
       return { success: false, error: "Failed to securely retrieve the salary slip file." };
     }
 
-    // 4. MOCK EMAIL SENDING (using the binary fileData as an attachment)
+    // 4. MOCK EMAIL SENDING (using the signed URL as a link)
     console.log(`[MOCK EMAIL] Sending Salary Slip to ${employeeEmail}...`);
-    console.log(`[MOCK EMAIL] Attachment: ${fileName} (${fileData.size} bytes)`);
+    console.log(`[MOCK EMAIL] Attachment Link: ${fileData.signedUrl}`);
     await new Promise(resolve => setTimeout(resolve, 800)); // simulate network delay
 
     // 5. Update emailed = true and tracking fields
@@ -703,39 +703,7 @@ export async function markSalarySlipSharedAction(snapshotId: string) {
   }
 }
 
-/**
- * downloadSalarySlipBase64Action
- * Downloads the salary slip PDF from storage and returns it as a Base64 string.
- * This is useful for bypassing client-side CORS issues when bundling ZIPs.
- */
-export async function downloadSalarySlipBase64Action(employeeId: string, month: number, year: number) {
-  try {
-    const profile: any = await getUserProfileAction();
-    if (profile?.role !== "admin" && profile?.role !== "hr") {
-      return { success: false, error: "Unauthorized access." };
-    }
 
-    const { createAdminClient } = await import("@/lib/supabase/admin");
-    const supabaseAdmin: any = createAdminClient();
-
-    let fileName = `${year}/${month}/${employeeId}/salary-slip.pdf`;
-
-    const { data, error } = await supabaseAdmin.storage
-      .from('salary_slips')
-      .download(fileName);
-
-    if (error || !data) {
-      return { success: false, error: "Validation Error: Salary slip file does not exist." };
-    }
-
-    const arrayBuffer = await data.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    
-    return { success: true, base64 };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
 
 
 /**

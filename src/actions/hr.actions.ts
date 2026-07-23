@@ -146,7 +146,7 @@ export async function getOnboardingInProgressAction() {
     const supabase: any = await createClient()
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, first_name, last_name, email, role, phone, is_active, status, created_at, updated_at, deleted_at, profile_image_url, department_id, reporting_manager_id')
       .in('status', ['onboarding_pending', 'invited'])
       
     if (error) {

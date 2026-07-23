@@ -169,7 +169,7 @@ export async function getAttendanceLogsAction(employeeId?: string, month?: numbe
     if (!profile) return { success: false, error: "Unauthorized" };
 
     const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
-    let query = supabaseAdmin.from('attendance_logs').select('*');
+    let query = supabaseAdmin.from('attendance_logs').select('id, employee_id, date, status, check_in_time, check_out_time, created_at');
 
     const isPrivileged = profile.role === 'admin' || profile.role === 'hr' || profile.role === 'accountant';
 

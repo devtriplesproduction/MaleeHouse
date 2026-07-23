@@ -421,7 +421,7 @@ export async function updateMaterialRequestStatusAction(requestId: string, newSt
   const supabase: any = await createClient();
   
   // Get request to notify the requester
-  const { data: request } = await supabase.from("material_requests").select("*").eq("id", requestId).single();
+  const { data: request } = await supabase.from("material_requests").select('id, requested_by, quantity, item_name, project_id').eq("id", requestId).single();
   if (!request) return { success: false, error: "Request not found" };
 
   const { error } = await supabase.from("material_requests").update({ status: newStatus }).eq("id", requestId);

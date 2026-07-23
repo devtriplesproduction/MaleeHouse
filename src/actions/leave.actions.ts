@@ -107,7 +107,7 @@ export async function getMyLeavesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient()
     const { data, error } = await supabase
       .from('leaves')
-      .select('*')
+      .select('id, user_id, type, start_date, end_date, reason, status, created_at, approved_by, doc_url')
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
 

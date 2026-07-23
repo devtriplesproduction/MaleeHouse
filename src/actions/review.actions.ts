@@ -89,7 +89,7 @@ export async function rejectProjectAction(
     // 2. Get the assigned engineer for this project
     const { data: assignments, error: assignmentError } = await supabase
       .from('project_assignments')
-      .select('*')
+      .select('id, project_id, user_id, role, assigned_by, assigned_at')
       .eq('project_id', projectId)
       .in('role', ['engineer', 'cad', 'field'])
       .order('assigned_at', { ascending: false });

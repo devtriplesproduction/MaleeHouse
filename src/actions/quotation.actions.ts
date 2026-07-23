@@ -183,7 +183,7 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
 
 
     const supabase: any = await createClient();
-    const { data: quotation } = await supabase.from('quotations').select('*').eq('id', payload.id).single();
+    const { data: quotation } = await supabase.from('quotations').select('id, status, project_id, total_amount, bank_id, created_by').eq('id', payload.id).single();
 
     if (!quotation) return { success: false, error: 'Quotation not found' };
 
@@ -279,7 +279,7 @@ export async function clientUpdateQuotationStatusAction(
     // Use service role to bypass RLS for unauthenticated client portal interactions
     const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
     const supabase = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-    const { data: quotation } = await supabase.from('quotations').select('*').or(`client_token.eq.${token},id.eq.${token}`).single();
+    const { data: quotation } = await supabase.from('quotations').select('id, status, project_id, total_amount, bank_id, created_by').or(`client_token.eq.${token},id.eq.${token}`).single();
 
     if (!quotation) return { success: false, error: 'Invalid quotation token or quotation not found.' };
 
@@ -527,7 +527,7 @@ export async function createQuotationRevisionAction(
     }
 
     const supabase: any = await createClient();
-    const { data: currentQuotation } = await supabase.from('quotations').select('*').eq('id', quotationId).single();
+    const { data: currentQuotation } = await supabase.from('quotations').select('id, status, project_id, total_amount, bank_id, created_by').eq('id', quotationId).single();
 
     if (!currentQuotation) {
       return { success: false, error: 'Quotation not found.' };
@@ -629,7 +629,7 @@ export async function getQuotationTemplatesAction(): Promise<ActionResponse> {
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    const { data: templates } = await supabase.from('quotation_templates').select('*').order('created_at', { ascending: false });
+    const { data: templates } = await supabase.from('quotation_templates').select('id, name, created_at, updated_at, is_active, content').order('created_at', { ascending: false });
     return { success: true, data: normalizeData(templates || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -711,7 +711,7 @@ export async function duplicateQuotationTemplateAction(id: string): Promise<Acti
     }
 
     const supabase: any = await createClient();
-    const { data: original } = await supabase.from('quotation_templates').select('*').eq('id', id).single();
+    const { data: original } = await supabase.from('quotation_templates').select('id').eq('id', id).single();
     if (!original) return { success: false, error: 'Template not found' };
 
     const { error } = await supabase.from('quotation_templates').insert({
@@ -763,7 +763,7 @@ export async function deleteQuotationAction(quotationId: string): Promise<Action
     }
 
     const supabase: any = await createClient();
-    const { data: quotation } = await supabase.from('quotations').select('*').eq('id', quotationId).single();
+    const { data: quotation } = await supabase.from('quotations').select('id, status, project_id, total_amount, bank_id, created_by').eq('id', quotationId).single();
 
     if (!quotation) return { success: false, error: 'Quotation not found.' };
     if (quotation.status !== 'Draft') {
@@ -792,11 +792,11 @@ export async function deleteQuotationAction(quotationId: string): Promise<Action
 export async function getQuotationByTokenAction(token: string): Promise<ActionResponse> {
   try {
     const supabase: any = await createClient();
-    const { data: quotation } = await supabase.from('quotations').select('*').or(`client_token.eq.${token},id.eq.${token}`).single();
+    const { data: quotation } = await supabase.from('quotations').select('id, status, project_id, total_amount, bank_id, created_by').or(`client_token.eq.${token},id.eq.${token}`).single();
 
     if (!quotation) return { success: false, error: 'Quotation not found' };
 
-    const { data: project } = await supabase.from('projects').select('*').eq('id', quotation.project_id).single();
+    const { data: project } = await supabase.from('projects').select('id, project_number, status, budget').eq('id', quotation.project_id).single();
 
     if (quotation.status === 'Sent') {
       await supabase.from('quotations').update({
@@ -822,7 +822,7 @@ export async function getQuotationByTokenAction(token: string): Promise<ActionRe
       // Use service role to bypass RLS for unauthenticated client portal
       const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
       const adminSupabase = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-      const { data: bank } = await adminSupabase.from('bank_accounts').select('*').eq('id', quotation.bank_id).single();
+      const { data: bank } = await adminSupabase.from('bank_accounts').select('id').eq('id', quotation.bank_id).single();
       bankDetails = bank;
     }
 

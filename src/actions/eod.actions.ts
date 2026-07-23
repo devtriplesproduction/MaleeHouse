@@ -101,7 +101,7 @@ export async function getMyEODReportsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient()
     const { data, error } = await supabase
       .from('eod_reports')
-      .select('*')
+      .select('id, user_id, date, summary, created_at, updated_at')
       .eq('user_id', profile.id)
       .order('date', { ascending: false })
 

@@ -1,0 +1,1512 @@
+
+=== src\actions\admin.actions.ts ===
+Line 94: .select('*')
+      .order('created_at', { ascending: false } as any)
+    if (error) {
+      console.log('getAllUsersAction db error:', error)
+      throw error
+    }
+    return { success: true, data: normalizeData(data || []) }
+  } catch (error: any) {
+    console.error('Directory Fetch Error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function onboardEmployeeAction(
+  data: OnboardFormData & {
+    reporting_manager_id?: string | null
+    department_head_id?: string | null
+    escalation_chain?: string[]
+    approval_authority?: boolean
+    branch?: string
+---
+Line 435: .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return { success: true, data: normalizeData(data || []) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function offboardEmployeeAction(userId: string) {
+  try {
+    const adminProfile: any = await getUserProfileAction()
+    if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
+
+    const supabaseAdmin: any = createAdminClient()
+    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
+
+    await supabaseAdmin
+      .from('profiles')
+      .update({ is_active: false, status: 'resigned', deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any)
+---
+Line 601: .select('*')
+      .eq('employee_id', employeeId)
+      .order('effective_date', { ascending: false })
+      .limit(1)
+      .single()
+      
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching last increment:', error)
+      throw new Error('Failed to fetch last increment')
+    }
+    
+    return { success: true, data: normalizeData(data) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getSalaryIncrementHistoryAction(employeeId: string) {
+  try {
+    const supabaseAdmin: any = createAdminClient()
+---
+Line 629: .select('*')
+      .eq('employee_id', employeeId)
+      .order('effective_date', { ascending: false })
+      
+    if (error) {
+      console.error('Error fetching increment history:', error)
+      throw new Error('Failed to fetch increment history')
+    }
+    
+    return { success: true, data: normalizeData(data) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+---
+
+=== src\actions\attendance.actions.ts ===
+Line 172: let query = supabaseAdmin.from('attendance_logs').select('*');
+
+    const isPrivileged = profile.role === 'admin' || profile.role === 'hr' || profile.role === 'accountant';
+
+    if (!isPrivileged) {
+      // Normal users can only see their own attendance logs
+      query = query.eq('employee_id', profile.id);
+    } else if (employeeId) {
+      // HR/Admin can query a specific employee
+      query = query.eq('employee_id', employeeId);
+    }
+
+    const { data: attendance, error } = await query;
+    if (error) throw new Error(error.message);
+
+    let filtered = attendance || [];
+
+    if (month && year) {
+      filtered = filtered.filter((a: any) => {
+        const d = new Date(a.date);
+---
+
+=== src\actions\auth.actions.ts ===
+Line 101: .select('*')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError || !profile) {
+    console.error('Error fetching profile:', profileError)
+    return null
+  }
+
+  return profile
+})
+
+export async function getUserProfileAction() {
+  return await getCachedSessionProfile()
+}
+
+export async function updateMyProfileAction(updates: Partial<any>) {
+  try {
+    const profile: any = await getCachedSessionProfile()
+    if (!profile) return { success: false, error: 'Unauthorized' }
+---
+
+=== src\actions\bank.actions.ts ===
+Line 19: .select("*")
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data: normalizeData(data) };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function saveBankAccountAction(payload: any) {
+  try {
+    const supabase = await createClient();
+    
+    // If setting this one as default, unset others first
+    if (payload.is_default) {
+      const { error: unsetError } = await (supabase as any)
+        .from("bank_accounts")
+        .update({ is_default: false })
+---
+Line 280: .select("*")
+      .eq("id", bankId)
+      .single();
+
+    if (error) throw error;
+    return { success: true, data: normalizeData(data) };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getBankAccountLedgerAction(bankId: string, limit: number = 100) {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized. Please log in." };
+
+    if (profile.role !== "admin" && profile.role !== "accountant") {
+      return { success: false, error: "Access denied. Accountant or Admin only." };
+    }
+
+---
+Line 305: .select("*")
+      .eq("id", bankId)
+      .single();
+    if (bankError) throw bankError;
+
+    // 2. Fetch Payments (Inflow/Credit) - limit records, but sum all for correct header
+    const { data: paymentsSum, error: paymentsSumError } = await (supabase as any)
+      .from("payments")
+      .select("amount")
+      .eq("bank_id", bankId)
+      .eq("status", "verified");
+    if (paymentsSumError) throw paymentsSumError;
+    const totalCredits = (paymentsSum || []).reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+
+    const { data: payments, error: paymentsError } = await (supabase as any)
+      .from("payments")
+      .select("id, amount, payment_method, transaction_id, payment_date, created_at, verified_by, profiles!verified_by(first_name, last_name)")
+      .eq("bank_id", bankId)
+      .eq("status", "verified")
+      .order("created_at", { ascending: false })
+---
+
+=== src\actions\eod.actions.ts ===
+Line 104: .select('*')
+      .eq('user_id', profile.id)
+      .order('date', { ascending: false })
+
+    if (error) return { success: false, error: error.message }
+    return { success: true, data: normalizeData(data || []) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getAllEODReportsAction(): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied.' }
+
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+      .from('eod_reports')
+---
+
+=== src\actions\expense.actions.ts ===
+Line 150: .select('*')
+      .eq('id', validated.data.id)
+      .single();
+
+    if (fetchErr || !existing) return { success: false, error: 'Expense not found' };
+
+    const projectIdToCheck = validated.data.project_id !== undefined ? validated.data.project_id : existing.project_id;
+    if (projectIdToCheck) {
+      const accessCheck = await verifyProjectAccess(projectIdToCheck, profile.id, profile.role);
+      if (!accessCheck.isAllowed) {
+        return { success: false, error: accessCheck.error || 'Access denied to this project.' };
+      }
+    }
+    if (existing.project_id && existing.project_id !== projectIdToCheck) {
+      const accessCheck = await verifyProjectAccess(existing.project_id, profile.id, profile.role);
+      if (!accessCheck.isAllowed) {
+        return { success: false, error: accessCheck.error || 'Access denied to original project.' };
+      }
+    }
+
+---
+Line 234: .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !existing) return { success: false, error: 'Expense not found' };
+
+    if (existing.project_id) {
+      const accessCheck = await verifyProjectAccess(existing.project_id, profile.id, profile.role);
+      if (!accessCheck.isAllowed) {
+        return { success: false, error: accessCheck.error || 'Access denied to this project.' };
+      }
+    }
+
+    const { error: deleteErr } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', id);
+
+    if (deleteErr) return { success: false, error: deleteErr.message };
+
+---
+
+=== src\actions\field.actions.ts ===
+Line 424: const { data: request } = await supabase.from("material_requests").select("*").eq("id", requestId).single();
+  if (!request) return { success: false, error: "Request not found" };
+
+  const { error } = await supabase.from("material_requests").update({ status: newStatus }).eq("id", requestId);
+  if (error) {
+    console.error("Error updating material request:", error);
+    return { success: false, error: error.message };
+  }
+
+  // Notify the field worker
+  await insertNotification({
+    userId: request.requested_by,
+    title: `📦 Material Request ${newStatus}`,
+    message: `Your request for ${request.quantity}x ${request.item_name} has been ${newStatus}.`,
+    type: "assignment",
+    relatedProjectId: request.project_id
+  });
+
+  return { success: true, message: `Material request marked as ${newStatus}` };
+}
+---
+
+=== src\actions\holiday.actions.ts ===
+Line 16: .select('*')
+      .order('date', { ascending: true });
+
+    if (error) throw error;
+    return { success: true, data: normalizeData(data) };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function createHolidayAction(payload: {
+  date: string;
+  name: string;
+  is_optional: boolean;
+}): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (profile?.role !== 'admin' && profile?.role !== 'hr') {
+      return { success: false, error: 'Unauthorized to manage holidays.' };
+    }
+---
+
+=== src\actions\hr.actions.ts ===
+Line 149: .select('*')
+      .in('status', ['onboarding_pending', 'invited'])
+      
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    const filtered = (data || []).filter(
+      (u: any) => !['admin', 'hr'].includes(u.role?.toLowerCase())
+    );
+
+    return { success: true, data: normalizeData(filtered) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+---
+
+=== src\actions\issue.actions.ts ===
+Line 101: .select("*")
+      .eq("project_id", projectId);
+
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, data: normalizeData(projectIssues) };
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+---
+
+=== src\actions\leave.actions.ts ===
+Line 110: .select('*')
+      .eq('user_id', profile.id)
+      .order('created_at', { ascending: false })
+
+    if (error) return { success: false, error: error.message }
+    return { success: true, data: normalizeData(data || []) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getAllLeavesAction(): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (profile?.role !== 'admin' && profile?.role !== 'hr') return { success: false, error: 'Access denied. Admins and HR only.' }
+
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const supabase: any = createAdminClient()
+    const { data, error } = await supabase
+      .from('leaves')
+---
+
+=== src\actions\ledger.actions.ts ===
+Line 9: const { data, error } = await supabase.from('employee_financial_ledger').select('*').eq('employee_id', employeeId).order('created_at', { ascending: false });
+    return { success: !error, data, error: error?.message };
+  } catch(e:any) {
+    return { success: false, error: e.message };
+  }
+}
+
+export async function createLedgerEntryAction(employeeId: string, type: string, amount: number, description: string) {
+  try {
+    const profile: any = await getUserProfileAction();
+    const category = ['salary_advance', 'damage'].includes(type) ? 'recoverable' : 'one_time';
+    
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabaseAdmin: any = createAdminClient();
+    const { error } = await supabaseAdmin.from('employee_financial_ledger').insert({
+      employee_id: employeeId,
+      adjustment_type: type,
+      adjustment_category: category,
+      original_amount: amount,
+      remaining_amount: amount,
+---
+
+=== src\actions\notification.actions.ts ===
+Line 588: .select('*')
+      .eq('date', tomorrowStr)
+
+    if (!holidays || holidays.length === 0) {
+      return { success: true, message: 'No holidays tomorrow' }
+    }
+
+    // Fetch active users
+    const { data: users } = await supabase.from('profiles').select('id').eq('is_active', true)
+    
+    if (!users || users.length === 0) return { success: true, message: 'No active users to notify' }
+
+    let notificationsSent = 0
+
+    for (const holiday of holidays) {
+      const typeLabel = 'Public Holiday';
+      
+      await Promise.all(
+        users.map((u: any) =>
+          insertNotification({
+---
+
+=== src\actions\payroll.actions.ts ===
+Line 217: const { data: cycles, error } = await supabase.from('payroll_cycles').select('*');
+    if (error) throw error;
+    return { success: true, data: normalizeData(cycles) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * calculateMonthlyPayrollAction
+ * Computes live draft payroll based on attendance records and current salary parameters.
+ */
+export async function calculateMonthlyPayrollAction(month: number, year: number) {
+  try {
+    const supabase: any = await createClient();
+
+    // 1. Fetch all active employees
+    const empRes = await getAllUsersAction();
+    if (!empRes.success || !empRes.data) {
+      return { success: false, error: "Failed to fetch employees." };
+---
+Line 251: .select('*')
+      .eq('month', month)
+      .eq('year', year);
+
+    if (cyclesError) throw cyclesError;
+
+    // 3. Fetch EOD reports for this month
+    const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const { data: eodLogs, error: eodError } = await supabaseAdmin
+      .from('eod_reports')
+      .select('user_id, date')
+      .gte('date', startOfMonth)
+      .lte('date', endOfMonth);
+      
+    if (eodError) throw eodError;
+
+    // Fetch holidays for this month
+    const { data: holidays, error: holidayError } = await supabase
+---
+Line 316: .select('*')
+      .lte('effective_date', endOfMonth)
+      .order('effective_date', { ascending: false });
+
+    // Days in Month (fixed working days = 26)
+    const workingDaysLimit = 26;
+
+    // Fetch all active financial ledger entries
+    const { data: ledgerData, error: ledgerError } = await supabaseAdmin
+      .from('employee_financial_ledger')
+      .select('*')
+      .in('employee_id', employees.map((e: any) => e.id))
+      .eq('status', 'pending');
+      
+    // Fetch draft applications for the current cycle, if any
+    const { data: currentApps } = await supabaseAdmin
+      .from('payroll_adjustment_applications')
+      .select('*')
+      .eq('cycle_id', existing?.id || 'draft-cycle');
+
+---
+Line 326: .select('*')
+      .in('employee_id', employees.map((e: any) => e.id))
+      .eq('status', 'pending');
+      
+    // Fetch draft applications for the current cycle, if any
+    const { data: currentApps } = await supabaseAdmin
+      .from('payroll_adjustment_applications')
+      .select('*')
+      .eq('cycle_id', existing?.id || 'draft-cycle');
+
+    const draftSnapshots: PayrollSnapshot[] = employees.map((emp: any) => {
+      const empLogs = attendanceLogs.filter((l: any) => l.employee_id === emp.id);
+      
+      const leave_dates = empLogs.filter((l: any) => l.status === "paid_leave" || l.status === "unpaid_leave").map((l: any) => l.date);
+
+      // Calculate leave and field days from attendance logs (approved leaves/fields)
+      const days_field = 0; // Field days are now counted implicitly through EOD submissions
+      const days_paid_leave = empLogs.filter((l: any) => l.status === "paid_leave").length;
+      const days_unpaid_leave = empLogs.filter((l: any) => l.status === "unpaid_leave").length;
+      
+---
+Line 333: .select('*')
+      .eq('cycle_id', existing?.id || 'draft-cycle');
+
+    const draftSnapshots: PayrollSnapshot[] = employees.map((emp: any) => {
+      const empLogs = attendanceLogs.filter((l: any) => l.employee_id === emp.id);
+      
+      const leave_dates = empLogs.filter((l: any) => l.status === "paid_leave" || l.status === "unpaid_leave").map((l: any) => l.date);
+
+      // Calculate leave and field days from attendance logs (approved leaves/fields)
+      const days_field = 0; // Field days are now counted implicitly through EOD submissions
+      const days_paid_leave = empLogs.filter((l: any) => l.status === "paid_leave").length;
+      const days_unpaid_leave = empLogs.filter((l: any) => l.status === "unpaid_leave").length;
+      
+      // Calculate days_present based on EOD submissions (deduplicate against leave logs)
+      const filteredEods = eodLogs ? eodLogs.filter((e: any) => e.user_id === emp.id && !leave_dates.includes(e.date)) : [];
+      const days_present = filteredEods.length;
+      if (emp.first_name === 'Yash') console.log('Yash eods:', filteredEods, eodLogs ? eodLogs.filter((e:any) => e.user_id === emp.id) : []);
+      
+      // Calculate days_absent: Any working day (up to 26) not accounted for by EODs, Leaves, or Holidays
+      // Ponytail fix: Do not award holidays to employees with absolute zero attendance
+---
+Line 785: .select('*')
+      .eq('snapshot_id', snapshotId)
+      .single();
+
+    if (error || !slip) {
+      return { success: false, error: "Validation Error: Salary slip does not exist." };
+    }
+
+    // Determine extension based on stored URL if possible, fallback to .pdf
+    let fileName = `salary_slip_${employeeId}_${month}_${year}.pdf`;
+    if (slip.pdf_url) {
+      fileName = getStoragePathFromUrl(slip.pdf_url);
+    }
+    
+    let signedUrlData, signedUrlError;
+    try {
+      const result = await supabaseAdmin.storage
+        .from('salary_slips')
+        .createSignedUrl(fileName, 60 * 60);
+      signedUrlData = result.data;
+---
+
+=== src\actions\payroll_workflow.actions.ts ===
+Line 25: .select('*')
+    .eq('month', month)
+    .eq('year', year);
+
+  if (cycleFetchError) return { success: false, error: cycleFetchError.message };
+  const existing = cycles && cycles.length > 0 ? cycles[0] : null;
+
+  if (existing && existing.status !== "draft") {
+    return { success: false, error: "Only draft payrolls can be submitted." };
+  }
+
+  const cycleId = existing?.id || randomUUID();
+  const batchNumber = `PAY-${year}-${String(month).padStart(2, '0')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+
+  if (existing) {
+    const { error } = await supabaseAdmin
+      .from('payroll_cycles')
+      .update({
+        status: 'submitted',
+        submitted_at: new Date().toISOString(),
+---
+Line 90: const { data: cycles } = await supabaseAdmin.from('payroll_cycles').select('*').eq('month', month).eq('year', year);
+  const existing = cycles && cycles.length > 0 ? cycles[0] : null;
+
+  if (!existing || (existing.status !== "submitted" && existing.status !== "locked")) {
+    return { success: false, error: "Invalid status for return to draft." };
+  }
+  
+  if (existing.payment_status === 'paid') {
+      return { success: false, error: "Cannot unlock a paid payroll cycle." };
+  }
+
+  // Preserve summaries if it was locked, only reset if it was submitted? Actually user said to keep summaries.
+  // We just change status to draft.
+  const { error } = await supabaseAdmin
+    .from('payroll_cycles')
+    .update({ status: 'draft' })
+    .eq('id', existing.id);
+    
+  if (error) return { success: false, error: error.message };
+
+---
+Line 136: const { data: cycles } = await supabaseAdmin.from('payroll_cycles').select('*').eq('month', month).eq('year', year);
+  const existing = cycles && cycles.length > 0 ? cycles[0] : null;
+
+  if (!existing || existing.status !== "submitted") {
+    return { success: false, error: "Only submitted payrolls can be locked." };
+  }
+
+  const draftRes = await calculateMonthlyPayrollAction(month, year);
+  if (!draftRes.success || !draftRes.data) return { success: false, error: "Calculation failed" };
+  const frozenSnapshots = draftRes.data;
+
+  const totalEmp = frozenSnapshots.length;
+  const gross = frozenSnapshots.reduce((acc: number, cur: any) => acc + (cur.gross_salary || 0), 0);
+  const net = frozenSnapshots.reduce((acc: number, cur: any) => acc + (cur.net_payable || 0), 0);
+  
+  // Save snapshots
+  for(let snap of frozenSnapshots) {
+      const { adjustments, ...dbSnap } = snap;
+      dbSnap.cycle_id = existing.id;
+      dbSnap.id = randomUUID();
+---
+Line 208: const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('*').eq('id', cycleId).single();
+  if (!cycle || cycle.status !== 'locked') return { success: false, error: "Payroll must be locked to generate slips." };
+
+  const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id').eq('cycle_id', cycleId);
+  if (!snaps || snaps.length === 0) return { success: false, error: "No employees in this payroll cycle." };
+
+  // Clean up any existing slips for this cycle to avoid unique constraint violations
+  await supabaseAdmin.from('salary_slips').delete().eq('cycle_id', cycleId);
+
+  const { error } = await supabaseAdmin.from('payroll_slip_runs').insert({
+    payroll_cycle_id: cycleId,
+    status: 'generated',
+    employee_count: snaps.length,
+    generated_count: snaps.length, // Simulating perfect generation for phase 1
+    failed_count: 0,
+    generated_by: profile.id
+  });
+  
+  if (error) return { success: false, error: error.message };
+
+---
+Line 273: const { data: run } = await supabaseAdmin.from('payroll_slip_runs').select('*').eq('payroll_cycle_id', cycleId).order('generated_at', { ascending: false }).limit(1).single();
+  if (!run || run.status === 'released') return { success: false, error: "No active unreleased slip run found." };
+
+  if (run.generated_count !== run.employee_count || run.failed_count !== 0) {
+    return { success: false, error: "Cannot release slips. Not all slips were generated successfully or there were failures." };
+  }
+
+  await supabaseAdmin.from('payroll_slip_runs').update({ status: 'released', released_by: profile.id, released_at: new Date().toISOString() }).eq('id', run.id);
+  
+  const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('batch_number').eq('id', cycleId).single();
+  await supabaseAdmin.from('payroll_cycles').update({ slip_status: 'released' }).eq('id', cycleId);
+  
+  await supabaseAdmin.from('payroll_audit_logs').insert({
+    cycle_id: cycleId,
+    batch_number: cycle?.batch_number,
+    user_id: profile.id,
+    action_type: "SLIPS_RELEASED",
+    previous_state: { slip_status: "generated" },
+    new_state: { slip_status: "released" },
+    action_source: "UI"
+---
+Line 310: const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('*').eq('id', cycleId).single();
+  if (!cycle || cycle.status !== 'locked') return { success: false, error: "Payroll must be locked to process payment." };
+  if (cycle.payment_status === 'paid') return { success: false, error: "This payroll cycle has already been marked as paid." };
+
+  // Note: True atomic transaction is implemented via RPC in DB, but here we do simple sequence.
+  // We will assume atomic execution for Phase 1 via RPC but here we simulate standard inserts.
+  
+  const { error: pErr } = await supabaseAdmin.from('payroll_payments').insert({
+    payroll_cycle_id: cycleId,
+    bank_id: paymentData.bank_id,
+    payment_date: paymentData.payment_date,
+    payment_method: paymentData.payment_method,
+    payment_reference: paymentData.payment_reference,
+    payment_total_amount: paymentData.payment_total_amount,
+    payment_notes: paymentData.payment_notes,
+    paid_by: profile.id
+  });
+
+  if (pErr) return { success: false, error: "Payment processing failed. Could not create payment record." };
+
+---
+
+=== src\actions\presence.actions.ts ===
+Line 16: const { data: profiles } = await supabase.from('profiles').select('*');
+    
+    if (!profiles) return [];
+    
+    const summary: TeamMemberSummary[] = profiles.map((p: any) => ({
+      id: p.id,
+      firstName: p.first_name,
+      lastName: p.last_name,
+      role: p.role,
+      email: p.email,
+    }));
+    return summary;
+  } catch (error) {
+    console.error("[getTeamPresenceSummaryAction] error:", error);
+    return [];
+  }
+}
+
+---
+
+=== src\actions\project.actions.ts ===
+Line 221: .select('*')
+      .in('status', ['lead_created', 'requirement_gathering', 'quotation_requested', 'quotation_sent', 'payment_pending'])
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (pError) throw pError;
+
+    const { data: tasks, error: tError } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('status', 'pending');
+
+    const followUpTasks = (tasks || []).filter((t: any) => t.title?.startsWith('Follow-up'));
+
+    const { data: comments, error: cError } = await supabase
+      .from('comments')
+      .select('project_id, content')
+      .eq('comment_type', 'follow_up')
+      .order('created_at', { ascending: false });
+
+---
+Line 230: .select('*')
+      .eq('status', 'pending');
+
+    const followUpTasks = (tasks || []).filter((t: any) => t.title?.startsWith('Follow-up'));
+
+    const { data: comments, error: cError } = await supabase
+      .from('comments')
+      .select('project_id, content')
+      .eq('comment_type', 'follow_up')
+      .order('created_at', { ascending: false });
+
+    const pipeline = (projects || []).map((p: any) => {
+      const pTasks = followUpTasks.filter((t: any) => t.project_id === p.id);
+      pTasks.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+      
+      const pComments = (comments || []).filter((c: any) => c.project_id === p.id);
+      let latestFollowUpStatus = '';
+      let latestOutcome = '';
+      
+      if (pComments.length > 0) {
+---
+Line 293: .select('*')
+      .in('status', ['payment_pending', 'payment_done'])
+      .is('deleted_at', null)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+
+    return { success: true, data: normalizeData(paymentProjects) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getReviewProjectsAction(): Promise<ActionResponse> {
+  try {
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const { userId, role } = auth;
+    if (role !== 'admin' && role !== 'engineer') {
+---
+Line 324: .select('*')
+      .in('status', ['review', 'final_review'])
+      .is('deleted_at', null)
+      .order('updated_at', { ascending: false });
+
+    if (assignedIds !== null) {
+      query = query.in('id', assignedIds);
+    }
+
+    const { data: reviewProjects, error } = await query;
+    if (error) throw error;
+
+    return { success: true, data: normalizeData(reviewProjects) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function assignUserAction(
+  projectId: string,
+---
+Line 358: .select('*')
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .eq('role', role);
+
+    const existingAssignment = existing && existing.length > 0 ? existing[0] : null;
+
+    const newAssignment = {
+      id: existingAssignment?.id || randomUUID(),
+      project_id: projectId,
+      user_id: userId,
+      role: role,
+      assigned_by: profile.id,
+      assigned_at: new Date().toISOString()
+    };
+
+    const { error: upsertError } = await supabase
+      .from('project_assignments')
+      .upsert(newAssignment, { onConflict: 'id' });
+
+---
+Line 447: .select('*')
+      .eq('id', projectId)
+      .is('deleted_at', null)
+      .single();
+
+    if (error || !project) return { success: false, error: 'Project not found' };
+
+    return { success: true, data: normalizeData(project) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function adminHardDeleteProjectAction(projectId: string): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile || profile.role !== 'admin') {
+      return { success: false, error: 'Unauthorized. Only administrators can delete projects.' };
+    }
+
+---
+
+=== src\actions\quotation.actions.ts ===
+Line 186: const { data: quotation } = await supabase.from('quotations').select('*').eq('id', payload.id).single();
+
+    if (!quotation) return { success: false, error: 'Quotation not found' };
+
+    const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+      'Draft': ['Pending', 'Sent'],
+      'Pending': ['Sent', 'Approved', 'Rejected'],
+      'Sent': ['Viewed', 'Approved', 'Rejected', 'Revision Requested', 'Expired', 'Draft'],
+      'Viewed': ['Approved', 'Rejected', 'Revision Requested', 'Expired', 'Draft'],
+      'Revision Requested': ['Draft'],
+      'Approved': ['Sent'],
+      'Rejected': ['Draft'],
+      'Expired': ['Draft']
+    };
+
+    const currentStatus = quotation.status || 'Draft';
+    const targetStatus = payload.status;
+
+    if (profile.role !== 'admin' && currentStatus !== targetStatus) {
+      const allowed = ALLOWED_TRANSITIONS[currentStatus];
+---
+Line 282: const { data: quotation } = await supabase.from('quotations').select('*').or(`client_token.eq.${token},id.eq.${token}`).single();
+
+    if (!quotation) return { success: false, error: 'Invalid quotation token or quotation not found.' };
+
+    const { data: project } = await supabase.from('projects').select('status, client_contact').eq('id', quotation.project_id).single();
+    if (project?.status === "completed" || project?.status === "archived") {
+      return { success: false, error: "Project is locked and cannot be modified." };
+    }
+
+    if (status === 'Approved') {
+      const normalizedInput = approverPhone?.replace(/\D/g, '');
+      const normalizedRecord = project?.client_contact?.replace(/\D/g, '');
+      const inputLast10 = normalizedInput?.slice(-10);
+      
+      if (!inputLast10 || inputLast10.length < 10 || !normalizedRecord || !normalizedRecord.includes(inputLast10)) {
+        return { success: false, error: "The entered mobile number does not match the registered client contact." };
+      }
+    }
+
+    const currentStatus = quotation.status || 'Draft';
+---
+Line 530: const { data: currentQuotation } = await supabase.from('quotations').select('*').eq('id', quotationId).single();
+
+    if (!currentQuotation) {
+      return { success: false, error: 'Quotation not found.' };
+    }
+
+    const { data: project } = await supabase.from('projects').select('status').eq('id', payload.project_id).single();
+    if (project?.status === "completed" || project?.status === "archived") {
+      return { success: false, error: "Project is locked (completed/archived) and cannot be modified." };
+    }
+
+    const newVersion = (currentQuotation.current_version || 1) + 1;
+    const baseNumber = (currentQuotation.quotation_number || quotationId).replace(/-V\d+$/, '');
+    const versionedNumber = `${baseNumber}-V${newVersion}`;
+
+    const { error: updateError } = await supabase.from('quotations').update({
+      items: validated.data.items,
+      subtotal: validated.data.subtotal,
+      discount_pct: (validated.data as any).discount_pct || 0,
+      discount_amount: (validated.data as any).discount_amount || 0,
+---
+Line 632: const { data: templates } = await supabase.from('quotation_templates').select('*').order('created_at', { ascending: false });
+    return { success: true, data: normalizeData(templates || []) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function saveQuotationTemplateAction(payload: any): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+
+    if (payload.is_default) {
+      await supabase.from('quotation_templates').update({ is_default: false }).neq('id', payload.id || '0');
+---
+Line 714: const { data: original } = await supabase.from('quotation_templates').select('*').eq('id', id).single();
+    if (!original) return { success: false, error: 'Template not found' };
+
+    const { error } = await supabase.from('quotation_templates').insert({
+      id: `tpl-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: `${original.name} (Copy)`,
+      category: original.category,
+      clauses: original.clauses,
+      is_default: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
+    if (error) throw error;
+
+    await revalidateAccountsPaths();
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+---
+Line 766: const { data: quotation } = await supabase.from('quotations').select('*').eq('id', quotationId).single();
+
+    if (!quotation) return { success: false, error: 'Quotation not found.' };
+    if (quotation.status !== 'Draft') {
+      return { success: false, error: 'Only Draft quotations can be deleted.' };
+    }
+
+    const { error } = await supabase.from('quotations').delete().eq('id', quotationId);
+    if (error) throw error;
+
+    await supabase.from('activity_logs').insert({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      project_id: quotation.project_id,
+      user_id: profile.id,
+      action: 'QUOTATION_DELETED',
+      details: { quotation_id: quotationId, quotation_number: quotation.quotation_number },
+      created_at: new Date().toISOString()
+    });
+
+    await revalidateAccountsPaths(quotation.project_id);
+---
+Line 795: const { data: quotation } = await supabase.from('quotations').select('*').or(`client_token.eq.${token},id.eq.${token}`).single();
+
+    if (!quotation) return { success: false, error: 'Quotation not found' };
+
+    const { data: project } = await supabase.from('projects').select('*').eq('id', quotation.project_id).single();
+
+    if (quotation.status === 'Sent') {
+      await supabase.from('quotations').update({
+        status: 'Viewed',
+        client_viewed_at: new Date().toISOString()
+      }).eq('id', quotation.id);
+      quotation.status = 'Viewed';
+
+      await supabase.from('activity_logs').insert({
+        id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        project_id: quotation.project_id,
+        user_id: 'ba635e03-0a19-4267-b5d8-bfa422aeb250',
+        action: 'QUOTATION_VIEWED_BY_CLIENT',
+        details: { quotation_id: quotation.id, quotation_number: quotation.quotation_number },
+        created_at: new Date().toISOString()
+---
+Line 799: const { data: project } = await supabase.from('projects').select('*').eq('id', quotation.project_id).single();
+
+    if (quotation.status === 'Sent') {
+      await supabase.from('quotations').update({
+        status: 'Viewed',
+        client_viewed_at: new Date().toISOString()
+      }).eq('id', quotation.id);
+      quotation.status = 'Viewed';
+
+      await supabase.from('activity_logs').insert({
+        id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        project_id: quotation.project_id,
+        user_id: 'ba635e03-0a19-4267-b5d8-bfa422aeb250',
+        action: 'QUOTATION_VIEWED_BY_CLIENT',
+        details: { quotation_id: quotation.id, quotation_number: quotation.quotation_number },
+        created_at: new Date().toISOString()
+      });
+
+      await revalidateAccountsPaths(quotation.project_id);
+    }
+---
+Line 825: const { data: bank } = await adminSupabase.from('bank_accounts').select('*').eq('id', quotation.bank_id).single();
+      bankDetails = bank;
+    }
+
+    return {
+      success: true,
+      data: {
+        ...quotation,
+        bank: bankDetails,
+        project: project ? { id: project.id, name: project.name, client_name: project.client_name, status: project.status, gst_number: project.gst_number } : null
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateDraftQuotationAction(id: string, payload: CreateQuotationInput): Promise<ActionResponse> {
+  try {
+    const validated = createQuotationSchema.safeParse(payload);
+---
+
+=== src\actions\reports.actions.ts ===
+Line 27: const { data: company } = await supabase.from('company_settings').select('*').limit(1).maybeSingle();
+  let project = {
+    client_name: 'All Projects (Company-wide)',
+    client_address: 'N/A',
+    client_contact: 'N/A'
+  };
+  
+  if (projectId) {
+    const { data: projData } = await supabase.from('projects').select('*').eq('id', projectId).single();
+    if (projData) {
+      project = projData;
+    }
+  }
+  
+  return { company, project };
+}
+
+export async function getProfitLossReportAction(start: string, end: string, projectId?: string): Promise<ReportResponse> {
+  try {
+    const auth = await requireAuthContext();
+---
+Line 35: const { data: projData } = await supabase.from('projects').select('*').eq('id', projectId).single();
+    if (projData) {
+      project = projData;
+    }
+  }
+  
+  return { company, project };
+}
+
+export async function getProfitLossReportAction(start: string, end: string, projectId?: string): Promise<ReportResponse> {
+  try {
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+    if (auth.role !== 'admin' && auth.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+    const [paymentsRes, expensesRes, visitsRes] = await Promise.all([
+      supabase.from('payments').select('amount, created_at, status, project_id, projects(name)'),
+---
+Line 339: .select('*')
+      .eq('id', projectId)
+      .single();
+      
+    if (pError || !project) return { success: false, error: 'Project not found.' };
+
+    // 2. Fetch Milestones (Payment Timeline)
+    const { data: milestones, error: mError } = await supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    // 3. Fetch Company Settings (Malee House Details)
+    const { data: company, error: cError } = await supabase
+      .from('company_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+---
+Line 348: .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    // 3. Fetch Company Settings (Malee House Details)
+    const { data: company, error: cError } = await supabase
+      .from('company_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    let totalBilled = 0;
+    let totalPaid = 0;
+
+    const timeline = (milestones || []).map((m: any) => {
+      const cgst = (m.amount * 9) / 100;
+      const sgst = (m.amount * 9) / 100;
+      const total = m.amount + cgst + sgst;
+      
+      totalBilled += total;
+---
+Line 355: .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    let totalBilled = 0;
+    let totalPaid = 0;
+
+    const timeline = (milestones || []).map((m: any) => {
+      const cgst = (m.amount * 9) / 100;
+      const sgst = (m.amount * 9) / 100;
+      const total = m.amount + cgst + sgst;
+      
+      totalBilled += total;
+      if (m.status === 'paid') {
+        totalPaid += total;
+      }
+
+      return {
+        id: m.id,
+        title: m.title,
+---
+Line 457: .select('*')
+      .eq('project_id', projectId);
+
+    if (error) throw error;
+    
+    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
+
+    // Fetch total quotation value for this project
+    const { data: financesData } = await supabase
+      .from('project_finances')
+      .select('total_quoted_amount')
+      .eq('project_id', projectId)
+      .single();
+
+    const totalQuotationValue = financesData?.total_quoted_amount || 0;
+
+    const budgetDetails: any = {};
+    const sectionTotals: any = {};
+    let totalProjectCosting = 0;
+
+---
+
+=== src\actions\review.actions.ts ===
+Line 92: .select('*')
+      .eq('project_id', projectId)
+      .in('role', ['engineer', 'cad', 'field'])
+      .order('assigned_at', { ascending: false });
+
+    if (assignmentError) {
+      console.error("Failed to fetch assignments:", assignmentError);
+    }
+
+    const assignment = assignments && assignments.length > 0 ? assignments[0] : null;
+
+    // 3. Create a high-priority correction task
+    if (assignment) {
+      const newTaskId = randomUUID();
+      const { error: taskError } = await supabase.from('tasks').insert({
+        id: newTaskId,
+        project_id: projectId,
+        assigned_to: assignment.user_id,
+        stage: returnStage,
+        title: `CORRECTION REQUIRED: ${correctionNote.slice(0, 50)}...`,
+---
+
+=== src\actions\settings.actions.ts ===
+Line 161: const { data, error } = await supabase.from('company_settings').select('*').limit(1);
+
+    if (data && data.length > 0) {
+      return data[0] as CompanySettings;
+    }
+    
+    // Create it with default if it doesn't exist (Only if Admin or Accountant)
+    const profile: any = await getUserProfileAction();
+    if (profile && (profile.role === "admin" || profile.role === "accountant")) {
+      await supabase.from('company_settings').insert([DEFAULT_COMPANY_SETTINGS]);
+    }
+    return DEFAULT_COMPANY_SETTINGS;
+  } catch (err) {
+    console.error("Error reading company settings:", err);
+    return DEFAULT_COMPANY_SETTINGS;
+  }
+}
+
+export async function updateCompanySettingsAction(settings: Partial<CompanySettings>) {
+  const profile: any = await getUserProfileAction();
+---
+
+=== src\actions\sop.actions.ts ===
+Line 18: .select('*')
+      .or(`target_role.is.null,target_role.eq.${profile.role}`)
+      .order('created_at', { ascending: false })
+
+    if (error) return { success: false, error: error.message }
+    return { success: true, data: normalizeData(data || []) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getAllSOPsAction(): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (profile?.role !== 'admin') return { success: false, error: 'Access denied. Admins only.' }
+
+    const supabase: any = await createClient()
+    const { data, error } = await supabase.from('sops').select('*').order('created_at', { ascending: false })
+    if (error) return { success: false, error: error.message }
+    return { success: true, data: normalizeData(data || []) }
+---
+Line 35: const { data, error } = await supabase.from('sops').select('*').order('created_at', { ascending: false })
+    if (error) return { success: false, error: error.message }
+    return { success: true, data: normalizeData(data || []) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function createSOPAction(payload: { title: string; content: string; target_role: string | null }): Promise<ActionResponse> {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (profile?.role !== 'admin') return { success: false, error: 'Only administrators can create SOPs.' }
+
+    const supabase: any = await createClient()
+    const { data, error } = await supabase
+      .from('sops')
+      .insert({
+        id: `sop-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        title: payload.title,
+        content: payload.content,
+---
+
+=== src\actions\workflow.actions.ts ===
+Line 66: .select('*')
+        .eq('title', 'Dispatch Override Requested')
+        .order('created_at', { ascending: false });
+        
+      if (!fallbackData) return { success: false, error: error.message };
+      finalData = fallbackData.map((n: any) => ({ ...n, projects: null }));
+    } else {
+      finalData = notifications || [];
+    }
+    
+    // De-duplicate by project_id just in case multiple admins get the notification
+    const uniqueMap = new Map();
+    for (const n of finalData) {
+      if (n.related_project_id && !uniqueMap.has(n.related_project_id)) {
+        uniqueMap.set(n.related_project_id, n);
+      }
+    }
+
+    // Recover any projects stuck in requested state without a notification
+    const { data: stuckProjects } = await supabase
+---
+Line 223: .select('*')
+      .eq('project_id', projectId)
+      .eq('linked_stage', newStage)
+      .maybeSingle();
+
+    if (linkedMilestone && linkedMilestone.status !== 'paid') {
+      return {
+        success: false,
+        error: `Cannot transition to "${newStage}": The payment for milestone "${linkedMilestone.title}" must be paid and verified first.`
+      };
+    }
+
+    switch (newStage) {
+      case "quotation_sent": {
+        const { data: quote } = await supabase.from("quotations").select("status").eq("project_id", projectId).in("status", ["Sent", "Viewed", "Approved"]).limit(1);
+        if (!quote || quote.length === 0) {
+          return {
+            success: false,
+            error: "Cannot transition to Quotation Sent: No quotation has been sent or approved for this project."
+          };
+---
+
+=== src\app\(modules)\(operations)\engineer\page.tsx ===
+Line 36: supabase.from('activity_logs').select('*'),
+    supabase.from('comments').select('*'),
+    supabase.from('files').select('*'),
+    supabase.from('profiles').select('*'),
+    getEngineerTasksAction(profile?.id || ""),
+    getNotificationsAction(),
+    supabase.from('project_visits').select('*, projects(name, client_name)').order('scheduled_date', { ascending: true }),
+    getAllMaterialRequestsAction()
+  ]);
+
+  const rawActivityLogs: any[] = (activityLogsRes.data as any) || [];
+  const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
+  const comments: any[] = (commentsRes.data as any) || [];
+  const files: any[] = (filesRes.data as any) || [];
+  const allUsers: any[] = (usersRes.data as any) || [];
+
+  const projects = assignedRes.data || [];
+  const eodReports = eodRes.success ? eodRes.data : [];
+  
+  const tasks = tasksRes.success ? tasksRes.data : [];
+---
+Line 37: supabase.from('comments').select('*'),
+    supabase.from('files').select('*'),
+    supabase.from('profiles').select('*'),
+    getEngineerTasksAction(profile?.id || ""),
+    getNotificationsAction(),
+    supabase.from('project_visits').select('*, projects(name, client_name)').order('scheduled_date', { ascending: true }),
+    getAllMaterialRequestsAction()
+  ]);
+
+  const rawActivityLogs: any[] = (activityLogsRes.data as any) || [];
+  const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
+  const comments: any[] = (commentsRes.data as any) || [];
+  const files: any[] = (filesRes.data as any) || [];
+  const allUsers: any[] = (usersRes.data as any) || [];
+
+  const projects = assignedRes.data || [];
+  const eodReports = eodRes.success ? eodRes.data : [];
+  
+  const tasks = tasksRes.success ? tasksRes.data : [];
+  const notifications = notifRes.success ? notifRes.data : [];
+---
+Line 38: supabase.from('files').select('*'),
+    supabase.from('profiles').select('*'),
+    getEngineerTasksAction(profile?.id || ""),
+    getNotificationsAction(),
+    supabase.from('project_visits').select('*, projects(name, client_name)').order('scheduled_date', { ascending: true }),
+    getAllMaterialRequestsAction()
+  ]);
+
+  const rawActivityLogs: any[] = (activityLogsRes.data as any) || [];
+  const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
+  const comments: any[] = (commentsRes.data as any) || [];
+  const files: any[] = (filesRes.data as any) || [];
+  const allUsers: any[] = (usersRes.data as any) || [];
+
+  const projects = assignedRes.data || [];
+  const eodReports = eodRes.success ? eodRes.data : [];
+  
+  const tasks = tasksRes.success ? tasksRes.data : [];
+  const notifications = notifRes.success ? notifRes.data : [];
+  const allMaterialRequests: any[] = (matReqRes?.success ? matReqRes.data : []) || [];
+---
+Line 39: supabase.from('profiles').select('*'),
+    getEngineerTasksAction(profile?.id || ""),
+    getNotificationsAction(),
+    supabase.from('project_visits').select('*, projects(name, client_name)').order('scheduled_date', { ascending: true }),
+    getAllMaterialRequestsAction()
+  ]);
+
+  const rawActivityLogs: any[] = (activityLogsRes.data as any) || [];
+  const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
+  const comments: any[] = (commentsRes.data as any) || [];
+  const files: any[] = (filesRes.data as any) || [];
+  const allUsers: any[] = (usersRes.data as any) || [];
+
+  const projects = assignedRes.data || [];
+  const eodReports = eodRes.success ? eodRes.data : [];
+  
+  const tasks = tasksRes.success ? tasksRes.data : [];
+  const notifications = notifRes.success ? notifRes.data : [];
+  const allMaterialRequests: any[] = (matReqRes?.success ? matReqRes.data : []) || [];
+
+---
+
+=== src\app\(modules)\(shared)\projects\[id]\page.tsx ===
+Line 207: supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
+    supabase.from('tasks').select('*').eq('project_id', params.id),
+    supabaseAdmin.from('project_assignments').select('*, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id),
+    role !== 'sales' ? getProjectQuotationsAction(params.id) : Promise.resolve({ data: [] }),
+    getMilestonesAction(params.id),
+    getFieldVisitsAction(params.id),
+    getAccountantOwnerAction(params.id).catch(() => ({ success: true, data: null })),
+    getProjectIssuesAction(params.id),
+    supabase.from('activity_logs').select('*, actor_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
+    supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role, designation')
+  ]);
+
+  const history = historyRes.data || [];
+  const comments = commentsRes.data || [];
+  const files = filesRes.data || [];
+  if (filesRes.error) console.error("Files Fetch Error:", filesRes.error);
+  const projectTasks = tasksRes.data || [];
+  const assignments = assignmentsRes.data || [];
+  if (assignmentsRes.error) console.error("Assignments Fetch Error:", assignmentsRes.error);
+  const quotations = quotationsRes.data || [];
+---
+Line 208: supabase.from('tasks').select('*').eq('project_id', params.id),
+    supabaseAdmin.from('project_assignments').select('*, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id),
+    role !== 'sales' ? getProjectQuotationsAction(params.id) : Promise.resolve({ data: [] }),
+    getMilestonesAction(params.id),
+    getFieldVisitsAction(params.id),
+    getAccountantOwnerAction(params.id).catch(() => ({ success: true, data: null })),
+    getProjectIssuesAction(params.id),
+    supabase.from('activity_logs').select('*, actor_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
+    supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role, designation')
+  ]);
+
+  const history = historyRes.data || [];
+  const comments = commentsRes.data || [];
+  const files = filesRes.data || [];
+  if (filesRes.error) console.error("Files Fetch Error:", filesRes.error);
+  const projectTasks = tasksRes.data || [];
+  const assignments = assignmentsRes.data || [];
+  if (assignmentsRes.error) console.error("Assignments Fetch Error:", assignmentsRes.error);
+  const quotations = quotationsRes.data || [];
+  const milestones = milestonesRes.data || [];
+---
+Line 325: const { data: project } = await supabase.from('projects').select('*').eq('id', params.id).is('deleted_at', null).single() as { data: any };
+
+  if (!project) return notFound();
+
+  // 2. Fetch Supporting Data
+  const profile = await getUserProfileAction();
+  if (!profile) return notFound();
+  const user = { id: profile.id, email: profile.email };
+
+  const role = profile?.role || "admin";
+  const theme = ROLE_THEME[role] || ROLE_THEME.admin;
+  const backLink = ROLE_REDIRECTS[role] || "/projects";
+
+  // Layer 1 Security: Application-level check
+  const accessCheck = await verifyProjectAccess(params.id, user.id, role as any, true);
+  if (!accessCheck.isAllowed) {
+    redirect('/unauthorized');
+  }
+
+  if (role === 'sales') {
+---
+
+=== src\app\api\check-reports\route.ts ===
+Line 6: const { data, error } = await supabase.from('eod_reports').select('*');
+  return NextResponse.json({ data, error });
+}
+
+---
+
+=== src\components\modules\ProjectReportButton.tsx ===
+Line 25: .select('*')
+        .eq('id', projectId)
+        .single();
+
+      // Fetch team
+      const { data: team } = await supabase
+        .from('project_assignments')
+        .select('*, profiles:user_id(*)')
+        .eq('project_id', projectId);
+
+      // Fetch tasks
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('project_id', projectId);
+
+      if (project && team && tasks) {
+        generateProjectReport({ project, team, tasks });
+      } else {
+        toast({ title: "Report Generation Failed", description: "Failed to fetch all data for report.", variant: "error" });
+---
+Line 38: .select('*')
+        .eq('project_id', projectId);
+
+      if (project && team && tasks) {
+        generateProjectReport({ project, team, tasks });
+      } else {
+        toast({ title: "Report Generation Failed", description: "Failed to fetch all data for report.", variant: "error" });
+      }
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Report Generation Failed", description: "An error occurred during PDF generation.", variant: "error" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={isGenerating}
+---
+
+=== src\features\sales\actions.ts ===
+Line 18: .select('*')
+      .eq('status', 'lead_created')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, data: leads };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getQuotationsAction(): Promise<ActionResponse<any[]>> {
+  try {
+    const supabase: any = await createClient();
+    
+    const { data: quotations, error } = await supabase
+      .from('quotations')
+      .select(`
+---
+Line 91: .select('*')
+      .is('deleted_at', null);
+
+    if (error) return { success: false, error: error.message };
+    
+    const clientsMap = new Map();
+    for (const item of activeProjects || []) {
+      if (!clientsMap.has(item.client_name)) {
+        clientsMap.set(item.client_name, {
+          client_name: item.client_name,
+          client_contact: item.client_contact || "No contact info",
+          client_address: item.client_address || "No address provided",
+          created_at: item.created_at || new Date().toISOString(),
+          projects: []
+        });
+      }
+      const clientObj = clientsMap.get(item.client_name);
+      
+      // Update created_at to earliest if needed
+      if (item.created_at && new Date(item.created_at).getTime() < new Date(clientObj.created_at).getTime()) {
+---

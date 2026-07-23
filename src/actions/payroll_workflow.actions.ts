@@ -22,7 +22,7 @@ export async function submitPayrollToAccountsAction(month: number, year: number)
 
   const { data: cycles, error: cycleFetchError } = await supabaseAdmin
     .from('payroll_cycles')
-    .select('*')
+    .select('id, month, year, status, batch_number, slip_status, payment_status, created_at, submitted_at')
     .eq('month', month)
     .eq('year', year);
 
@@ -87,7 +87,7 @@ export async function returnPayrollToDraftAction(month: number, year: number) {
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const supabaseAdmin: any = createAdminClient();
 
-  const { data: cycles } = await supabaseAdmin.from('payroll_cycles').select('*').eq('month', month).eq('year', year);
+  const { data: cycles } = await supabaseAdmin.from('payroll_cycles').select('id, month, year, status, batch_number, slip_status, payment_status, created_at, submitted_at').eq('month', month).eq('year', year);
   const existing = cycles && cycles.length > 0 ? cycles[0] : null;
 
   if (!existing || (existing.status !== "submitted" && existing.status !== "locked")) {
@@ -133,7 +133,7 @@ export async function approveAndLockPayrollAction(month: number, year: number, c
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const supabaseAdmin: any = createAdminClient();
 
-  const { data: cycles } = await supabaseAdmin.from('payroll_cycles').select('*').eq('month', month).eq('year', year);
+  const { data: cycles } = await supabaseAdmin.from('payroll_cycles').select('id, month, year, status, batch_number, slip_status, payment_status, created_at, submitted_at').eq('month', month).eq('year', year);
   const existing = cycles && cycles.length > 0 ? cycles[0] : null;
 
   if (!existing || existing.status !== "submitted") {
@@ -205,7 +205,7 @@ export async function generateSlipRunAction(cycleId: string) {
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const supabaseAdmin: any = createAdminClient();
 
-  const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('*').eq('id', cycleId).single();
+  const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('id, status, payment_status, batch_number').eq('id', cycleId).single();
   if (!cycle || cycle.status !== 'locked') return { success: false, error: "Payroll must be locked to generate slips." };
 
   const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id').eq('cycle_id', cycleId);
@@ -270,7 +270,7 @@ export async function releaseSlipsAction(cycleId: string) {
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const supabaseAdmin: any = createAdminClient();
 
-  const { data: run } = await supabaseAdmin.from('payroll_slip_runs').select('*').eq('payroll_cycle_id', cycleId).order('generated_at', { ascending: false }).limit(1).single();
+  const { data: run } = await supabaseAdmin.from('payroll_slip_runs').select('id, status, employee_count, generated_count, failed_count').eq('payroll_cycle_id', cycleId).order('generated_at', { ascending: false }).limit(1).single();
   if (!run || run.status === 'released') return { success: false, error: "No active unreleased slip run found." };
 
   if (run.generated_count !== run.employee_count || run.failed_count !== 0) {
@@ -307,7 +307,7 @@ export async function markPaymentCompletedAction(cycleId: string, paymentData: a
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const supabaseAdmin: any = createAdminClient();
 
-  const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('*').eq('id', cycleId).single();
+  const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('id, status, payment_status, batch_number').eq('id', cycleId).single();
   if (!cycle || cycle.status !== 'locked') return { success: false, error: "Payroll must be locked to process payment." };
   if (cycle.payment_status === 'paid') return { success: false, error: "This payroll cycle has already been marked as paid." };
 

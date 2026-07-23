@@ -98,7 +98,7 @@ const getCachedSessionProfile = cache(async () => {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, role, email')
     .eq('id', user.id)
     .single()
 

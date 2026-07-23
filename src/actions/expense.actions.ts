@@ -147,7 +147,7 @@ export async function updateExpenseAction(payload: UpdateExpenseInput): Promise<
     const supabase: any = await createClient();
     const { data: existing, error: fetchErr } = await supabase
       .from('expenses')
-      .select('*')
+      .select('id, project_id')
       .eq('id', validated.data.id)
       .single();
 
@@ -231,7 +231,7 @@ export async function deleteExpenseAction(id: string): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: existing, error: fetchErr } = await supabase
       .from('expenses')
-      .select('*')
+      .select('id, project_id')
       .eq('id', id)
       .single();
 

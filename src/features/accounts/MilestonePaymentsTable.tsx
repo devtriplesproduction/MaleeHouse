@@ -64,8 +64,6 @@ export interface MilestonePayment {
 const getActiveInvoice = (m: MilestonePayment) => {
   if (!m.invoices || m.invoices.length === 0) return null;
   return m.invoices.find((inv: any) => 
-    Number(inv.amount) === Number(m.amount) && 
-    inv.due_date === m.due_date && 
     inv.status !== 'cancelled' && 
     inv.status !== 'rejected'
   ) || null;

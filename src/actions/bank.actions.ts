@@ -16,7 +16,7 @@ export async function getBankAccountsAction() {
     );
     const { data, error } = await supabase
       .from("bank_accounts")
-      .select("*")
+      .select('id, bank_name, account_name, account_number, branch_name, qr_code_url, is_default, created_at, updated_at, is_active')
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
 
@@ -277,7 +277,7 @@ export async function getBankAccountDetailsAction(bankId: string) {
     const supabase = await createClient();
     const { data, error } = await (supabase as any)
       .from("bank_accounts")
-      .select("*")
+      .select('id')
       .eq("id", bankId)
       .single();
 
@@ -302,7 +302,7 @@ export async function getBankAccountLedgerAction(bankId: string, limit: number =
     // 1. Fetch Bank Account metadata
     const { data: bank, error: bankError } = await (supabase as any)
       .from("bank_accounts")
-      .select("*")
+      .select('id')
       .eq("id", bankId)
       .single();
     if (bankError) throw bankError;

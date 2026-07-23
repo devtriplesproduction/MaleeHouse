@@ -24,7 +24,7 @@ function filterByDate(data: any[], dateField: string, start: string, end: string
 
 // Helper to fetch company and project details for report headers
 async function getCompanyAndProjectDetails(supabase: any, projectId?: string) {
-  const { data: company } = await supabase.from('company_settings').select('*').limit(1).maybeSingle();
+  const { data: company } = await supabase.from('company_settings').select('id').limit(1).maybeSingle();
   let project = {
     client_name: 'All Projects (Company-wide)',
     client_address: 'N/A',
@@ -32,7 +32,7 @@ async function getCompanyAndProjectDetails(supabase: any, projectId?: string) {
   };
   
   if (projectId) {
-    const { data: projData } = await supabase.from('projects').select('*').eq('id', projectId).single();
+    const { data: projData } = await supabase.from('projects').select('id, project_number, status, budget').eq('id', projectId).single();
     if (projData) {
       project = projData;
     }
@@ -336,7 +336,7 @@ export async function getProjectStatementAction(projectId: string): Promise<Repo
     // 1. Fetch Project Details
     const { data: project, error: pError } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, project_number, status, budget')
       .eq('id', projectId)
       .single();
       
@@ -352,7 +352,7 @@ export async function getProjectStatementAction(projectId: string): Promise<Repo
     // 3. Fetch Company Settings (Malee House Details)
     const { data: company, error: cError } = await supabase
       .from('company_settings')
-      .select('*')
+      .select('id')
       .limit(1)
       .maybeSingle();
 
@@ -454,7 +454,7 @@ export async function getProjectBudgetSheetAction(projectId: string): Promise<Re
 
     const { data: budgetItems, error } = await supabase
       .from('expenses')
-      .select('*')
+      .select('id, project_id, amount, category, status, description, date, created_at, created_by, receipt_url, approved_by')
       .eq('project_id', projectId);
 
     if (error) throw error;

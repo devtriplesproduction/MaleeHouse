@@ -205,7 +205,7 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
     supabase.from('workflow_history').select('*, changed_by_profile:profiles!changed_by(first_name, last_name, email)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
     supabase.from('comments').select('*, author_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
     supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
-    supabase.from('tasks').select('*').eq('project_id', params.id),
+    supabase.from('tasks').select('id, project_id, title, description, status, assigned_to, created_by, created_at, due_date').eq('project_id', params.id),
     supabaseAdmin.from('project_assignments').select('*, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id),
     role !== 'sales' ? getProjectQuotationsAction(params.id) : Promise.resolve({ data: [] }),
     getMilestonesAction(params.id),
@@ -322,7 +322,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const supabase: any = await createClient();
 
   // 1. Fetch Core Project Data
-  const { data: project } = await supabase.from('projects').select('*').eq('id', params.id).is('deleted_at', null).single() as { data: any };
+  const { data: project } = await supabase.from('projects').select('id, project_number, status, budget').eq('id', params.id).is('deleted_at', null).single() as { data: any };
 
   if (!project) return notFound();
 

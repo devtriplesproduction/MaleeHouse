@@ -218,7 +218,7 @@ export async function getSalesPipelineAction(): Promise<ActionResponse> {
 
     const { data: projects, error: pError } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, project_number, client_id, company_id, category, status, start_date, end_date, created_at, updated_at, budget')
       .in('status', ['lead_created', 'requirement_gathering', 'quotation_requested', 'quotation_sent', 'payment_pending'])
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
@@ -227,7 +227,7 @@ export async function getSalesPipelineAction(): Promise<ActionResponse> {
 
     const { data: tasks, error: tError } = await supabase
       .from('tasks')
-      .select('*')
+      .select('id, project_id, title, description, status, assigned_to, created_by, created_at, due_date')
       .eq('status', 'pending');
 
     const followUpTasks = (tasks || []).filter((t: any) => t.title?.startsWith('Follow-up'));
@@ -290,7 +290,7 @@ export async function getPaymentProjectsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: paymentProjects, error } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, project_number, client_id, company_id, category, status, start_date, end_date, created_at, updated_at, budget')
       .in('status', ['payment_pending', 'payment_done'])
       .is('deleted_at', null)
       .order('updated_at', { ascending: false });
@@ -321,7 +321,7 @@ export async function getReviewProjectsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     let query = supabase
       .from('projects')
-      .select('*')
+      .select('id, project_number, client_id, company_id, category, status, start_date, end_date, created_at, updated_at, budget')
       .in('status', ['review', 'final_review'])
       .is('deleted_at', null)
       .order('updated_at', { ascending: false });
@@ -355,7 +355,7 @@ export async function assignUserAction(
     const supabase: any = await createClient();
     const { data: existing, error: existError } = await supabase
       .from('project_assignments')
-      .select('*')
+      .select('id, project_id, user_id, role, assigned_by, assigned_at')
       .eq('project_id', projectId)
       .eq('user_id', userId)
       .eq('role', role);
@@ -444,7 +444,7 @@ export async function getProjectByIdAction(projectId: string): Promise<ActionRes
     const supabase: any = await createClient();
     const { data: project, error } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, project_number, status, budget')
       .eq('id', projectId)
       .is('deleted_at', null)
       .single();

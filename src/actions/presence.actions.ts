@@ -13,7 +13,7 @@ export interface TeamMemberSummary {
 export async function getTeamPresenceSummaryAction() {
   try {
     const supabase = await createClient();
-    const { data: profiles } = await supabase.from('profiles').select('*');
+    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role, phone, is_active, status, created_at, updated_at, deleted_at, profile_image_url, department_id, reporting_manager_id');
     
     if (!profiles) return [];
     

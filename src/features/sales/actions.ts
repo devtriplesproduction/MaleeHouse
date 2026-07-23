@@ -15,7 +15,7 @@ export async function getLeadsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: leads, error } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, project_number, client_id, company_id, category, status, start_date, end_date, created_at, updated_at, budget')
       .eq('status', 'lead_created')
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
@@ -88,7 +88,7 @@ export async function getClientsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: activeProjects, error } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, project_number, client_id, company_id, category, status, start_date, end_date, created_at, updated_at, budget')
       .is('deleted_at', null);
 
     if (error) return { success: false, error: error.message };

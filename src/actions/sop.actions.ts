@@ -15,7 +15,7 @@ export async function getSOPsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient()
     const { data, error } = await supabase
       .from('sops')
-      .select('*')
+      .select('id, title, description, created_at, updated_at, created_by, file_url')
       .or(`target_role.is.null,target_role.eq.${profile.role}`)
       .order('created_at', { ascending: false })
 
@@ -32,7 +32,7 @@ export async function getAllSOPsAction(): Promise<ActionResponse> {
     if (profile?.role !== 'admin') return { success: false, error: 'Access denied. Admins only.' }
 
     const supabase: any = await createClient()
-    const { data, error } = await supabase.from('sops').select('*').order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('sops').select('id, title, description, created_at, updated_at, created_by, file_url').order('created_at', { ascending: false })
     if (error) return { success: false, error: error.message }
     return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {

@@ -91,7 +91,7 @@ export async function getAllUsersAction() {
     const supabaseAdmin: any = createAdminClient()
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .select('*')
+      .select('id, first_name, last_name, email, role, phone, is_active, status, created_at, updated_at, deleted_at, profile_image_url, department_id, reporting_manager_id')
       .order('created_at', { ascending: false } as any)
     if (error) {
       console.log('getAllUsersAction db error:', error)
