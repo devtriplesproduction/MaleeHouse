@@ -63,7 +63,7 @@ export async function getAllOverrideRequestsAction() {
       // Fallback if projects relation fails
       const { data: fallbackData } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, user_id, title, message, type, is_read, created_at, related_project_id')
         .eq('title', 'Dispatch Override Requested')
         .order('created_at', { ascending: false });
         
@@ -220,7 +220,7 @@ async function validateStageTransition(
     // Dynamic Milestone Gate Check
     const { data: linkedMilestone } = await supabase
       .from('project_milestones')
-      .select('*')
+      .select('id, project_id, title, description, amount, due_date, linked_stage, is_activation_gate, status, is_compulsory, sort_order, created_at, updated_at')
       .eq('project_id', projectId)
       .eq('linked_stage', newStage)
       .maybeSingle();

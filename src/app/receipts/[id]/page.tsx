@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { getCompanySettingsAction } from '@/actions/settings.actions';
 import { ClientReceiptViewer } from './ClientReceiptViewer';
 import { Metadata } from 'next';
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ReceiptPage({ params, searchParams }: { params: { id: string }, searchParams: { type?: string } }) {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const type = searchParams.type || 'milestone'; // Default to milestone if not provided
   let receiptData = null;
 
@@ -30,7 +30,7 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
     // Search exact ID first, fallback to partial match for legacy URLs
     let { data, error } = await supabase
       .from('milestones')
-      .select('*, projects(name, client_name, gst_number)')
+      .select('id, amount, project_id, status, created_at, receipt_number, date, payment_method, client_name, projects(id, name, client_name, gst_number)')
       .eq('id', params.id)
       .maybeSingle();
 
@@ -38,7 +38,7 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
        // Legacy fallback
        const fallbackRes = await supabase
          .from('milestones')
-         .select('*, projects(name, client_name, gst_number)')
+         .select('id, amount, project_id, status, created_at, receipt_number, date, payment_method, client_name, projects(id, name, client_name, gst_number)')
          .ilike('id', `%${searchId}%`)
          .limit(1)
          .maybeSingle();
@@ -70,7 +70,7 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
   } else if (queryType === 'invoice') {
     let { data, error } = await supabase
       .from('invoices')
-      .select('*, projects(name, client_name, id, gst_number)')
+      .select('id, project_id, invoice_number, amount, gst_rate, gst_amount, total_amount, status, milestone_id, visit_id, due_date, notes, created_by, bank_id, created_at, updated_at, projects(name, client_name, id, gst_number)')
       .eq('id', params.id)
       .maybeSingle();
 
@@ -78,7 +78,7 @@ export default async function ReceiptPage({ params, searchParams }: { params: { 
        // Legacy fallback: invoice numbers might just be numeric or have INV-
        const fallbackRes = await supabase
          .from('invoices')
-         .select('*, projects(name, client_name, id, gst_number)')
+         .select('id, project_id, invoice_number, amount, gst_rate, gst_amount, total_amount, status, milestone_id, visit_id, due_date, notes, created_by, bank_id, created_at, updated_at, projects(name, client_name, id, gst_number)')
          .ilike('invoice_number', `%${searchId}%`)
          .limit(1)
          .maybeSingle();

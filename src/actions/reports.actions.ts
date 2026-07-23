@@ -345,7 +345,7 @@ export async function getProjectStatementAction(projectId: string): Promise<Repo
     // 2. Fetch Milestones (Payment Timeline)
     const { data: milestones, error: mError } = await supabase
       .from('project_milestones')
-      .select('*')
+      .select('id, project_id, title, description, amount, due_date, linked_stage, is_activation_gate, status, is_compulsory, sort_order, created_at, updated_at')
       .eq('project_id', projectId)
       .order('created_at', { ascending: true });
 
@@ -523,7 +523,7 @@ export async function getExpensesFundAllocationAction(start: string, end: string
 
     const { data: allocations, error } = await supabase
       .from('fund_allocations')
-      .select('*, bank_accounts(bank_name)')
+      .select('id, project_id, bank_account_id, service_divide, day, amount, remark, created_at, updated_at, bank_accounts(bank_name)')
       .gte('created_at', start)
       .lte('created_at', end);
 

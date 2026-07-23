@@ -21,7 +21,7 @@ export async function getHRDashboardStatsAction() {
     // 1. Headcount
     const { count: headcount } = await supabase
       .from('profiles')
-      .select('*', { count: 'exact', head: true })
+      .select('id, email, role, first_name, last_name, phone_number, dob, gender, personal_email, emergency_contact, profile_photo, address, employee_id, department, designation, joining_date, employment_type, salary, experience, location, status, is_active, branch, office_location, operational_zone, reporting_manager_id, department_head_id, escalation_chain, approval_authority, force_password_reset, temp_password_expires_at, documents, created_at, updated_at, deleted_at', { count: 'exact', head: true })
       .eq('is_active', true)
 
     // 2. Pending leaves
@@ -98,7 +98,7 @@ export async function getTodayAttendanceSummaryAction() {
   
   const { data, error } = await supabase
     .from('eod_reports')
-    .select('*, profiles(first_name, last_name, role, profile_photo)')
+    .select('id, user_id, date, tasks_completed, hours_spent, blockers, status, adjusted_hours, admin_note, created_at, updated_at, profiles(first_name, last_name, role, profile_photo)')
     .gte('created_at', startOfToday.toISOString())
     .order('created_at', { ascending: false })
 

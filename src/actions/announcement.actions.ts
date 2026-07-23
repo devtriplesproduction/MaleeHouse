@@ -14,7 +14,7 @@ export async function getAnnouncementsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('announcements')
-      .select('*, posted_by_profile:profiles!posted_by(first_name, last_name, role)')
+      .select('id, title, content, category, priority, posted_by, created_at, updated_at, posted_by_profile:profiles!posted_by(first_name, last_name, role)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

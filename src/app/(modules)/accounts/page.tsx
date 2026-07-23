@@ -31,7 +31,7 @@ export default async function AccountantDashboardPage() {
   const quotations = quotationsRes.data || [];
   const projects = projectsRes.data || [];
   const milestones = milestonesRes.success ? milestonesRes.data : [];
-  
+
   const overview = overviewRes.success ? overviewRes.data : {
     totalIncome: 0, totalExpenses: 0, monthlyProfit: 0, accountsReceivable: 0, accountsPayable: 0, monthlyCashFlow: [], expenseByCategory: []
   };
@@ -40,18 +40,18 @@ export default async function AccountantDashboardPage() {
 
   // Calculate the new KPI metrics
   const monthlyRevenue = overview.totalIncome || 0;
-  
-  const activeProjects = projects.filter((p: any) => 
+
+  const activeProjects = projects.filter((p: any) =>
     p.status !== 'Completed' && p.status !== 'Archived' && p.status !== 'cancelled' && p.status !== 'completed'
   ).length;
 
   const pendingQuoteRequests = intakeRes.success && intakeRes.data ? intakeRes.data.length : 0;
-  
-  const waitingClientApproval = quotations.filter((q: any) => 
+
+  const waitingClientApproval = quotations.filter((q: any) =>
     q.status === 'Sent' || q.status === 'Pending Approval' || q.status === 'Review'
   ).length;
 
-  const milestonesPending = milestones.filter((m: any) => 
+  const milestonesPending = milestones.filter((m: any) =>
     m.status !== 'paid' && m.status !== 'completed'
   ).length;
 
@@ -179,7 +179,7 @@ export default async function AccountantDashboardPage() {
                 <Link href="/accounts/intake" className="text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:underline">View All</Link>
               </div>
             </div>
-            
+
             <div className="max-h-[360px] overflow-y-auto custom-scrollbar pr-2 -mr-2">
               <QuotationIntakeQueue projects={intakeRes.data || []} hideSearch={true} />
             </div>

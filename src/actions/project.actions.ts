@@ -399,7 +399,7 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
     if (isGlobalRole) {
       const { data: activeProjects, error } = await supabase
         .from('projects')
-        .select('*, creator:profiles!projects_created_by_fkey(first_name, last_name)')
+        .select('id, project_id, user_id, role, assigned_by, assigned_at, removed_at, creator:profiles!projects_created_by_fkey(first_name, last_name)')
         .neq('status', 'archived')
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
@@ -422,7 +422,7 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
 
       const { data: assignedProjects, error: pError } = await supabase
         .from('projects')
-        .select('*, creator:profiles!projects_created_by_fkey(first_name, last_name)')
+        .select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at, creator:profiles!projects_created_by_fkey(first_name, last_name)')
         .in('id', userProjectIds)
         .neq('status', 'archived')
         .is('deleted_at', null)

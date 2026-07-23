@@ -63,7 +63,7 @@ async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileI
   const { data: existing } = await supabaseAdmin.from('salary_slips').select('id, pdf_url').eq('snapshot_id', snapshotId).maybeSingle();
   
   let slip = existing;
-  const { data: snap } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id, cycle_id, payroll_cycles(month, year, status, slip_status)').eq('id', snapshotId).maybeSingle();
+  const { data: snap } = await supabaseAdmin.from('payroll_snapshots').select('*, profiles:employee_id(first_name, last_name, role), payroll_cycles(month, year, status, slip_status)').eq('id', snapshotId).maybeSingle();
   if (!snap) return;
 
   const cycle = snap.payroll_cycles;
@@ -89,23 +89,17 @@ async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileI
   if (slip && slip.pdf_url) {
     try {
       const fileName = getStoragePathFromUrl(slip.pdf_url);
-      const parts = fileName.split('/');
-      const folderPath = parts.slice(0, -1).join('/');
-      const baseName = parts[parts.length - 1];
+      const { generateSalarySlipPdfBuffer } = await import("@/lib/pdfGenerator");
+      const pdfBuffer = await generateSalarySlipPdfBuffer({
+        ...snap,
+        employee_name: `${snap.profiles?.first_name || ''} ${snap.profiles?.last_name || ''}`.trim() || 'Employee',
+        designation: snap.profiles?.role || 'Employee'
+      }, cycle.month, cycle.year);
 
-      const { data: fileExists } = await supabaseAdmin.storage.from('salary_slips').list(folderPath, {
-        search: baseName
+      await supabaseAdmin.storage.from('salary_slips').upload(fileName, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: false
       });
-
-      if (!fileExists || fileExists.length === 0) {
-        const mockPdfBuffer = Buffer.from(
-          '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
-        );
-        await supabaseAdmin.storage.from('salary_slips').upload(fileName, mockPdfBuffer, {
-          contentType: 'application/pdf',
-          upsert: true
-        });
-      }
     } catch (e) {
       console.error("[ensureSlipExists] storage error:", e);
     }
@@ -116,17 +110,20 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
   const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('month, year, status, slip_status').eq('id', cycleId).single();
   if (!cycle || (cycle.status !== 'locked' && cycle.status !== 'paid')) return;
 
-  const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id').eq('cycle_id', cycleId);
+  const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('*, profiles:employee_id(first_name, last_name, role)').eq('cycle_id', cycleId);
   if (!snaps || snaps.length === 0) return;
 
-  for (const snap of snaps) {
-    const { data: existing } = await supabaseAdmin.from('salary_slips').select('id, pdf_url').eq('snapshot_id', snap.id).maybeSingle();
-    let slip = existing;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
-    const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
+  const snapshotIds = snaps.map((s: any) => s.id);
+  const { data: existingSlips } = await supabaseAdmin.from('salary_slips').select('id, pdf_url, snapshot_id').in('snapshot_id', snapshotIds);
+  const existingMap = new Map<string, any>((existingSlips || []).map((s: any) => [s.snapshot_id, s]));
 
-    if (!slip) {
-      const { data: newSlip } = await supabaseAdmin.from('salary_slips').insert({
+  const newSlipsToInsert = [];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
+
+  for (const snap of snaps) {
+    if (!existingMap.has(snap.id)) {
+      const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
+      newSlipsToInsert.push({
         employee_id: snap.employee_id,
         cycle_id: cycleId,
         snapshot_id: snap.id,
@@ -135,34 +132,42 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
         generated_by: profileId,
         emailed: false,
         shared: false
-      }).select().single();
-      slip = newSlip;
+      });
     }
+  }
 
-    if (slip && slip.pdf_url) {
-      try {
-        const fileName = getStoragePathFromUrl(slip.pdf_url);
-        const parts = fileName.split('/');
-        const folderPath = parts.slice(0, -1).join('/');
-        const baseName = parts[parts.length - 1];
+  if (newSlipsToInsert.length > 0) {
+    const { data: insertedSlips } = await supabaseAdmin.from('salary_slips').insert(newSlipsToInsert).select();
+    if (insertedSlips) {
+      insertedSlips.forEach((s: any) => existingMap.set(s.snapshot_id, s));
+    }
+  }
 
-        const { data: fileExists } = await supabaseAdmin.storage.from('salary_slips').list(folderPath, {
-          search: baseName
-        });
+  // Upload PDFs in parallel chunks
+  const chunkSize = 5;
+  for (let i = 0; i < snaps.length; i += chunkSize) {
+    const chunk = snaps.slice(i, i + chunkSize);
+    await Promise.all(chunk.map(async (snap: any) => {
+      const slip = existingMap.get(snap.id);
+      if (slip && slip.pdf_url) {
+        try {
+          const fileName = getStoragePathFromUrl(slip.pdf_url);
+          const { generateSalarySlipPdfBuffer } = await import("@/lib/pdfGenerator");
+          const pdfBuffer = await generateSalarySlipPdfBuffer({
+            ...snap,
+            employee_name: `${snap.profiles?.first_name || ''} ${snap.profiles?.last_name || ''}`.trim() || 'Employee',
+            designation: snap.profiles?.role || 'Employee'
+          }, cycle.month, cycle.year);
 
-        if (!fileExists || fileExists.length === 0) {
-          const mockPdfBuffer = Buffer.from(
-            '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
-          );
-          await supabaseAdmin.storage.from('salary_slips').upload(fileName, mockPdfBuffer, {
+          await supabaseAdmin.storage.from('salary_slips').upload(fileName, pdfBuffer, {
             contentType: 'application/pdf',
-            upsert: true
+            upsert: false
           });
+        } catch (e) {
+          console.error("[ensureSlipsExistForCycle] storage error:", e);
         }
-      } catch (e) {
-        console.error("[ensureSlipsExistForCycle] storage error:", e);
       }
-    }
+    }));
   }
 }
 
@@ -283,7 +288,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       // Return immutable snapshots along with salary slip tracking fields
       const { data: cycleSnapshots, error: snapshotsError } = await supabaseAdmin
         .from('payroll_snapshots')
-        .select('*, salary_slips(emailed, status)')
+        .select('id, employee_id, month, year, created_at, status, salary_slips(emailed, status)')
         .eq('cycle_id', existing.id);
 
       if (snapshotsError) throw snapshotsError;
@@ -313,7 +318,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     // Fetch all salary increments up to this month
     const { data: incrementsData } = await supabase
       .from('salary_increments')
-      .select('*')
+      .select('id, employee_id, previous_salary, new_salary, increment_amount, increment_percentage, effective_date, created_at, created_by')
       .lte('effective_date', endOfMonth)
       .order('effective_date', { ascending: false });
 
@@ -323,14 +328,14 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     // Fetch all active financial ledger entries
     const { data: ledgerData, error: ledgerError } = await supabaseAdmin
       .from('employee_financial_ledger')
-      .select('*')
+      .select('id, employee_id, transaction_type, amount, description, created_at')
       .in('employee_id', employees.map((e: any) => e.id))
       .eq('status', 'pending');
       
     // Fetch draft applications for the current cycle, if any
     const { data: currentApps } = await supabaseAdmin
       .from('payroll_adjustment_applications')
-      .select('*')
+      .select('id, employee_id, month, year, created_at, status, salary_slips(emailed, status)')
       .eq('cycle_id', existing?.id || 'draft-cycle');
 
     const draftSnapshots: PayrollSnapshot[] = employees.map((emp: any) => {
@@ -750,7 +755,7 @@ export async function getSalarySlipUrlAction(snapshotId: string, employeeId: str
 
     const { data: slip, error } = await supabaseAdmin
       .from('salary_slips')
-      .select('*')
+      .select('id, employee_id, month, year, basic, hra, conveyance, special_allowance, gross, pf, esi, tds, total_deductions, net_salary, status, emailed, created_at')
       .eq('snapshot_id', snapshotId)
       .single();
 

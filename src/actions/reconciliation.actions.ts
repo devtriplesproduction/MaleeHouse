@@ -11,7 +11,7 @@ export async function getReconciliationHistoryAction(bankId: string) {
     const supabase = await createClient();
     const { data, error } = await (supabase as any)
       .from("bank_reconciliations")
-      .select("*, reconciled_by_profile:profiles!reconciled_by(first_name, last_name), superseded_by_profile:profiles!superseded_by(first_name, last_name)")
+      .select('id, account_id, reconciled_by, superseded_by, status, created_at, total_amount, reconciled_by_profile:profiles!reconciled_by(first_name, last_name), superseded_by_profile:profiles!superseded_by(first_name, last_name)')
       .eq("bank_id", bankId)
       .order("statement_date", { ascending: false });
     if (error) throw error;

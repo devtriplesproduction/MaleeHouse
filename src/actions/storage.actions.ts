@@ -71,7 +71,10 @@ export async function uploadFileToServerAction(
     // Upload using standard Client - relies on Storage RLS
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(filePath, file);
+      .upload(filePath, file, {
+        cacheControl: '31536000',
+        upsert: false
+      });
 
     if (error) {
       throw error;
@@ -174,10 +177,12 @@ export async function uploadHRDocumentAction(
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase
+    const { data: signedData, error: signError } = await supabase
       .storage
       .from('hr-documents')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 3600);
+
+    if (signError) throw signError;
 
     // Save to employee_documents table
     const { error: dbError } = await supabase
@@ -185,13 +190,13 @@ export async function uploadHRDocumentAction(
       .insert({
         employee_id: employeeId,
         category: category,
-        file_url: publicUrl,
+        file_url: signedData.signedUrl,
         uploaded_by: profile.id,
       } as any);
 
     if (dbError) throw dbError;
 
-    return { success: true, url: publicUrl, path: filePath };
+    return { success: true, url: signedData.signedUrl, path: filePath };
   } catch (error: any) {
     console.error('HR Upload error:', error);
     return { success: false, error: error.message };
@@ -203,7 +208,7 @@ export async function getEmployeeDocumentsAction(employeeId: string) {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('employee_documents')
-      .select('*, uploaded_by_profile:profiles!uploaded_by(first_name, last_name)')
+      .select('id, name, url, size, type, uploaded_by, created_at, project_id, uploaded_at, file_path, file_name, file_size, file_type, uploaded_by_profile:profiles!uploaded_by(first_name, last_name)')
       .eq('employee_id', employeeId)
       .order('created_at', { ascending: false });
 

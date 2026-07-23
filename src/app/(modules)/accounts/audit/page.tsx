@@ -35,8 +35,8 @@ export const dynamic = "force-dynamic";
 export default async function AuditPage() {
   const supabase: any = await createClient();
   const { data: logs } = await supabase
-    .from("activity_logs")
-    .select("*, profiles!activity_logs_user_id_fkey(first_name, last_name, role)")
+    .from('activity_logs')
+    .select('id, project_id, user_id, action, details, created_at, profiles!activity_logs_user_id_fkey(first_name, last_name, role)')
     .order("created_at", { ascending: false })
     .limit(100);
 

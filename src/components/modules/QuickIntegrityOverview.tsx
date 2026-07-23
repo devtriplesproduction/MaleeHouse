@@ -16,7 +16,7 @@ export function QuickIntegrityOverview() {
       if (res && res.success) {
         setHealth(res.data);
       }
-      setHealth((prev: any) => ({ ...prev, activeUsers: Math.floor(Math.random() * 5) + 3 })); // Mocking active users
+      // We no longer mock activeUsers as it comes from health data
       setLoading(false);
     }
 

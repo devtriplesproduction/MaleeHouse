@@ -74,25 +74,29 @@ export function BulkPayrollOperationsDialog({
       const zip = new JSZip();
       let s = 0;
       let f = 0;
-
-      for (let i = 0; i < snapshots.length; i++) {
-        const snap = snapshots[i];
+      
+      const chunkSize = 5;
+      for (let i = 0; i < snapshots.length; i += chunkSize) {
+        const chunk = snapshots.slice(i, i + chunkSize);
         
-        try {
-          const res = await getSalarySlipUrlAction(snap.id, snap.employee_id, month, year);
-          if (!res.success || !res.url) throw new Error(res.error || "Failed to get URL");
-          
-          const fileRes = await fetch(res.url);
-          const blob = await fileRes.blob();
-          
-          const safeName = snap.employee_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-          zip.file(`Salary_Slip_${safeName}_${month}_${year}.pdf`, blob);
-          s++;
-        } catch (e) {
-          f++;
-        }
+        await Promise.all(chunk.map(async (snap) => {
+          try {
+            const res = await getSalarySlipUrlAction(snap.id, snap.employee_id, month, year);
+            if (!res.success || !res.url) throw new Error(res.error || "Failed to get URL");
+            
+            const fileRes = await fetch(res.url);
+            if (!fileRes.ok) throw new Error("Fetch failed");
+            
+            const blob = await fileRes.blob();
+            const safeName = snap.employee_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            zip.file(`Salary_Slip_${safeName}_${month}_${year}.pdf`, blob);
+            s++;
+          } catch (e) {
+            f++;
+          }
+        }));
         
-        setProgress(i + 1);
+        setProgress(Math.min(i + chunkSize, snapshots.length));
         setSuccessCount(s);
         setFailCount(f);
       }

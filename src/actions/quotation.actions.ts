@@ -61,7 +61,7 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
     if (profile.role === 'accountant' && payload.project_id) {
       const { count, error: countError } = await supabase
         .from('quotations')
-        .select('*', { count: 'exact', head: true })
+        .select('id, project_id, quotation_number, client_token, client_details, items, subtotal, discount_pct, discount_amount, gst_rate, gst_amount, total_amount, notes, terms, internal_notes, status, current_version, rejection_category, rejection_reason, client_viewed_at, client_approved_at, client_approver_phone, created_by, bank_id, created_at, updated_at', { count: 'exact', head: true })
         .eq('project_id', payload.project_id);
 
       console.log(`createQuotationAction: Accountant project limit check. Existing count: ${count}`);
@@ -416,7 +416,7 @@ export async function getQuotationIntakeQueueAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: intakeProjects } = await supabase
       .from('projects')
-      .select('*, creator:profiles!projects_created_by_fkey(*), files(*)')
+      .select('id, project_id, user_id, action, details, severity, target_user_id, actor_email, created_at, creator:profiles!projects_created_by_fkey(id, email, role, first_name, last_name, phone_number, dob, gender, personal_email, emergency_contact, profile_photo, address, employee_id, department, designation, joining_date, employment_type, salary, experience, location, status, is_active, branch, office_location, operational_zone, reporting_manager_id, department_head_id, escalation_chain, approval_authority, force_password_reset, temp_password_expires_at, documents, created_at, updated_at, deleted_at), files(id, name, url, size, type, uploaded_by, created_at, project_id, uploaded_at, file_path, file_name, file_size, file_type)')
       .in('status', ['quotation_requested', 'lead_created'])
       .is('deleted_at', null)
       .order('updated_at', { ascending: false });
@@ -448,14 +448,14 @@ export async function getProjectQuotationsAction(projectId: string, _cacheBuster
     if (projectId.startsWith('QUO-')) {
       const { data: standalone } = await supabase
         .from('quotations')
-        .select('*, project:projects(id, name, client_name, status, gst_number)')
+        .select('id, project_id, quotation_number, client_token, client_details, items, subtotal, discount_pct, discount_amount, gst_rate, gst_amount, total_amount, notes, terms, internal_notes, status, current_version, rejection_category, rejection_reason, client_viewed_at, client_approved_at, client_approver_phone, created_by, bank_id, created_at, updated_at, project:projects(id, name, client_name, status, gst_number)')
         .eq('id', projectId);
       return { success: true, data: normalizeData(standalone || []) };
     }
 
     const { data: projectQuotations } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status, gst_number)')
+      .select('id, project_id, quotation_number, client_token, client_details, items, subtotal, discount_pct, discount_amount, gst_rate, gst_amount, total_amount, notes, terms, internal_notes, status, current_version, rejection_category, rejection_reason, client_viewed_at, client_approved_at, client_approver_phone, created_by, bank_id, created_at, updated_at, project:projects(id, name, client_name, status, gst_number)')
       .eq('project_id', projectId)
       .order('created_at', { ascending: false });
 
@@ -473,7 +473,7 @@ export async function getQuotationByIdAction(id: string): Promise<ActionResponse
     const supabase: any = await createClient();
     const { data: quotation } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status, gst_number)')
+      .select('id, project_id, quotation_number, client_token, client_details, items, subtotal, discount_pct, discount_amount, gst_rate, gst_amount, total_amount, notes, terms, internal_notes, status, current_version, rejection_category, rejection_reason, client_viewed_at, client_approved_at, client_approver_phone, created_by, bank_id, created_at, updated_at, project:projects(id, name, client_name, status, gst_number)')
       .eq('id', id)
       .single();
 
@@ -497,7 +497,7 @@ export async function getAllQuotationsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: sorted } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status, gst_number, project_milestones(id), deleted_at)')
+      .select('id, project_id, quotation_number, client_token, client_details, items, subtotal, discount_pct, discount_amount, gst_rate, gst_amount, total_amount, notes, terms, internal_notes, status, current_version, rejection_category, rejection_reason, client_viewed_at, client_approved_at, client_approver_phone, created_by, bank_id, created_at, updated_at, project:projects(id, name, client_name, status, gst_number, project_milestones(id), deleted_at)')
       .order('created_at', { ascending: false });
 
     const activeQuotations = (sorted || []).filter((q: any) => !q.project || !q.project.deleted_at);
@@ -613,7 +613,7 @@ export async function getQuotationVersionsAction(quotationId: string): Promise<A
     const supabase: any = await createClient();
     const { data: quotationVersions } = await supabase
       .from('quotation_versions')
-      .select('*, creator:profiles!created_by(*)')
+      .select('id, project_id, quotation_number, client_token, client_details, items, subtotal, discount_pct, discount_amount, gst_rate, gst_amount, total_amount, notes, terms, internal_notes, status, current_version, rejection_category, rejection_reason, client_viewed_at, client_approved_at, client_approver_phone, created_by, bank_id, created_at, updated_at, creator:profiles!created_by(id, email, role, first_name, last_name, phone_number, dob, gender, personal_email, emergency_contact, profile_photo, address, employee_id, department, designation, joining_date, employment_type, salary, experience, location, status, is_active, branch, office_location, operational_zone, reporting_manager_id, department_head_id, escalation_chain, approval_authority, force_password_reset, temp_password_expires_at, documents, created_at, updated_at, deleted_at)')
       .eq('quotation_id', quotationId)
       .order('version_number', { ascending: false });
 

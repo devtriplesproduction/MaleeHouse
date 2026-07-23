@@ -127,7 +127,7 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
     const supabase: any = createAdminClient()
     const { data, error } = await supabase
       .from('leaves')
-      .select('*, profiles!leaves_user_id_fkey (first_name, last_name, email, role, profile_photo)')
+      .select('id, user_id, start_date, end_date, leave_type, reason, status, approved_by, approved_at, rejection_reason, created_at, updated_at, profiles!leaves_user_id_fkey (first_name, last_name, email, role, profile_photo)')
       .order('created_at', { ascending: false })
 
     if (error) return { success: false, error: error.message }
@@ -147,7 +147,7 @@ export async function updateLeaveStatusAction(id: string, status: 'approved' | '
     // Get the leave owner's role before updating
     const { data: leaveData } = await supabase
       .from('leaves')
-      .select('*, profiles!leaves_user_id_fkey (role)')
+      .select('id, user_id, start_date, end_date, leave_type, reason, status, approved_by, approved_at, rejection_reason, created_at, updated_at, profiles!leaves_user_id_fkey (role)')
       .eq('id', id)
       .single()
 

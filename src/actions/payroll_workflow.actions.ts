@@ -208,40 +208,78 @@ export async function generateSlipRunAction(cycleId: string) {
   const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('id, status, payment_status, batch_number').eq('id', cycleId).single();
   if (!cycle || cycle.status !== 'locked') return { success: false, error: "Payroll must be locked to generate slips." };
 
-  const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id').eq('cycle_id', cycleId);
+  const { data: snaps } = await supabaseAdmin
+    .from('payroll_snapshots')
+    .select('*, profiles:employee_id(first_name, last_name, role)')
+    .eq('cycle_id', cycleId);
   if (!snaps || snaps.length === 0) return { success: false, error: "No employees in this payroll cycle." };
 
   // Clean up any existing slips for this cycle to avoid unique constraint violations
   await supabaseAdmin.from('salary_slips').delete().eq('cycle_id', cycleId);
 
+  const { generateSalarySlipPdfBuffer } = await import("@/lib/pdfGenerator");
+  const slipsToInsert = [];
+  let generatedCount = 0;
+  let failedCount = 0;
+
+  for (const snap of snaps) {
+    try {
+      const pdfBuffer = await generateSalarySlipPdfBuffer({
+        ...snap,
+        employee_name: `${snap.profiles?.first_name || ''} ${snap.profiles?.last_name || ''}`.trim() || 'Employee',
+        designation: snap.profiles?.role || 'Employee'
+      }, cycle.month, cycle.year);
+      
+      const filePath = `${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
+      const { error: uploadError } = await supabaseAdmin.storage.from('salary_slips').upload(filePath, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+      
+      if (uploadError) {
+        console.error("PDF Upload Error:", uploadError);
+        failedCount++;
+        continue;
+      }
+      
+      const { data: publicUrlData } = supabaseAdmin.storage.from('salary_slips').getPublicUrl(filePath);
+
+      slipsToInsert.push({
+        employee_id: snap.employee_id,
+        cycle_id: cycleId,
+        snapshot_id: snap.id,
+        pdf_url: publicUrlData.publicUrl,
+        generated_by: profile.id,
+        status: 'generated',
+        emailed: false,
+        shared: false
+      });
+      generatedCount++;
+    } catch (err) {
+      console.error(err);
+      failedCount++;
+    }
+  }
+
   const { error } = await supabaseAdmin.from('payroll_slip_runs').insert({
     payroll_cycle_id: cycleId,
-    status: 'generated',
+    status: failedCount === 0 ? 'generated' : 'failed',
     employee_count: snaps.length,
-    generated_count: snaps.length, // Simulating perfect generation for phase 1
-    failed_count: 0,
+    generated_count: generatedCount,
+    failed_count: failedCount,
     generated_by: profile.id
   });
   
   if (error) return { success: false, error: error.message };
 
-  const slipsToInsert = snaps.map((snap: any) => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
-    const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
-    return {
-      employee_id: snap.employee_id,
-      cycle_id: cycleId,
-      snapshot_id: snap.id,
-      pdf_url: pdfUrl,
-      generated_by: profile.id,
-      status: 'generated',
-      emailed: false,
-      shared: false
-    };
-  });
+  if (slipsToInsert.length > 0) {
+    const { error: slipsError } = await supabaseAdmin.from('salary_slips').insert(slipsToInsert);
+    if (slipsError) return { success: false, error: slipsError.message };
+  }
 
-  const { error: slipsError } = await supabaseAdmin.from('salary_slips').insert(slipsToInsert);
-  if (slipsError) return { success: false, error: slipsError.message };
+  if (generatedCount === 0) {
+    return { success: false, error: "Failed to generate any salary slips." };
+  }
 
   await supabaseAdmin.from('payroll_cycles').update({ slip_status: 'generated' }).eq('id', cycleId);
   
@@ -354,7 +392,7 @@ export async function getPayrollAuditLogsAction(cycleId: string) {
     const supabaseAdmin: any = createAdminClient();
     const { data, error } = await supabaseAdmin
       .from('payroll_audit_logs')
-      .select('*, profiles(first_name, last_name, role)')
+      .select('id, employee_id, month, year, created_at, status, basic, hra, conveyance, special_allowance, gross, pf, esi, tds, total_deductions, net_salary, emailed, profiles(first_name, last_name, role)')
       .eq('cycle_id', cycleId)
       .order('created_at', { ascending: true });
     if (error) throw error;

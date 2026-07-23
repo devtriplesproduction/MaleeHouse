@@ -121,10 +121,11 @@ export async function getSystemHealthAction() {
   try {
     const start = Date.now();
     
-    // Check DB + Auth
-    const [dbCheck, authCheck] = await Promise.all([
+    // Check DB + Auth + Active Users
+    const [dbCheck, authCheck, activeUsersCount] = await Promise.all([
       supabase.from("system_settings").select("key").limit(1),
-      supabase.auth.getSession()
+      supabase.auth.getSession(),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_active", true)
     ]);
 
     const latency = Date.now() - start;
@@ -136,6 +137,7 @@ export async function getSystemHealthAction() {
       data: {
         status: isHealthy ? "operational" : "degraded",
         latency: `${latency}ms`,
+        activeUsers: activeUsersCount.count || 0,
         services: {
           database: !dbCheck.error ? "healthy" : "error",
           auth: !authCheck.error ? "healthy" : "error",

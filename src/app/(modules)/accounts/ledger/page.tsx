@@ -18,7 +18,7 @@ export default async function LedgerPage() {
   const supabase: any = await createClient();
   const [{ data: projectsData }, { data: visitsData }, { data: payrollData }] = await Promise.all([
     supabase.from("projects").select("id, name"),
-    supabase.from("project_visits").select("*, projects(name)"),
+    supabase.from('project_visits').select('id, project_id, scheduled_date, purpose, notes, assigned_team, status, completed_date, report_id, is_billable, visit_cost, created_at, updated_at, projects(name)'),
     supabase.from("payroll_cycles").select("id, month, year, status, created_at, bank_accounts(bank_name), payroll_snapshots(net_payable)").eq("status", "locked"),
   ]);
 
@@ -125,8 +125,8 @@ export default async function LedgerPage() {
           visit.status === "completed"
             ? "paid"
             : visit.status === "cancelled"
-            ? "cancelled"
-            : "pending",
+              ? "cancelled"
+              : "pending",
         added_by: "System",
         source: "expense",
       });

@@ -54,7 +54,7 @@ export async function createIssueAction(
     };
 
     const { data: newIssue, error } = await supabase
-      .from("issues")
+      .from('issues')
       .insert(newIssuePayload)
       .select()
       .single();
@@ -98,7 +98,7 @@ export async function getProjectIssuesAction(projectId: string) {
 
     const { data: projectIssues, error } = await supabase
       .from("issues")
-      .select("*")
+      .select('id, project_id, title, description, severity, status, reported_by, assigned_to, resolved_at, created_at, updated_at')
       .eq("project_id", projectId);
 
     if (error) return { success: false, error: error.message };

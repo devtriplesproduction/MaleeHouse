@@ -430,10 +430,15 @@ export async function getAdminAuditLogsAction() {
     if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
 
     const supabase: any = await createClient()
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const { data, error } = await supabase
       .from('activity_logs')
-      .select('*')
+      .select('id, user_id, actor_email, action, details, severity, target_user_id, created_at')
+      .gte('created_at', thirtyDaysAgo.toISOString())
       .order('created_at', { ascending: false })
+      .limit(100)
     if (error) throw error
     return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
@@ -598,7 +603,7 @@ export async function getLastSalaryIncrementAction(employeeId: string) {
     
     const { data, error } = await supabaseAdmin
       .from('salary_increments')
-      .select('*')
+      .select('id, employee_id, previous_salary, new_salary, increment_amount, increment_percentage, effective_date, created_at, created_by')
       .eq('employee_id', employeeId)
       .order('effective_date', { ascending: false })
       .limit(1)
@@ -626,7 +631,7 @@ export async function getSalaryIncrementHistoryAction(employeeId: string) {
     
     const { data, error } = await supabaseAdmin
       .from('salary_increments')
-      .select('*')
+      .select('id, employee_id, previous_salary, new_salary, increment_amount, increment_percentage, effective_date, created_at, created_by')
       .eq('employee_id', employeeId)
       .order('effective_date', { ascending: false })
       

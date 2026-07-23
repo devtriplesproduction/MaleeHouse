@@ -70,21 +70,21 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
         .select('amount, due_date')
         .eq('id', payload.milestone_id)
         .single();
-        
+
       if (milestone) {
         const { data: existingInvoices } = await supabase
           .from('invoices')
           .select('status, amount, due_date')
           .eq('milestone_id', payload.milestone_id)
           .order('created_at', { ascending: false });
-          
-        const activeProforma = existingInvoices?.find((inv: any) => 
+
+        const activeProforma = existingInvoices?.find((inv: any) =>
           Number(inv.amount) === Number(milestone.amount) &&
           inv.due_date === milestone.due_date &&
-          inv.status !== 'cancelled' && 
+          inv.status !== 'cancelled' &&
           inv.status !== 'rejected'
         );
-        
+
         if (activeProforma) {
           return { success: false, error: 'An active Invoice already exists for the current milestone configuration.' };
         }
@@ -191,7 +191,7 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
 
     const { milestone_id, ...paymentData } = validated.data;
     const supabase: any = await createClient();
-    
+
     let finalInvoiceId = paymentData.invoice_id;
     if (milestone_id && !finalInvoiceId) {
       // Find existing invoice for milestone
@@ -217,7 +217,7 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
     if (error) return { success: false, error: error.message };
 
     // Milestone status is implicitly derived from invoices(payments) instead
-    
+
     // Only update to payment_pending if the project is in its early stages
     const { data: currentProject } = await supabase.from('projects').select('status').eq('id', payload.project_id).single();
     if (currentProject && ['lead_created', 'quotation_requested', 'quotation_sent', 'payment_pending'].includes(currentProject.status)) {
@@ -395,7 +395,7 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
     if (payment.bank_id) {
       const { syncBankBalance } = await import('@/actions/bank.actions');
       await syncBankBalance(payment.bank_id);
-      
+
       if (status === 'verified') {
         const { flagBackdatedReconciliationsAction } = await import('@/actions/reconciliation.actions');
         await flagBackdatedReconciliationsAction(payment.bank_id, payment.payment_date || payment.created_at, "Payment Verified");
@@ -418,7 +418,7 @@ export async function getInvoiceByIdAction(invoiceId: string): Promise<ActionRes
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('invoices')
-      .select('*, projects(name, client_name, budget, payments(amount, status), gst_number), payments(amount, status)')
+      .select('id, project_id, total_quoted_amount, total_invoiced_amount, total_paid_amount, currency, updated_at, projects(name, client_name, budget, payments(amount, status), gst_number), payments(amount, status)')
       .eq('id', invoiceId)
       .single();
 
@@ -437,7 +437,7 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    let query = supabase.from('invoices').select('*, projects(name, client_name, budget, deleted_at, payments(amount, status)), payments(amount, status), project_milestones(title, sort_order)');
+    let query = supabase.from('invoices').select('id, project_id, invoice_number, amount, gst_rate, gst_amount, total_amount, status, milestone_id, visit_id, due_date, notes, created_by, bank_id, created_at, updated_at, projects(name, client_name, budget, deleted_at, payments(amount, status)), payments(amount, status), project_milestones(title, sort_order)');
 
     if (projectId) {
       query = query.eq('project_id', projectId);
@@ -467,7 +467,7 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    let query = supabase.from('payments').select('*, projects(name, client_name, deleted_at), bank_accounts(bank_name)');
+    let query = supabase.from('payments').select('id, project_id, invoice_id, amount, payment_method, transaction_id, receipt_url, status, verified_by, verified_at, rejection_reason, created_at, updated_at, projects(name, client_name, deleted_at), bank_accounts(bank_name)');
 
     if (projectId) {
       query = query.eq('project_id', projectId);
@@ -617,7 +617,7 @@ export async function createMilestonesAction(
         .from('quotations')
         .select('total_amount, status')
         .eq('project_id', projectId);
-      
+
       if (quotes && quotes.length > 0) {
         const approvedQuote = quotes.find((q: any) => q.status?.toLowerCase() === 'approved');
         if (approvedQuote) {
@@ -644,12 +644,12 @@ export async function createMilestonesAction(
       .from('project_milestones')
       .select('id, status')
       .eq('project_id', projectId);
-      
+
     const existingMilestoneIds = (existingMilestones || []).map((m: any) => m.id);
     const incomingIds = milestones.map((m: any) => m.id).filter((id: string) => id && !id.startsWith('temp-'));
 
     const missingMilestoneIds = existingMilestoneIds.filter((id: string) => !incomingIds.includes(id));
-    
+
     if (missingMilestoneIds.length > 0) {
       const { data: associatedInvoices } = await supabase
         .from('invoices')
@@ -657,7 +657,7 @@ export async function createMilestonesAction(
         .in('milestone_id', missingMilestoneIds);
 
       const invoiceMilestoneIds = (associatedInvoices || []).map((i: any) => i.milestone_id);
-      
+
       const milestonesToArchive = missingMilestoneIds.filter((id: string) => invoiceMilestoneIds.includes(id));
       if (milestonesToArchive.length > 0) {
         for (const id of milestonesToArchive) {
@@ -665,7 +665,7 @@ export async function createMilestonesAction(
           if (mData) {
             await supabase
               .from('project_milestones')
-              .update({ 
+              .update({
                 title: mData.title.includes('[Archived]') ? mData.title : `${mData.title} [Archived]`,
                 sort_order: -1
               })
@@ -673,7 +673,7 @@ export async function createMilestonesAction(
           }
         }
       }
-      
+
       const milestonesToDelete = missingMilestoneIds.filter((id: string) => !invoiceMilestoneIds.includes(id));
       if (milestonesToDelete.length > 0) {
         await supabase
@@ -713,13 +713,13 @@ export async function createMilestonesAction(
       const { error: insertError } = await supabase.from('project_milestones').insert(inserts);
       if (insertError) return { success: false, error: insertError.message };
     }
-    
+
     if (updates.length > 0) {
       for (const update of updates) {
         const { id, ...rest } = update;
         const { error: updateError } = await supabase.from('project_milestones').update(rest).eq('id', id);
         if (updateError) return { success: false, error: updateError.message };
-        
+
         // Keep linked invoices in sync if due date changes
         if (rest.due_date !== undefined) {
           await supabase.from('invoices').update({ due_date: rest.due_date }).eq('milestone_id', id);
@@ -902,7 +902,7 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved, deleted_at), invoices(id, status, created_at, amount, due_date, payments(status))')
+      .select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at, projects(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved, deleted_at), invoices(id, status, created_at, amount, due_date, payments(status))')
       .order('due_date', { ascending: true });
 
     if (error) {
@@ -1068,7 +1068,7 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
     // 1. Fetch pending milestones
     const { data: milestones, error: mErr } = await supabase
       .from('project_milestones')
-      .select('*, projects(status, is_frozen)')
+      .select('id, project_id, title, description, amount, due_date, linked_stage, is_activation_gate, status, is_compulsory, sort_order, created_at, updated_at, projects(status, is_frozen)')
       .eq('status', 'pending')
       .lte('due_date', targetDateStr);
 
@@ -1232,9 +1232,9 @@ export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): 
 export async function getProjectsFinancialSummaryAction(projectIds: string[]): Promise<ActionResponse> {
   try {
     if (!projectIds || projectIds.length === 0) return { success: true, data: {} };
-    
+
     const supabase: any = await createClient();
-    
+
     // We fetch all quotations instead of filtering by 'approved' only, because some 
     // active projects might have 'Sent' or other status quotations if they skipped the formal approval flow.
     const [quotesRes, paymentsRes] = await Promise.all([
@@ -1358,7 +1358,7 @@ export async function getFinancialOverviewAction(): Promise<{ success: boolean; 
       if (i.status !== 'cancelled') totalInvoiced += Number(i.total_amount || 0);
     });
     const accountsReceivable = Math.max(0, totalInvoiced - totalIncome);
-    
+
     // Outstanding Payments (same as Accounts Receivable for now, or just pending invoices)
     let outstandingPayments = 0;
     invoices.forEach((i: any) => {
@@ -1420,7 +1420,7 @@ export async function getFinancialOverviewAction(): Promise<{ success: boolean; 
     Object.keys(categoryMap).forEach(key => {
       expenseByCategory.push({ category: key, amount: categoryMap[key] });
     });
-    
+
     let fieldVisitSum = 0;
     visits.forEach((v: any) => {
       const amt = Number(v.visit_cost || 0);
@@ -1554,7 +1554,7 @@ export async function markInvoiceAsSentAction(invoiceId: string) {
       .eq('status', 'draft'); // Only update if it's currently a draft
 
     if (error) return { success: false, error: error.message };
-    
+
     // Log the action
     await logAdminAuditAction({
       action: 'update_invoice',
@@ -1578,7 +1578,7 @@ export async function getProjectBillingSummaryAction(): Promise<ActionResponse> 
     const supabase: any = await createClient();
 
     let query = supabase.from('projects').select('id, name, client_name, budget, status').is('deleted_at', null);
-    
+
     // Apply role-based filtering if needed (like in getInvoicesAction)
     if (auth.role !== 'admin' && auth.role !== 'accountant') {
       const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
@@ -1673,7 +1673,7 @@ export async function getProjectBillingSummaryAction(): Promise<ActionResponse> 
         else if (b.milestone_sum > 0) dynamicBudget = b.milestone_sum;
         else if (b.total_invoiced > 0) dynamicBudget = b.total_invoiced;
       }
-      
+
       return {
         ...b,
         budget: dynamicBudget,
@@ -1705,10 +1705,10 @@ export async function getOutstandingBalancesAction(): Promise<ActionResponse> {
     const { data: projects, error: projectsErr } = await supabase
       .from("projects")
       .select("id, name, client_name, status, budget");
-      
+
     if (projectsErr) return { success: false, error: projectsErr.message };
     if (!projects || projects.length === 0) return { success: true, data: [] };
-    
+
     const projectIds = projects.map((p: any) => p.id);
 
     const [invoicesRes, expensesRes, quotationsRes, visitsRes] = await Promise.all([
@@ -1726,10 +1726,10 @@ export async function getOutstandingBalancesAction(): Promise<ActionResponse> {
     const projectSummaries = projects.map((p: any) => {
       const projectQuotations = quotations.filter((q: any) => q.project_id === p.id);
       const quotationTotal = projectQuotations.reduce((sum: number, q: any) => sum + Number(q.total_amount || 0), 0);
-      
+
       const projectVisits = visits.filter((v: any) => v.project_id === p.id);
       const visitsTotal = projectVisits.reduce((sum: number, v: any) => sum + Number(v.visit_cost || 0), 0);
-      
+
       const totalBilled = quotationTotal + visitsTotal;
 
       const projectInvoices = invoices.filter((i: any) => i.project_id === p.id && i.status === 'paid');
@@ -1789,7 +1789,7 @@ export async function updateInvoiceStatusAction(invoiceId: string, status: strin
     if (!profile) return { success: false, error: 'Unauthorized' };
 
     const supabase: any = await createClient();
-    
+
     const { data: invoice, error: fetchError } = await supabase.from('invoices').select('project_id').eq('id', invoiceId).single();
     if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
 
@@ -1802,7 +1802,7 @@ export async function updateInvoiceStatusAction(invoiceId: string, status: strin
       .from('invoices')
       .update({ status })
       .eq('id', invoiceId);
-      
+
     if (updateError) return { success: false, error: updateError.message };
 
     await supabase.from('activity_logs').insert({
@@ -1825,7 +1825,7 @@ export async function updateInvoiceStatusAction(invoiceId: string, status: strin
 export async function publicUpdateInvoiceStatusAction(invoiceId: string, status: string): Promise<ActionResponse> {
   try {
     const supabase = await createClient(); // assuming createAdminClient or similar if RLS blocks public update
-    
+
     // Instead of createClient which uses the user auth, we should use createAdminClient
     const { createAdminClient } = await import('@/lib/supabase/admin');
     const adminSupabase: any = createAdminClient();
@@ -1837,7 +1837,7 @@ export async function publicUpdateInvoiceStatusAction(invoiceId: string, status:
       .from('invoices')
       .update({ status: status as any })
       .eq('id', invoiceId);
-      
+
     if (updateError) return { success: false, error: updateError.message };
 
     await adminSupabase.from('activity_logs').insert({

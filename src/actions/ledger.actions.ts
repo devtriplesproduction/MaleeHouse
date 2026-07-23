@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 export async function getEmployeeLedgerAction(employeeId: string) {
   try {
     const supabase: any = await createClient();
-    const { data, error } = await supabase.from('employee_financial_ledger').select('*').eq('employee_id', employeeId).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('employee_financial_ledger').select('id, employee_id, transaction_type, amount, description, created_at').eq('employee_id', employeeId).order('created_at', { ascending: false });
     return { success: !error, data, error: error?.message };
   } catch(e:any) {
     return { success: false, error: e.message };

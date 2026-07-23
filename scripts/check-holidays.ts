@@ -5,7 +5,7 @@ dotenv.config({ path: '.env.local' });
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL as string, process.env.SUPABASE_SERVICE_ROLE_KEY as string);
 
 async function checkHolidays() {
-  const { data, error } = await supabase.from('holidays').select('*');
+  const { data, error } = await supabase.from('holidays').select('id, name, date, is_optional, created_at');
   console.log(JSON.stringify(data, null, 2));
 }
 

@@ -6,12 +6,12 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-import { 
-  ArrowLeft, 
-  Calendar, 
-  User, 
-  MapPin, 
-  Hash, 
+import {
+  ArrowLeft,
+  Calendar,
+  User,
+  MapPin,
+  Hash,
   ChevronRight,
   ShieldCheck,
   LayoutGrid,
@@ -62,12 +62,12 @@ import { verifyProjectAccess } from "@/lib/permissions/permissions";
 import { ProjectDeleteButton } from "@/components/modules/ProjectDeleteButton";
 
 const ROLE_THEME: Record<string, { primary: string; hover: string; text: string; bg: string; border: string; glow: string }> = {
-  admin:      { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
-  sales:      { primary: "indigo-600",  hover: "hover:text-indigo-600 dark:hover:text-indigo-400",  text: "text-indigo-500",  bg: "bg-indigo-500/10",  border: "border-indigo-500/20",  glow: "bg-indigo-600/10" },
-  accountant: { primary: "violet-600",  hover: "hover:text-violet-600 dark:hover:text-violet-400",  text: "text-violet-500",  bg: "bg-violet-500/10",  border: "border-violet-500/20",  glow: "bg-violet-600/10" },
-  engineer:   { primary: "amber-600",   hover: "hover:text-amber-600 dark:hover:text-amber-400",   text: "text-amber-500",   bg: "bg-amber-500/10",   border: "border-amber-500/20",   glow: "bg-indigo-600/10" },
-  cad:        { primary: "blue-600",    hover: "hover:text-blue-600 dark:hover:text-blue-400",    text: "text-blue-500",    bg: "bg-blue-500/10",    border: "border-blue-500/20",    glow: "bg-indigo-600/10" },
-  field:      { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-emerald-600/10" },
+  admin: { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
+  sales: { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
+  accountant: { primary: "violet-600", hover: "hover:text-violet-600 dark:hover:text-violet-400", text: "text-violet-500", bg: "bg-violet-500/10", border: "border-violet-500/20", glow: "bg-violet-600/10" },
+  engineer: { primary: "amber-600", hover: "hover:text-amber-600 dark:hover:text-amber-400", text: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20", glow: "bg-indigo-600/10" },
+  cad: { primary: "blue-600", hover: "hover:text-blue-600 dark:hover:text-blue-400", text: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20", glow: "bg-indigo-600/10" },
+  field: { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-emerald-600/10" },
 };
 
 const ROLE_REDIRECTS: Record<string, string> = {
@@ -80,8 +80,8 @@ const ROLE_REDIRECTS: Record<string, string> = {
 };
 
 const getNextRequiredAction = (status: string, files: any[], assignments: any[], activityLogs: any[]) => {
-  const isQcRejected = activityLogs.some((l: any) => l.action === "QC_REJECTED") && 
-    !activityLogs.some((l: any) => l.action === "QC_APPROVED") && 
+  const isQcRejected = activityLogs.some((l: any) => l.action === "QC_REJECTED") &&
+    !activityLogs.some((l: any) => l.action === "QC_APPROVED") &&
     (status === "data_sync" || status === "prototype" || status === "review");
 
   if (isQcRejected) {
@@ -98,7 +98,7 @@ const getNextRequiredAction = (status: string, files: any[], assignments: any[],
     case 'data_collection':
       const intakeFiles = files.filter((f: any) => ['requirements', 'quotation', 'receipt', 'intake_document'].includes(f.category));
       const hasCAD = assignments.some((a: any) => a.role === 'cad');
-      
+
       if (intakeFiles.length === 0) {
         return {
           title: "Collect Client Documents",
@@ -143,22 +143,22 @@ const getNextRequiredAction = (status: string, files: any[], assignments: any[],
         badge: "Survey In Progress",
         color: "text-sky-600 bg-sky-500/10 border-sky-500/20 dark:text-sky-450 dark:bg-sky-500/[0.05]"
       };
-      case 'data_sync':
-        const hasFinalDoc = activityLogs?.some((l: any) => l.action === "FILE_UPLOADED" && l.details?.category === "final_file");
-        if (hasFinalDoc) {
-          return {
-            title: "Engineer Final Review",
-            description: "Lead Engineer to approve final CAD deliverable.",
-            badge: "Engineer Review Required",
-            color: "text-purple-600 bg-purple-500/10 border-purple-500/20 dark:text-purple-450 dark:bg-purple-500/[0.05]"
-          };
-        }
+    case 'data_sync':
+      const hasFinalDoc = activityLogs?.some((l: any) => l.action === "FILE_UPLOADED" && l.details?.category === "final_file");
+      if (hasFinalDoc) {
         return {
-          title: "Validate Survey Data & Finalize CAD",
-          description: "CAD Specialist to compare field data and produce final deliverable.",
-          badge: "In Progress",
-          color: "text-cyan-600 bg-cyan-500/10 border-cyan-500/20 dark:text-cyan-450 dark:bg-cyan-500/[0.05]"
+          title: "Engineer Final Review",
+          description: "Lead Engineer to approve final CAD deliverable.",
+          badge: "Engineer Review Required",
+          color: "text-purple-600 bg-purple-500/10 border-purple-500/20 dark:text-purple-450 dark:bg-purple-500/[0.05]"
         };
+      }
+      return {
+        title: "Validate Survey Data & Finalize CAD",
+        description: "CAD Specialist to compare field data and produce final deliverable.",
+        badge: "In Progress",
+        color: "text-cyan-600 bg-cyan-500/10 border-cyan-500/20 dark:text-cyan-450 dark:bg-cyan-500/[0.05]"
+      };
     case 'qc_review':
       return {
         title: "Engineer Final Review",
@@ -202,17 +202,17 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
     activityLogsRes,
     allUsersRes
   ] = await Promise.all([
-    supabase.from('workflow_history').select('*, changed_by_profile:profiles!changed_by(first_name, last_name, email)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
-    supabase.from('comments').select('*, author_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
-    supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
+    supabase.from('workflow_history').select('id, project_id, from_stage, to_stage, comment, changed_by, created_at, changed_by_profile:profiles!changed_by(first_name, last_name, email)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
+    supabase.from('comments').select('id, project_id, user_id, content, mentions, created_at, updated_at, deleted_at, author_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
+    supabase.from('files').select('id, name, url, size, type, uploaded_by, created_at, project_id, uploaded_at, file_path, file_name, file_size, file_type').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
     supabase.from('tasks').select('id, project_id, title, description, status, assigned_to, created_by, created_at, due_date').eq('project_id', params.id),
-    supabaseAdmin.from('project_assignments').select('*, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id),
+    supabaseAdmin.from('project_assignments').select('id, project_id, user_id, role, assigned_by, assigned_at, removed_at, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id),
     role !== 'sales' ? getProjectQuotationsAction(params.id) : Promise.resolve({ data: [] }),
     getMilestonesAction(params.id),
     getFieldVisitsAction(params.id),
     getAccountantOwnerAction(params.id).catch(() => ({ success: true, data: null })),
     getProjectIssuesAction(params.id),
-    supabase.from('activity_logs').select('*, actor_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
+    supabase.from('activity_logs').select('id, project_id, user_id, action, details, created_at, actor_profile:profiles!user_id(first_name, last_name, role)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
     supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role, designation')
   ]);
 
@@ -243,11 +243,11 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
   const isOperationalRole = ['admin', 'engineer', 'cad', 'field'].includes(profile?.role || '');
   const [cadResult, fieldResult, checklistResult, localAssignmentsResult] = isOperationalRole
     ? await Promise.all([
-        getCADRevisionsAction(params.id),
-        getFieldReportsAction(params.id),
-        getDeliveryChecklistAction(params.id),
-        getTeamAssignmentsAction(params.id),
-      ])
+      getCADRevisionsAction(params.id),
+      getFieldReportsAction(params.id),
+      getDeliveryChecklistAction(params.id),
+      getTeamAssignmentsAction(params.id),
+    ])
     : [{ data: [] }, { data: [] }, { data: null }, { data: [] }];
 
   const cadRevisions = cadResult.data || [];
@@ -263,13 +263,13 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
     role: a.profiles?.role || a.role
   }));
 
-  const isQcRejected = activityLogs.some((l: any) => l.action === "QC_REJECTED") && 
-          !activityLogs.some((l: any) => l.action === "QC_APPROVED");
+  const isQcRejected = activityLogs.some((l: any) => l.action === "QC_REJECTED") &&
+    !activityLogs.some((l: any) => l.action === "QC_APPROVED");
 
   return (
     <>
       {/* STAGE DEPENDENT DYNAMIC LOCK BANNER */}
-      <StageDependentLockBanner 
+      <StageDependentLockBanner
         projectId={project.id}
         isFrozen={project.is_frozen}
         freezeReason={project.freeze_reason}
@@ -406,7 +406,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
           {/* Title + Actions row */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-6">
-            
+
             {/* Left Side: Title */}
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">

@@ -20,10 +20,10 @@ export async function getGlobalStatsAction(): Promise<StatItem[]> {
       { count: fieldCount },
       { count: completedCount }
     ] = await Promise.all([
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'field_work'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'completed')
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending'),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'field_work'),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'completed')
     ]);
 
     return [
@@ -50,9 +50,9 @@ export async function getSalesStatsAction(): Promise<StatItem[]> {
       { count: quoteCount },
       { count: paymentCount }
     ] = await Promise.all([
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'lead'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'quotation_sent'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending')
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'lead'),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'quotation_sent'),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending')
     ]);
 
     return [
@@ -77,8 +77,8 @@ export async function getEngineerStatsAction(userId: string): Promise<StatItem[]
       { count: queueCount },
       { count: overdueCount }
     ] = await Promise.all([
-      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed'),
-      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed').lt('due_date', now)
+      supabase.from('tasks').select('id, project_id, title, description, stage, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, updated_at', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed'),
+      supabase.from('tasks').select('id, project_id, title, description, stage, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, updated_at', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed').lt('due_date', now)
     ]);
     
     return [
@@ -105,9 +105,9 @@ export async function getAccountantStatsAction(): Promise<StatItem[]> {
       { count: totalQuotations },
       { data: recentQuotations }
     ] = await Promise.all([
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).gte('created_at', firstOfMonth),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).not('status', 'in', '("completed","archived")'),
-      supabase.from('quotations').select('*', { count: 'exact', head: true }),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).gte('created_at', firstOfMonth),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).not('status', 'in', '("completed","archived")'),
+      supabase.from('quotations').select('id, project_id, quotation_number, client_token, client_details, items, subtotal, discount_pct, discount_amount, gst_rate, gst_amount, total_amount, notes, terms, internal_notes, status, current_version, rejection_category, rejection_reason, client_viewed_at, client_approved_at, client_approver_phone, created_by, bank_id, created_at, updated_at', { count: 'exact', head: true }),
       supabase.from('quotations').select('total_amount').eq('status', 'Approved').gte('updated_at', firstOfMonth),
     ]);
 
@@ -134,7 +134,7 @@ export async function getQCStatsAction(): Promise<StatItem[]> {
     const supabase: any = await createClient()
     const { count: reviewCount } = await supabase
       .from('projects')
-      .select('*', { count: 'exact', head: true })
+      .select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true })
       .in('status', ['review'])
       .is('deleted_at', null)
 
@@ -176,10 +176,10 @@ export async function getOperationsStatsAction(): Promise<StatItem[]> {
       { count: qcBacklog },
       { count: alertCount }
     ] = await Promise.all([
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).in('status', ['data_collection', 'prototype']),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'field_work'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).in('status', ['review']),
-      supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'completed').lt('due_date', now)
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).in('status', ['data_collection', 'prototype']),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'field_work'),
+      supabase.from('projects').select('id, name, client_name, client_contact, client_address, site_type, site_coordinates, services, survey_requirements, description, status, priority, requirement_checklist, target_completion_date, follow_up_date, is_frozen, freeze_reason, frozen_at, frozen_by, bypass_active, satisfaction_score, archival_note, created_by, created_at, updated_at, deleted_at', { count: 'exact', head: true }).is('deleted_at', null).in('status', ['review']),
+      supabase.from('tasks').select('id, project_id, title, description, stage, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, updated_at', { count: 'exact', head: true }).neq('status', 'completed').lt('due_date', now)
     ]);
     
     return [
@@ -203,7 +203,7 @@ export async function getActivityLogsAction(limit: number = 5) {
     const supabase: any = await createClient()
     const { data } = await supabase
       .from('activity_logs')
-      .select('*, profiles!user_id(first_name, last_name)')
+      .select('id, project_id, user_id, action, details, created_at, profiles!user_id(first_name, last_name)')
       .order('created_at', { ascending: false })
       .limit(limit)
     return data || []

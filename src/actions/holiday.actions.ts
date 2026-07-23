@@ -13,7 +13,7 @@ export async function getHolidaysAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('holidays')
-      .select('*')
+      .select('id, name, date, is_optional, created_at')
       .order('date', { ascending: true });
 
     if (error) throw error;

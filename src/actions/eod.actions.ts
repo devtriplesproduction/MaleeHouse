@@ -121,7 +121,7 @@ export async function getAllEODReportsAction(): Promise<ActionResponse> {
     
     const { data, error } = await supabase
       .from('eod_reports')
-      .select('*, profiles(first_name, last_name, role, department, employee_id)')
+      .select('id, user_id, date, tasks_completed, hours_spent, blockers, status, adjusted_hours, admin_note, created_at, updated_at, profiles(first_name, last_name, role, department, employee_id)')
       .order('date', { ascending: false })
 
     if (error) return { success: false, error: error.message }

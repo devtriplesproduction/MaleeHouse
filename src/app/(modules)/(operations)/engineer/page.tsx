@@ -33,13 +33,13 @@ export default async function EngineerDashboardPage() {
   const [assignedRes, eodRes, activityLogsRes, commentsRes, filesRes, usersRes, tasksRes, notifRes, visitsRes, matReqRes] = await Promise.all([
     getMyAssignedProjectsAction(),
     getMyEODReportsAction(),
-    supabase.from('activity_logs').select('*'),
+    supabase.from('activity_logs').select('id, project_id, user_id, action, details, severity, target_user_id, actor_email, created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()).order('created_at', { ascending: false }).limit(50),
     supabase.from('comments').select('id, project_id, user_id, content, created_at, comment_type'),
-    supabase.from('files').select('*'),
+    supabase.from('files').select('id, name, url, size, type, uploaded_by, created_at, project_id, uploaded_at, file_path, file_name, file_size, file_type'),
     supabase.from('profiles').select('id, first_name, last_name, email, role, phone, is_active, status, created_at, updated_at, deleted_at, profile_image_url, department_id, reporting_manager_id'),
     getEngineerTasksAction(profile?.id || ""),
     getNotificationsAction(),
-    supabase.from('project_visits').select('*, projects(name, client_name)').order('scheduled_date', { ascending: true }),
+    supabase.from('project_visits').select('id, project_id, scheduled_date, purpose, notes, assigned_team, status, completed_date, report_id, is_billable, visit_cost, created_at, updated_at, projects(name, client_name)').order('scheduled_date', { ascending: true }),
     getAllMaterialRequestsAction()
   ]);
 
@@ -51,7 +51,7 @@ export default async function EngineerDashboardPage() {
 
   const projects = assignedRes.data || [];
   const eodReports = eodRes.success ? eodRes.data : [];
-  
+
   const tasks = tasksRes.success ? tasksRes.data : [];
   const notifications = notifRes.success ? notifRes.data : [];
   const allMaterialRequests: any[] = (matReqRes?.success ? matReqRes.data : []) || [];
@@ -76,7 +76,7 @@ export default async function EngineerDashboardPage() {
     }
     return false;
   });
-  
+
   const fieldReviews = projects.filter((p: any) => {
     if (p.status === "data_sync") {
       const projectLogs = activityLogs.filter((l: any) => l.project_id === p.id);
@@ -122,7 +122,7 @@ export default async function EngineerDashboardPage() {
     .map((log: any) => {
       const user = allUsers.find((u: any) => u.id === log.user_id);
       const userName = user ? `${user.first_name} ${user.last_name}` : "Team Member";
-      
+
       let summary = "";
       switch (log.action) {
         case "STAGE_UPDATE":
@@ -179,7 +179,7 @@ export default async function EngineerDashboardPage() {
     .map((f: any) => {
       const user = allUsers.find((u: any) => u.id === f.uploaded_by);
       const userName = user ? `${user.first_name} ${user.last_name}` : "Team Member";
-      
+
       let summary = "";
       if (['requirements', 'intake_document'].includes(f.category)) {
         summary = `Client Documents Added: "${f.file_name}"`;
@@ -320,8 +320,8 @@ export default async function EngineerDashboardPage() {
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div 
-              key={kpi.label} 
+            <div
+              key={kpi.label}
               className="glass-card p-4 border-slate-200/60 dark:border-white/10 dark:bg-white/[0.03] group hover:bg-white/[0.08] transition-all duration-500 relative overflow-hidden shadow-sm rounded-xl flex items-center justify-between"
             >
               <div className="space-y-0.5 relative z-10">
@@ -340,15 +340,15 @@ export default async function EngineerDashboardPage() {
 
       {/* Main Grid 10-Column Split (70/30) */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-8">
-        
+
         {/* Left Column (70%) - Queue Tabs & Lists */}
         <div className="lg:col-span-7 space-y-6">
           <Tabs defaultValue="pending" className="space-y-6">
             <div className="border-b border-slate-200 dark:border-white/10 w-full overflow-x-auto custom-scrollbar pb-3">
               <TabsList className="bg-transparent border-none p-0 flex h-auto gap-8 w-full justify-start">
-                
-                <TabsTrigger 
-                  value="pending" 
+
+                <TabsTrigger
+                  value="pending"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-indigo-600 data-[state=active]:!text-indigo-600 dark:data-[state=active]:!text-indigo-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   New Assignments
@@ -359,8 +359,8 @@ export default async function EngineerDashboardPage() {
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger 
-                  value="active" 
+                <TabsTrigger
+                  value="active"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-indigo-600 data-[state=active]:!text-indigo-600 dark:data-[state=active]:!text-indigo-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   Active Projects
@@ -370,9 +370,9 @@ export default async function EngineerDashboardPage() {
                     </span>
                   )}
                 </TabsTrigger>
-                
-                <TabsTrigger 
-                  value="cad" 
+
+                <TabsTrigger
+                  value="cad"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-indigo-600 data-[state=active]:!text-indigo-600 dark:data-[state=active]:!text-indigo-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   CAD Reviews
@@ -383,8 +383,8 @@ export default async function EngineerDashboardPage() {
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger 
-                  value="field_reviews" 
+                <TabsTrigger
+                  value="field_reviews"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-cyan-500 data-[state=active]:!text-cyan-600 dark:data-[state=active]:!text-cyan-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   Field Reviews
@@ -395,8 +395,8 @@ export default async function EngineerDashboardPage() {
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger 
-                  value="activity" 
+                <TabsTrigger
+                  value="activity"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-amber-500 data-[state=active]:!text-amber-600 dark:data-[state=active]:!text-amber-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   Activity Feed
@@ -407,8 +407,8 @@ export default async function EngineerDashboardPage() {
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger 
-                  value="tasks" 
+                <TabsTrigger
+                  value="tasks"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-indigo-600 data-[state=active]:!text-indigo-600 dark:data-[state=active]:!text-indigo-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   Pending Tasks
@@ -419,8 +419,8 @@ export default async function EngineerDashboardPage() {
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger 
-                  value="deadlines" 
+                <TabsTrigger
+                  value="deadlines"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-rose-600 data-[state=active]:!text-rose-600 dark:data-[state=active]:!text-rose-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   Deadlines
@@ -431,8 +431,8 @@ export default async function EngineerDashboardPage() {
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger 
-                  value="visits" 
+                <TabsTrigger
+                  value="visits"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-sky-600 data-[state=active]:!text-sky-600 dark:data-[state=active]:!text-sky-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   Site Visits
@@ -443,8 +443,8 @@ export default async function EngineerDashboardPage() {
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger 
-                  value="notifications" 
+                <TabsTrigger
+                  value="notifications"
                   className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-indigo-600 data-[state=active]:!text-indigo-600 dark:data-[state=active]:!text-indigo-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                 >
                   Notifications
@@ -505,7 +505,7 @@ export default async function EngineerDashboardPage() {
                     {tasks.map((task: any) => {
                       let badgeColor = "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400";
                       let dueText = "No Due Date";
-                      
+
                       if (task.due_date) {
                         const dueDate = new Date(task.due_date);
                         const daysLeft = differenceInDays(dueDate, new Date());
@@ -527,7 +527,7 @@ export default async function EngineerDashboardPage() {
 
                       return (
                         <div key={task.id} className="relative overflow-hidden p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-900/40 flex justify-between items-center hover:bg-white dark:hover:bg-slate-900 hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300 group">
-                          
+
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
                               <ClipboardCheck className="w-4.5 h-4.5 text-indigo-600 dark:text-indigo-400" />
@@ -541,7 +541,7 @@ export default async function EngineerDashboardPage() {
                               </p>
                             </div>
                           </div>
-                          
+
                           <div className="flex flex-col items-end gap-1.5 shrink-0 z-10">
                             <div className={cn("text-[11px] px-2.5 py-1 rounded-lg font-extrabold flex items-center gap-1.5", badgeColor)}>
                               {dueText === "Overdue" && <AlertCircle className="w-3.5 h-3.5" />}
@@ -553,7 +553,7 @@ export default async function EngineerDashboardPage() {
                               </span>
                             )}
                           </div>
-                          
+
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-white/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 dark:via-white/[0.02] dark:to-white/[0.05]" />
                         </div>
                       );
@@ -571,7 +571,7 @@ export default async function EngineerDashboardPage() {
                       const dueDate = new Date(p.target_completion_date);
                       const daysLeft = differenceInDays(dueDate, new Date());
                       const isOverdue = isPast(dueDate) && daysLeft < 0;
-                      
+
                       let badgeColor = "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400";
                       let iconColor = "text-emerald-600 dark:text-emerald-400";
                       let statusText = `${daysLeft} days left`;
@@ -591,7 +591,7 @@ export default async function EngineerDashboardPage() {
 
                       return (
                         <Link href={`/projects/${p.id}`} key={p.id} className="relative overflow-hidden p-4 rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-900/40 flex items-center justify-between hover:bg-white dark:hover:bg-slate-900 hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300 group">
-                          
+
                           <div className="flex items-center gap-4">
                             <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300", badgeColor.split(' ')[0], badgeColor.split(' ')[2])}>
                               <Calendar className={cn("w-4.5 h-4.5", iconColor)} />
@@ -617,7 +617,7 @@ export default async function EngineerDashboardPage() {
                               {format(dueDate, "MMM d, yyyy")}
                             </span>
                           </div>
-                          
+
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-white/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 dark:via-white/[0.02] dark:to-white/[0.05]" />
                         </Link>
                       );
@@ -643,9 +643,9 @@ export default async function EngineerDashboardPage() {
                           <div className="text-xs bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 px-2 py-1 rounded font-medium">
                             {visit.scheduled_date ? new Date(visit.scheduled_date).toLocaleDateString() : 'N/A'}
                           </div>
-                          <span className={cn("text-[10px] uppercase font-bold", 
-                            visit.status === 'completed' ? "text-emerald-500" : 
-                            visit.status === 'in_progress' ? "text-blue-500" : "text-amber-500"
+                          <span className={cn("text-[10px] uppercase font-bold",
+                            visit.status === 'completed' ? "text-emerald-500" :
+                              visit.status === 'in_progress' ? "text-blue-500" : "text-amber-500"
                           )}>
                             {visit.status?.replace('_', ' ')}
                           </span>
@@ -693,12 +693,12 @@ export default async function EngineerDashboardPage() {
                       }
 
                       return (
-                        <div 
-                          key={n.id} 
+                        <div
+                          key={n.id}
                           className={cn(
                             "relative overflow-hidden p-4 rounded-2xl border transition-all duration-300 group flex items-start gap-4",
-                            !n.is_read 
-                              ? "bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-500/30 shadow-sm" 
+                            !n.is_read
+                              ? "bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-500/30 shadow-sm"
                               : "bg-white/50 dark:bg-slate-900/40 border-slate-200/60 dark:border-white/10 hover:bg-white dark:hover:bg-slate-900 hover:border-indigo-500/20"
                           )}
                         >
@@ -706,11 +706,11 @@ export default async function EngineerDashboardPage() {
                           {!n.is_read && (
                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />
                           )}
-                          
+
                           <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300", iconBg)}>
                             <IconComponent className={cn("w-4.5 h-4.5", iconColor)} />
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-start gap-2">
                               <h4 className={cn(
@@ -726,14 +726,14 @@ export default async function EngineerDashboardPage() {
                                 {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                               </span>
                             </div>
-                            
+
                             <p className={cn(
                               "text-xs mt-1 leading-relaxed line-clamp-2",
                               !n.is_read ? "text-slate-700 dark:text-slate-300 font-medium" : "text-slate-500 dark:text-slate-400"
                             )}>
                               {n.message}
                             </p>
-                            
+
                             {n.project_name && (
                               <div className="mt-2.5 inline-flex">
                                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400">
@@ -742,7 +742,7 @@ export default async function EngineerDashboardPage() {
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-white/10 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 dark:via-white/[0.02]" />
                         </div>
                       );
@@ -757,13 +757,13 @@ export default async function EngineerDashboardPage() {
         {/* Right Column (30%) - Action widgets and Recent Activity */}
         <div className="lg:col-span-3 space-y-6 animate-in fade-in duration-300">
           <MaterialApprovalWidget requests={allMaterialRequests} />
-          
+
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
               <Activity className="w-4 h-4 text-indigo-500" />
               <h2 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">recent activity</h2>
             </div>
-            
+
             <div className="glass-card p-5 rounded-[1.5rem] bg-white/40 dark:bg-slate-900/40 border-slate-200/50 dark:border-white/5 overflow-y-auto h-[500px] shadow-sm custom-scrollbar">
               {recentActivities.length === 0 ? (
                 <div className="py-8 text-center text-xs text-slate-400 italic">
@@ -775,9 +775,9 @@ export default async function EngineerDashboardPage() {
                     const s = item.summary.toLowerCase();
 
                     // ── classify ──────────────────────────────────────────
-                    let iconBg   = 'bg-slate-100 dark:bg-white/5';
+                    let iconBg = 'bg-slate-100 dark:bg-white/5';
                     let iconText = 'text-slate-400';
-                    let rowBg   = 'bg-slate-50/60 dark:bg-white/[0.01] hover:bg-slate-100/60 dark:hover:bg-white/[0.03] border-slate-200 dark:border-white/5';
+                    let rowBg = 'bg-slate-50/60 dark:bg-white/[0.01] hover:bg-slate-100/60 dark:hover:bg-white/[0.03] border-slate-200 dark:border-white/5';
                     let nameColor = 'text-slate-600 dark:text-slate-400';
                     let Icon: React.ComponentType<{ className?: string }> = Clock;
                     let isImportant = false;

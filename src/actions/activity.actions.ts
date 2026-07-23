@@ -25,10 +25,10 @@ export async function getGlobalActivityAction(): Promise<GlobalActivityItem[]> {
     const supabase: any = await createClient()
 
     const [stageRes, fileRes, assignRes, commentRes, profileRes] = await Promise.all([
-      supabase.from('workflow_history').select('*, profiles!changed_by(first_name, last_name, role)').order('created_at', { ascending: false }).limit(50),
-      supabase.from('files').select('*, profiles!uploaded_by(first_name, last_name, role)').order('uploaded_at', { ascending: false }).limit(50),
-      supabase.from('project_assignments').select('*, profiles!user_id(first_name, last_name, role)').order('assigned_at', { ascending: false }).limit(50),
-      supabase.from('comments').select('*, profiles!user_id(first_name, last_name, role)').is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
+      supabase.from('workflow_history').select('id, project_id, from_stage, to_stage, comment, changed_by, created_at, profiles!changed_by(first_name, last_name, role)').order('created_at', { ascending: false }).limit(50),
+      supabase.from('files').select('id, name, url, size, type, uploaded_by, created_at, project_id, uploaded_at, file_path, file_name, file_size, file_type, profiles!uploaded_by(first_name, last_name, role)').order('uploaded_at', { ascending: false }).limit(50),
+      supabase.from('project_assignments').select('id, project_id, user_id, role, assigned_by, assigned_at, removed_at, profiles!user_id(first_name, last_name, role)').order('assigned_at', { ascending: false }).limit(50),
+      supabase.from('comments').select('id, project_id, user_id, content, mentions, created_at, updated_at, deleted_at, profiles!user_id(first_name, last_name, role)').is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
       supabase.from('projects').select('id, name'),
     ])
 

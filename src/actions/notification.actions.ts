@@ -205,7 +205,7 @@ export async function getNotificationsAction() {
     const supabase: any = await createClient()
     const { data: notifications, error } = await supabase
       .from('notifications')
-      .select('*, projects!related_project_id(name, status)')
+      .select('id, user_id, title, message, type, is_read, created_at, related_project_id, projects!related_project_id(name, status)')
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(100)
@@ -585,7 +585,7 @@ export async function notifyUpcomingHolidaysAction(cronSecret?: string) {
     // Fetch holidays for tomorrow
     const { data: holidays } = await supabase
       .from('holidays')
-      .select('*')
+      .select('id, name, date, is_optional, created_at')
       .eq('date', tomorrowStr)
 
     if (!holidays || holidays.length === 0) {

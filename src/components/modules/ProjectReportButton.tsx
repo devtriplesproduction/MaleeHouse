@@ -29,7 +29,7 @@ export function ProjectReportButton({ projectId }: ProjectReportButtonProps) {
       // Fetch team
       const { data: team } = await supabase
         .from('project_assignments')
-        .select('*, profiles:user_id(*)')
+        .select('id, project_id, user_id, role, assigned_by, assigned_at, removed_at, profiles:user_id(id, email, role, first_name, last_name, phone_number, dob, gender, personal_email, emergency_contact, profile_photo, address, employee_id, department, designation, joining_date, employment_type, salary, experience, location, status, is_active, branch, office_location, operational_zone, reporting_manager_id, department_head_id, escalation_chain, approval_authority, force_password_reset, temp_password_expires_at, documents, created_at, updated_at, deleted_at)')
         .eq('project_id', projectId);
 
       // Fetch tasks

@@ -229,7 +229,7 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
 
     const allowedRoles = ["engineer", "cad", "field", "admin"];
     if (!allowedRoles.includes(profile.role)) {
-       return { success: false, error: "Role not authorized to claim projects." };
+      return { success: false, error: "Role not authorized to claim projects." };
     }
 
     const supabase: any = await createClient();
@@ -261,8 +261,8 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
       project_id: projectId,
       user_id: profile.id,
       action: 'TEAM_MEMBER_ASSIGNED',
-      details: { 
-        assigned_user: profile.id, 
+      details: {
+        assigned_user: profile.id,
         role: profile.role,
         note: 'Project claimed by user'
       }
@@ -318,15 +318,15 @@ export async function getTeamAssignmentsAction(projectId: string): Promise<OpRes
   try {
     const supabase: any = await createClient();
     const { data: assignments } = await supabase.from('project_assignments').select('id, project_id, user_id, role, assigned_by, assigned_at, removed_at').eq('project_id', projectId);
-    
+
     const userIds = Array.from(new Set((assignments || []).map((a: any) => a.user_id))).filter(Boolean);
-    
+
     let profiles = [];
     if (userIds.length > 0) {
       const { data } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
       profiles = data || [];
     }
-    
+
     const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     const projectAssignments = (assignments || []).map((a: any) => ({
@@ -459,12 +459,12 @@ export async function approveCADRevisionAction(
       return { success: false, error: "Only Engineers can approve CAD revisions." };
 
     const supabase: any = await createClient();
-    
+
     // Check if at least one CAD engineer and one Field engineer are assigned
     const { data: assignments } = await supabase.from('project_assignments').select('role').eq('project_id', projectId);
     const hasCad = assignments?.some((a: any) => a.role === 'cad');
     const hasField = assignments?.some((a: any) => a.role === 'field');
-    
+
     if (!hasCad || !hasField) {
       return { success: false, error: "Cannot approve CAD: At least one CAD engineer and one Field engineer must be assigned to the team." };
     }
@@ -603,7 +603,7 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
   try {
     const supabase: any = await createClient();
     const { data: revisions } = await supabase.from('cad_revisions').select('id, project_id, submitted_by, title, description, files, revision_number, status, revision_type, review_notes, reviewed_by, reviewed_at, submitted_at, updated_at').eq('project_id', projectId);
-    
+
     const userIds = Array.from(new Set((revisions || []).flatMap((r: any) => [r.submitted_by, r.reviewed_by]))).filter(Boolean);
     let profiles: any[] = [];
     if (userIds.length > 0) {
@@ -742,7 +742,7 @@ export async function getFieldReportsAction(projectId: string): Promise<OpRespon
   try {
     const supabase: any = await createClient();
     const { data: reports } = await supabase.from('field_reports').select('id, project_id, submitted_by, report_type, report_date, content, issues_identified, attachments, status, acknowledged_by, acknowledged_at, location_lat, location_lng, created_at, updated_at').eq('project_id', projectId);
-    
+
     const userIds = Array.from(new Set((reports || []).map((r: any) => r.submitted_by))).filter(Boolean);
     let profiles: any[] = [];
     if (userIds.length > 0) {
@@ -831,7 +831,7 @@ export async function notifyCadSurveyDataUploadedAction(projectId: string): Prom
     const cadUserIds = assignRes.data
       .filter((a: any) => ["cad"].includes(a.role))
       .map((a: any) => a.user_id);
-    
+
     if (cadUserIds.length > 0) {
       await sendLocalNotifications(
         cadUserIds,
@@ -874,7 +874,7 @@ export async function reviewFieldSurveyAction(
         const fieldUserIds = assignRes.data
           .filter((a: any) => ["field"].includes(a.role))
           .map((a: any) => a.user_id);
-        
+
         if (fieldUserIds.length > 0) {
           await sendLocalNotifications(
             fieldUserIds,
@@ -953,7 +953,7 @@ export async function logFieldVisitAction(
       .select('user_id')
       .eq('project_id', projectId)
       .eq('role', 'field');
-      
+
     const assignedFieldEngineers = assignments ? assignments.map((a: any) => a.user_id) : [];
 
     const newVisit = {
@@ -1106,7 +1106,7 @@ export async function getMyAssignedProjectsAction() {
     const supabase: any = await createClient();
     const { data: assignments } = await supabase.from('project_assignments').select('project_id, role, assigned_at').eq('user_id', profile.id);
     const assignedProjectIds = new Set((assignments || []).map((a: any) => a.project_id));
-    
+
     // Include unassigned projects in 'project_created' phase for engineers (and admins) to claim/view
     if (profile.role === 'engineer' || profile.role === 'admin') {
       const { data: createdProjects } = await supabase.from('projects').select('id').eq('status', 'project_created').is('deleted_at', null);
@@ -1114,7 +1114,7 @@ export async function getMyAssignedProjectsAction() {
         const createdIds = createdProjects.map((p: any) => p.id);
         const { data: engineerAssignments } = await supabase.from('project_assignments').select('project_id').in('project_id', createdIds).eq('role', 'engineer');
         const assignedEngineersSet = new Set((engineerAssignments || []).map((a: any) => a.project_id));
-        
+
         createdIds.forEach((id: string) => {
           if (!assignedEngineersSet.has(id)) {
             assignedProjectIds.add(id);
@@ -1130,7 +1130,7 @@ export async function getMyAssignedProjectsAction() {
         const cadIds = cadProjects.map((p: any) => p.id);
         const { data: cadAssignments } = await supabase.from('project_assignments').select('project_id').in('project_id', cadIds).eq('role', 'cad');
         const assignedCadSet = new Set((cadAssignments || []).map((a: any) => a.project_id));
-        
+
         cadIds.forEach((id: string) => {
           if (!assignedCadSet.has(id)) {
             assignedProjectIds.add(id);
@@ -1146,7 +1146,7 @@ export async function getMyAssignedProjectsAction() {
         const fieldIds = fieldProjects.map((p: any) => p.id);
         const { data: fieldAssignments } = await supabase.from('project_assignments').select('project_id').in('project_id', fieldIds).in('role', ['field']);
         const assignedFieldSet = new Set((fieldAssignments || []).map((a: any) => a.project_id));
-        
+
         fieldIds.forEach((id: string) => {
           if (!assignedFieldSet.has(id)) {
             assignedProjectIds.add(id);
@@ -1183,18 +1183,12 @@ export async function getMyAssignedProjectsAction() {
 export async function getProjectActivityAction(projectId: string) {
   try {
     const supabase: any = await createClient();
-    const { data: activityLogs } = await supabase.from('activity_logs').select('id, project_id, user_id, action, details, created_at').eq('project_id', projectId);
-
-    const userIds = Array.from(new Set()).filter(Boolean);
-    const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, email, role').in('id', userIds);
-    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-
+    const { data: activityLogs } = await supabase.from('activity_logs').select('id, project_id, user_id, action, details, created_at, user_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(200);
+    
     const logs = (activityLogs || []).map((l: any) => ({
       ...l,
-      user_profile: profileMap.get(l.user_id) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
+      user_profile: l.user_profile || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
     }));
-
-    logs.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return { success: true, error: null, data: logs };
   } catch (err: any) {
@@ -1214,13 +1208,13 @@ export async function getFieldVisitsAction(projectId: string): Promise<OpRespons
     const supabase: any = await createClient();
     const { data, error } = await supabase.from('project_visits').select('id, project_id, scheduled_date, status, purpose, assigned_team, visit_cost, is_billable, created_at, updated_at').eq('project_id', projectId).order('scheduled_date', { ascending: false });
     if (error) return { success: false, error: error.message };
-    
+
     const mapped = (data || []).map((v: any) => ({
       ...v,
       visit_date: v.scheduled_date,
       price: v.visit_cost
     }));
-    
+
     return { success: true, error: null, data: mapped };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -1251,7 +1245,7 @@ export async function getCADMetricsAction(): Promise<OpResponse<any>> {
       .from('files')
       .select('project_id')
       .in('category', ['cad_drawing', 'prototype', 'cad']);
-      
+
     const projectDrawingCounts: Record<string, number> = {};
     (files || []).forEach((f: any) => {
       projectDrawingCounts[f.project_id] = (projectDrawingCounts[f.project_id] || 0) + 1;
@@ -1286,23 +1280,23 @@ export async function getCADMetricsAction(): Promise<OpResponse<any>> {
       totalHours += (r.hours_spent || 0);
       totalTasksStr += " " + (r.tasks_completed || "");
     });
-    
+
     // Naive task count (split by commas or newlines in the text field)
     const tasksArr = totalTasksStr.split(/[\n,]+/).filter(t => t.trim().length > 0);
-    
+
     const productivity = {
       weeklyHours: totalHours,
       weeklyTasksCompleted: tasksArr.length
     };
 
-    return { 
-      success: true, 
-      error: null, 
+    return {
+      success: true,
+      error: null,
       data: {
         projectDrawingCounts,
         activeRevisions,
         productivity
-      } 
+      }
     };
   } catch (err: any) {
     return { success: false, error: err.message, data: null };
