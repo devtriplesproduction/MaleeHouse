@@ -17,6 +17,7 @@ import {
   getExpensesFundAllocationAction,
   getProjectActualSheetAction
 } from '@/actions/reports.actions';
+import { Select, SelectItem } from "@/components/ui/select";
 import { getProjectsListAction } from '@/actions/project.actions';
 import { generateFinancialReportPDF } from '@/lib/financial-pdf-generator';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -805,64 +806,63 @@ export function ReportsGenerator() {
   return (
     <div className="space-y-6">
       {/* Controls Header */}
-      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col gap-5 sticky top-4 z-10">
+      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col gap-5 z-10">
         
         <div className="flex flex-col gap-4">
           {/* Top Row: Dropdown Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Report Type</label>
-              <select
+              <Select
                 value={reportType}
-                onChange={(e) => setReportType(e.target.value as ReportType)}
-                className="w-full h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 cursor-pointer shadow-sm"
+                onValueChange={(val) => setReportType(val as ReportType)}
+                buttonClassName="w-full h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 cursor-pointer shadow-sm text-left"
               >
-                <option value="profit_loss">Profit & Loss Statement</option>
-                <option value="income">Income Statement</option>
-                <option value="expense">Expense Statement</option>
-                <option value="cash_flow">Cash Flow Statement</option>
-                <option value="balance_sheet">Balance Sheet</option>
-                <option value="project_statement">Project Statement (Client Copy)</option>
-                <option disabled>──────────</option>
-                <option value="all_project_summary">All Project Summary</option>
-                <option value="project_budget_sheet">Project Budget Sheet</option>
-                <option value="expenses_fund_allocation">Total Expences Fund Allocation</option>
-                <option value="project_actual_sheet">Project Actual Sheet</option>
-              </select>
+                <SelectItem value="profit_loss">Profit & Loss Statement</SelectItem>
+                <SelectItem value="income">Income Statement</SelectItem>
+                <SelectItem value="expense">Expense Statement</SelectItem>
+                <SelectItem value="cash_flow">Cash Flow Statement</SelectItem>
+                <SelectItem value="balance_sheet">Balance Sheet</SelectItem>
+                <SelectItem value="project_statement">Project Statement (Client Copy)</SelectItem>
+                <SelectItem value="all_project_summary">All Project Summary</SelectItem>
+                <SelectItem value="project_budget_sheet">Project Budget Sheet</SelectItem>
+                <SelectItem value="expenses_fund_allocation">Total Expences Fund Allocation</SelectItem>
+                <SelectItem value="project_actual_sheet">Project Actual Sheet</SelectItem>
+              </Select>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Project Filter</label>
-              <select
-                value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="w-full h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 cursor-pointer shadow-sm"
+              <Select
+                value={selectedProjectId || "all"}
+                onValueChange={(val) => setSelectedProjectId(val === "all" ? "" : val)}
+                buttonClassName="w-full h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 cursor-pointer shadow-sm text-left"
               >
-                <option value="">All Projects (Company-wide)</option>
+                <SelectItem value="all">All Projects (Company-wide)</SelectItem>
                 {projects.map(p => (
-                  <option key={p.id} value={p.id}>
+                  <SelectItem key={p.id} value={p.id}>
                     {p.name.length > 35 ? p.name.substring(0, 35) + '...' : p.name}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) ? (
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Timeframe</label>
-                <select
+                <Select
                   value={datePreset}
-                  onChange={(e) => handleDatePresetChange(e.target.value as DateRangePreset)}
-                  className="w-full h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 cursor-pointer shadow-sm"
+                  onValueChange={(val) => handleDatePresetChange(val as DateRangePreset)}
+                  buttonClassName="w-full h-11 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 cursor-pointer shadow-sm text-left"
                 >
-                  <option value="today">Daily (Today)</option>
-                  <option value="yesterday">Daily (Yesterday)</option>
-                  <option value="this_week">Weekly (This Week)</option>
-                  <option value="last_week">Weekly (Last Week)</option>
-                  <option value="this_month">Monthly (This Month)</option>
-                  <option value="last_month">Monthly (Last Month)</option>
-                  <option value="custom">Custom Date Range</option>
-                </select>
+                  <SelectItem value="today">Daily (Today)</SelectItem>
+                  <SelectItem value="yesterday">Daily (Yesterday)</SelectItem>
+                  <SelectItem value="this_week">Weekly (This Week)</SelectItem>
+                  <SelectItem value="last_week">Weekly (Last Week)</SelectItem>
+                  <SelectItem value="this_month">Monthly (This Month)</SelectItem>
+                  <SelectItem value="last_month">Monthly (Last Month)</SelectItem>
+                  <SelectItem value="custom">Custom Date Range</SelectItem>
+                </Select>
               </div>
             ) : (
               <div className="hidden lg:block" />
