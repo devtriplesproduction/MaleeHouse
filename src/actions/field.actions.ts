@@ -528,3 +528,17 @@ export async function getFieldMetricsAction(): Promise<any> {
     return { success: false, error: err.message, data: null };
   }
 }
+
+export async function getPendingMaterialRequestsCountAction() {
+  try {
+    const supabase: any = await createClient();
+    const { count, error } = await supabase
+      .from('material_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    if (error) throw error;
+    return { success: true, data: count || 0 };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

@@ -582,3 +582,50 @@ export async function adminHardDeleteClientAction(clientName: string): Promise<A
     return { success: false, error: error.message };
   }
 }
+
+export async function getActiveProjectsCountAction() {
+  try {
+    const supabase: any = await createClient();
+    const { count, error } = await supabase
+      .from('projects')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .not('status', 'in', '("completed","archived")');
+    if (error) throw error;
+    return { success: true, data: count || 0 };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getProjectStatusCountsAction() {
+  try {
+    const supabase: any = await createClient();
+    const now = new Date().toISOString();
+    
+    const [delayedRes, onTrackRes] = await Promise.all([
+      supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null)
+        .not('status', 'in', '("completed","archived")')
+        .lt('deadline', now),
+      supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null)
+        .not('status', 'in', '("completed","archived")')
+        .or(`deadline.is.null,deadline.gte.${now}`)
+    ]);
+    
+    return {
+      success: true,
+      data: {
+        delayed: delayedRes.count || 0,
+        onTrack: onTrackRes.count || 0
+      }
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

@@ -44,14 +44,6 @@ export async function getHRDashboardStatsAction() {
       }
     }
 
-    // 4. Open positions
-    // We don't have this table yet, so mock it to 0
-    const openPositionsCount = 0
-
-    // 5. Documents expiring
-    // Mock to 0 for now
-    const expiringDocumentsCount = 0
-
     return {
       success: true,
       data: {
@@ -61,9 +53,7 @@ export async function getHRDashboardStatsAction() {
           present: presentCount,
           absent: absentCount,
           onLeave: onLeaveCount
-        },
-        openPositionsCount,
-        expiringDocumentsCount
+        }
       }
     }
   } catch (error: any) {
@@ -160,5 +150,19 @@ export async function getOnboardingInProgressAction() {
     return { success: true, data: normalizeData(filtered) }
   } catch (error: any) {
     return { success: false, error: error.message }
+  }
+}
+
+export async function getActiveEmployeesCountAction() {
+  try {
+    const supabase: any = await createClient();
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+    if (error) throw error;
+    return { success: true, data: count || 0 };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
 }

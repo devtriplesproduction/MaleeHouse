@@ -81,20 +81,22 @@ export async function getAllOverrideRequestsAction() {
       }
     }
 
-    // Recover any projects stuck in requested state without a notification
-    const { data: stuckProjects } = await supabase
+    // Recover all projects with active or approved dispatch overrides to construct history
+    const { data: overrideProjects } = await supabase
       .from('projects')
-      .select('id, name, client_name, status, updated_at')
-      .eq('dispatch_override_requested', true);
+      .select('id, name, client_name, status, updated_at, dispatch_override_requested, dispatch_override_approved')
+      .or('dispatch_override_requested.eq.true,dispatch_override_approved.eq.true');
       
-    if (stuckProjects && stuckProjects.length > 0) {
-      for (const p of stuckProjects) {
+    if (overrideProjects && overrideProjects.length > 0) {
+      for (const p of overrideProjects) {
         if (!uniqueMap.has(p.id)) {
           uniqueMap.set(p.id, {
-            id: `stuck-${p.id}`,
-            title: 'Dispatch Override Requested',
-            message: `Accountant requested dispatch override for Project "${p.name}" (Payment is pending).`,
-            is_read: false,
+            id: `proj-${p.id}`,
+            title: p.dispatch_override_approved ? 'Dispatch Override Approved' : 'Dispatch Override Requested',
+            message: p.dispatch_override_approved 
+              ? `Override approved for Project "${p.name}".`
+              : `Accountant requested dispatch override for Project "${p.name}" (Payment is pending).`,
+            is_read: p.dispatch_override_approved,
             created_at: p.updated_at || new Date().toISOString(),
             related_project_id: p.id,
             projects: {
@@ -104,7 +106,8 @@ export async function getAllOverrideRequestsAction() {
             }
           });
         } else {
-          uniqueMap.get(p.id).is_read = false; // ensure it shows as pending
+          // Sync state if already exists in notification map
+          uniqueMap.get(p.id).is_read = p.dispatch_override_approved;
         }
       }
     }

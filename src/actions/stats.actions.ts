@@ -211,3 +211,16 @@ export async function getActivityLogsAction(limit: number = 5) {
     return []
   }
 }
+
+export async function getActiveClientsCountAction() {
+  try {
+    const supabase: any = await createClient();
+    const { count, error } = await supabase
+      .from('clients')
+      .select('*', { count: 'exact', head: true });
+    if (error) throw error;
+    return { success: true, data: count || 0 };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
