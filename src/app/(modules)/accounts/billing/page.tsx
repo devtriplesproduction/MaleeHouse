@@ -7,10 +7,9 @@ import { MilestonePaymentsTable } from "@/features/accounts/MilestonePaymentsTab
 import { PaymentReceiptsTable } from "@/features/accounts/PaymentReceiptsTable";
 import { ProjectBillingTable, ProjectBillingSummary } from "@/features/accounts/ProjectBillingTable";
 import { ExpenseEntryTrigger } from "@/features/accounts/ExpenseEntryTrigger";
-import { AlertCircle, Target, FileText, Wallet, RefreshCw, Search, Receipt, Briefcase, Coins } from "lucide-react";
+import { AlertCircle, Target, FileText, Wallet, RefreshCw, Search, Receipt, Briefcase } from "lucide-react";
 import DashboardLoading from "@/app/(modules)/loading";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/modules/PageHeader";
 
 export default function BillingPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -60,35 +59,41 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
-      <PageHeader
-        title={<>Billing & <span className="text-indigo-600 dark:text-indigo-400">Collections</span></>}
-        subtitle="Manage client invoices, monitor milestone collections, and track inbound receivables."
-        icon={Coins}
-        actions={
-          <>
-            <div className="relative flex-1 md:w-80 md:flex-initial">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search project, client, or milestone title..."
-                className="w-full pl-9 pr-4 h-10 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs outline-none focus:bg-white dark:focus:bg-slate-950 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 dark:text-white placeholder:text-slate-400"
-              />
-            </div>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-6">
+        <div className="space-y-1.5">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            Billing & <span className="text-indigo-600 dark:text-indigo-400">Collections</span>
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Manage client invoices and track receivables.
+          </p>
+        </div>
 
-            <button
-              onClick={() => fetchData(true)}
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400 transition-all hover:text-slate-900 dark:hover:text-white active:scale-95 flex-shrink-0"
-              title="Refresh Data"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Search bar */}
+          <div className="relative flex-1 md:w-80 md:flex-initial">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search project, client, or milestone title..."
+              className="w-full pl-9 pr-4 h-10 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs outline-none focus:bg-white dark:focus:bg-slate-950 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 dark:text-white placeholder:text-slate-400"
+            />
+          </div>
 
-            <ExpenseEntryTrigger projects={projectsData} />
-          </>
-        }
-      />
+          <button
+            onClick={() => fetchData(true)}
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400 transition-all hover:text-slate-900 dark:hover:text-white active:scale-95 flex-shrink-0"
+            title="Refresh Data"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+
+          <ExpenseEntryTrigger projects={projectsData} />
+        </div>
+      </div>
 
       {/* Tabs list selector */}
       <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/80 dark:bg-white/5 rounded-xl border border-slate-200/20 dark:border-white/5 self-start w-fit">
