@@ -834,7 +834,9 @@ export function ReportsGenerator() {
             >
               <option value="">All Projects (Company-wide)</option>
               {projects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name.length > 35 ? p.name.substring(0, 35) + '...' : p.name}
+                </option>
               ))}
             </select>
 
