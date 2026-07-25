@@ -434,9 +434,6 @@ function ProjectMilestonesContent() {
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-6">
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">
-            Financial Control
-          </p>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Project <span className="text-indigo-600 dark:text-indigo-400">Milestones</span>
           </h1>
