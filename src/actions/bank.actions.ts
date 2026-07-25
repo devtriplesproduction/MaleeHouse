@@ -446,3 +446,17 @@ export async function getBankAccountLedgerAction(bankId: string, limit: number =
   }
 }
 
+export async function getTotalBankBalanceAction() {
+  try {
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('bank_accounts')
+      .select('current_balance');
+    if (error) throw error;
+    
+    const total = (data || []).reduce((sum: number, b: any) => sum + Number(b.current_balance || 0), 0);
+    return { success: true, data: total };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
