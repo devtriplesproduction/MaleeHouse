@@ -34,6 +34,16 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
 };
 
+const formatPhone = (contactStr?: string | null) => {
+  if (!contactStr) return 'N/A';
+  const phoneMatch = contactStr.match(/Phone:\s*([^\s,]+)/i);
+  if (phoneMatch) return phoneMatch[1];
+  if (contactStr.includes(',')) {
+    return contactStr.split(',')[0].replace(/phone:\s*/i, '').trim();
+  }
+  return contactStr.replace(/phone:\s*/i, '').trim();
+};
+
 export function ReportsGenerator() {
   const [reportType, setReportType] = useState<ReportType>('profit_loss');
   const [dateFrom, setDateFrom] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -217,13 +227,13 @@ export function ReportsGenerator() {
     const type = generatedConfig.type;
     
     const isCashFlow = type === 'cash_flow';
-    const inflowTitle = isCashFlow ? '1. CASH INFLOW (REVENUE)' : '1. REVENUE';
-    const outflowTitle = isCashFlow ? '2. CASH OUTFLOW (EXPENSES)' : '2. COSTS & EXPENSES';
-    const summaryTitle = isCashFlow ? '3. CASH FLOW SUMMARY' : '3. PROFIT & LOSS SUMMARY';
-    const overviewTitle = isCashFlow ? '4. CASH FLOW OVERVIEW' : '4. FINANCIAL OVERVIEW';
-    const totalInflowLabel = isCashFlow ? 'TOTAL CASH INFLOW' : 'TOTAL REVENUE';
-    const totalOutflowLabel = isCashFlow ? 'TOTAL CASH OUTFLOW' : 'TOTAL COSTS';
-    const netLabel = isCashFlow ? 'NET CASH FLOW' : 'NET PROFIT';
+    const inflowTitle = isCashFlow ? '1. Cash Inflow (Revenue)' : '1. Revenue';
+    const outflowTitle = isCashFlow ? '2. Cash Outflow (Expenses)' : '2. Costs & Expenses';
+    const summaryTitle = isCashFlow ? '3. Cash Flow Summary' : '3. Profit & Loss Summary';
+    const overviewTitle = isCashFlow ? '4. Cash Flow Overview' : '4. Financial Overview';
+    const totalInflowLabel = isCashFlow ? 'Total Cash Inflow' : 'Total Revenue';
+    const totalOutflowLabel = isCashFlow ? 'Total Cash Outflow' : 'Total Costs';
+    const netLabel = isCashFlow ? 'Net Cash Flow' : 'Net Profit';
 
     const UniversalHeader = (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-2 px-6">
@@ -240,8 +250,7 @@ export function ReportsGenerator() {
                 <tbody>
                   <tr><td className="py-1.5 text-slate-500 w-24 sm:w-28 font-medium">Client Name</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.client_name || 'N/A'}</td></tr>
                   <tr><td className="py-1.5 text-slate-500 font-medium align-top">Address</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.client_address || (generatedConfig.projectId ? 'Address Not Provided' : 'N/A')}</td></tr>
-                  <tr><td className="py-1.5 text-slate-500 font-medium">Phone</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.client_contact || (generatedConfig.projectId ? '' : 'N/A')}</td></tr>
-                  <tr><td className="py-1.5 text-slate-500 font-medium">Email</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.client_email || 'N/A'}</td></tr>
+                  <tr><td className="py-1.5 text-slate-500 font-medium">Phone</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {formatPhone(reportData.project?.client_contact) || (generatedConfig.projectId ? '' : 'N/A')}</td></tr>
                 </tbody>
               </table>
             </div>
@@ -262,7 +271,6 @@ export function ReportsGenerator() {
                   <tr><td className="py-1.5 text-slate-500 w-24 sm:w-28 font-medium">Project Name</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: {reportData.project?.name || 'All Projects'}</td></tr>
                   <tr><td className="py-1.5 text-slate-500 font-medium">Manager</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: Malee House Team</td></tr>
                   <tr><td className="py-1.5 text-slate-500 font-medium">Status</td><td className="py-1.5 font-semibold text-emerald-600 dark:text-emerald-400">: {reportData.project?.status || 'Completed'}</td></tr>
-                  <tr><td className="py-1.5 text-slate-500 font-medium">Currency</td><td className="py-1.5 font-semibold text-slate-800 dark:text-foreground">: INR</td></tr>
                 </tbody>
               </table>
             </div>
@@ -278,39 +286,39 @@ export function ReportsGenerator() {
           
           {/* Revenue / Inflow */}
           <div className="px-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-blue-600 text-white p-2 rounded-full shadow-lg shadow-blue-500/30">
-                <TrendingUp size={20} strokeWidth={2.5} />
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/50 shrink-0">
+                <TrendingUp className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-base font-black text-blue-600 uppercase tracking-wide">{inflowTitle}</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">{inflowTitle}</h3>
             </div>
-            <div className="border border-blue-200 dark:border-blue-900 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
+            <div className="border border-slate-200/70 dark:border-slate-800/70 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-blue-600 text-white">
-                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider w-16 text-center">#</th>
-                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider">Description</th>
-                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider text-right">Amount (INR)</th>
+                  <tr className="bg-slate-50/70 dark:bg-slate-900/50 border-b border-slate-200/70 dark:border-slate-800/70">
+                    <th className="py-3 px-6 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider w-16 text-center">#</th>
+                    <th className="py-3 px-6 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Description</th>
+                    <th className="py-3 px-6 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Amount (INR)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.entries(reportData.revenueByProject || {}).map(([k, v], idx) => (
-                    <tr key={idx} className="border-b border-blue-100 dark:border-blue-900/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20">
-                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400 text-center">{idx + 1}</td>
-                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-foreground font-medium">{k}</td>
-                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">{formatCurrency(v as number)}</td>
+                    <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                      <td className="py-3 px-6 text-sm text-slate-400 dark:text-slate-500 text-center">{idx + 1}</td>
+                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-slate-200 font-medium">{k}</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-slate-200">{formatCurrency(v as number)}</td>
                     </tr>
                   ))}
                   {Object.keys(reportData.revenueByProject || {}).length === 0 && (
-                    <tr className="border-b border-blue-100 dark:border-blue-900/50">
-                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400 text-center">1</td>
-                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-foreground font-medium">Other Income</td>
-                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">₹ 0.00</td>
+                    <tr className="border-b border-slate-100 dark:border-slate-800/50">
+                      <td className="py-3 px-6 text-sm text-slate-400 dark:text-slate-500 text-center">1</td>
+                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-slate-200 font-medium">Other Income</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-slate-200">₹ 0.00</td>
                     </tr>
                   )}
-                  <tr className="bg-blue-50/80 dark:bg-blue-900/20">
-                    <td colSpan={2} className="py-4 px-6 text-sm text-blue-700 dark:text-blue-400 font-bold uppercase tracking-wider">{totalInflowLabel}</td>
-                    <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-blue-700 dark:text-blue-400">{formatCurrency(reportData.totalRevenue)}</td>
+                  <tr className="bg-slate-50/80 dark:bg-slate-900/40">
+                    <td colSpan={2} className="py-3.5 px-6 text-xs text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">{totalInflowLabel}</td>
+                    <td className="py-3.5 px-6 text-sm font-bold tabular-nums text-right text-slate-900 dark:text-slate-100">{formatCurrency(reportData.totalRevenue)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -319,39 +327,39 @@ export function ReportsGenerator() {
 
           {/* Costs / Outflow */}
           <div className="px-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-purple-600 text-white p-2 rounded-full shadow-lg shadow-purple-500/30">
-                <TrendingDown size={20} strokeWidth={2.5} />
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/50 shrink-0">
+                <TrendingDown className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-base font-black text-purple-600 uppercase tracking-wide">{outflowTitle}</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">{outflowTitle}</h3>
             </div>
-            <div className="border border-purple-200 dark:border-purple-900 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
+            <div className="border border-slate-200/70 dark:border-slate-800/70 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-purple-600 text-white">
-                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider w-16 text-center">#</th>
-                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider">Description</th>
-                    <th className="py-3 px-6 text-xs font-bold uppercase tracking-wider text-right">Amount (INR)</th>
+                  <tr className="bg-slate-50/70 dark:bg-slate-900/50 border-b border-slate-200/70 dark:border-slate-800/70">
+                    <th className="py-3 px-6 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider w-16 text-center">#</th>
+                    <th className="py-3 px-6 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Description</th>
+                    <th className="py-3 px-6 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Amount (INR)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.entries(reportData.costsByCategory || {}).map(([k, v], idx) => (
-                    <tr key={idx} className="border-b border-purple-100 dark:border-purple-900/50 hover:bg-purple-50/50 dark:hover:bg-purple-900/20">
-                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400 text-center">{idx + 1}</td>
-                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-foreground font-medium capitalize">{k}</td>
-                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">{formatCurrency(v as number)}</td>
+                    <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                      <td className="py-3 px-6 text-sm text-slate-400 dark:text-slate-500 text-center">{idx + 1}</td>
+                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-slate-200 font-medium capitalize">{k}</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-slate-200">{formatCurrency(v as number)}</td>
                     </tr>
                   ))}
                   {Object.keys(reportData.costsByCategory || {}).length === 0 && (
-                    <tr className="border-b border-purple-100 dark:border-purple-900/50">
-                      <td className="py-3 px-6 text-sm text-slate-500 dark:text-slate-400 text-center">1</td>
-                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-foreground font-medium">Other Expenses</td>
-                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">₹ 0.00</td>
+                    <tr className="border-b border-slate-100 dark:border-slate-800/50">
+                      <td className="py-3 px-6 text-sm text-slate-400 dark:text-slate-500 text-center">1</td>
+                      <td className="py-3 px-6 text-sm text-slate-800 dark:text-slate-200 font-medium">Other Expenses</td>
+                      <td className="py-3 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-slate-200">₹ 0.00</td>
                     </tr>
                   )}
-                  <tr className="bg-purple-50/80 dark:bg-purple-900/20">
-                    <td colSpan={2} className="py-4 px-6 text-sm text-purple-700 dark:text-purple-400 font-bold uppercase tracking-wider">{totalOutflowLabel}</td>
-                    <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-purple-700 dark:text-purple-400">{formatCurrency(reportData.totalCosts)}</td>
+                  <tr className="bg-slate-50/80 dark:bg-slate-900/40">
+                    <td colSpan={2} className="py-3.5 px-6 text-xs text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">{totalOutflowLabel}</td>
+                    <td className="py-3.5 px-6 text-sm font-bold tabular-nums text-right text-slate-900 dark:text-slate-100">{formatCurrency(reportData.totalCosts)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -360,30 +368,30 @@ export function ReportsGenerator() {
 
           {/* Summary Section */}
           <div className="px-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-teal-600 text-white p-2 rounded-full shadow-lg shadow-primary/20">
-                <Wallet size={20} strokeWidth={2.5} />
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/50 shrink-0">
+                <Wallet className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-base font-black text-teal-600 uppercase tracking-wide">{summaryTitle}</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">{summaryTitle}</h3>
             </div>
-            <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
+            <div className="border border-slate-200/70 dark:border-slate-800/70 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm">
               <table className="w-full text-left border-collapse">
                 <tbody>
-                  <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="py-4 px-6 text-sm text-slate-600 dark:text-slate-400 font-medium">Opening Balance</td>
-                    <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-foreground">₹ 0.00</td>
+                  <tr className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/20 dark:hover:bg-white/[0.01]">
+                    <td className="py-3.5 px-6 text-sm text-slate-500 dark:text-slate-400 font-medium">Opening Balance</td>
+                    <td className="py-3.5 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-slate-200">₹ 0.00</td>
                   </tr>
-                  <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="py-4 px-6 text-sm text-emerald-600 dark:text-emerald-500 font-medium">{totalInflowLabel}</td>
-                    <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-emerald-600 dark:text-emerald-500">{formatCurrency(reportData.totalRevenue)}</td>
+                  <tr className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/20 dark:hover:bg-white/[0.01]">
+                    <td className="py-3.5 px-6 text-sm text-slate-500 dark:text-slate-400 font-medium">{totalInflowLabel}</td>
+                    <td className="py-3.5 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-slate-200">{formatCurrency(reportData.totalRevenue)}</td>
                   </tr>
-                  <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="py-4 px-6 text-sm text-rose-600 dark:text-rose-500 font-medium">{totalOutflowLabel}</td>
-                    <td className="py-4 px-6 text-sm font-semibold tabular-nums text-right text-rose-600 dark:text-rose-500">- {formatCurrency(reportData.totalCosts)}</td>
+                  <tr className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/20 dark:hover:bg-white/[0.01]">
+                    <td className="py-3.5 px-6 text-sm text-slate-500 dark:text-slate-400 font-medium">{totalOutflowLabel}</td>
+                    <td className="py-3.5 px-6 text-sm font-semibold tabular-nums text-right text-slate-800 dark:text-slate-200">- {formatCurrency(reportData.totalCosts)}</td>
                   </tr>
-                  <tr className="bg-teal-50/50 dark:bg-teal-900/10 border-t-2 border-slate-100 dark:border-slate-800">
-                    <td className="py-5 px-6 text-sm text-teal-700 dark:text-teal-400 font-bold uppercase tracking-wider">Closing Balance</td>
-                    <td className="py-5 px-6 text-sm font-bold tabular-nums text-right text-teal-700 dark:text-teal-400">{formatCurrency(reportData.netProfit)}</td>
+                  <tr className="bg-slate-50/80 dark:bg-slate-900/40">
+                    <td className="py-4 px-6 text-xs text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider">Closing Balance</td>
+                    <td className="py-4 px-6 text-sm font-bold tabular-nums text-right text-slate-900 dark:text-slate-100">{formatCurrency(reportData.netProfit)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -392,27 +400,30 @@ export function ReportsGenerator() {
 
           {/* Overview Block */}
           <div className="px-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-indigo-600 text-white p-2 rounded-full shadow-lg shadow-primary/20">
-                <FileBarChart2 size={20} strokeWidth={2.5} />
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/50 shrink-0">
+                <FileBarChart2 className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-base font-black text-indigo-600 uppercase tracking-wide">{overviewTitle}</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">{overviewTitle}</h3>
             </div>
-            <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm flex flex-col md:flex-row">
-              <div className="flex-1 p-6 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 flex flex-col justify-center">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Revenue (Inflow)</span>
-                  <span className="text-sm font-bold tabular-nums text-emerald-600">{formatCurrency(reportData.totalRevenue)}</span>
+            <div className="border border-slate-200/70 dark:border-slate-800/70 rounded-xl overflow-hidden bg-white dark:bg-[#0f172a]/80 shadow-sm flex flex-col md:flex-row">
+              <div className="flex-1 p-6 border-b md:border-b-0 md:border-r border-slate-200/70 dark:border-slate-800/70 flex flex-col justify-center">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Revenue (Inflow)</span>
+                  <span className="text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(reportData.totalRevenue)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Expenses (Outflow)</span>
-                  <span className="text-sm font-bold tabular-nums text-rose-600">{formatCurrency(reportData.totalCosts)}</span>
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Expenses (Outflow)</span>
+                  <span className="text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">{formatCurrency(reportData.totalCosts)}</span>
                 </div>
               </div>
-              <div className="flex-1 p-8 bg-slate-50 dark:bg-white/[0.02] flex flex-col items-center justify-center text-center">
-                <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2">{netLabel}</span>
-                <span className={`text-4xl font-black tabular-nums tracking-tight ${reportData.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              <div className="flex-1 p-6 bg-slate-50/40 dark:bg-white/[0.01] flex flex-col items-center justify-center text-center">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{netLabel}</span>
+                <span className="text-2xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-slate-100">
                   {reportData.netProfit < 0 ? '- ' : ''}{formatCurrency(Math.abs(reportData.netProfit))}
+                </span>
+                <span className={`inline-flex items-center gap-1 mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${reportData.netProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/40' : 'bg-rose-50 text-rose-700 border border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40'}`}>
+                  {reportData.netProfit >= 0 ? 'Positive Net' : 'Deficit'}
                 </span>
               </div>
             </div>
