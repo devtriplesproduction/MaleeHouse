@@ -20,6 +20,7 @@ import {
   Clock,
   AlertCircle,
   Scale,
+  Coins,
 } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
@@ -57,7 +58,7 @@ const adminLinks = [
     title: "Finance",
     icon: DollarSign,
     subLinks: [
-      { title: "Billing & Collections", href: "/accounts/billing", icon: DollarSign },
+      { title: "Billing & Collections", href: "/accounts/billing", icon: Coins },
       { title: "Payroll", href: "/admin/hr/payroll", icon: DollarSign },
       { title: "Reports", href: "/accounts/reports", icon: BarChart3 },
     ],
