@@ -402,15 +402,6 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                   {/* Section 1: Icon + Project, Client, & Title */}
                   <div className="flex items-start gap-3 flex-1 min-w-0 md:pr-4 py-0.5">
                     {/* Tinted Icon Box */}
-                    <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm group-hover:scale-105 transition-transform duration-200 flex-shrink-0 mt-1",
-                      isProjectFrozen
-                        ? "bg-rose-500/10 border-rose-500/20 text-rose-500"
-                        : "bg-indigo-500/10 border-indigo-500/20 text-indigo-500 dark:text-indigo-400"
-                    )}>
-                      {isProjectFrozen ? <Lock className="w-4 h-4" /> : <Target className="w-4 h-4" />}
-                    </div>
-
                     <div className="min-w-0 flex-1 flex flex-col justify-center">
                       <div className="flex flex-col justify-center">
                         <span className="text-[15px] font-medium text-slate-900 dark:text-white leading-tight block mb-1.5 truncate" title={m.projects?.name || 'Standalone Assignment'}>

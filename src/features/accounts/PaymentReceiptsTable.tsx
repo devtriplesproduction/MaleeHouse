@@ -189,11 +189,6 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
             >
               {/* Section 1: Icon + Project, Client, & Receipt ID (50%) */}
               <div className="flex items-start gap-3 w-full md:w-[50%] flex-shrink-0 md:pr-4 py-0.5">
-                {/* Tinted Icon Box */}
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm group-hover:scale-105 transition-transform duration-200 flex-shrink-0 mt-1">
-                  <CheckCircle className="w-4 h-4" />
-                </div>
-
                 <div className="min-w-0 flex-1 flex flex-col justify-center">
                   <div className="flex flex-col justify-center">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
