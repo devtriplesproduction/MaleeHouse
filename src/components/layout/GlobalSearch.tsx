@@ -30,7 +30,6 @@ export function GlobalSearch() {
   const quickActions = [
     { title: "Create New Project", shortcut: "/new-project", icon: Plus, path: "/projects/new", color: "text-indigo-500", bg: "bg-indigo-500/10" },
     { title: "Invite Team Member", shortcut: "/invite", icon: UserPlus, path: "/admin/users", color: "text-blue-500", bg: "bg-blue-500/10" },
-    { title: "System Health Room", shortcut: "/health", icon: Activity, path: "/admin", color: "text-emerald-500", bg: "bg-emerald-500/10" },
     { title: "Security Audit Logs", shortcut: "/security", icon: ShieldAlert, path: "/admin", color: "text-amber-500", bg: "bg-amber-500/10" },
     { title: "Analytics Overview", shortcut: "/stats", icon: Zap, path: "/admin", color: "text-purple-500", bg: "bg-purple-500/10" },
   ];

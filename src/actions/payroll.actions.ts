@@ -1037,3 +1037,28 @@ export async function savePayrollDraftAdjustmentsAction(cycleId: string, draftAp
     return { success: false, error: error.message };
   }
 }
+
+export async function getLatestPayrollStatusAction() {
+  try {
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
+      .from('payroll_cycles')
+      .select('status')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+      
+    if (error) throw error;
+    
+    const status = data?.status === 'locked' 
+      ? 'Processed' 
+      : data?.status === 'draft' 
+        ? 'Draft' 
+        : data?.status === 'submitted' 
+          ? 'Submitted' 
+          : 'Pending';
+    return { success: true, data: status };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
