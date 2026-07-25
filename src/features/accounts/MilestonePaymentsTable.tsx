@@ -14,7 +14,8 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
-  FilePlus
+  FilePlus,
+  FileText
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -83,7 +84,7 @@ const statusConfig: Record<string, { label: string; className: string; icon: any
   hold: { label: 'Payment Hold', className: 'bg-rose-500/10 text-rose-500 border-rose-500/20', icon: Pause },
   reminder: { label: 'Reminder', className: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20', icon: Bell },
   payment_verification_pending: { label: 'Verification Pending', className: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock },
-  invoiced: { label: 'Invoiced', className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20', icon: Receipt },
+  invoiced: { label: 'Invoiced', className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20', icon: FileText },
 };
 
 const formatCurrency = (amount: number) => {
@@ -519,15 +520,15 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                             setSelectedInvoiceMilestone(m);
                             setInvoiceModalOpen(true);
                           }}
-                          disabled={isProjectFrozen || !!getActiveInvoice(m) || m.status === 'invoiced'}
-                          title={isProjectFrozen ? "Project is frozen. Resume project to create invoice." : (getActiveInvoice(m) || m.status === 'invoiced') ? "Active invoice already exists or milestone is invoiced" : "Create Invoice"}
+                          disabled={isProjectFrozen || !!getActiveInvoice(m) || (m.status as string) === 'invoiced'}
+                          title={isProjectFrozen ? "Project is frozen. Resume project to create invoice." : (getActiveInvoice(m) || (m.status as string) === 'invoiced') ? "Active invoice already exists or milestone is invoiced" : "Create Invoice"}
                           className={cn(
                             "h-8 px-3 rounded-lg text-xs font-semibold border border-indigo-600 text-indigo-600 dark:border-indigo-500/50 dark:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
-                            (isProjectFrozen || !!getActiveInvoice(m) || m.status === 'invoiced') && "opacity-50 cursor-not-allowed active:scale-100"
+                            (isProjectFrozen || !!getActiveInvoice(m) || (m.status as string) === 'invoiced') && "opacity-50 cursor-not-allowed active:scale-100"
                           )}
                         >
                           <FilePlus className="w-3.5 h-3.5" />
-                          {(getActiveInvoice(m) || m.status === 'invoiced') ? 'Invoice Created' : 'Create PF Invoice'}
+                          {(getActiveInvoice(m) || (m.status as string) === 'invoiced') ? 'Invoice Created' : 'Create PF Invoice'}
                         </button>
 
                         <button
