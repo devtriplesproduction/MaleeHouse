@@ -28,6 +28,8 @@ interface ProjectBillingTableProps {
 }
 
 export function ProjectBillingTable({ projects, searchQuery = "", onRefresh }: ProjectBillingTableProps) {
+  const [visibleCount, setVisibleCount] = React.useState(10);
+
   const filtered = projects.filter((project) => {
     if (!searchQuery) return true;
     const projName = project.name || '';
@@ -36,6 +38,13 @@ export function ProjectBillingTable({ projects, searchQuery = "", onRefresh }: P
     return projName.toLowerCase().includes(searchQuery.toLowerCase()) ||
            clientName.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  const paginated = filtered.slice(0, visibleCount);
+
+  // Reset pagination when search query changes
+  React.useEffect(() => {
+    setVisibleCount(10);
+  }, [searchQuery]);
 
   return (
     <div className="space-y-3.5">
@@ -47,7 +56,7 @@ export function ProjectBillingTable({ projects, searchQuery = "", onRefresh }: P
           </div>
         </div>
       ) : (
-        filtered.map((project) => {
+        paginated.map((project) => {
           const budget = project.budget || 0;
           const paid = project.total_paid || 0;
           const effectiveBudget = budget > 0 ? budget : (project.total_invoiced > 0 ? project.total_invoiced : 0);
@@ -122,6 +131,17 @@ export function ProjectBillingTable({ projects, searchQuery = "", onRefresh }: P
             </Link>
           );
         })
+      )}
+
+      {filtered.length > visibleCount && (
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={() => setVisibleCount((prev) => prev + 10)}
+            className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-slate-600 dark:text-slate-300"
+          >
+            Load More Projects
+          </button>
+        </div>
       )}
     </div>
   );
