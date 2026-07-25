@@ -815,25 +815,25 @@ export function ReportsGenerator() {
 
       {/* Minimal controls below */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200/40 dark:border-white/5">
-        <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+        <div className="flex flex-row items-center gap-3 w-full lg:w-auto overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 scrollbar-none flex-nowrap">
           {/* Searchable Project Filter */}
-          <div className="w-full sm:w-72 relative" ref={dropdownRef}>
+          <div className="w-[200px] sm:w-64 shrink-0 relative" ref={dropdownRef}>
             <button
               type="button"
               onClick={() => setProjDropdownOpen(!projDropdownOpen)}
-              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all outline-none"
+              className="w-full flex items-center justify-between px-4 h-11 rounded-xl text-sm font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all outline-none"
             >
               <span className="truncate">
                 {projects.find(p => p.id === selectedProjectId)?.name || "All Projects (Company-wide)"}
               </span>
-              <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0 ml-2", projDropdownOpen && "rotate-180")} />
+              <ChevronDown className={cn("h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0 ml-2", projDropdownOpen && "rotate-180")} />
             </button>
 
             {projDropdownOpen && (
               <div className="absolute top-full left-0 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
                 {/* Search input inside dropdown */}
-                <div className="p-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2.5">
+                  <Search className="w-4 h-4 text-slate-400 shrink-0" />
                   <input
                     type="text"
                     value={projectSearch}
@@ -871,7 +871,7 @@ export function ReportsGenerator() {
                           : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                       )}
                     >
-                      <span className="truncate max-w-[200px]">{p.name}</span>
+                      <span className="truncate max-w-[180px]">{p.name}</span>
                       {selectedProjectId === p.id && <Check className="w-3.5 h-3.5" />}
                     </button>
                   ))}
@@ -888,26 +888,26 @@ export function ReportsGenerator() {
 
           {/* Premium Date Pickers wrapped in a non-wrapping flex row */}
           {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
-            <div className="flex items-center gap-2 flex-nowrap w-full sm:w-auto">
-              <div className="w-[140px] sm:w-40">
+            <div className="flex items-center gap-2.5 flex-nowrap shrink-0">
+              <div className="w-[140px] sm:w-[170px]">
                 <PremiumDatePicker
                   value={dateFrom}
                   onChange={setDateFrom}
                   align="left"
                   className="w-full"
-                  triggerClassName="text-xs font-semibold h-9 rounded-xl py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                  triggerClassName="text-sm font-semibold h-11 py-2.5 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
                 />
               </div>
 
-              <span className="text-slate-400 text-xs font-bold shrink-0">to</span>
+              <span className="text-slate-400 text-sm font-bold shrink-0">to</span>
 
-              <div className="w-[140px] sm:w-40">
+              <div className="w-[140px] sm:w-[170px]">
                 <PremiumDatePicker
                   value={dateTo}
                   onChange={setDateTo}
                   align="left"
                   className="w-full"
-                  triggerClassName="text-xs font-semibold h-9 rounded-xl py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                  triggerClassName="text-sm font-semibold h-11 py-2.5 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
                 />
               </div>
             </div>
@@ -916,28 +916,28 @@ export function ReportsGenerator() {
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            className="w-full sm:w-auto h-9 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] shrink-0"
+            className="h-11 px-7 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] shrink-0"
           >
-            {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
             Generate
           </button>
         </div>
 
         {/* Exports on the right */}
         {reportData && generatedConfig && (
-          <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end border-t md:border-t-0 border-slate-200/50 dark:border-white/5 pt-3 md:pt-0">
+          <div className="flex items-center gap-3 w-full lg:w-auto justify-start lg:justify-end border-t lg:border-t-0 border-slate-200/50 dark:border-white/5 pt-4 lg:pt-0">
             <button
               onClick={exportExcel}
-              className="w-full sm:w-auto h-9 px-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto h-11 px-5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               Excel
             </button>
             <button
               onClick={exportPDF}
-              className="w-full sm:w-auto h-9 px-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto h-11 px-5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2"
             >
-              <Download className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <Download className="w-4 h-4 text-rose-600 dark:text-rose-400" />
               PDF
             </button>
           </div>
