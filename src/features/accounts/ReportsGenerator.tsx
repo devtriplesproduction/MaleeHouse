@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { FileText, FileSpreadsheet, Calendar, ChevronDown, CheckCircle2, Loader2, Download, User, Briefcase, TrendingUp, TrendingDown, Wallet, FileBarChart2 } from 'lucide-react';
+import { FileText, FileSpreadsheet, Calendar, ChevronDown, CheckCircle2, Loader2, Download, User, Briefcase, TrendingUp, TrendingDown, Wallet, FileBarChart2, Search, Check } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, subDays, subMonths, subWeeks } from 'date-fns';
 import { 
   getProfitLossReportAction, 
@@ -23,6 +23,7 @@ import { PremiumDatePicker } from "@/components/ui/PremiumDatePicker";
 import { BarChart3 } from "lucide-react";
 import { getProjectsListAction } from '@/actions/project.actions';
 import { generateFinancialReportPDF } from '@/lib/financial-pdf-generator';
+import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
 
@@ -40,6 +41,9 @@ export function ReportsGenerator() {
   
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [projectSearch, setProjectSearch] = useState("");
+  const [projDropdownOpen, setProjDropdownOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
@@ -53,6 +57,16 @@ export function ReportsGenerator() {
       }
     }
     loadProjects();
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setProjDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleGenerate = async () => {
@@ -800,27 +814,81 @@ export function ReportsGenerator() {
       />
 
       {/* Minimal controls below */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200/40 dark:border-white/5">
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Project Filter */}
-          <div className="w-full sm:w-60">
-            <Select
-              value={selectedProjectId || "all"}
-              onValueChange={(val) => setSelectedProjectId(val === "all" ? "" : val)}
-              buttonClassName="w-full h-9 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all dark:text-slate-100 cursor-pointer shadow-sm text-left"
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200/40 dark:border-white/5">
+        <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+          {/* Searchable Project Filter */}
+          <div className="w-full sm:w-72 relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setProjDropdownOpen(!projDropdownOpen)}
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all outline-none"
             >
-              <SelectItem value="all">All Projects (Company-wide)</SelectItem>
-              {projects.map(p => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name.length > 35 ? p.name.substring(0, 35) + '...' : p.name}
-                </SelectItem>
-              ))}
-            </Select>
+              <span className="truncate">
+                {projects.find(p => p.id === selectedProjectId)?.name || "All Projects (Company-wide)"}
+              </span>
+              <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0 ml-2", projDropdownOpen && "rotate-180")} />
+            </button>
+
+            {projDropdownOpen && (
+              <div className="absolute top-full left-0 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
+                {/* Search input inside dropdown */}
+                <div className="p-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={projectSearch}
+                    onChange={(e) => setProjectSearch(e.target.value)}
+                    placeholder="Search projects..."
+                    className="w-full bg-transparent border-none text-xs outline-none text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
+                  />
+                </div>
+
+                {/* Project List */}
+                <div className="max-h-48 overflow-y-auto p-1.5 space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedProjectId(""); setProjDropdownOpen(false); setProjectSearch(""); }}
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2 text-left rounded-lg text-xs font-medium transition-colors",
+                      !selectedProjectId 
+                        ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" 
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    )}
+                  >
+                    <span>All Projects (Company-wide)</span>
+                    {!selectedProjectId && <Check className="w-3.5 h-3.5" />}
+                  </button>
+
+                  {projects.filter(p => p.name.toLowerCase().includes(projectSearch.toLowerCase())).map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { setSelectedProjectId(p.id); setProjDropdownOpen(false); setProjectSearch(""); }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2 text-left rounded-lg text-xs font-medium transition-colors",
+                        selectedProjectId === p.id 
+                          ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" 
+                          : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      )}
+                    >
+                      <span className="truncate max-w-[200px]">{p.name}</span>
+                      {selectedProjectId === p.id && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                  ))}
+
+                  {projects.filter(p => p.name.toLowerCase().includes(projectSearch.toLowerCase())).length === 0 && (
+                    <div className="px-3 py-2 text-xs text-slate-400 italic text-center">
+                      No matching projects
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Premium Date Pickers */}
           {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
-            <div className="w-full sm:w-36">
+            <div className="w-full sm:w-44">
               <PremiumDatePicker
                 value={dateFrom}
                 onChange={setDateFrom}
@@ -836,7 +904,7 @@ export function ReportsGenerator() {
           )}
 
           {!['project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
-            <div className="w-full sm:w-36">
+            <div className="w-full sm:w-44">
               <PremiumDatePicker
                 value={dateTo}
                 onChange={setDateTo}
@@ -850,7 +918,7 @@ export function ReportsGenerator() {
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            className="w-full sm:w-auto h-9 px-5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto h-9 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
           >
             {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
             Generate
