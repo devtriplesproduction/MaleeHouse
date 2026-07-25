@@ -3,6 +3,8 @@ import { getAllUsersAction } from "@/actions/admin.actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/modules/PageHeader";
+import { CalendarCheck } from "lucide-react";
 
 export default async function AttendanceManagementPage() {
   const [usersRes, logsRes] = await Promise.all([
@@ -20,12 +22,11 @@ export default async function AttendanceManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Attendance Management</h1>
-          <p className="text-muted-foreground mt-1">Review employee attendance and process overrides.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Attendance Management"
+        subtitle="Review employee attendance and process overrides."
+        icon={CalendarCheck}
+      />
 
       <Card>
         <CardHeader>

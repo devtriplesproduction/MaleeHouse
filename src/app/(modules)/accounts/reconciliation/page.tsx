@@ -3,6 +3,7 @@ import { getBankAccountsAction } from "@/actions/bank.actions";
 import { Landmark, Scale, Clock, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReconciliationWorkspace from "@/features/accounts/ReconciliationWorkspace";
+import { PageHeader } from "@/components/modules/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -33,15 +34,11 @@ export default async function ReconciliationPage() {
 
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="border-b border-slate-200/60 dark:border-white/5 pb-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Reconciliation
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Compare bank statement balances with ERP ledger entries to identify discrepancies.
-        </p>
-      </div>
+      <PageHeader
+        title="Reconciliation"
+        subtitle="Compare bank statement balances with ERP ledger entries to identify discrepancies."
+        icon={Scale}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

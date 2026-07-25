@@ -53,7 +53,7 @@ export default async function EmployeeDetailsPage({ params }: { params: { id: st
                         {doc.category}
                       </TableCell>
                       <TableCell>{doc.uploaded_by_profile?.first_name} {doc.uploaded_by_profile?.last_name}</TableCell>
-                      <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>{doc.created_at && !isNaN(new Date(doc.created_at).getTime()) ? new Date(doc.created_at).toLocaleDateString() : 'N/A'}</TableCell>
                       <TableCell className="text-right">
                         <Link href={doc.file_url} target="_blank" className="text-blue-500 hover:underline flex items-center justify-end gap-1">
                           <Download className="h-3 w-3" /> View

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Menu, Search, Settings, LogOut, ChevronDown, User } from "lucide-react";
+import { Menu, Search, LogOut, ChevronDown, User } from "lucide-react";
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { useUser } from "@/hooks/useUser";
 import { NotificationBell } from "./NotificationBell";
@@ -43,17 +43,6 @@ export function Topbar() {
       <div className="flex items-center gap-2">
         {/* Background Upload Monitor */}
         <UploadMonitor />
-
-        {/* Settings icon */}
-        {role === "admin" && (
-          <Link
-            href="/admin/settings"
-            aria-label="Settings"
-            className="p-2 rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <Settings className="w-[18px] h-[18px]" />
-          </Link>
-        )}
 
         {/* Theme Toggle */}
         <ThemeToggle />

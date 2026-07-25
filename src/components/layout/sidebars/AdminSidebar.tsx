@@ -1,40 +1,83 @@
 "use client";
 
-import { Settings, Users, BookOpen, Clock, CalendarCheck, PlaneTakeoff, FileText, Target, Building2, Megaphone, DollarSign, Landmark, UserCheck, Shield } from "lucide-react";
+import {
+  Settings,
+  Users,
+  Building2,
+  FileText,
+  Landmark,
+  FolderKanban,
+  Briefcase,
+  DollarSign,
+  UserCheck,
+  Megaphone,
+  BarChart3,
+  Activity,
+  ScrollText,
+  CalendarCheck,
+  PlaneTakeoff,
+  BookOpen,
+  Clock,
+  AlertCircle,
+  Scale,
+} from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
 const adminLinks = [
-  { title: "Admin Console", href: "/admin", icon: Settings },
-  { 
-    title: "Team Management", 
-    icon: Users,
+  { title: "Dashboard", href: "/admin", icon: Activity },
+  { isSeparator: true, title: "sep-org" },
+  {
+    title: "Organization",
+    icon: Building2,
     subLinks: [
       { title: "Employees", href: "/admin/users", icon: Users },
       { title: "Departments", href: "/admin/hr/employees", icon: UserCheck },
-      { title: "Roles & Permissions", href: "/admin/settings", icon: Shield },
-    ]
+    ],
   },
-  { title: "Project Milestones", href: "/admin/milestones", icon: Target },
-  { title: "All Projects", href: "/projects", icon: FileText },
-  { title: "Client Directory", href: "/clients", icon: Building2 },
-  { title: "Procedures (SOP)", href: "/sop", icon: BookOpen },
-  { 
-    title: "HR & Attendance",
-    icon: Clock,
+  {
+    title: "Projects",
+    icon: FolderKanban,
     subLinks: [
-      { title: "Attendance", href: "/admin/hr/attendance", icon: UserCheck },
-      { title: "Leave Management", href: "/admin/hr/team", icon: Users },
+      { title: "All Projects", href: "/projects", icon: FileText },
+      { title: "Milestones", href: "/admin/milestones", icon: ScrollText },
+      { title: "Clients", href: "/clients", icon: Briefcase },
+    ],
+  },
+  {
+    title: "Banking",
+    icon: Landmark,
+    subLinks: [
+      { title: "Bank Accounts", href: "/accounts/banks", icon: Landmark },
+      { title: "Ledger", href: "/accounts/ledger", icon: ScrollText },
+      { title: "Outstanding Payments", href: "/accounts/outstanding", icon: AlertCircle },
+      { title: "Reconciliation", href: "/accounts/reconciliation", icon: Scale },
+    ],
+  },
+  {
+    title: "Finance",
+    icon: DollarSign,
+    subLinks: [
+      { title: "Billing & Collections", href: "/accounts/billing", icon: DollarSign },
+      { title: "Payroll", href: "/admin/hr/payroll", icon: DollarSign },
+      { title: "Reports", href: "/accounts/reports", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "HR",
+    icon: UserCheck,
+    subLinks: [
+      { title: "Attendance", href: "/admin/hr/attendance", icon: CalendarCheck },
+      { title: "Leave Management", href: "/leaves", icon: PlaneTakeoff },
       { title: "Announcements", href: "/announcements", icon: Megaphone },
-    ]
+    ],
   },
-  { title: "Salary Records", href: "/admin/hr/payroll", icon: DollarSign },
-  { 
-    title: "Company Settings", 
-    icon: Building2,
+  {
+    title: "Administration",
+    icon: Settings,
     subLinks: [
-      { title: "Company Details", href: "/settings/details", icon: Building2 },
-      { title: "Company Accounts", href: "/settings/account", icon: Landmark },
-    ]
+      { title: "Company Settings", href: "/settings/details", icon: Building2 },
+      { title: "Audit Logs", href: "/accounts/audit", icon: ScrollText },
+    ],
   },
 ];
 

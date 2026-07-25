@@ -1,8 +1,7 @@
 import React, { Suspense } from "react";
-
 export const dynamic = "force-dynamic";
-import { RealtimeStatsGrid } from "@/components/modules/RealtimeStatsGrid";
-import { TrendingUp, AlertCircle, FileText, Zap, ChevronDown, IndianRupee, ArrowUpRight, ArrowDownRight, Wallet, Clock, CheckSquare, Target } from "lucide-react";
+import { PageHeader } from "@/components/modules/PageHeader";
+import { ShieldAlert, TrendingUp, AlertCircle, FileText, Zap, ChevronDown, IndianRupee, ArrowUpRight, ArrowDownRight, Wallet, Clock, CheckSquare, Target } from "lucide-react";
 import Link from "next/link";
 import { getQuotationIntakeQueueAction } from "@/actions/quotation.actions";
 import { createClient } from "@/lib/supabase/server";
@@ -59,21 +58,17 @@ export default async function AccountantDashboardPage() {
 
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="border-b border-slate-200/60 dark:border-white/5 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Accounts Overview
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Financial KPIs and pipeline at a glance.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <EODFormModal reports={eodReports} roleColor="indigo" />
-          <ExpenseEntryTrigger projects={projects} />
-        </div>
-      </div>
+      <PageHeader
+        title="Master Financial Control Center"
+        subtitle="Financial KPIs, auditing pipeline and controls at a glance."
+        icon={ShieldAlert}
+        actions={
+          <>
+            <EODFormModal reports={eodReports} roleColor="indigo" />
+            <ExpenseEntryTrigger projects={projects} />
+          </>
+        }
+      />
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 !mt-5">

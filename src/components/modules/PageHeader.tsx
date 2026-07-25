@@ -15,25 +15,31 @@ export function PageHeader({
   title,
   subtitle,
   icon: Icon,
-  iconClassName = "text-indigo-500",
+  iconClassName = "text-indigo-600 dark:text-indigo-400",
   actions,
   className
 }: PageHeaderProps) {
   return (
-    <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-4", className)}>
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-          {Icon && <Icon className={cn("w-6 h-6", iconClassName)} />}
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {subtitle}
-          </p>
+    <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-4", className)}>
+      <div className="flex items-center gap-3.5">
+        {Icon && (
+          <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+            <Icon className={cn("w-5 h-5", iconClassName)} />
+          </div>
         )}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
       {actions && (
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-3 w-full sm:w-auto flex-shrink-0">
           {actions}
         </div>
       )}

@@ -13,7 +13,6 @@ import {
   getCashFlowStatementAction, 
   getBalanceSheetAction,
   getProjectStatementAction,
-  getAllProjectSummaryAction,
   getProjectBudgetSheetAction,
   getExpensesFundAllocationAction,
   getProjectActualSheetAction
@@ -120,9 +119,6 @@ export function ReportsGenerator() {
         case 'project_statement':
           if (!pid) { toast.error('Project Required', { description: 'Please select a specific project.' }); setIsLoading(false); return; }
           res = await getProjectStatementAction(pid);
-          break;
-        case 'all_project_summary':
-          res = await getAllProjectSummaryAction(dateFrom, dateTo);
           break;
         case 'project_budget_sheet':
           if (!pid) { toast.error('Project Required', { description: 'Please select a specific project for the Budget Sheet.' }); setIsLoading(false); return; }

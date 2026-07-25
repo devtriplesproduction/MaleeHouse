@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Gift, Calendar, Users } from "lucide-react";
+import { Gift, Calendar, Users, Contact } from "lucide-react";
+import { PageHeader } from "@/components/modules/PageHeader";
 
 export default async function EmployeeDirectoryPage() {
   const { data: users, success } = await getAllUsersAction();
@@ -41,32 +42,31 @@ export default async function EmployeeDirectoryPage() {
     return null;
   };
 
-  const sortedUsers = [...(users || [])].sort((a, b) => {
-    if (!a.dob) return 1;
-    if (!b.dob) return -1;
-    const dateA = new Date(a.dob);
-    const dateB = new Date(b.dob);
-    
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    
-    let nextA = new Date(today.getFullYear(), dateA.getMonth(), dateA.getDate());
-    if (nextA < today) nextA.setFullYear(today.getFullYear() + 1);
-    
-    let nextB = new Date(today.getFullYear(), dateB.getMonth(), dateB.getDate());
-    if (nextB < today) nextB.setFullYear(today.getFullYear() + 1);
-    
-    return nextA.getTime() - nextB.getTime();
-  });
+  const sortedUsers = [...(users || [])]
+    .filter(u => u.dob && !isNaN(new Date(u.dob).getTime()))
+    .sort((a, b) => {
+      const dateA = new Date(a.dob);
+      const dateB = new Date(b.dob);
+      
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      
+      let nextA = new Date(today.getFullYear(), dateA.getMonth(), dateA.getDate());
+      if (nextA < today) nextA.setFullYear(today.getFullYear() + 1);
+      
+      let nextB = new Date(today.getFullYear(), dateB.getMonth(), dateB.getDate());
+      if (nextB < today) nextB.setFullYear(today.getFullYear() + 1);
+      
+      return nextA.getTime() - nextB.getTime();
+    });
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Employee Directory</h1>
-          <p className="text-muted-foreground mt-1">View and search through all personnel profiles and details.</p>
-        </div>
-      </div>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <PageHeader
+        title="Employee Directory"
+        subtitle="View and search through all personnel profiles and details."
+        icon={Contact}
+      />
 
       <Tabs defaultValue="directory" className="w-full">
         <TabsList className="mb-4">
@@ -150,7 +150,7 @@ export default async function EmployeeDirectoryPage() {
                           </TableCell>
                           <TableCell className="capitalize">{user.department || 'N/A'}</TableCell>
                           <TableCell>
-                            {user.dob ? (
+                            {user.dob && !isNaN(new Date(user.dob).getTime()) ? (
                               <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                                 <Calendar className="w-4 h-4 text-slate-400" />
                                 {new Date(user.dob).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}

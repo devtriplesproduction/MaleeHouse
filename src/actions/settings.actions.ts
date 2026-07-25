@@ -102,7 +102,6 @@ export async function updateSystemSettingsAction(key: string, value: any) {
 
     if (error) throw error;
 
-    revalidatePath("/admin/settings");
     revalidatePath("/admin");
     return { success: true };
   } catch (err: any) {
@@ -194,7 +193,6 @@ export async function updateCompanySettingsAction(settings: Partial<CompanySetti
 
     if (error) throw error;
 
-    revalidatePath("/admin/settings");
     revalidatePath("/accounts");
     revalidatePath("/projects");
     return { success: true, data: normalizeData(updatedSettings) };

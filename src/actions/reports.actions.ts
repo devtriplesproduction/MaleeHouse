@@ -410,41 +410,6 @@ export async function getProjectStatementAction(projectId: string): Promise<Repo
 
 // New Actions for Financial Reports
 
-export async function getAllProjectSummaryAction(start: string, end: string): Promise<ReportResponse> {
-  try {
-    const auth = await requireAuthContext();
-    if (auth.error) return { success: false, error: auth.error };
-
-    const supabase: any = await createClient();
-
-    const { data: projectsData, error } = await supabase
-      .from('projects')
-      .select('id, name, client_name, client_contact, client_address, services, created_at')
-      .gte('created_at', start)
-      .lte('created_at', end);
-
-    if (error) throw error;
-
-    const mappedProjects = (projectsData || []).map((p: any) => ({
-      projectId: p.id,
-      quotationNo: p.id.startsWith('PRJ-') ? 'QT-' + p.id.substring(4) : 'QT-' + p.id,
-      projectName: p.name || p.client_name,
-      contactNo: p.client_contact || 'N/A',
-      serviceType: p.services?.[0] || 'N/A',
-      location: p.client_address || 'N/A',
-      totalInvoiceValue: Math.floor(Math.random() * 50000) + 10000,
-      budgetExpences: Math.floor(Math.random() * 20000) + 5000,
-      totalExpences: Math.floor(Math.random() * 25000) + 5000,
-      totalReceived: Math.floor(Math.random() * 30000) + 5000,
-      totalPending: Math.floor(Math.random() * 10000),
-      totalProfitLoss: Math.floor(Math.random() * 15000)
-    }));
-
-    return { success: true, data: { projects: mappedProjects } };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
 
 export async function getProjectBudgetSheetAction(projectId: string): Promise<ReportResponse> {
   try {
