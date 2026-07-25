@@ -901,3 +901,17 @@ export async function updateDraftQuotationAction(id: string, payload: CreateQuot
     return { success: false, error: error?.message || String(error) };
   }
 }
+
+export async function getPendingQuotationsCountAction() {
+  try {
+    const supabase: any = await createClient();
+    const { count, error } = await supabase
+      .from('quotations')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Draft'); // Assuming Draft or Pending implies it needs action
+    if (error) throw error;
+    return { success: true, data: count || 0 };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

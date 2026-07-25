@@ -1863,3 +1863,17 @@ export async function publicUpdateInvoiceStatusAction(invoiceId: string, status:
     return { success: false, error: error.message };
   }
 }
+
+export async function getPendingInvoicesCountAction() {
+  try {
+    const supabase: any = await createClient();
+    const { count, error } = await supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['pending', 'issued']);
+    if (error) throw error;
+    return { success: true, data: count || 0 };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
