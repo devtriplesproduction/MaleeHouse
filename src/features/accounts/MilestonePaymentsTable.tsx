@@ -413,7 +413,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
 
                     <div className="min-w-0 flex-1 flex flex-col justify-center">
                       <div className="flex flex-col justify-center">
-                        <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block mb-1.5 truncate" title={m.projects?.name || 'Standalone Assignment'}>
+                        <span className="text-[15px] font-medium text-slate-900 dark:text-white leading-tight block mb-1.5 truncate" title={m.projects?.name || 'Standalone Assignment'}>
                           {m.projects?.name || 'Standalone Assignment'}
                         </span>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 font-medium">

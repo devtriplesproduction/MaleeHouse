@@ -66,7 +66,7 @@ export function ProjectBillingTable({ projects, searchQuery = "", onRefresh }: P
                 </div>
 
                 <div className="min-w-0 flex-1 flex flex-col justify-center">
-                  <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block mb-1.5 hover:underline" title={project.name}>
+                  <span className="text-[15px] font-medium text-slate-900 dark:text-white leading-tight block mb-1.5 hover:underline" title={project.name}>
                     {project.name}
                   </span>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 font-medium">

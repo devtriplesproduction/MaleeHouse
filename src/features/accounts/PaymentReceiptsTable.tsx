@@ -197,7 +197,7 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
                 <div className="min-w-0 flex-1 flex flex-col justify-center">
                   <div className="flex flex-col justify-center">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block truncate" title={r.projectName}>
+                      <span className="text-[15px] font-medium text-slate-900 dark:text-white leading-tight block truncate" title={r.projectName}>
                         {r.projectName}
                       </span>
                       <span className={cn(

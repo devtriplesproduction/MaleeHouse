@@ -121,7 +121,7 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
 
                 <div className="min-w-0 flex-1 flex flex-col justify-center">
                   <div className="flex flex-col justify-center">
-                    <span className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight block mb-1.5" title={invoice.projects?.name || 'Standalone Assignment'}>
+                    <span className="text-[15px] font-medium text-slate-900 dark:text-white leading-tight block mb-1.5" title={invoice.projects?.name || 'Standalone Assignment'}>
                       {invoice.projects?.name || 'Standalone Assignment'}
                       {invoice.project_milestones?.title?.includes('[Archived]') && (
                         <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
