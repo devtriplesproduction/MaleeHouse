@@ -886,39 +886,37 @@ export function ReportsGenerator() {
             )}
           </div>
 
-          {/* Premium Date Pickers */}
+          {/* Premium Date Pickers wrapped in a non-wrapping flex row */}
           {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
-            <div className="w-full sm:w-44">
-              <PremiumDatePicker
-                value={dateFrom}
-                onChange={setDateFrom}
-                align="left"
-                className="w-full"
-                triggerClassName="text-xs font-semibold h-9 rounded-xl py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
-              />
-            </div>
-          )}
+            <div className="flex items-center gap-2 flex-nowrap w-full sm:w-auto">
+              <div className="w-[140px] sm:w-40">
+                <PremiumDatePicker
+                  value={dateFrom}
+                  onChange={setDateFrom}
+                  align="left"
+                  className="w-full"
+                  triggerClassName="text-xs font-semibold h-9 rounded-xl py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                />
+              </div>
 
-          {!['balance_sheet', 'project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
-            <span className="text-slate-400 text-xs font-bold shrink-0">to</span>
-          )}
+              <span className="text-slate-400 text-xs font-bold shrink-0">to</span>
 
-          {!['project_statement', 'project_budget_sheet', 'project_actual_sheet'].includes(reportType) && (
-            <div className="w-full sm:w-44">
-              <PremiumDatePicker
-                value={dateTo}
-                onChange={setDateTo}
-                align="left"
-                className="w-full"
-                triggerClassName="text-xs font-semibold h-9 rounded-xl py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
-              />
+              <div className="w-[140px] sm:w-40">
+                <PremiumDatePicker
+                  value={dateTo}
+                  onChange={setDateTo}
+                  align="left"
+                  className="w-full"
+                  triggerClassName="text-xs font-semibold h-9 rounded-xl py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                />
+              </div>
             </div>
           )}
 
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            className="w-full sm:w-auto h-9 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full sm:w-auto h-9 px-6 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] shrink-0"
           >
             {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
             Generate
