@@ -227,7 +227,7 @@ export default function DashboardNotificationCenter() {
                   </div>
 
                   <div className="border-t border-slate-100/50 dark:border-white/5 pt-2 flex items-center justify-between text-xs font-semibold text-slate-450 dark:text-slate-500">
-                    <span>{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
+                    <span suppressHydrationWarning>{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
                     
                     {n.related_project_id && (
                       <Link

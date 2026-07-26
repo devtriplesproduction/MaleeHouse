@@ -107,7 +107,7 @@ export function DispatchOverridesTable({ requests: initialRequests }: DispatchOv
                   <td className="px-4 py-4 text-slate-500">
                     <div className="flex flex-col">
                       <span>{format(new Date(req.created_at), 'MMM d, yyyy')}</span>
-                      <span className="text-xs">{formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}</span>
+                      <span className="text-xs" suppressHydrationWarning>{formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}</span>
                     </div>
                   </td>
                   <td className="px-4 py-4">

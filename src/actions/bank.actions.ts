@@ -16,7 +16,7 @@ export async function getBankAccountsAction() {
     );
     const { data, error } = await supabase
       .from("bank_accounts")
-      .select('id, bank_name, account_name, account_number, branch_name, qr_code_url, is_default, created_at, updated_at, is_active')
+      .select('id, bank_name, account_name, account_number, branch_name, is_default, created_at, updated_at')
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
 

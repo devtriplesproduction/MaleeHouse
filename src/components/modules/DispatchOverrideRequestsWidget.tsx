@@ -100,7 +100,7 @@ export function DispatchOverrideRequestsWidget({ requests: initialRequests }: Di
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Client: {req.projects?.client_name || 'N/A'}
                 </p>
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-slate-400 mt-1" suppressHydrationWarning>
                   Requested {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
                 </p>
               </div>

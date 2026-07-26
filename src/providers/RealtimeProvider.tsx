@@ -61,7 +61,7 @@ const NOTIFICATION_TOAST_CONFIG: Record<
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
-  const supabase: any = createClient();
+  const [supabase] = useState(() => createClient());
   const { toast } = useToast();
   const [notificationVersion, setNotificationVersion] = useState(0);
   const isSubscribing = useRef(false);

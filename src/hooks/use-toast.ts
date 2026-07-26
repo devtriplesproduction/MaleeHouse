@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { create } from "zustand";
 
 export type ToastVariant = "default" | "success" | "error" | "warning";
@@ -45,9 +46,9 @@ export const toast = (props: Omit<Toast, "id">) => useToastStore.getState().addT
 export function useToast() {
   const { addToast, removeToast, toasts } = useToastStore();
 
-  return {
+  return React.useMemo(() => ({
     toasts,
     toast: (props: Omit<Toast, "id">) => addToast(props),
     dismiss: (id: string) => removeToast(id),
-  };
+  }), [toasts, addToast, removeToast]);
 }

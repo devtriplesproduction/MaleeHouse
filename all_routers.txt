@@ -1,0 +1,102 @@
+src/app/(modules)/accounts/approvals/page.tsx:131: router.push(`/accounts/milestones?project=${quotation.project_id}&plan=true`);
+src/app/(modules)/accounts/approvals/page.tsx:434: onClick={() => router.push(`/accounts/quotations?project=${q.project.id}&mode=manage`)}
+src/app/(modules)/accounts/approvals/page.tsx:522: router.push(`/accounts/milestones?project=${q.project_id}&plan=true`);
+src/app/(modules)/accounts/approvals/page.tsx:585: router.push(`/accounts/quotations?project=${q.project.id}&mode=manage`);
+src/app/(modules)/accounts/approvals/page.tsx:587: router.push(`/accounts/quotations?quotation=${q.id}&mode=manage`);
+src/app/(modules)/accounts/approvals/page.tsx:788: router.push(`/accounts/milestones?project=${selectedQuote.project_id}&plan=true`);
+src/app/(modules)/accounts/banking/accounts/[bankId]/BankDetailsClient.tsx:153: onClick={() => router.push("/accounts/banks")}
+src/app/(modules)/accounts/banking/accounts/[bankId]/BankDetailsClient.tsx:424: onClick={() => router.push(getTargetUrl(tx.module, tx.recordId))}
+src/app/(modules)/accounts/milestones/page.tsx:333: router.push("/accounts/approvals");
+src/app/(modules)/accounts/quotations/page.tsx:105: onCancel={() => router.push("/accounts/quotations")}
+src/app/(modules)/accounts/quotations/page.tsx:107: router.push(`/accounts/quotations?project=${project.id}&mode=manage`)
+src/app/(modules)/accounts/quotations/page.tsx:128: onClick={() => router.push("/accounts/quotations")}
+src/app/invoices/[id]/ClientInvoiceViewer.tsx:29: router.refresh();
+src/app/unauthorized/page.tsx:15: router.push('/login');
+src/app/unauthorized/page.tsx:16: router.refresh();
+src/components/auth/AutoLogout.tsx:25: router.push("/login");
+src/components/eod/EODForm.tsx:213: router.refresh();
+src/components/layout/GlobalSearch.tsx:93: router.push(item.path);
+src/components/layout/GlobalSearch.tsx:137: router.push(action.path);
+src/components/leaves/AdminLeaveDashboard.tsx:104: router.refresh();
+src/components/leaves/LeaveForm.tsx:176: router.refresh();
+src/components/modules/AnnouncementManager.tsx:91: if (res.success) { toast.success('Announcement updated'); setIsOpen(false); router.refresh(); }
+src/components/modules/AnnouncementManager.tsx:95: if (res.success) { toast.success('Announcement created'); setIsOpen(false); router.refresh(); }
+src/components/modules/AnnouncementManager.tsx:109: if (res.success) { toast.success('Announcement deleted'); router.refresh(); }
+src/components/modules/AssignmentModal.tsx:59: router.refresh();
+src/components/modules/AssignmentModal.tsx:72: router.refresh();
+src/components/modules/CADRevisionPanel.tsx:100: router.refresh();
+src/components/modules/CADRevisionPanel.tsx:119: router.refresh();
+src/components/modules/CADRevisionPanel.tsx:133: router.refresh();
+src/components/modules/DigitalVault.tsx:137: router.refresh();
+src/components/modules/DigitalVault.tsx:153: router.refresh();
+src/components/modules/DigitalVault.tsx:198: router.refresh();
+src/components/modules/FieldDashboardWidgets.tsx:59: router.refresh();
+src/components/modules/FieldDashboardWidgets.tsx:135: router.refresh();
+src/components/modules/FieldReportPanel.tsx:67: router.refresh();
+src/components/modules/FileUploader.tsx:89: router.refresh();
+src/components/modules/MaterialApprovalWidget.tsx:17: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:134: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:148: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:180: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:201: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:219: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:241: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:261: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:279: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:300: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:319: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:398: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:417: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:437: router.refresh();
+src/components/modules/OperationsControlCenter.tsx:454: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:171: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:232: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:284: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:315: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:385: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:434: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:486: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:541: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:562: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:589: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:616: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:642: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:650: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:659: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:694: router.refresh();
+src/components/modules/OperationsFileUploadPanel.tsx:716: router.refresh();
+src/components/modules/OperationsTable.tsx:151: onClick={() => router.push(`/projects/${project.id}`)}
+src/components/modules/ProjectCommunicationTab.tsx:80: router.refresh();
+src/components/modules/ProjectCommunicationTab.tsx:94: router.refresh();
+src/components/modules/ProjectDeleteButton.tsx:28: router.push('/projects');
+src/components/modules/ProjectDetailsHeader.tsx:48: router.refresh();
+src/components/modules/ProjectDetailsHeader.tsx:59: router.push('/projects');
+src/components/modules/ProjectDocumentsTab.tsx:178: router.refresh();
+src/components/modules/ProjectDocumentsTab.tsx:199: router.refresh();
+src/components/modules/ProjectDocumentsTab.tsx:215: router.refresh();
+src/components/modules/ProjectOverviewTab.tsx:142: router.refresh();
+src/components/modules/ProjectOverviewTab.tsx:158: router.refresh();
+src/components/modules/ProjectOverviewTab.tsx:170: router.refresh();
+src/components/modules/ProjectsTable.tsx:264: router.push(`/projects/${project.id}`);
+src/components/modules/ProjectWorkflowTab.tsx:194: router.refresh();
+src/features/accounts/BankManagementPanel.tsx:141: onClick={() => router.push(`/accounts/banking/accounts/${bank.id}`)}
+src/features/accounts/ExpenseEntryTrigger.tsx:14: router.refresh();
+src/features/accounts/QuotationApprovalPanel.tsx:75: router.push('/accounts/approvals');
+src/features/accounts/QuotationIntakeQueue.tsx:238: onClick={() => router.push(`/accounts/quotations?project=${project.id}&mode=create`)}
+src/features/accounts/QuotationList.tsx:122: onClick={() => router.push(`/accounts/quotations?project=${q.project.id}&mode=manage`)}
+src/features/accounts/QuotationList.tsx:199: router.push(`/accounts/quotations?project=${q.project.id}&mode=manage`);
+src/features/accounts/QuotationList.tsx:201: router.push(`/accounts/quotations?quotation=${q.id}&mode=manage`);
+src/features/accounts/UpcomingMilestonesWidget.tsx:105: router.refresh();
+src/features/accounts/UpcomingMilestonesWidget.tsx:332: router.refresh();
+src/features/sales/components/ClientDirectory.tsx:133: router.refresh();
+src/features/sales/components/ClientDirectory.tsx:142: router.refresh();
+src/features/sales/components/CreateLeadModal.tsx:105: router.refresh();
+src/features/sales/components/crm/FollowUpManager.tsx:173: router.refresh();
+src/features/sales/components/crm/RequirementSystem.tsx:54: router.refresh();
+src/features/sales/components/LeadPipeline.tsx:132: router.refresh();
+src/features/sales/components/LeadPipeline.tsx:190: router.refresh();
+src/features/sales/components/SalesProjectPortal.tsx:161: router.refresh();
+src/features/sales/components/SalesProjectPortal.tsx:175: router.refresh();
+src/features/sales/components/SalesProjectPortal.tsx:216: router.refresh();
+src/features/sales/components/SalesProjectPortal.tsx:234: router.refresh();
+src/providers/UserProvider.tsx:95: router.push('/login');

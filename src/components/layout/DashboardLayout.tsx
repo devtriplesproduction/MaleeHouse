@@ -22,14 +22,6 @@ export function DashboardLayout({
 }) {
   const { role, isLoading } = useUser();
 
-  if (isLoading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#fcfcfd] dark:bg-[#080b14]">
-        <DashboardLoading />
-      </div>
-    );
-  }
-
   const renderSidebar = () => {
     if (role === "admin") return <AdminSidebar />;
     if (role === "sales") return <SalesSidebar />;

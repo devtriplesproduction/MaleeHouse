@@ -1,0 +1,8 @@
+src/app/(modules)/(shared)/profile/IDCardClient.tsx:32 - router.replace called inside useMemo/useState in IDCardClient
+src/components/eod/EODReview.tsx:119 - router.push called inside useMemo/useState in EODReview
+src/components/modules/HolidayManager.tsx:52 - router.push called inside useMemo/useState in HolidayManager
+src/components/modules/ProjectActivityFeed.tsx:161 - router.push called inside useMemo/useState in RichTextarea
+src/components/modules/ProjectActivityFeed.tsx:418 - router.push called inside useMemo/useState in ProjectActivityFeed
+src/components/modules/ProjectActivityFeed.tsx:438 - router.push called inside useMemo/useState in ProjectActivityFeed
+src/components/modules/ProjectActivityFeed.tsx:442 - router.push called inside useMemo/useState in ProjectActivityFeed
+src/components/modules/TeamPresenceWarRoom.tsx:61 - router.push called inside useMemo/useState in TeamPresenceWarRoom

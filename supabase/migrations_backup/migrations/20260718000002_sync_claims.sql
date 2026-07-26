@@ -10,10 +10,11 @@ BEGIN
   -- We only want to run this if the role actually changed or is newly inserted
   IF TG_OP = 'INSERT' OR NEW.role IS DISTINCT FROM OLD.role THEN
     UPDATE auth.users
-    SET raw_app_meta_data = jsonb_set(
-      COALESCE(raw_app_meta_data, '{}'::jsonb),
-      '{role}',
-      to_jsonb(NEW.role)
+    SETraw_app_meta_data =
+    COALESCE(raw_app_meta_data, '{}'::jsonb)
+    || jsonb_build_object(
+        'role', NEW.role,
+        'is_active', NEW.is_active
     )
     WHERE id = NEW.id;
   END IF;

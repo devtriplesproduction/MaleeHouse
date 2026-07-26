@@ -33,7 +33,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase: any = createClient();
+  const [supabase] = useState(() => createClient());
   const router = useRouter();
 
   const getUserProfile = async (forceLoading = false) => {
@@ -93,7 +93,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setRole(null);
         // Do not set isLoading(false) to avoid re-rendering protected components with a null user during redirect.
         router.push('/login');
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      } else if (event === 'SIGNED_IN') {
         getUserProfile();
       }
     });
