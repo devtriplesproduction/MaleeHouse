@@ -38,7 +38,6 @@ import { ProjectBillingSummary } from "@/components/modules/ProjectBillingSummar
 import { SalesActionsPanel } from "@/features/sales/components/SalesActionsPanel";
 import { LeadCRMView } from "@/features/sales/components/LeadCRMView";
 import { QuotationList } from "@/features/accounts/QuotationList";
-import { getProjectQuotationsAction } from "@/actions/quotation.actions";
 import { CADRevisionPanel } from "@/components/modules/CADRevisionPanel";
 import { FieldReportPanel } from "@/components/modules/FieldReportPanel";
 import { DeliveryReadinessPanel } from "@/components/modules/DeliveryReadinessPanel";
@@ -46,13 +45,8 @@ import { StageDependentLockBanner } from "@/components/modules/StageDependentLoc
 import {
   getCADRevisionsAction,
   getFieldReportsAction,
-  getDeliveryChecklistAction,
-  getTeamAssignmentsAction,
-  getFieldVisitsAction,
 } from "@/actions/operations.actions";
-import { getMilestonesAction, getAccountantOwnerAction, getProjectFinancesAction, getInvoicesAction, getPaymentsAction } from "@/actions/finance.actions";
-import { getExpensesAction } from "@/actions/expense.actions";
-import { getProjectIssuesAction } from "@/actions/issue.actions";
+import { getMilestonesAction } from "@/actions/finance.actions";
 import { calculateProjectHealth, getSLAViolationsCount } from "@/lib/project-health";
 
 import { getUserProfileAction } from "@/actions/auth.actions";
@@ -191,83 +185,51 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
 
   const [
     historyRes,
+  const [
+    historyRes,
     commentsRes,
     filesRes,
-    tasksRes,
     assignmentsRes,
-    quotationsRes,
     milestonesRes,
-    visitsRes,
-    accountantRes,
-    issuesRes,
     activityLogsRes,
-    allUsersRes,
-    projectFinancesRes,
-    invoicesRes,
-    paymentsRes,
-    expensesRes
+    allUsersRes
   ] = await Promise.all([
     supabase.from('workflow_history').select('*, changed_by_profile:profiles!changed_by(first_name, last_name, email)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
     supabase.from('comments').select('*, author_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
     supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
-    supabase.from('tasks').select('*').eq('project_id', params.id),
     supabaseAdmin.from('project_assignments').select('*, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id),
-    role !== 'sales' ? getProjectQuotationsAction(params.id) : Promise.resolve({ data: [] }),
     getMilestonesAction(params.id),
-    getFieldVisitsAction(params.id),
-    getAccountantOwnerAction(params.id).catch(() => ({ success: true, data: null })),
-    getProjectIssuesAction(params.id),
     supabase.from('activity_logs').select('*, actor_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
-    supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role, designation'),
-    getProjectFinancesAction(params.id),
-    getInvoicesAction(params.id),
-    getPaymentsAction(params.id),
-    getExpensesAction({ project_id: params.id })
+    supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role, designation')
   ]);
 
   const history = historyRes.data || [];
   const comments = commentsRes.data || [];
   const files = filesRes.data || [];
   if (filesRes.error) console.error("Files Fetch Error:", filesRes.error);
-  const projectTasks = tasksRes.data || [];
   const assignments = assignmentsRes.data || [];
   if (assignmentsRes.error) console.error("Assignments Fetch Error:", assignmentsRes.error);
-  const quotations = quotationsRes.data || [];
   const milestones = milestonesRes.data || [];
-  const visits = visitsRes.data || [];
-  const accountantOwner = accountantRes.data || null;
-  const projectIssues = issuesRes.data || [];
   const rawActivityLogs = activityLogsRes.data || [];
   const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
   const allUsers = allUsersRes.data || [];
-
-  const projectFinances = projectFinancesRes?.success ? projectFinancesRes.data : null;
-  const projectInvoices = invoicesRes?.success ? invoicesRes.data : [];
-  const projectPayments = paymentsRes?.success ? paymentsRes.data : [];
-  const projectExpenses = expensesRes?.success ? expensesRes.data : [];
 
   const isStageBlocked = (milestones || []).some(
     (m: any) => m.status !== 'paid' && (m.linked_stage === project.status || m.block_after_stage === project.status)
   );
   const isOperationsFrozen = project.is_frozen || isStageBlocked;
 
-  const activeQuotation = quotations.find((q: any) => q.status === 'Sent' || q.status === 'Viewed' || q.status === 'Approved' || q.status === 'Draft');
-
   // Fetch operational data from local DB for technical roles
   const isOperationalRole = ['admin', 'engineer', 'cad', 'field'].includes(profile?.role || '');
-  const [cadResult, fieldResult, checklistResult, localAssignmentsResult] = isOperationalRole
+  const [cadResult, fieldResult] = isOperationalRole
     ? await Promise.all([
         getCADRevisionsAction(params.id),
         getFieldReportsAction(params.id),
-        getDeliveryChecklistAction(params.id),
-        getTeamAssignmentsAction(params.id),
       ])
-    : [{ data: [] }, { data: [] }, { data: null }, { data: [] }];
+    : [{ data: [] }, { data: [] }];
 
   const cadRevisions = cadResult.data || [];
   const fieldReports = fieldResult.data || [];
-  const deliveryChecklist = checklistResult.data || null;
-  const localAssignments = localAssignmentsResult.data || [];
 
   const teamMembers = (assignments || []).map((a: any) => ({
     userId: a.user_id,
@@ -318,17 +280,10 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
             files={files}
             teamMembers={teamMembers}
             milestones={milestones}
-            visits={visits}
-            accountantOwner={accountantOwner}
-            activeQuotation={activeQuotation}
             allUsers={allUsers}
             cadRevisions={cadRevisions}
             fieldReports={fieldReports}
             theme={theme}
-            projectFinances={projectFinances}
-            projectInvoices={projectInvoices}
-            projectPayments={projectPayments}
-            projectExpenses={projectExpenses}
           />
         )}
       </div>

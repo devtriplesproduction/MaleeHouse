@@ -1997,3 +1997,55 @@ export async function getProjectsWithFinancialsAction(): Promise<ActionResponse>
   }
 }
 
+export async function getProjectFinanceTabDataAction(projectId: string): Promise<ActionResponse> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    
+    // Import other actions dynamically to avoid circular dependencies
+    const { getProjectQuotationsAction } = await import('@/actions/quotation.actions');
+    const { getFieldVisitsAction } = await import('@/actions/operations.actions');
+    const { getExpensesAction } = await import('@/actions/expense.actions');
+
+    const [
+      quotationsRes,
+      visitsRes,
+      accountantRes,
+      projectFinancesRes,
+      invoicesRes,
+      paymentsRes,
+      expensesRes
+    ] = await Promise.all([
+      getProjectQuotationsAction(projectId),
+      getFieldVisitsAction(projectId),
+      getAccountantOwnerAction(projectId).catch(() => ({ success: true, data: null })),
+      getProjectFinancesAction(projectId),
+      getInvoicesAction(projectId),
+      getPaymentsAction(projectId),
+      getExpensesAction({ project_id: projectId })
+    ]);
+
+    const quotations = quotationsRes?.data || [];
+    const activeQuotation = quotations.find((q: any) => 
+      q.status === 'Sent' || q.status === 'Viewed' || q.status === 'Approved' || q.status === 'Draft'
+    );
+
+    return {
+      success: true,
+      data: {
+        activeQuotation,
+        visits: visitsRes?.data || [],
+        accountantOwner: accountantRes?.data || null,
+        projectFinances: projectFinancesRes?.success ? projectFinancesRes.data : null,
+        projectInvoices: invoicesRes?.success ? invoicesRes.data : [],
+        projectPayments: paymentsRes?.success ? paymentsRes.data : [],
+        projectExpenses: expensesRes?.success ? expensesRes.data : []
+      }
+    };
+  } catch (error: any) {
+    console.error("Finance Tab Data Fetch Error:", error);
+    return { success: false, error: error.message || 'Failed to load finance tab data' };
+  }
+}
+
+

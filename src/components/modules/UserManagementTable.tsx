@@ -1254,7 +1254,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                   </tr>
                 </thead>
                 <tbody>
-                  {[...(users || [])].sort((a, b) => {
+                  {[...(users || [])].filter((u: any) => u.status?.toLowerCase() !== 'terminated').sort((a, b) => {
                     if (!a.dob) return 1;
                     if (!b.dob) return -1;
                     const dateA = new Date(a.dob);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutGrid, 
@@ -22,6 +22,7 @@ import ProjectCommunicationTab from './ProjectCommunicationTab';
 import ProjectActivityLogTab from './ProjectActivityLogTab';
 import { ProjectFinanceTabContent } from './ProjectFinanceTabContent';
 import { ProjectFinanceDashboardTab } from './ProjectFinanceDashboardTab';
+import { getProjectFinanceTabDataAction } from '@/actions/finance.actions';
 
 interface ProjectDetailTabsProps {
   project: any;
@@ -33,9 +34,6 @@ interface ProjectDetailTabsProps {
   files: any[];
   teamMembers: any[];
   milestones: any[];
-  visits: any[];
-  accountantOwner: any;
-  activeQuotation?: any;
   allUsers: any[];
   cadRevisions?: any[];
   fieldReports?: any[];
@@ -47,10 +45,6 @@ interface ProjectDetailTabsProps {
     border: string;
     glow: string;
   };
-  projectFinances?: any;
-  projectInvoices?: any[];
-  projectPayments?: any[];
-  projectExpenses?: any[];
 }
 
 export function ProjectDetailTabs({
@@ -63,17 +57,10 @@ export function ProjectDetailTabs({
   files,
   teamMembers,
   milestones,
-  visits,
-  accountantOwner,
-  activeQuotation,
   allUsers,
   cadRevisions,
   fieldReports,
-  theme,
-  projectFinances,
-  projectInvoices,
-  projectPayments,
-  projectExpenses
+  theme
 }: ProjectDetailTabsProps) {
   
   const showFinanceTab = userRole === 'admin' || userRole === 'accountant';
@@ -118,6 +105,20 @@ export function ProjectDetailTabs({
   ];
 
   const [activeTab, setActiveTab] = useState(tabs[0].id);
+  const [financeData, setFinanceData] = useState<any>(null);
+  const [isFinanceLoading, setIsFinanceLoading] = useState(false);
+
+  useEffect(() => {
+    if ((activeTab === 'billing' || activeTab === 'finance') && !financeData && !isFinanceLoading) {
+      setIsFinanceLoading(true);
+      getProjectFinanceTabDataAction(project.id).then((res) => {
+        if (res.success) {
+          setFinanceData(res.data);
+        }
+        setIsFinanceLoading(false);
+      });
+    }
+  }, [activeTab, financeData, isFinanceLoading, project.id]);
 
   return (
     <div className="space-y-6">
@@ -236,31 +237,45 @@ export function ProjectDetailTabs({
             
             {activeTab === 'billing' && showFinanceTab && (
               <div className="animate-in fade-in duration-300">
-                <ProjectFinanceTabContent 
-                  projectId={project.id}
-                  project={project}
-                  milestones={milestones}
-                  visits={visits}
-                  accountantOwner={accountantOwner}
-                  role={userRole}
-                  theme={theme}
-                  quotation={activeQuotation}
-                  activityLogs={activityLogs}
-                  projectExpenses={projectExpenses}
-                />
+                {isFinanceLoading || !financeData ? (
+                  <div className="flex flex-col items-center justify-center h-64 space-y-4">
+                    <div className="w-10 h-10 rounded-full border-[3px] border-slate-500 border-t-transparent animate-spin" />
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Billing Data...</p>
+                  </div>
+                ) : (
+                  <ProjectFinanceTabContent 
+                    projectId={project.id}
+                    project={project}
+                    milestones={milestones}
+                    visits={financeData.visits}
+                    accountantOwner={financeData.accountantOwner}
+                    role={userRole}
+                    theme={theme}
+                    quotation={financeData.activeQuotation}
+                    activityLogs={activityLogs}
+                    projectExpenses={financeData.projectExpenses}
+                  />
+                )}
               </div>
             )}
             
             {activeTab === 'finance' && showFinanceTab && (
               <div className="animate-in fade-in duration-300">
-                <ProjectFinanceDashboardTab 
-                  projectId={project.id} 
-                  theme={theme}
-                  projectFinances={projectFinances}
-                  projectInvoices={projectInvoices}
-                  projectPayments={projectPayments}
-                  projectExpenses={projectExpenses}
-                />
+                {isFinanceLoading || !financeData ? (
+                  <div className="flex flex-col items-center justify-center h-64 space-y-4">
+                    <div className="w-10 h-10 rounded-full border-[3px] border-slate-500 border-t-transparent animate-spin" />
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Finance Data...</p>
+                  </div>
+                ) : (
+                  <ProjectFinanceDashboardTab 
+                    projectId={project.id} 
+                    theme={theme}
+                    projectFinances={financeData.projectFinances}
+                    projectInvoices={financeData.projectInvoices}
+                    projectPayments={financeData.projectPayments}
+                    projectExpenses={financeData.projectExpenses}
+                  />
+                )}
               </div>
             )}
           </motion.div>
