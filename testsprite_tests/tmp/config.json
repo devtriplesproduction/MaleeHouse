@@ -1,0 +1,13 @@
+{
+  "status": "init",
+  "executionArgs": {
+    "projectName": "Malee House Software",
+    "projectPath": "/Users/suansh/Office/Malee House/Software/Malee House Software/frontend",
+    "testIds": [],
+    "additionalInstruction": "Verify that the admin dashboard now includes the System Command section and that the seed action works as expected.",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-w9noBvf1rVKTkD9Dw4H1esjuh-gMF95lEFhPSmqcA6COLoB29bbrRz_CrOTkg8OqoDECqPEj_hhgpFENFrp34AeqmBo6WXUDTyFFAyL1MOgpLz_QZfYZRmjO3f-hasMS8kQ"
+    }
+  }
+}
