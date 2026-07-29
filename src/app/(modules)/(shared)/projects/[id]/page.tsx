@@ -284,6 +284,7 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
             cadRevisions={cadRevisions}
             fieldReports={fieldReports}
             theme={theme}
+            serverRenderTime={Date.now()}
           />
         )}
       </div>

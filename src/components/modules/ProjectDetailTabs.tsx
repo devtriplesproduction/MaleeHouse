@@ -9,7 +9,8 @@ import {
   DollarSign,
   GitBranch,
   MessageSquare,
-  Activity 
+  Activity,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -45,6 +46,7 @@ interface ProjectDetailTabsProps {
     border: string;
     glow: string;
   };
+  serverRenderTime?: number;
 }
 
 export function ProjectDetailTabs({
@@ -60,7 +62,8 @@ export function ProjectDetailTabs({
   allUsers,
   cadRevisions,
   fieldReports,
-  theme
+  theme,
+  serverRenderTime = 0
 }: ProjectDetailTabsProps) {
   
   const showFinanceTab = userRole === 'admin' || userRole === 'accountant';
@@ -107,18 +110,39 @@ export function ProjectDetailTabs({
   const [activeTab, setActiveTab] = useState(tabs[0].id);
   const [financeData, setFinanceData] = useState<any>(null);
   const [isFinanceLoading, setIsFinanceLoading] = useState(false);
+  const [financeFetchError, setFinanceFetchError] = useState(false);
+  const [lastRenderTime, setLastRenderTime] = useState(serverRenderTime);
+
+  // Post-render synchronization for cache invalidation
+  useEffect(() => {
+    if (serverRenderTime !== lastRenderTime) {
+      setLastRenderTime(serverRenderTime);
+      setFinanceData(null);
+      setFinanceFetchError(false);
+    }
+  }, [serverRenderTime, lastRenderTime]);
 
   useEffect(() => {
-    if ((activeTab === 'billing' || activeTab === 'finance') && !financeData && !isFinanceLoading) {
+    if ((activeTab === 'billing' || activeTab === 'finance') && !financeData && !isFinanceLoading && !financeFetchError) {
       setIsFinanceLoading(true);
       getProjectFinanceTabDataAction(project.id).then((res) => {
         if (res.success) {
           setFinanceData(res.data);
+          setFinanceFetchError(false);
+        } else {
+          setFinanceFetchError(true);
         }
+        setIsFinanceLoading(false);
+      }).catch(() => {
+        setFinanceFetchError(true);
         setIsFinanceLoading(false);
       });
     }
-  }, [activeTab, financeData, isFinanceLoading, project.id]);
+  }, [activeTab, financeData, isFinanceLoading, financeFetchError, project.id]);
+
+  const handleRetryFinance = () => {
+    setFinanceFetchError(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -237,7 +261,20 @@ export function ProjectDetailTabs({
             
             {activeTab === 'billing' && showFinanceTab && (
               <div className="animate-in fade-in duration-300">
-                {isFinanceLoading || !financeData ? (
+                {financeFetchError ? (
+                  <div className="flex flex-col items-center justify-center h-64 space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
+                      <AlertCircle className="w-6 h-6 text-red-500" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Failed to load Billing Data</p>
+                    <button 
+                      onClick={handleRetryFinance}
+                      className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
+                    >
+                      Retry Connection
+                    </button>
+                  </div>
+                ) : isFinanceLoading || !financeData ? (
                   <div className="flex flex-col items-center justify-center h-64 space-y-4">
                     <div className="w-10 h-10 rounded-full border-[3px] border-slate-500 border-t-transparent animate-spin" />
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Billing Data...</p>
@@ -261,7 +298,20 @@ export function ProjectDetailTabs({
             
             {activeTab === 'finance' && showFinanceTab && (
               <div className="animate-in fade-in duration-300">
-                {isFinanceLoading || !financeData ? (
+                {financeFetchError ? (
+                  <div className="flex flex-col items-center justify-center h-64 space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
+                      <AlertCircle className="w-6 h-6 text-red-500" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Failed to load Finance Data</p>
+                    <button 
+                      onClick={handleRetryFinance}
+                      className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
+                    >
+                      Retry Connection
+                    </button>
+                  </div>
+                ) : isFinanceLoading || !financeData ? (
                   <div className="flex flex-col items-center justify-center h-64 space-y-4">
                     <div className="w-10 h-10 rounded-full border-[3px] border-slate-500 border-t-transparent animate-spin" />
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading Finance Data...</p>
