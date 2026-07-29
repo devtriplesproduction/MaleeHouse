@@ -3,8 +3,10 @@ import { getUserProfileAction } from "@/actions/auth.actions";
 import { HolidayManager } from "@/components/modules/HolidayManager";
 
 export default async function HolidaysPage() {
-  const { data: holidays, success } = await getHolidaysAction();
-  const profile: any = await getUserProfileAction();
+  const [{ data: holidays, success }, profile] = await Promise.all([
+    getHolidaysAction(),
+    getUserProfileAction()
+  ]);
   const isAdmin = profile?.role === 'admin' || profile?.role === 'hr';
 
   if (!success) {

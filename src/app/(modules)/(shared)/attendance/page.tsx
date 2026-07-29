@@ -10,10 +10,12 @@ export default async function MyAttendancePage() {
     return <div>Unable to load profile.</div>;
   }
 
-  const logsRes = await getAttendanceLogsAction(profile.id);
+  const [logsRes, eodRes] = await Promise.all([
+    getAttendanceLogsAction(profile.id),
+    getMyEODReportsAction()
+  ]);
+
   const logs = logsRes.data || [];
-  
-  const eodRes = await getMyEODReportsAction();
   const eodReports = eodRes.data || [];
 
   return (

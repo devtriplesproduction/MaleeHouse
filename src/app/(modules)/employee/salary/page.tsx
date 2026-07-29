@@ -16,9 +16,6 @@ export default async function MySalarySlipsPage() {
     redirect("/login");
   }
 
-  // Allow admins and hr to see it for themselves too, or strictly employee.
-  // We'll just rely on the RLS policy and fetch it.
-  
   const { data: slips, success } = await getMySalarySlipsAction();
   
   const employeeName = profile.first_name 

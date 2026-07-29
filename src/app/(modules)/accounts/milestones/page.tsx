@@ -1,6 +1,5 @@
 import React, { Suspense } from "react";
-import { getProjectsListAction } from "@/actions/project.actions";
-import { getProjectsFinancialSummaryAction } from "@/actions/finance.actions";
+import { getProjectsWithFinancialsAction } from "@/actions/finance.actions";
 import { ProjectMilestonesContent } from "@/features/accounts/ProjectMilestonesContent";
 import DashboardLoading from "@/app/(modules)/loading";
 
@@ -29,7 +28,7 @@ export default async function ProjectMilestonesPage({
 }) {
   let initialProjects: any[] = [];
   
-  const projRes = await getProjectsListAction();
+  const projRes = await getProjectsWithFinancialsAction();
 
   if (projRes?.success && projRes.data) {
     const projectIdParam = searchParams.project as string;
@@ -39,20 +38,6 @@ export default async function ProjectMilestonesPage({
       if (projectIdParam && p.id === projectIdParam) return true;
       return ACTIVE_SURVEY_STATUSES.includes(p.status);
     });
-
-    const activeIds = active.map((p: any) => p.id);
-    
-    // Fetch aggregated financials sequentially because activeIds are needed
-    const finRes = await getProjectsFinancialSummaryAction(activeIds);
-
-    if (finRes?.success && finRes.data) {
-      active.forEach((p: any) => {
-        const financials = finRes.data[p.id] || { contract_value: 0, received_amount: 0 };
-        p.contract_value = financials.contract_value;
-        p.received_amount = financials.received_amount;
-        p.pending_amount = Math.max(0, financials.contract_value - financials.received_amount);
-      });
-    }
 
     initialProjects = active;
   }

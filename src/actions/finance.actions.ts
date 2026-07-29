@@ -1912,3 +1912,88 @@ export async function getPendingInvoicesCountAction() {
     return { success: false, error: err.message };
   }
 }
+
+export async function getProjectsWithFinancialsAction(): Promise<ActionResponse> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
+    const role = profile.role as string;
+    const isGlobalRole = ['admin', 'sales', 'accountant', 'hr'].includes(role);
+
+    const supabase: any = await createClient();
+
+    let selectString = `
+        id,
+        name,
+        client_name,
+        status,
+        is_frozen,
+        quotations (total_amount, status),
+        payments (amount, status)
+    `;
+
+    if (!isGlobalRole) {
+      selectString += `, project_assignments!inner(user_id)`;
+    }
+
+    let query = supabase
+      .from('projects')
+      .select(selectString)
+      .neq('status', 'archived')
+      .is('deleted_at', null)
+      .eq('payments.status', 'verified')
+      .order('created_at', { ascending: false });
+
+    if (!isGlobalRole) {
+      query = query.eq('project_assignments.user_id', profile.id);
+    }
+
+    const { data: projects, error } = await query;
+    if (error) throw error;
+
+    const enrichedProjects = projects.map((p: any) => {
+      let contract_value = 0;
+      let received_amount = 0;
+
+      if (p.quotations && p.quotations.length > 0) {
+        let maxQuote = 0;
+        let approvedQuote = null;
+        for (const q of p.quotations) {
+          const amt = Number(q.total_amount || 0);
+          if (q.status?.toLowerCase() === 'approved') {
+            approvedQuote = amt;
+          }
+          if (amt > maxQuote) {
+            maxQuote = amt;
+          }
+        }
+        contract_value = approvedQuote !== null ? approvedQuote : maxQuote;
+      }
+
+      if (p.payments && p.payments.length > 0) {
+        for (const pay of p.payments) {
+          received_amount += Number(pay.amount || 0);
+        }
+      }
+
+      return {
+        id: p.id,
+        name: p.name,
+        client_name: p.client_name,
+        status: p.status,
+        is_frozen: p.is_frozen,
+        contract_value,
+        received_amount,
+        pending_amount: Math.max(0, contract_value - received_amount)
+      };
+    });
+
+    return { success: true, data: normalizeData(enrichedProjects) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
