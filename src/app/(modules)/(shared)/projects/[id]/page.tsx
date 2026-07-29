@@ -185,8 +185,6 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
 
   const [
     historyRes,
-  const [
-    historyRes,
     commentsRes,
     filesRes,
     assignmentsRes,
