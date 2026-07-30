@@ -137,7 +137,26 @@ export async function submitQuickReportAction(projectId: string, formData: FormD
     'dwg', 'dxf', 'rvt', 'skp'
   ];
 
-  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  let ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    const mimeToExt: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+      'image/svg+xml': 'svg',
+      'application/pdf': 'pdf',
+      'text/csv': 'csv',
+      'text/plain': 'txt',
+      'application/zip': 'zip'
+    };
+    if (file.type && mimeToExt[file.type]) {
+      ext = mimeToExt[file.type];
+    }
+  }
+
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
     return { success: false, error: "Invalid file type. Please upload a supported document, image, CAD, or archive format." };
   }

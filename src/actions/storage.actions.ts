@@ -25,7 +25,25 @@ export async function uploadFileToServerAction(
       'dwg', 'dxf', 'rvt', 'skp', 'kml', 'kmz'
     ];
 
-    const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+    let fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+
+    if (!ALLOWED_EXTENSIONS.includes(fileExt)) {
+      const mimeToExt: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp',
+        'image/gif': 'gif',
+        'image/svg+xml': 'svg',
+        'application/pdf': 'pdf',
+        'text/csv': 'csv',
+        'text/plain': 'txt',
+        'application/zip': 'zip'
+      };
+      if (file.type && mimeToExt[file.type]) {
+        fileExt = mimeToExt[file.type];
+      }
+    }
 
     if (!ALLOWED_EXTENSIONS.includes(fileExt)) {
       return { success: false, error: "Invalid file type. Please upload a supported document, image, CAD, or archive format." };
