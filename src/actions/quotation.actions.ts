@@ -12,7 +12,6 @@ import {
   type UpdateQuotationStatusInput
 } from '@/validations/quotation.schema';
 import { getUserProfileAction } from './auth.actions';
-import { updateProjectStageAction } from './workflow.actions';
 import { requireAuthContext } from '@/lib/permissions/permissions';
 import { notifyStageUpdateAction, notifyQuotationCreatedAction } from './notification.actions';
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
@@ -217,6 +216,7 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
     if (updateError) throw updateError;
 
     if (quotation.project_id) {
+      const { updateProjectStageAction } = await import('@/actions/workflow.actions');
       if (payload.status === 'Sent') {
         const stageResponse = await updateProjectStageAction(
           quotation.project_id,

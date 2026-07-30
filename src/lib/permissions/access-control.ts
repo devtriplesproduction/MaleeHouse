@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Role } from './roles'
+import { cache } from 'react'
 
 export type AuthContext = {
   userId: string
@@ -7,7 +8,7 @@ export type AuthContext = {
   error?: string
 }
 
-export async function requireAuthContext(): Promise<AuthContext> {
+export const requireAuthContext = cache(async (): Promise<AuthContext> => {
   const supabase: any = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -30,4 +31,4 @@ export async function requireAuthContext(): Promise<AuthContext> {
   }
 
   return { userId: user.id, role: profile.role as Role }
-}
+})

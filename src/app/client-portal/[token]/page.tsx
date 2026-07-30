@@ -30,6 +30,7 @@ interface QuotationItem {
   hsn_code?: string;
   description?: string;
   quantity: number;
+  unit?: string;
   unit_price: number;
   total: number;
 }
@@ -388,8 +389,8 @@ export default function ClientPortalPage() {
                                       )}
                                       <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{item.description || 'Professional survey services as per client requirements.'}</p>
                                    </td>
-                                   <td className="py-3.5 text-center text-xs font-semibold text-slate-800">{item.quantity}</td>
-                                   <td className="py-3.5 text-right text-xs font-medium text-slate-800 nums">INR {(item.unit_price ?? 0).toLocaleString('en-IN')}</td>
+                                   <td className="py-3.5 text-center text-xs font-semibold text-slate-800">{item.quantity} {item.unit || ''}</td>
+                                   <td className="py-3.5 text-right text-xs font-medium text-slate-800 nums">INR {(item.unit_price ?? 0).toLocaleString('en-IN')} {item.unit ? `/ ${item.unit}` : ''}</td>
                                    <td className="py-3.5 text-right text-xs font-semibold text-slate-900 nums">INR {(item.total ?? 0).toLocaleString('en-IN')}</td>
                                 </tr>
                              ))}

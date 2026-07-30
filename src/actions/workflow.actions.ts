@@ -14,6 +14,7 @@ import {
   canUpdateProjectStage,
   canUploadFileCategory
 } from "@/lib/permissions/permissions";
+import { requireProjectAccess } from "@/lib/permissions/project-access";
 import { notifySupplementalUploadAction, notifyStageUpdateAction, notifyAdminDispatchOverrideRequestAction } from "@/actions/notification.actions";
 import { getTasksForStage } from "@/lib/workflow-engine";
 import { logWorkflowAudit } from "@/lib/workflow/logWorkflowAudit";
@@ -434,17 +435,11 @@ export async function transitionWorkflowAction(
   comment?: string
 ): Promise<WorkflowResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized. Please log in." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: false });
+    if (!auth.authorized) return { success: false, error: auth.error || "Access denied." };
 
-    const role = profile.role as Role;
+    const role = auth.role as Role;
     const supabase: any = await createClient();
-
-    // 2. Assignment & Role Verification
-    const accessCheck = await verifyProjectAccess(projectId, profile.id, role, true);
-    if (!accessCheck.isAllowed) {
-      return { success: false, error: accessCheck.error || "Access denied." };
-    }
 
     const stageCheck = canUpdateProjectStage(role, newStage);
     if (!stageCheck.isAllowed) {
@@ -510,7 +505,7 @@ export async function transitionWorkflowAction(
       project_id: projectId,
       from_stage: fromStage,
       to_stage: newStage,
-      changed_by: profile.id,
+      changed_by: auth.userId,
       comment: comment || `Status updated by ${role}`,
       created_at: new Date().toISOString()
     });
@@ -518,7 +513,7 @@ export async function transitionWorkflowAction(
     // 6. Log in Activity Logs
     await adminClient.from("activity_logs").insert({
       project_id: projectId,
-      user_id: profile.id,
+      user_id: auth.userId,
       action: "STAGE_UPDATE",
       details: { from_status: fromStage, new_status: newStage, role },
       created_at: new Date().toISOString()

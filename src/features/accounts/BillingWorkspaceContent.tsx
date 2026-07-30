@@ -14,12 +14,14 @@ interface BillingWorkspaceContentProps {
   initialInvoices: any[];
   initialMilestones: any[];
   initialProjectsData: ProjectBillingSummary[];
+  initialPayments?: any[];
 }
 
 export function BillingWorkspaceContent({
   initialInvoices,
   initialMilestones,
-  initialProjectsData
+  initialProjectsData,
+  initialPayments = []
 }: BillingWorkspaceContentProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"projects" | "milestones" | "invoices" | "receipts">("projects");
@@ -119,7 +121,7 @@ export function BillingWorkspaceContent({
           )}
         >
           <Receipt className="w-3.5 h-3.5" />
-          Payment Receipts ({initialMilestones.filter((m: any) => m.status === 'paid').length + initialInvoices.filter((i: any) => i.status === 'paid').length})
+          Payment Receipts ({initialPayments.filter((p: any) => p.status === 'verified').length})
         </button>
       </div>
 
@@ -149,8 +151,7 @@ export function BillingWorkspaceContent({
           )}
           {activeTab === "receipts" && (
             <PaymentReceiptsTable 
-              milestones={initialMilestones} 
-              invoices={initialInvoices} 
+              payments={initialPayments}
               searchQuery={searchQuery} 
             />
           )}

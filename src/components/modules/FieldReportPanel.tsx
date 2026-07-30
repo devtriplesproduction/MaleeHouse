@@ -248,17 +248,17 @@ export function FieldReportPanel({ projectId, reports, userRole, isFrozen = fals
                         Report
                       </p>
                       <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-white/5 p-3 rounded-xl border border-slate-100 dark:border-white/5">
-                        {report.description}
+                        {report.content}
                       </p>
                     </div>
-                    {report.location_notes && (
+                    {report.issues_identified && (
                       <div>
                         <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1">
                           Location Notes
                         </p>
                         <p className="text-xs text-slate-400 flex items-center gap-1.5">
                           <MapPin className="w-3 h-3" />
-                          {report.location_notes}
+                          {report.issues_identified}
                         </p>
                       </div>
                     )}

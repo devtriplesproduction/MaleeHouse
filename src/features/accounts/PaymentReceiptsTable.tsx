@@ -54,14 +54,13 @@ export interface Invoice {
 }
 
 interface PaymentReceiptsTableProps {
-  milestones: MilestonePayment[];
-  invoices: Invoice[];
+  payments: any[];
   searchQuery: string;
 }
 
 interface ReceiptItem {
   id: string;
-  type: 'milestone' | 'invoice';
+  type: 'payment' | 'invoice' | 'milestone';
   projectName: string;
   clientName: string;
   title: string;
@@ -78,7 +77,7 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: PaymentReceiptsTableProps) {
+export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsTableProps) {
   const [selectedReceipt, setSelectedReceipt] = useState(null as ReceiptItem | null);
   const [mounted, setMounted] = useState(false);
   const { settings: companySettings } = useCompanySettings();
@@ -87,50 +86,48 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
     setMounted(true);
   }, []);
 
-  // Filter paid milestones
-  const paidMilestones: ReceiptItem[] = milestones
-    .filter((m: any) => m.status === 'paid')
-    .map((m: any) => {
-      const cleanId = m.id.includes('-') ? m.id.split('-')[1].toUpperCase() : m.id.substring(0, 5).toUpperCase();
+  // Filter verified payments and construct receipt items
+  const receipts: ReceiptItem[] = payments
+    .filter((p: any) => p.status === 'verified')
+    .map((p: any) => {
+      const cleanId = p.id.replace(/\D/g, '').substring(0, 8) || p.id.substring(0, 5).toUpperCase();
+      let title = `Payment Payout: ${cleanId}`;
+      let type: 'payment' | 'invoice' | 'milestone' = 'payment';
+      if (p.invoices?.invoice_number) {
+        title = `Invoice Payout: ${p.invoices.invoice_number}`;
+        type = 'invoice';
+      } else if (p.invoices?.project_milestones?.title) {
+        title = `Milestone Payout: ${p.invoices.project_milestones.title}`;
+        type = 'milestone';
+      }
+
       return {
-        id: `REC-MS-${cleanId}`,
-        type: 'milestone',
-        projectName: m.projects?.name || 'Standalone Assignment',
-        clientName: m.projects?.client_name || 'Direct Client',
-        title: m.title,
-        amount: m.amount,
-        dateCleared: m.updated_at || m.created_at,
-        original: m
+        id: `REC-PAY-${cleanId}`,
+        type,
+        projectName: p.projects?.name || 'Standalone Assignment',
+        clientName: p.projects?.client_name || 'Direct Client',
+        title,
+        amount: p.amount,
+        dateCleared: p.verified_at || p.created_at,
+        original: p
       };
     });
-
-  // Filter paid invoices
-  const paidInvoices: ReceiptItem[] = invoices
-    .filter((i: any) => i.status === 'paid')
-    .map((i: any) => {
-      const cleanId = i.invoice_number.replace(/\D/g, '') || i.id.substring(0, 5).toUpperCase();
-      return {
-        id: `REC-INV-${cleanId}`,
-        type: 'invoice',
-        projectName: i.projects?.name || 'Standalone Assignment',
-        clientName: i.projects?.client_name || 'Direct Client',
-        title: `Invoice Payout: ${i.invoice_number}`,
-        amount: i.total_amount,
-        dateCleared: i.created_at,
-        original: i
-      };
-    });
-
-  const receipts = [...paidMilestones, ...paidInvoices];
 
   // Filter receipts by search query
   const filtered = receipts.filter((r: any) => {
     if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return r.id.toLowerCase().includes(q) ||
-           r.projectName.toLowerCase().includes(q) ||
-           r.clientName.toLowerCase().includes(q) ||
-           r.title.toLowerCase().includes(q);
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    
+    const id = r.id || '';
+    const projectName = r.projectName || '';
+    const clientName = r.clientName || '';
+    const title = r.title || '';
+
+    return id.toLowerCase().includes(q) ||
+           projectName.toLowerCase().includes(q) ||
+           clientName.toLowerCase().includes(q) ||
+           title.toLowerCase().includes(q);
   });
 
   const handlePrint = () => {
@@ -197,11 +194,11 @@ export function PaymentReceiptsTable({ milestones, invoices, searchQuery }: Paym
                       </span>
                       <span className={cn(
                         "inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium border shadow-sm whitespace-nowrap",
-                        r.type === 'invoice' 
+                        r.title.includes('Invoice')
                           ? "bg-amber-500/10 text-amber-500 border-amber-500/20" 
                           : "bg-indigo-500/10 text-indigo-500 border-indigo-500/20"
                       )}>
-                        {r.type === 'invoice' ? 'Invoice Payout' : 'Milestone Payout'}
+                        {r.title.includes('Invoice') ? 'Invoice Payout' : 'Milestone Payout'}
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 font-medium">

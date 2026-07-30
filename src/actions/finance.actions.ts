@@ -11,7 +11,7 @@ import { updateProjectStageAction } from '@/actions/workflow.actions';
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
 import { getUserProfileAction } from '@/actions/auth.actions';
 import { logAdminAuditAction } from '@/actions/admin.actions';
-import { requireAuthContext, getAssignedProjectIds } from '@/lib/permissions/permissions';
+import { requireAuthContext, getAssignedProjectIds, requireProjectAccess } from '@/lib/permissions/permissions';
 import {
   createInvoiceSchema,
   createPaymentSchema,
@@ -48,16 +48,11 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
       return { success: false, error: validated.error.errors[0]?.message };
     }
 
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
+    const auth = await requireProjectAccess(payload.project_id, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || 'Unauthorized. Please log in.' };
 
-    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+    if (auth.role !== 'admin' && auth.role !== 'accountant') {
       return { success: false, error: 'Access denied. Accountant or Admin only.' };
-    }
-
-    const lockCheck = await verifyProjectNotLocked(payload.project_id);
-    if (!lockCheck.success) {
-      return { success: false, error: lockCheck.error || "Project is locked." };
     }
 
     const { amount, gst_rate } = validated.data;
@@ -100,7 +95,7 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
         ...validated.data,
         gst_amount,
         total_amount,
-        created_by: profile.id,
+        created_by: auth.userId,
         status: 'draft'
       })
       .select()
@@ -116,12 +111,12 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
         .eq('id', validated.data.milestone_id);
     }
 
-    await logWorkflowAudit(supabase, payload.project_id, profile.id, `Created invoice for ${total_amount.toFixed(2)}`);
+    await logWorkflowAudit(supabase, payload.project_id, auth.userId, `Created invoice for ${total_amount.toFixed(2)}`);
 
     await supabase.from('activity_logs').insert({
       id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: payload.project_id,
-      user_id: profile.id,
+      user_id: auth.userId,
       action: 'INVOICE_CREATED',
       details: { invoice_id: data.id, amount: total_amount },
       created_at: new Date().toISOString()
@@ -185,13 +180,8 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
       return { success: false, error: validated.error.errors[0]?.message };
     }
 
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
-
-    const lockCheck = await verifyProjectNotLocked(payload.project_id);
-    if (!lockCheck.success) {
-      return { success: false, error: lockCheck.error || "Project is locked." };
-    }
+    const auth = await requireProjectAccess(payload.project_id, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || 'Unauthorized. Please log in.' };
 
     const { milestone_id, ...paymentData } = validated.data;
     const supabase: any = await createClient();
@@ -268,14 +258,14 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
     await supabase.from('activity_logs').insert({
       id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: payload.project_id,
-      user_id: profile.id,
+      user_id: auth.userId,
       action: 'PAYMENT_LOGGED',
       details: { payment_id: data.id, amount: paymentData.amount },
       created_at: new Date().toISOString()
     });
 
     // Auto-verify if logged by accountant or admin
-    if (profile.role === 'admin' || profile.role === 'accountant') {
+    if (auth.role === 'admin' || auth.role === 'accountant') {
       const verifyRes = await verifyPaymentAction(data.id, 'verified', 'Auto-verified because payment was logged by accountant or admin.');
       if (!verifyRes.success) {
         return { success: false, error: "Auto-verification failed: " + verifyRes.error };
@@ -477,8 +467,17 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
-    const auth = await requireAuthContext();
-    if (auth.error) return { success: false, error: auth.error };
+    
+    let authContext;
+    if (projectId) {
+      const auth = await requireProjectAccess(projectId);
+      if (!auth.authorized) return { success: false, error: auth.error };
+      authContext = auth;
+    } else {
+      const auth = await requireAuthContext();
+      if (auth.error) return { success: false, error: auth.error };
+      authContext = auth;
+    }
 
     const supabase: any = await createClient();
     let query = supabase.from('invoices').select('*, projects(name, client_name, budget, deleted_at, payments(amount, status)), payments(amount, status), project_milestones(title, sort_order)');
@@ -486,7 +485,7 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
     if (projectId) {
       query = query.eq('project_id', projectId);
     } else {
-      const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
+      const assignedIds = await getAssignedProjectIds(authContext.userId, authContext.role);
       if (assignedIds !== null) {
         if (assignedIds.length === 0) return { success: true, data: [] };
         query = query.in('project_id', assignedIds);
@@ -507,16 +506,25 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
-    const auth = await requireAuthContext();
-    if (auth.error) return { success: false, error: auth.error };
+    
+    let authContext;
+    if (projectId) {
+      const auth = await requireProjectAccess(projectId);
+      if (!auth.authorized) return { success: false, error: auth.error };
+      authContext = auth;
+    } else {
+      const auth = await requireAuthContext();
+      if (auth.error) return { success: false, error: auth.error };
+      authContext = auth;
+    }
 
     const supabase: any = await createClient();
-    let query = supabase.from('payments').select('*, projects(name, client_name, deleted_at), bank_accounts(bank_name)');
+    let query = supabase.from('payments').select('*, projects(name, client_name, deleted_at), bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))');
 
     if (projectId) {
       query = query.eq('project_id', projectId);
     } else {
-      const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
+      const assignedIds = await getAssignedProjectIds(authContext.userId, authContext.role);
       if (assignedIds !== null) {
         if (assignedIds.length === 0) return { success: true, data: [] };
         query = query.in('project_id', assignedIds);
@@ -602,28 +610,28 @@ export async function createMilestonesAction(
   }>
 ): Promise<ActionResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: 'Unauthorized' };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || 'Unauthorized' };
 
-    let isAuthorized = profile.role === 'admin';
+    let isAuthorized = auth.role === 'admin';
     const supabase: any = await createClient();
 
-    if (!isAuthorized && profile.role === 'accountant') {
+    if (!isAuthorized && auth.role === 'accountant') {
       const { data: owner } = await supabase
         .from('project_accounts_owners')
         .select('accountant_id')
         .eq('project_id', projectId)
         .maybeSingle();
       if (owner) {
-        isAuthorized = owner.accountant_id === profile.id;
+        isAuthorized = owner.accountant_id === auth.userId;
       } else {
         isAuthorized = true;
         await supabase
           .from('project_accounts_owners')
           .insert({
             project_id: projectId,
-            accountant_id: profile.id,
-            assigned_by: profile.id,
+            accountant_id: auth.userId,
+            assigned_by: auth.userId,
             assigned_at: new Date().toISOString()
           });
       }
@@ -631,11 +639,6 @@ export async function createMilestonesAction(
 
     if (!isAuthorized) {
       return { success: false, error: 'Access denied. Only the assigned Accountant or Admin can create milestones.' };
-    }
-
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) {
-      return { success: false, error: lockCheck.error || "Project is locked." };
     }
 
     let sum = 0;
@@ -776,12 +779,12 @@ export async function createMilestonesAction(
       }
     }
 
-    await logWorkflowAudit(supabase, projectId, profile.id, `Updated milestone configuration totaling ${sum.toFixed(2)}`);
+    await logWorkflowAudit(supabase, projectId, auth.userId, `Updated milestone configuration totaling ${sum.toFixed(2)}`);
 
     await supabase.from('activity_logs').insert({
       id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: projectId,
-      user_id: profile.id,
+      user_id: auth.userId,
       action: 'MILESTONES_UPDATED',
       details: { count: milestones.length, total: sum },
       created_at: new Date().toISOString()
@@ -806,16 +809,29 @@ export async function getMilestonesAction(projectId: string): Promise<ActionResp
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
+    
+    const auth = await requireProjectAccess(projectId);
+    if (!auth.authorized) return { success: false, error: auth.error };
+
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
       .select('*')
       .eq('project_id', projectId)
       .not('title', 'ilike', '%[Archived]%')
-      .order('created_at', { ascending: true });
+      .order('due_date', { ascending: true, nullsFirst: true });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data: normalizeData(data) };
+
+    // Additionally sort in JS to ensure any null due_dates are at the bottom, just in case
+    const sortedData = (data || []).sort((a: any, b: any) => {
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
+
+    return { success: true, data: normalizeData(sortedData) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -827,16 +843,11 @@ export async function freezeProjectAction(
   comment?: string
 ): Promise<ActionResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: 'Unauthorized' };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || 'Unauthorized' };
 
-    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+    if (auth.role !== 'admin' && auth.role !== 'accountant') {
       return { success: false, error: 'Access denied. Accountant or Admin only.' };
-    }
-
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) {
-      return { success: false, error: lockCheck.error || "Project is locked." };
     }
 
     const supabase: any = await createClient();
@@ -849,7 +860,7 @@ export async function freezeProjectAction(
         is_frozen: true,
         freeze_reason: reason,
         frozen_at: new Date().toISOString(),
-        frozen_by: profile.id
+        frozen_by: auth.userId
       })
       .eq('id', projectId)
       .select()
@@ -862,14 +873,14 @@ export async function freezeProjectAction(
       project_id: projectId,
       from_stage: currentProject?.status,
       to_stage: 'frozen',
-      changed_by: profile.id,
+      changed_by: auth.userId,
       comment: comment || `Project frozen due to ${reason}.`
     });
 
     await supabase.from('activity_logs').insert({
       id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       project_id: projectId,
-      user_id: profile.id,
+      user_id: auth.userId,
       action: 'PROJECT_FROZEN',
       details: { reason, comment },
       created_at: new Date().toISOString()

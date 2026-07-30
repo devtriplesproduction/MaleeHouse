@@ -144,6 +144,15 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
           }
           return m;
         });
+
+        // Sort milestones by due date
+        loadedMilestones.sort((a: any, b: any) => {
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        });
+
         setMilestones(loadedMilestones);
       } else {
         console.error("Milestones fetch failed:", msRes);

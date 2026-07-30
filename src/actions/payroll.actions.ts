@@ -328,10 +328,14 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       .eq('status', 'pending');
       
     // Fetch draft applications for the current cycle, if any
-    const { data: currentApps } = await supabaseAdmin
-      .from('payroll_adjustment_applications')
-      .select('*')
-      .eq('cycle_id', existing?.id || 'draft-cycle');
+    let currentApps: any[] = [];
+    if (existing?.id) {
+      const { data } = await supabaseAdmin
+        .from('payroll_adjustment_applications')
+        .select('*')
+        .eq('cycle_id', existing.id);
+      currentApps = data || [];
+    }
 
     const draftSnapshots: PayrollSnapshot[] = employees.map((emp: any) => {
       const empLogs = attendanceLogs.filter((l: any) => l.employee_id === emp.id);

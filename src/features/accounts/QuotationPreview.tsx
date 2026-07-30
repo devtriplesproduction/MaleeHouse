@@ -192,7 +192,7 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
                                 <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">{item.description || 'Professional survey services as per client requirements.'}</p>
                              </td>
                              <td className="py-4 text-center text-xs font-semibold text-slate-800">{item.quantity} {item.unit || ''}</td>
-                             <td className="py-4 text-right text-xs font-medium text-slate-800 nums">INR {(item.unit_price ?? 0).toLocaleString('en-IN')}</td>
+                             <td className="py-4 text-right text-xs font-medium text-slate-800 nums">INR {(item.unit_price ?? 0).toLocaleString('en-IN')} {item.unit ? `/ ${item.unit}` : ''}</td>
                              <td className="py-4 text-right text-xs font-semibold text-slate-900 nums">INR {(item.total ?? 0).toLocaleString('en-IN')}</td>
                           </tr>
                        ))}

@@ -2,7 +2,7 @@
 export { requireAuthContext, type AuthContext } from "./access-control";
 
 // Project and Assignment validations
-export { verifyProjectAccess, getAssignedProjectIds, type AccessCheckResult } from "./project-access";
+export { verifyProjectAccess, getAssignedProjectIds, requireProjectAccess, type AccessCheckResult } from "./project-access";
 
 // Workflow validations
 export { canUpdateProjectStage, canUploadFileCategory } from "./workflow-permissions";

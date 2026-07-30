@@ -7,6 +7,7 @@ import { getUserProfileAction } from "@/actions/auth.actions";
 import {
   Role,
   verifyProjectAccess,
+  requireProjectAccess,
 } from "@/lib/permissions/permissions";
 import { updateProjectStageAction } from "./workflow.actions";
 import { addProjectCommentAction } from "./comment.actions";
@@ -142,12 +143,10 @@ export async function assignTeamMemberAction(
   assignedRole: string
 ): Promise<OpResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
 
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) return lockCheck;
-    if (!["admin", "engineer"].includes(profile.role))
+    if (!["admin", "engineer"].includes(auth.role))
       return { success: false, error: "Only Admins and Engineers can assign team members." };
 
     const supabase: any = await createClient();
@@ -177,23 +176,23 @@ export async function assignTeamMemberAction(
       project_id: projectId,
       user_id: userId,
       role: assignedRole,
-      assigned_by: profile.id,
+      assigned_by: auth.userId,
       assigned_at: new Date().toISOString(),
       status: "active",
     };
     const { error: insertError } = await supabaseAdmin.from('project_assignments').insert(newAssignment);
     if (insertError) throw new Error(insertError.message);
 
-    await logWorkflowAudit(supabaseAdmin, projectId, profile.id, `Assigned ${assignedRole} to project`);
+    await logWorkflowAudit(supabaseAdmin, projectId, auth.userId, `Assigned ${assignedRole} to project`);
 
     const assignedUser = await getUserById(userId);
     const projectName = await getProjectName(projectId);
 
-    await logActivity(projectId, profile.id, "TEAM_ASSIGNED", {
+    await logActivity(projectId, auth.userId, "TEAM_ASSIGNED", {
       assigned_user_id: userId,
       assigned_user_name: `${assignedUser.first_name} ${assignedUser.last_name}`,
       assigned_role: assignedRole,
-      assigned_by: profile.id,
+      assigned_by: auth.userId,
     });
 
     await sendLocalNotification(
@@ -215,25 +214,21 @@ export async function assignTeamMemberAction(
 
 export async function claimProjectAction(projectId: string): Promise<OpResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
-
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) return lockCheck;
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true, requireAssignment: false });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
 
     const allowedRoles = ["engineer", "cad", "field", "admin"];
-    if (!allowedRoles.includes(profile.role)) {
+    if (!allowedRoles.includes(auth.role)) {
        return { success: false, error: "Role not authorized to claim projects." };
     }
 
     const supabase: any = await createClient();
 
-    // Check if user is already assigned
     const { data: existing } = await supabase
       .from('project_assignments')
       .select('id')
       .eq('project_id', projectId)
-      .eq('user_id', profile.id)
+      .eq('user_id', auth.userId)
       .single();
 
     if (existing) {
@@ -243,9 +238,9 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
     const { error: assignError } = await supabase.from('project_assignments').insert({
       id: generateId('asn'),
       project_id: projectId,
-      user_id: profile.id,
-      role: profile.role,
-      assigned_by: profile.id
+      user_id: auth.userId,
+      role: auth.role,
+      assigned_by: auth.userId
     });
 
     if (assignError) throw assignError;
@@ -253,11 +248,11 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
     await supabase.from('activity_logs').insert({
       id: generateId('act'),
       project_id: projectId,
-      user_id: profile.id,
+      user_id: auth.userId,
       action: 'TEAM_MEMBER_ASSIGNED',
       details: { 
-        assigned_user: profile.id, 
-        role: profile.role,
+        assigned_user: auth.userId, 
+        role: auth.role,
         note: 'Project claimed by user'
       }
     });
@@ -279,12 +274,10 @@ export async function removeTeamMemberAction(
   projectId: string
 ): Promise<OpResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
 
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) return lockCheck;
-    if (!["admin", "engineer"].includes(profile.role))
+    if (!["admin", "engineer"].includes(auth.role))
       return { success: false, error: "Only Admins and Engineers can remove team members." };
 
     const supabase: any = await createClient();
@@ -294,7 +287,7 @@ export async function removeTeamMemberAction(
     await supabase.from('project_assignments').delete().eq('id', assignmentId);
 
     const removedUser = await getUserById(assignment.user_id);
-    await logActivity(projectId, profile.id, "TEAM_REMOVED", {
+    await logActivity(projectId, auth.userId, "TEAM_REMOVED", {
       removed_user_id: assignment.user_id,
       removed_user_name: `${removedUser.first_name} ${removedUser.last_name}`,
       removed_role: assignment.role,
@@ -310,6 +303,9 @@ export async function removeTeamMemberAction(
 
 export async function getTeamAssignmentsAction(projectId: string): Promise<OpResponse<any[]>> {
   try {
+    const auth = await requireProjectAccess(projectId);
+    if (!auth.authorized) return { success: false, error: auth.error || null, data: [] };
+
     const supabase: any = await createClient();
     const { data: assignments } = await supabase.from('project_assignments').select('*').eq('project_id', projectId);
     
@@ -358,16 +354,11 @@ export async function submitCADRevisionAction(
   revisionType: "prototype" | "final" = "prototype"
 ): Promise<OpResponse<CADRevision>> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." } as any;
 
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) return lockCheck as any;
-    if (!["cad", "admin"].includes(profile.role))
-      return { success: false, error: "Only CAD users can submit revisions." };
-
-    const accessCheck = await verifyProjectAccess(projectId, profile.id, profile.role as Role, true);
-    if (!accessCheck.isAllowed) return { success: false, error: accessCheck.error || "Access denied." };
+    if (!["cad", "admin"].includes(auth.role))
+      return { success: false, error: "Only CAD users can submit revisions." } as any;
 
     const supabase: any = await createClient();
     const { data: projectRevisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
@@ -387,7 +378,7 @@ export async function submitCADRevisionAction(
     const newRevision = {
       id: generateId("cad"),
       project_id: projectId,
-      submitted_by: profile.id,
+      submitted_by: auth.userId,
       title: revisionType === "final" ? "Final CAD Deliverable" : "CAD Prototype",
       description: revisionNotes,
       files: [{ name: fileName, url: fileUrl }],
@@ -402,7 +393,7 @@ export async function submitCADRevisionAction(
     await updateProjectStageAction(projectId, "review", `CAD Revision #${revisionNumber} submitted for review.`);
 
     const projectName = await getProjectName(projectId);
-    await logActivity(projectId, profile.id, "CAD_SUBMITTED", {
+    await logActivity(projectId, auth.userId, "CAD_SUBMITTED", {
       revision_id: newRevision.id,
       revision_number: revisionNumber,
       file_name: fileName,
@@ -432,12 +423,10 @@ export async function approveCADRevisionAction(
   reviewNote?: string
 ): Promise<OpResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
 
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) return lockCheck;
-    if (!["engineer", "admin"].includes(profile.role))
+    if (!["engineer", "admin"].includes(auth.role))
       return { success: false, error: "Only Engineers can approve CAD revisions." };
 
     const supabase: any = await createClient();
@@ -453,7 +442,7 @@ export async function approveCADRevisionAction(
 
     const { error: updateError } = await supabase.from('cad_revisions').update({
       status: "approved",
-      reviewed_by: profile.id,
+      reviewed_by: auth.userId,
       reviewed_at: new Date().toISOString(),
       review_notes: reviewNote || "Approved.",
     }).eq('id', revisionId);
@@ -462,7 +451,7 @@ export async function approveCADRevisionAction(
     const { data: revision } = await supabase.from('cad_revisions').select('*').eq('id', revisionId).single();
     const projectName = await getProjectName(projectId);
 
-    await logActivity(projectId, profile.id, "CAD_APPROVED", {
+    await logActivity(projectId, auth.userId, "CAD_APPROVED", {
       revision_id: revisionId,
       review_notes: reviewNote,
     });
@@ -500,18 +489,16 @@ export async function rejectCADRevisionAction(
   rejectionReason: string
 ): Promise<OpResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
 
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) return lockCheck;
-    if (!["engineer", "admin"].includes(profile.role))
+    if (!["engineer", "admin"].includes(auth.role))
       return { success: false, error: "Only Engineers can reject CAD revisions." };
 
     const supabase: any = await createClient();
     const { error: updateError } = await supabase.from('cad_revisions').update({
       status: "rejected",
-      reviewed_by: profile.id,
+      reviewed_by: auth.userId,
       reviewed_at: new Date().toISOString(),
       review_notes: rejectionReason,
     }).eq('id', revisionId);
@@ -520,7 +507,7 @@ export async function rejectCADRevisionAction(
     const { data: revision } = await supabase.from('cad_revisions').select('*').eq('id', revisionId).single();
     const projectName = await getProjectName(projectId);
 
-    await logActivity(projectId, profile.id, "CAD_REJECTED", {
+    await logActivity(projectId, auth.userId, "CAD_REJECTED", {
       revision_id: revisionId,
       rejection_reason: rejectionReason,
     });
@@ -556,10 +543,10 @@ export async function rejectCADRevisionAction(
 
 export async function bypassCADEscalationAction(projectId: string): Promise<OpResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
 
-    if (!["engineer", "admin"].includes(profile.role)) {
+    if (auth.role !== "admin") {
       return { success: false, error: "Only Admin or Lead Engineer can authorize escalation bypass." };
     }
 
@@ -570,8 +557,8 @@ export async function bypassCADEscalationAction(projectId: string): Promise<OpRe
     }).eq('id', projectId);
     if (updateError) return { success: false, error: "Project not found." };
 
-    await logActivity(projectId, profile.id, "ESCALATION_BYPASSED", {
-      authorized_by: profile.id
+    await logActivity(projectId, auth.userId, "ESCALATION_BYPASSED", {
+      authorized_by: auth.userId
     });
 
     revalidatePath(`/projects/${projectId}`);
@@ -583,6 +570,9 @@ export async function bypassCADEscalationAction(projectId: string): Promise<OpRe
 
 export async function getCADRevisionsAction(projectId: string): Promise<OpResponse<CADRevision[]>> {
   try {
+    const auth = await requireProjectAccess(projectId);
+    if (!auth.authorized) return { success: false, error: auth.error || null, data: [] };
+
     const supabase: any = await createClient();
     const { data: revisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
     
@@ -633,9 +623,9 @@ export type FieldReport = {
   project_id: string;
   submitted_by: string;
   report_type: "progress" | "completion" | "issue";
-  description: string;
-  location_notes?: string;
-  site_photos?: string[];
+  content: string;
+  issues_identified?: string;
+  attachments?: any[];
   status: "submitted" | "acknowledged" | "resolved";
   created_at: string;
 };
@@ -663,8 +653,8 @@ export async function submitFieldReportAction(
       project_id: projectId,
       submitted_by: profile.id,
       report_type: reportType,
-      description,
-      location_notes: locationNotes,
+      content: description,
+      issues_identified: locationNotes,
       status: "submitted",
       created_at: new Date().toISOString(),
     };
@@ -707,8 +697,11 @@ export async function submitFieldReportAction(
 
 export async function getFieldReportsAction(projectId: string): Promise<OpResponse<FieldReport[]>> {
   try {
+    const auth = await requireProjectAccess(projectId);
+    if (!auth.authorized) return { success: false, error: auth.error || null, data: [] };
+
     const supabase: any = await createClient();
-    const { data: reports } = await supabase.from('field_reports').select('id, project_id, report_date, summary, status, submitted_by, created_at, photos').eq('project_id', projectId).order('created_at', { ascending: false }).limit(100);
+    const { data: reports } = await supabase.from('field_reports').select('id, project_id, report_date, content, issues_identified, attachments, status, submitted_by, created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(100);
     
     const userIds = Array.from(new Set((reports || []).map((r: any) => r.submitted_by))).filter(Boolean);
     let profiles: any[] = [];
@@ -814,22 +807,20 @@ export async function reviewFieldSurveyAction(
   reviewNotes: string
 ): Promise<OpResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
 
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) return lockCheck;
-    if (!["cad", "admin"].includes(profile.role))
+    if (!["cad", "admin"].includes(auth.role))
       return { success: false, error: "Only CAD can review field surveys." };
 
     if (isApproved) {
       const stRes = await updateProjectStageAction(projectId, "final_review", `Field Survey Accepted. Ready for Final CAD. Notes: ${reviewNotes}`);
       if (!stRes.success) return stRes;
-      await logActivity(projectId, profile?.id || "sys", "FIELD_SURVEY_APPROVED", { reviewNotes });
+      await logActivity(projectId, auth.userId, "FIELD_SURVEY_APPROVED", { reviewNotes });
     } else {
       const stRes = await updateProjectStageAction(projectId, "field_work", `Field Survey Rejected. Reason: ${reviewNotes}`);
       if (!stRes.success) return stRes;
-      await logActivity(projectId, profile.id, "FIELD_SURVEY_REJECTED", { reviewNotes });
+      await logActivity(projectId, auth.userId, "FIELD_SURVEY_REJECTED", { reviewNotes });
       await addProjectCommentAction(projectId, `[Survey Rejection] ${reviewNotes}`, "rejection");
 
       // Notify field workers
@@ -866,20 +857,18 @@ export async function engineerApproveSurveyDataAction(
   reviewNotes: string
 ): Promise<OpResponse> {
   try {
-    const profile: any = await getUserProfileAction();
-    if (!profile) return { success: false, error: "Unauthorized." };
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
 
-    const lockCheck = await verifyProjectNotLocked(projectId);
-    if (!lockCheck.success) return lockCheck;
-    if (!["engineer", "admin"].includes(profile.role))
+    if (!["engineer", "admin"].includes(auth.role))
       return { success: false, error: "Only Engineers can validate field data." };
 
     if (isApproved) {
       await updateProjectStageAction(projectId, "final_review", `Engineer Data Validated. Ready for CAD Finalization. Notes: ${reviewNotes}`);
-      await logActivity(projectId, profile.id, "ENGINEER_DATA_APPROVED", { reviewNotes });
+      await logActivity(projectId, auth.userId, "ENGINEER_DATA_APPROVED", { reviewNotes });
     } else {
       await updateProjectStageAction(projectId, "field_work", `Engineer Data Validation Rejected. Reason: ${reviewNotes}`);
-      await logActivity(projectId, profile.id, "ENGINEER_DATA_REJECTED", { reviewNotes });
+      await logActivity(projectId, auth.userId, "ENGINEER_DATA_REJECTED", { reviewNotes });
       await addProjectCommentAction(projectId, `[Engineer Data Rejection] ${reviewNotes}`, "rejection");
     }
 
