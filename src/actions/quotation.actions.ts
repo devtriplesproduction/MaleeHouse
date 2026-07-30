@@ -791,7 +791,8 @@ export async function deleteQuotationAction(quotationId: string): Promise<Action
 
 export async function getQuotationByTokenAction(token: string): Promise<ActionResponse> {
   try {
-    const supabase: any = await createClient();
+    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
+    const supabase = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { data: quotation } = await supabase.from('quotations').select('*').or(`client_token.eq.${token},id.eq.${token}`).single();
 
     if (!quotation) return { success: false, error: 'Quotation not found' };

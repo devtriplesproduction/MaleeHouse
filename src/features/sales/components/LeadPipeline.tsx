@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { Clock, ChevronRight, FileText, CheckCircle2, Send, Loader2, Calendar, X } from 'lucide-react';
@@ -40,6 +40,9 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
   const router = useRouter();
   const [sendingLeadId, setSendingLeadId] = useState<string | null>(null);
   const [followUpLoadingId, setFollowUpLoadingId] = useState<string | null>(null);
+
+  const [localLeads, setLocalLeads] = useState(leads);
+  useEffect(() => setLocalLeads(leads), [leads]);
 
   // Follow Up Custom Calendar States
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -129,7 +132,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
         toast.success("Sent to Accounts", {
           description: "Lead successfully pushed to the Accounts queue."
         });
-        router.refresh();
+        setLocalLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: 'quotation_requested' } : l));
       } else {
         toast.error("Handover Failed", {
           description: result.error
@@ -174,7 +177,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
       parseInt(selectedMinute)
     );
 
-    const selectedLead = leads.find((l: any) => l.id === selectedLeadId);
+    const selectedLead = localLeads.find((l: any) => l.id === selectedLeadId);
     const isReschedule = !!selectedLead?.follow_up_date;
 
     setIsSavingFollowUp(true);
@@ -187,7 +190,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
             : "Project moved to Follow Up tab and task scheduled successfully."
         });
         setSelectedLeadId(null);
-        router.refresh();
+        setLocalLeads(prev => prev.map(l => l.id === selectedLeadId ? { ...l, follow_up_date: finalDate.toISOString(), status: 'requirement_gathering' } : l));
       } else {
         toast.error("Failed to save follow-up", { description: result.error });
       }
@@ -202,7 +205,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {COLUMNS.map((col) => {
-          const colLeads = leads.filter((l: any) => {
+          const colLeads = localLeads.filter((l: any) => {
             if (col.id === 'lead_created') return l.status === 'lead_created';
             if (col.id === 'requirement_gathering') return l.status === 'requirement_gathering';
             if (col.id === 'payment_pending') return ['quotation_requested', 'quotation_sent', 'payment_pending'].includes(l.status);
@@ -399,7 +402,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
       </div>
 
       {selectedLeadId && (() => {
-        const selectedLead = leads.find(l => l.id === selectedLeadId);
+        const selectedLead = localLeads.find(l => l.id === selectedLeadId);
         const isReschedule = !!selectedLead?.follow_up_date;
 
         const totalDays = getDaysInMonth(currentYear, currentMonth);

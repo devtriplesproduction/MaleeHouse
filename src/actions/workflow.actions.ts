@@ -29,10 +29,12 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
     const supabase: any = await createClient();
     
     // Update the project to store the requested state
-    const { error } = await supabase
+    const { data: updatedProject, error } = await supabase
       .from('projects')
       .update({ dispatch_override_requested: true })
-      .eq('id', projectId);
+      .eq('id', projectId)
+      .select()
+      .single();
 
     if (error) {
       console.error("Error setting override state:", error);
@@ -43,7 +45,7 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
     await notifyAdminDispatchOverrideRequestAction(projectId);
     
     revalidatePath(`/projects/${projectId}`);
-    return { success: true, error: null };
+    return { success: true, error: null, data: updatedProject };
   } catch (err) {
     console.error("requestDispatchOverrideAction error:", err);
     return { success: false, error: "Failed to request override." };
@@ -135,12 +137,14 @@ export async function approveDispatchOverrideAction(projectId: string) {
       .eq('title', 'Dispatch Override Requested');
       
     // 2. Reset the override requested state and set approved state
-    const { error } = await supabase.from('projects')
+    const { data: updatedProject, error } = await supabase.from('projects')
       .update({ 
         dispatch_override_requested: false,
         dispatch_override_approved: true
       })
-      .eq('id', projectId);
+      .eq('id', projectId)
+      .select()
+      .single();
       
     if (error) throw error;
       
@@ -149,7 +153,7 @@ export async function approveDispatchOverrideAction(projectId: string) {
 
     revalidatePath('/admin');
     await revalidateAccountsPaths(projectId);
-    return { success: true };
+    return { success: true, data: updatedProject };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -165,13 +169,17 @@ export async function rejectDispatchOverrideAction(projectId: string) {
       .eq('title', 'Dispatch Override Requested');
       
     // 2. Reset the override requested state
-    await supabase.from('projects')
+    const { data: updatedProject, error } = await supabase.from('projects')
       .update({ dispatch_override_requested: false })
-      .eq('id', projectId);
+      .eq('id', projectId)
+      .select()
+      .single();
+      
+    if (error) throw error;
       
     revalidatePath('/admin');
     await revalidateAccountsPaths(projectId);
-    return { success: true };
+    return { success: true, data: updatedProject };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -492,9 +500,9 @@ export async function transitionWorkflowAction(
     const { error: updateError, data: updatedProject } = await adminClient.from("projects").update({
       status: newStage,
       updated_at: new Date().toISOString()
-    }).eq("id", projectId).select();
+    }).eq("id", projectId).select().single();
 
-    if (updateError || !updatedProject || updatedProject.length === 0) {
+    if (updateError || !updatedProject) {
       console.error("Project update failed. updateError:", updateError, "updatedProject:", updatedProject);
       return { success: false, error: `Project not found or update failed (RLS or Admin Error). DB Error: ${updateError?.message || 'None'}` };
     }
@@ -552,7 +560,7 @@ export async function transitionWorkflowAction(
 
     await revalidateAccountsPaths(projectId);
 
-    return { success: true, error: null };
+    return { success: true, error: null, data: updatedProject };
   } catch (err: any) {
     console.error("transitionWorkflowAction error:", err);
     return { success: false, error: err.message || "Failed to transition workflow stage" };
@@ -647,14 +655,16 @@ export async function uploadProjectFileAction(
     }
 
     const supabase: any = await createClient();
-    await supabase.from("files").insert({
+    const { data: uploadedFile, error: insertError } = await supabase.from("files").insert({
       project_id: projectId,
       uploaded_by: profile.id,
       category: category,
       file_name: fileName,
       file_url: fileUrl,
       uploaded_at: new Date().toISOString()
-    });
+    }).select().single();
+    
+    if (insertError) throw insertError;
 
     await logWorkflowAudit(supabase, projectId, profile.id, `Uploaded file: ${fileName} (${category})`);
 
@@ -673,7 +683,7 @@ export async function uploadProjectFileAction(
     }
 
     revalidatePath(`/projects/${projectId}`);
-    return { success: true, error: null };
+    return { success: true, error: null, data: uploadedFile };
   } catch (err: any) {
     console.error("uploadProjectFileAction error:", err);
     return { success: false, error: err.message || "Failed to upload file" };
@@ -700,12 +710,12 @@ export async function archiveProjectAction(
     const supabase: any = await createClient();
 
     // 2. Update Project Status to Archived with satisfaction and notes
-    const { error: updateError } = await supabase.from("projects").update({
+    const { data: updatedProject, error: updateError } = await supabase.from("projects").update({
       status: "archived",
       satisfaction_score: satisfactionScore,
       archival_note: note,
       updated_at: new Date().toISOString()
-    }).eq("id", projectId);
+    }).eq("id", projectId).select().single();
 
     if (updateError) return { success: false, error: "Project not found or update failed." };
 
@@ -738,7 +748,7 @@ export async function archiveProjectAction(
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/projects");
-    return { success: true, error: null };
+    return { success: true, error: null, data: updatedProject };
   } catch (err: any) {
     console.error("archiveProjectAction error:", err);
     return { success: false, error: err.message || "Failed to archive project" };
@@ -774,10 +784,10 @@ export async function reopenProjectAction(
     }
 
     // 2. Update status to data_sync
-    const { error: updateError } = await supabase.from("projects").update({
+    const { data: updatedProject, error: updateError } = await supabase.from("projects").update({
       status: "data_sync",
       updated_at: new Date().toISOString()
-    }).eq("id", projectId);
+    }).eq("id", projectId).select().single();
 
     if (updateError) return { success: false, error: "Failed to reopen project." };
 
@@ -823,7 +833,7 @@ export async function reopenProjectAction(
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/projects");
-    return { success: true, error: null };
+    return { success: true, error: null, data: updatedProject };
   } catch (err: any) {
     console.error("reopenProjectAction error:", err);
     return { success: false, error: err.message || "Failed to reopen project" };

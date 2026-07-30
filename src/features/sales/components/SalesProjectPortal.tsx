@@ -60,6 +60,16 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
   const [isPending, startTransition] = useTransition();
   const [mounted, setMounted] = useState(false);
 
+  const [localProject, setLocalProject] = useState(project);
+  const [localComments, setLocalComments] = useState(comments);
+  const [localFiles, setLocalFiles] = useState(files);
+
+  useEffect(() => {
+    setLocalProject(project);
+    setLocalComments(comments);
+    setLocalFiles(files);
+  }, [project, comments, files]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -83,7 +93,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Filter comments for follow-ups
-  const followUpLogs = comments.filter((c: any) => 
+  const followUpLogs = localComments.filter((c: any) => 
     c.content.includes("Follow-up Outcome:") || c.comment_type === 'follow_up'
   ).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -155,10 +165,27 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
       const result = await recordFollowUpAction(project.id, finalDate.toISOString(), status, outcome);
       if (result.success) {
         toast.success("Follow-up Recorded", { description: "Reminder scheduled and history logged." });
+        
+        // Optimistic update
+        setLocalProject((prev: any) => ({
+          ...prev,
+          status: 'requirement_gathering',
+          follow_up_date: finalDate.toISOString()
+        }));
+        
+        setLocalComments((prev: any) => [
+          {
+            id: `temp-${Date.now()}`,
+            content: `Follow-up Outcome: ${outcome}\nStatus: ${status}\nNext Date: ${finalDate.toISOString()}`,
+            comment_type: 'follow_up',
+            created_at: new Date().toISOString()
+          },
+          ...prev
+        ]);
+
         setIsRecording(false);
         setOutcome('');
         setSelectedDate(new Date());
-        router.refresh();
       } else {
         toast.error("Failed to save", { description: result.error });
       }
@@ -172,7 +199,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
         toast.success("Handed over to Accounts", { 
           description: "Project is now in Accounts queue for quotation formulation." 
         });
-        router.refresh();
+        setLocalProject((prev: any) => ({ ...prev, status: 'quotation_requested' }));
       } else {
         toast.error("Workflow Error", { description: result.error });
       }
@@ -212,8 +239,18 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
         toast.success("Document Uploaded", { 
           description: `${fileToUpload.name} saved to vault.` 
         });
+        setLocalFiles((prev: any) => [
+          ...prev,
+          {
+            id: `temp-${Date.now()}`,
+            category: 'requirements',
+            file_name: prefixedName,
+            file_url: fileUrl,
+            file_size: fileToUpload.size,
+            created_at: new Date().toISOString()
+          }
+        ]);
         setSelectedFile(null);
-        router.refresh();
       } else {
         toast.error("Registration Failed", { description: result.error });
       }
@@ -231,16 +268,16 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
       const result = await deleteFileAction(fileId, project.id, storagePath);
       if (result.success) {
         toast.success("Document Deleted", { description: "Removed from vault database." });
-        router.refresh();
+        setLocalFiles((prev: any) => prev.filter((f: any) => f.id !== fileId));
       } else {
         toast.error("Deletion Failed", { description: result.error });
       }
     });
   };
 
-  const isLead = ['lead_created', 'requirement_gathering', 'follow_up_pending'].includes(project.status);
-  const isPushed = project.status === 'quotation_requested';
-  const isQuoteFormulated = !isLead && !isPushed && project.status !== 'archived';
+  const isLead = ['lead_created', 'requirement_gathering', 'follow_up_pending'].includes(localProject.status);
+  const isPushed = localProject.status === 'quotation_requested';
+  const isQuoteFormulated = !isLead && !isPushed && localProject.status !== 'archived';
 
   return (
     <div className="space-y-5 animate-in fade-in duration-500">
@@ -381,7 +418,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
                 </div>
                 <div>
                   <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5 leading-none">Client Entity</p>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-1">{project.client_name}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-1">{localProject.client_name}</p>
                 </div>
               </div>
 
@@ -391,7 +428,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
                 </div>
                 <div>
                   <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5 leading-none">Primary Phone</p>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-1">{(project.client_contact || '').split(',')[0]?.replace('Phone: ', '') || 'N/A'}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-1">{(localProject.client_contact || '').split(',')[0]?.replace('Phone: ', '') || 'N/A'}</p>
                 </div>
               </div>
 
@@ -402,7 +439,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
                 <div>
                   <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5 leading-none">Email Address</p>
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-1 truncate max-w-[220px]">
-                    {(project.client_contact || '').split(',')[1]?.replace(' Email: ', '') || 'No Email Registered'}
+                    {(localProject.client_contact || '').split(',')[1]?.replace(' Email: ', '') || 'No Email Registered'}
                   </p>
                 </div>
               </div>
@@ -413,7 +450,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
                 </div>
                 <div>
                   <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5 leading-none">Site Location Address</p>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-205 mt-1 leading-relaxed">{project.client_address || 'No Address Logged'}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-205 mt-1 leading-relaxed">{localProject.client_address || 'No Address Logged'}</p>
                 </div>
               </div>
 
@@ -425,7 +462,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
                   <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5 leading-none">Required Services</p>
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {(() => {
-                      const raw = project.services;
+                      const raw = localProject.services;
                       const servicesArr: string[] = Array.isArray(raw)
                         ? raw
                         : typeof raw === 'string' && raw.trim().length > 0
@@ -448,14 +485,14 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
               <div className="border-t border-slate-100 dark:border-white/5 pt-4">
                 <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5 leading-none">Site Typology</p>
                 <span className="inline-block px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider bg-indigo-500/10 text-indigo-500 rounded-lg border border-indigo-500/20">
-                  {project.site_type || 'Residential'}
+                  {localProject.site_type || 'Residential'}
                 </span>
               </div>
 
               <div className="border-t border-slate-100 dark:border-white/5 pt-4 space-y-1.5">
                 <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5 leading-none">Scope & Special Instructions</p>
                 <p className="text-xs text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-black/20 p-3.5 rounded-xl border border-slate-200/50 dark:border-white/5 leading-relaxed font-medium">
-                  "{project.survey_requirements || 'No specific limit or instructions provided.'}"
+                  "{localProject.survey_requirements || 'No specific limit or instructions provided.'}"
                 </p>
               </div>
             </div>
@@ -477,7 +514,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
               </div>
               
               <span className="text-[10px] font-semibold bg-indigo-500/10 text-indigo-500 px-3 py-1 rounded-full border border-indigo-500/20 shrink-0">
-                {files.length} Staged Document{files.length !== 1 ? 's' : ''}
+                {localFiles.length} Staged Document{localFiles.length !== 1 ? 's' : ''}
               </span>
             </div>
 
@@ -539,14 +576,14 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
 
             {/* Document list */}
             <div className="space-y-3">
-              {files.length === 0 ? (
+              {localFiles.length === 0 ? (
                 <div className="py-12 text-center border border-dashed border-slate-200 dark:border-white/5 rounded-2xl text-slate-400 italic text-xs flex flex-col items-center justify-center gap-2">
                   <FolderOpen className="w-8 h-8 text-slate-300 dark:text-slate-600 stroke-[1.5]" />
                   No documents received or staged yet.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {files.map((file) => {
+                  {localFiles.map((file: any) => {
                     return (
                       <div 
                         key={file.id}

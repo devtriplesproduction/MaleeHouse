@@ -34,7 +34,7 @@ export async function createTaskAction(
 
     const supabase: any = await createClient();
 
-    const { error: insertError } = await supabase
+    const { data: insertedTask, error: insertError } = await supabase
       .from("tasks")
       .insert({
         project_id: projectId,
@@ -45,7 +45,9 @@ export async function createTaskAction(
         status: "pending",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      });
+      })
+      .select()
+      .single();
 
     if (insertError) {
       return { success: false, error: insertError.message };
@@ -55,7 +57,7 @@ export async function createTaskAction(
     notifyAssignmentAction(assignedToId, projectId).catch(console.error);
 
     revalidatePath(`/projects/${projectId}`);
-    return { success: true, error: null };
+    return { success: true, error: null, data: insertedTask };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to create task" };
   }
@@ -86,13 +88,15 @@ export async function updateTaskStatusAction(taskId: string, status: string, pro
       return { success: false, error: "Permission denied. Task not assigned to you." };
     }
 
-    const { error: updateError } = await supabase
+    const { data: updatedTask, error: updateError } = await supabase
       .from("tasks")
       .update({
         status: status,
         updated_at: new Date().toISOString()
       })
-      .eq("id", taskId);
+      .eq("id", taskId)
+      .select()
+      .single();
 
     if (updateError) {
       return { success: false, error: updateError.message };
@@ -100,7 +104,7 @@ export async function updateTaskStatusAction(taskId: string, status: string, pro
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/(dashboard)", "layout");
-    return { success: true, error: null };
+    return { success: true, error: null, data: updatedTask };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to update task status" };
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   CheckCircle2, 
@@ -132,6 +132,11 @@ export default function ProjectWorkflowTab({
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState('');
+  const [localStatus, setLocalStatus] = useState(projectStatus);
+
+  useEffect(() => {
+    setLocalStatus(projectStatus);
+  }, [projectStatus]);
 
   // Map project status to current stage index (0 to 8)
   const getStageIndex = (status: string): number => {
@@ -165,7 +170,7 @@ export default function ProjectWorkflowTab({
     }
   };
 
-  const currentIndex = getStageIndex(projectStatus);
+  const currentIndex = getStageIndex(localStatus);
   const currentStage = WORKFLOW_STAGES[currentIndex];
   const nextStage = currentIndex < 7 ? WORKFLOW_STAGES[currentIndex + 1] : null;
 
@@ -184,14 +189,15 @@ export default function ProjectWorkflowTab({
 
     startTransition(async () => {
       const res = await transitionWorkflowAction(projectId, nextStage.statusKey, comment || `Advanced to ${nextStage.label} by ${userRole}`);
-      if (res?.success) {
+        if (res.data?.status) {
+          setLocalStatus(res.data.status);
+        }
         toast({
           title: 'Workflow Advanced',
           description: `Stage successfully transitioned to ${nextStage.label}.`,
           variant: 'success'
         });
         setComment('');
-        router.refresh();
       } else {
         toast({
           title: 'Transition Gated',

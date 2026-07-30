@@ -102,7 +102,6 @@ export function CreateLeadModal() {
           variant: "success",
         });
         setOpen(false);
-        router.refresh();
       } else {
         toast({
           title: "Capture Failed",

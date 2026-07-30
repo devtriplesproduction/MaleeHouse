@@ -51,7 +51,6 @@ export function RequirementSystem({ projectId, projectStatus }: RequirementSyste
         toast.success("Push to Accounts Successful", { 
           description: "Project is now in the Accounts queue for verification." 
         });
-        router.refresh();
       } else {
         toast.error("Workflow Error", { description: result.error });
       }

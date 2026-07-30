@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import {
   PenTool, Upload, CheckCircle2, XCircle, Clock, ChevronDown,
   ChevronUp, AlertTriangle, Loader2, Send, FileText, RotateCcw, Hash
@@ -77,13 +77,21 @@ export function CADRevisionPanel({
   } | null>(null);
   const [reviewNote, setReviewNote] = useState("");
 
+  const [localRevisions, setLocalRevisions] = useState(revisions);
+  const [localBypass, setLocalBypass] = useState(bypassActive);
+
+  useEffect(() => {
+    setLocalRevisions(revisions);
+    setLocalBypass(bypassActive);
+  }, [revisions, bypassActive]);
+
   const isEngineer = ["engineer", "admin"].includes(userRole);
   const isCAD = ["cad", "admin"].includes(userRole);
-  const latestRevision = revisions[0];
+  const latestRevision = localRevisions[0];
   
-  const rejectedCount = revisions.filter((r: any) => r.status === "rejected").length;
-  const isEscalationHold = rejectedCount >= 10 && !bypassActive;
-  const hasEscalatedRevisions = revisions.length >= 10 && revisions.some((r: any) => r.status === "pending_review");
+  const rejectedCount = localRevisions.filter((r: any) => r.status === "rejected").length;
+  const isEscalationHold = rejectedCount >= 10 && !localBypass;
+  const hasEscalatedRevisions = localRevisions.length >= 10 && localRevisions.some((r: any) => r.status === "pending_review");
 
   const handleApprove = () => {
     if (!activeAction) return;
@@ -94,10 +102,12 @@ export function CADRevisionPanel({
         reviewNote
       );
       if (result?.success) {
+        if (result.data) {
+          setLocalRevisions(prev => prev.map((r: any) => r.id === result.data.id ? { ...r, ...result.data } : r));
+        }
         toast.success("CAD revision approved.");
         setActiveAction(null);
         setReviewNote("");
-        router.refresh();
       } else {
         toast.error(result?.error || "Approval failed.");
       }
@@ -113,10 +123,12 @@ export function CADRevisionPanel({
         reviewNote
       );
       if (result?.success) {
+        if (result.data) {
+          setLocalRevisions(prev => prev.map((r: any) => r.id === result.data.id ? { ...r, ...result.data } : r));
+        }
         toast.success("CAD revision rejected. CAD team notified.");
         setActiveAction(null);
         setReviewNote("");
-        router.refresh();
       } else {
         toast.error(result?.error || "Rejection failed.");
       }
@@ -129,8 +141,10 @@ export function CADRevisionPanel({
       try {
         const result = await bypassCADEscalationAction(projectId);
         if (result?.success) {
+          if (result.data?.bypass_active) {
+            setLocalBypass(result.data.bypass_active);
+          }
           toast.success("CAD Escalation hold bypassed successfully.");
-          router.refresh();
         } else {
           toast.error(result?.error || "Bypass failed.");
         }
@@ -151,7 +165,7 @@ export function CADRevisionPanel({
           CAD Revision History
         </h3>
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          {revisions.length} version{revisions.length !== 1 ? "s" : ""}
+          {localRevisions.length} version{localRevisions.length !== 1 ? "s" : ""}
         </span>
       </div>
       <div className="space-y-4">
@@ -195,7 +209,7 @@ export function CADRevisionPanel({
       )}
 
       {/* Revision List */}
-      {revisions.length === 0 ? (
+      {localRevisions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
           <div className="w-12 h-12 rounded-full bg-blue-500/5 flex items-center justify-center border border-blue-500/10">
             <FileText className="w-5 h-5 text-blue-500/30" />
@@ -207,7 +221,7 @@ export function CADRevisionPanel({
         </div>
       ) : (
         <div className="space-y-3">
-          {revisions.map((rev: any) => {
+          {localRevisions.map((rev: any) => {
             const cfg = STATUS_CONFIG[rev.status as keyof typeof STATUS_CONFIG];
             const StatusIcon = cfg.icon;
             const isExpanded = expandedId === rev.id;

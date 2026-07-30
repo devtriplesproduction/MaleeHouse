@@ -64,6 +64,9 @@ interface ClientDirectoryProps {
 
 export function ClientDirectory({ clients, userRole }: ClientDirectoryProps) {
   const router = useRouter();
+  const [localClients, setLocalClients] = React.useState(clients);
+  React.useEffect(() => setLocalClients(clients), [clients]);
+
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'none'>('all');
@@ -97,7 +100,9 @@ export function ClientDirectory({ clients, userRole }: ClientDirectoryProps) {
     const res = await updateClientDetailsAction(selectedClient.client_name, editForm);
     setIsSaving(false);
     if (res.success) {
-      setSelectedClient({ ...selectedClient, ...editForm });
+      const updated = { ...selectedClient, ...editForm };
+      setSelectedClient(updated);
+      setLocalClients(prev => prev.map(c => c.client_name === selectedClient.client_name ? updated : c));
       setIsEditing(false);
     } else {
       toast({ title: "Update Failed", description: res.error || "Failed to update client details.", variant: "error" });
@@ -125,12 +130,15 @@ export function ClientDirectory({ clients, userRole }: ClientDirectoryProps) {
       if (res.success) {
         toast({ title: "Project Deleted", description: `"${deleteTarget.name}" and all related data have been permanently removed.` });
         if (selectedClient) {
-          setSelectedClient({
+          const newSelected = {
             ...selectedClient,
             projects: selectedClient.projects.filter((p: any) => p.id !== (deleteTarget as any).id)
-          });
+          };
+          setSelectedClient(newSelected);
+          setLocalClients(prev => prev.map(c => 
+            c.client_name === selectedClient.client_name ? newSelected : c
+          ));
         }
-        router.refresh();
       } else {
         toast({ title: "Delete Failed", description: res.error || "Failed to delete project.", variant: "error" });
       }
@@ -139,7 +147,7 @@ export function ClientDirectory({ clients, userRole }: ClientDirectoryProps) {
       if (res.success) {
         toast({ title: "Client Deleted", description: `"${deleteTarget.name}" and all their projects have been permanently removed.` });
         handleCloseModal();
-        router.refresh();
+        setLocalClients(prev => prev.filter(c => c.client_name !== deleteTarget.name));
       } else {
         toast({ title: "Delete Failed", description: res.error || "Failed to delete client.", variant: "error" });
       }
@@ -173,7 +181,7 @@ export function ClientDirectory({ clients, userRole }: ClientDirectoryProps) {
     return status.split('_').map((w: any) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
-  const filteredClients = clients
+  const filteredClients = localClients
     .filter((c: any) => {
       const nameMatch = c.client_name.toLowerCase().includes(search.toLowerCase());
       const contactMatch = c.client_contact.toLowerCase().includes(search.toLowerCase());

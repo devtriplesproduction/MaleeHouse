@@ -11,7 +11,8 @@ import { updateProjectStageAction } from '@/actions/workflow.actions';
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
 import { getUserProfileAction } from '@/actions/auth.actions';
 import { logAdminAuditAction } from '@/actions/admin.actions';
-import { requireAuthContext, getAssignedProjectIds, requireProjectAccess } from '@/lib/permissions/permissions';
+import { requireAuthContext } from '@/lib/permissions/permissions';
+import { getAssignedProjectIds, requireProjectAccess } from '@/lib/permissions/project-access';
 import {
   createInvoiceSchema,
   createPaymentSchema,

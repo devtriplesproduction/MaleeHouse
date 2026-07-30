@@ -170,7 +170,6 @@ export function FollowUpManager({
         setIsRecording(false);
         setOutcome('');
         setSelectedDate(new Date());
-        router.refresh();
         onUpdate?.();
       } else {
         toast.error("Synchronization Error", { description: result.error });

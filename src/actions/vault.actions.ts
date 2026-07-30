@@ -9,6 +9,7 @@ import { requireAuthContext } from "@/lib/permissions/access-control";
 interface FileActionResponse {
   success: boolean;
   error?: string;
+  data?: any;
 }
 
 /**
@@ -31,10 +32,12 @@ export async function renameFileAction(
   }
 
   // 2. Perform Update
-  const { error } = await supabase
+  const { data: updatedFile, error } = await supabase
     .from("files")
     .update({ file_name: newName })
-    .eq("id", fileId);
+    .eq("id", fileId)
+    .select()
+    .single();
 
   if (error) return { success: false, error: error.message };
 
@@ -47,7 +50,7 @@ export async function renameFileAction(
   });
 
   revalidatePath(`/projects/${projectId}`);
-  return { success: true };
+  return { success: true, data: updatedFile };
 }
 
 /**

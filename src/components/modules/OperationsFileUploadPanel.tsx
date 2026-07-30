@@ -312,7 +312,6 @@ export function OperationsFileUploadPanel({
           description: 'Project moved to CAD Prototype stage successfully.',
           variant: 'success'
         });
-        router.refresh();
       } else {
         toast({
           title: 'Dispatch Failed',
@@ -382,7 +381,6 @@ export function OperationsFileUploadPanel({
           description: 'Project moved to CAD Review stage.',
           variant: 'success'
         });
-        router.refresh();
       } else {
         toast({
           title: 'Stage Update Failed',
@@ -559,7 +557,6 @@ export function OperationsFileUploadPanel({
             description: 'Project moved to CAD Drafting.',
             variant: 'success'
           });
-          router.refresh();
         } else {
           toast({
             title: 'Action Failed',
@@ -586,7 +583,6 @@ export function OperationsFileUploadPanel({
             description: 'Project marked as Completed.',
             variant: 'success'
           });
-          router.refresh();
         } else {
           toast({
             title: 'Approval Failed',
@@ -613,7 +609,6 @@ export function OperationsFileUploadPanel({
             description: 'Project moved to Field Work stage.',
             variant: 'success'
           });
-          router.refresh();
         } else {
           toast({
             title: 'Action Failed',
@@ -639,7 +634,6 @@ export function OperationsFileUploadPanel({
         const res = await reviewLatestCADRevisionAction(projectId, false, rejectionReason);
         if (res.success) {
           toast({ title: 'Prototype Rejected', description: 'Sent back to CAD team.', variant: 'success' });
-          router.refresh();
         } else {
           toast({ title: 'Action Failed', description: res.error || 'Failed to review prototype.', variant: 'error' });
         }
@@ -647,7 +641,6 @@ export function OperationsFileUploadPanel({
         const res = await reviewFieldSurveyAction(projectId, false, rejectionReason);
         if (res.success) {
           toast({ title: 'Survey Sent for Rework', description: 'Sent back to field team.', variant: 'success' });
-          router.refresh();
         } else {
           toast({ title: 'Action Failed', description: res.error || 'Failed to review survey.', variant: 'error' });
         }
@@ -656,7 +649,6 @@ export function OperationsFileUploadPanel({
         const res = await engineerReviewFinalCADAction(projectId, false, rejectionReason, rejectionComments, rejectionInstructions);
         if (res.success) {
           toast({ title: 'Final Deliverable Rejected', description: 'Project returned to CAD Finalization stage.', variant: 'success' });
-          router.refresh();
         } else {
           toast({ title: 'Rejection Failed', description: res.error || 'An error occurred.', variant: 'error' });
         }
@@ -691,7 +683,6 @@ export function OperationsFileUploadPanel({
           description: 'Project moved to Data Sync stage.',
           variant: 'success'
         });
-        router.refresh();
       } else {
         toast({
           title: 'Submission Failed',
@@ -713,7 +704,6 @@ export function OperationsFileUploadPanel({
           description: 'File has been deleted.',
           variant: 'success'
         });
-        router.refresh();
       } else {
         toast({
           title: 'Delete Failed',

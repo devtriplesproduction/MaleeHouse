@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,12 @@ export function ProjectTaskList({
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  const stageTasks = tasks.filter((t: any) => t.stage === currentStage);
+  const [localTasks, setLocalTasks] = useState(tasks);
+  useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
+
+  const stageTasks = localTasks.filter((t: any) => t.stage === currentStage);
 
   const handleCreateTask = () => {
     if (!newTaskTitle || !newTaskAssignee || !newTaskDueDate) return;
@@ -59,7 +64,10 @@ export function ProjectTaskList({
         newTaskDueDate
       );
 
-      if (result?.success) {
+      if (result?.success && result.data) {
+        const assignedUser = teamMembers.find((m: any) => m.id === result.data.assigned_to);
+        const newTask = { ...result.data, assigned_name: assignedUser ? assignedUser.name : "Unknown" };
+        setLocalTasks(prev => [...prev, newTask]);
         toast({ title: "Task Created", variant: "success" });
         setIsDialogOpen(false);
         setNewTaskTitle("");
@@ -74,7 +82,8 @@ export function ProjectTaskList({
   const handleUpdateStatus = (taskId: string, newStatus: string) => {
     startTransition(async () => {
       const result = await updateTaskStatusAction(taskId, newStatus, projectId);
-      if (result?.success) {
+      if (result?.success && result.data) {
+        setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: result.data.status } : t));
         toast({ title: "Status Updated", variant: "success" });
       } else {
         toast({ title: "Error", description: result?.error || undefined, variant: "error" });

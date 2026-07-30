@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import {
   MapPin, FileText, AlertTriangle, CheckCircle2, Clock,
   Plus, Send, Loader2, ChevronDown, ChevronUp
@@ -52,6 +52,9 @@ export function FieldReportPanel({ projectId, reports, userRole, isFrozen = fals
   const [description, setDescription] = useState("");
   const [locationNotes, setLocationNotes] = useState("");
 
+  const [localReports, setLocalReports] = useState(reports);
+  useEffect(() => setLocalReports(reports), [reports]);
+
   const isField = ["field", "admin"].includes(userRole);
 
   const handleSubmit = () => {
@@ -59,12 +62,14 @@ export function FieldReportPanel({ projectId, reports, userRole, isFrozen = fals
     startTransition(async () => {
       const result = await submitFieldReportAction(projectId, reportType, description, locationNotes);
       if (result?.success) {
+        if (result.data) {
+          setLocalReports(prev => [result.data as any, ...prev]);
+        }
         toast.success("Field report submitted.");
         setShowForm(false);
         setDescription("");
         setLocationNotes("");
         setReportType("progress");
-        router.refresh();
       } else {
         toast.error(result?.error || "Failed to submit report.");
       }
@@ -81,7 +86,7 @@ export function FieldReportPanel({ projectId, reports, userRole, isFrozen = fals
             Field Reports
           </h3>
           <span className="text-xs font-black px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            {reports.length}
+            {localReports.length}
           </span>
         </div>
 
@@ -181,7 +186,7 @@ export function FieldReportPanel({ projectId, reports, userRole, isFrozen = fals
       )}
 
       {/* Reports List */}
-      {reports.length === 0 ? (
+      {localReports.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
           <div className="w-12 h-12 rounded-full bg-emerald-500/5 flex items-center justify-center border border-emerald-500/10">
             <FileText className="w-5 h-5 text-emerald-500/30" />
@@ -193,7 +198,7 @@ export function FieldReportPanel({ projectId, reports, userRole, isFrozen = fals
         </div>
       ) : (
         <div className="space-y-3">
-          {reports.map((report: any) => {
+          {localReports.map((report: any) => {
             const cfg = REPORT_TYPE_CONFIG[report.report_type as keyof typeof REPORT_TYPE_CONFIG];
             const Icon = cfg.icon;
             const isExpanded = expandedId === report.id;

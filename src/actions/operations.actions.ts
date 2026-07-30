@@ -7,8 +7,8 @@ import { getUserProfileAction } from "@/actions/auth.actions";
 import {
   Role,
   verifyProjectAccess,
-  requireProjectAccess,
 } from "@/lib/permissions/permissions";
+import { requireProjectAccess } from "@/lib/permissions/project-access";
 import { updateProjectStageAction } from "./workflow.actions";
 import { addProjectCommentAction } from "./comment.actions";
 import { createClient } from "@/lib/supabase/server";
@@ -387,7 +387,7 @@ export async function submitCADRevisionAction(
       revision_type: revisionType
     };
 
-    const { error: insertError } = await supabase.from('cad_revisions').insert(newRevision);
+    const { data: insertedRevision, error: insertError } = await supabase.from('cad_revisions').insert(newRevision).select().single();
     if (insertError) throw new Error(insertError.message);
 
     await updateProjectStageAction(projectId, "review", `CAD Revision #${revisionNumber} submitted for review.`);
@@ -411,7 +411,7 @@ export async function submitCADRevisionAction(
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/cad");
-    return { success: true, error: null, data: newRevision as any };
+    return { success: true, error: null, data: insertedRevision as any };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to submit CAD revision." };
   }
@@ -440,15 +440,15 @@ export async function approveCADRevisionAction(
       return { success: false, error: "Cannot approve CAD: At least one CAD engineer and one Field engineer must be assigned to the team." };
     }
 
-    const { error: updateError } = await supabase.from('cad_revisions').update({
+    const { data: updatedRevision, error: updateError } = await supabase.from('cad_revisions').update({
       status: "approved",
       reviewed_by: auth.userId,
       reviewed_at: new Date().toISOString(),
       review_notes: reviewNote || "Approved.",
-    }).eq('id', revisionId);
+    }).eq('id', revisionId).select().single();
     if (updateError) return { success: false, error: "CAD revision not found." };
 
-    const { data: revision } = await supabase.from('cad_revisions').select('*').eq('id', revisionId).single();
+    const revision = updatedRevision;
     const projectName = await getProjectName(projectId);
 
     await logActivity(projectId, auth.userId, "CAD_APPROVED", {
@@ -477,7 +477,7 @@ export async function approveCADRevisionAction(
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/engineer");
     revalidatePath("/cad");
-    return { success: true, error: null };
+    return { success: true, error: null, data: updatedRevision as any };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to approve CAD revision." };
   }
@@ -496,15 +496,15 @@ export async function rejectCADRevisionAction(
       return { success: false, error: "Only Engineers can reject CAD revisions." };
 
     const supabase: any = await createClient();
-    const { error: updateError } = await supabase.from('cad_revisions').update({
+    const { data: updatedRevision, error: updateError } = await supabase.from('cad_revisions').update({
       status: "rejected",
       reviewed_by: auth.userId,
       reviewed_at: new Date().toISOString(),
       review_notes: rejectionReason,
-    }).eq('id', revisionId);
+    }).eq('id', revisionId).select().single();
     if (updateError) return { success: false, error: "CAD revision not found." };
 
-    const { data: revision } = await supabase.from('cad_revisions').select('*').eq('id', revisionId).single();
+    const revision = updatedRevision;
     const projectName = await getProjectName(projectId);
 
     await logActivity(projectId, auth.userId, "CAD_REJECTED", {
@@ -535,13 +535,13 @@ export async function rejectCADRevisionAction(
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/engineer");
     revalidatePath("/cad");
-    return { success: true, error: null };
+    return { success: true, error: null, data: updatedRevision as any };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to reject CAD revision." };
   }
 }
 
-export async function bypassCADEscalationAction(projectId: string): Promise<OpResponse> {
+export async function bypassCADEscalationAction(projectId: string): Promise<OpResponse<any>> {
   try {
     const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
     if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
@@ -551,10 +551,10 @@ export async function bypassCADEscalationAction(projectId: string): Promise<OpRe
     }
 
     const supabase: any = await createClient();
-    const { error: updateError } = await supabase.from('projects').update({
+    const { data: updatedProject, error: updateError } = await supabase.from('projects').update({
       bypass_active: true,
       updated_at: new Date().toISOString()
-    }).eq('id', projectId);
+    }).eq('id', projectId).select().single();
     if (updateError) return { success: false, error: "Project not found." };
 
     await logActivity(projectId, auth.userId, "ESCALATION_BYPASSED", {
@@ -562,7 +562,7 @@ export async function bypassCADEscalationAction(projectId: string): Promise<OpRe
     });
 
     revalidatePath(`/projects/${projectId}`);
-    return { success: true, error: null };
+    return { success: true, error: null, data: updatedProject as any };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to bypass escalation." };
   }

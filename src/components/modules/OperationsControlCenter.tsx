@@ -131,7 +131,6 @@ export function OperationsControlCenter({
       toast({ title: "File Renamed", variant: "success" });
       setRenamingFileId(null);
       setTempFileName("");
-      router.refresh();
     } else {
       toast({ title: "Rename Failed", description: result?.error || undefined, variant: "error" });
     }
@@ -145,7 +144,6 @@ export function OperationsControlCenter({
       const result = await deleteFileAction(fileId, projectId, storagePath);
       if (result?.success) {
         toast({ title: "Document Deleted", variant: "success" });
-        router.refresh();
       } else {
         throw new Error(result?.error || "Deletion failed");
       }
@@ -177,7 +175,6 @@ export function OperationsControlCenter({
 
       if (registerResult.success) {
         toast({ title: "Document Uploaded", description: `"${file.name}" uploaded successfully.`, variant: "success" });
-        router.refresh();
       } else {
         throw new Error(registerResult.error || "Failed to register file in database");
       }
@@ -198,7 +195,6 @@ export function OperationsControlCenter({
         toast({ title: "CAD Engineer Assigned", variant: "success" });
         setSelectedCAD("");
         setShowAddCAD(false);
-        router.refresh();
       } else {
         throw new Error(result?.error || "Assignment failed");
       }
@@ -216,7 +212,6 @@ export function OperationsControlCenter({
       const result = await removeUserFromProjectAction(assignmentId, projectId);
       if (result?.success) {
         toast({ title: "CAD Engineer Removed", variant: "success" });
-        router.refresh();
       } else {
         throw new Error(result?.error || "Removal failed");
       }
@@ -238,7 +233,6 @@ export function OperationsControlCenter({
         toast({ title: "CAD Engineer Updated", variant: "success" });
         setEditingCADId(null);
         setEditSelectedCAD("");
-        router.refresh();
       } else {
         throw new Error(result?.error || "Update failed");
       }
@@ -258,7 +252,6 @@ export function OperationsControlCenter({
         toast({ title: "Field Engineer Assigned", variant: "success" });
         setSelectedField("");
         setShowAddField(false);
-        router.refresh();
       } else {
         throw new Error(result?.error || "Assignment failed");
       }
@@ -276,7 +269,6 @@ export function OperationsControlCenter({
       const result = await removeUserFromProjectAction(assignmentId, projectId);
       if (result?.success) {
         toast({ title: "Field Engineer Removed", variant: "success" });
-        router.refresh();
       } else {
         throw new Error(result?.error || "Removal failed");
       }
@@ -297,7 +289,6 @@ export function OperationsControlCenter({
         toast({ title: "Field Engineer Updated", variant: "success" });
         setEditingFieldId(null);
         setEditSelectedField("");
-        router.refresh();
       } else {
         throw new Error(result?.error || "Update failed");
       }
@@ -316,7 +307,6 @@ export function OperationsControlCenter({
       if (result?.success) {
         toast({ title: "Project Transmitted to CAD", variant: "success" });
         setHandoverNote("");
-        router.refresh();
       } else {
         throw new Error(result?.error || "Transmission failed");
       }
@@ -395,7 +385,6 @@ export function OperationsControlCenter({
       toast({ title: "Project Reopened", variant: "success" });
       setIsReopenModalOpen(false);
       setReopenReason("");
-      router.refresh();
     } else {
       toast({ title: "Reopen Failed", description: result.error || "Something went wrong.", variant: "error" });
     }
@@ -414,7 +403,6 @@ export function OperationsControlCenter({
         toast({ title: "Workflow Synchronized", variant: "success" });
         setIsTransitionOpen(false);
         setTransitionComment("");
-        router.refresh();
       } else {
         throw new Error(result?.error || "Transition failed");
       }
@@ -434,7 +422,6 @@ export function OperationsControlCenter({
         toast({ title: "Survey Rejected", description: "Project sent back to field team.", variant: "success" });
         setIsRejectModalOpen(false);
         setRejectionNote("");
-        router.refresh();
       } else {
         throw new Error(res?.error || "Failed to reject survey data");
       }
@@ -451,7 +438,6 @@ export function OperationsControlCenter({
       const result = await claimProjectAction(projectId);
       if (result?.success) {
         toast({ title: "Project Claimed", description: "You are now assigned to this operational squad.", variant: "success" });
-        router.refresh();
       } else {
         throw new Error(result?.error || "Failed to claim project");
       }

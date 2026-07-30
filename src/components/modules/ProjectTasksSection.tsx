@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Table, 
   TableBody, 
@@ -23,12 +23,18 @@ interface ProjectTasksSectionProps {
 
 export function ProjectTasksSection({ projectId, tasks }: ProjectTasksSectionProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [localTasks, setLocalTasks] = useState(tasks);
+
+  useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
 
   const handleStatusUpdate = async (taskId: string, newStatus: string) => {
     setLoadingId(taskId);
     try {
       const result = await updateTaskStatusAction(taskId, newStatus, projectId);
-      if (result?.success) {
+      if (result?.success && result.data) {
+        setLocalTasks(prev => prev.map((t: any) => t.id === taskId ? { ...t, status: result.data.status } : t));
         toast.success(`Task marked as ${newStatus}`);
       } else {
         toast.error(result?.error || "Failed to update task");
@@ -60,14 +66,14 @@ export function ProjectTasksSection({ projectId, tasks }: ProjectTasksSectionPro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tasks.length === 0 ? (
+            {localTasks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">
                   No tasks assigned to this project yet.
                 </TableCell>
               </TableRow>
             ) : (
-              tasks.map((task) => (
+              localTasks.map((task: any) => (
                 <TableRow key={task.id}>
                   <TableCell className="font-medium">{task.title}</TableCell>
                   <TableCell>

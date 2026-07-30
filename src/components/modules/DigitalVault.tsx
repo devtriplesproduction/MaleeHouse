@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition, useCallback } from 'react';
+import React, { useState, useTransition, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   FileText, 
@@ -56,6 +56,11 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
   const [searchTerm, setSearchTerm] = useState('');
   const [isPending, startTransition] = useTransition();
 
+  const [localFiles, setLocalFiles] = useState<ProjectFile[]>(files);
+  useEffect(() => {
+    setLocalFiles(files);
+  }, [files]);
+
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -84,7 +89,7 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
 
   // 1. Group Files by Tabs
   const getTabFiles = (tab: VaultTab) => {
-    return files.filter((f: any) => {
+    return localFiles.filter((f: any) => {
       const matchesSearch = f.file_name.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
 
@@ -108,8 +113,8 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
   const currentTabFiles = getTabFiles(activeTab);
 
   // 2. Control Points Specific Check
-  const cpImage = files.find((f: any) => f.category === 'control_point_image');
-  const cpCsv = files.find((f: any) => f.category === 'control_point_csv');
+  const cpImage = localFiles.find((f: any) => f.category === 'control_point_image');
+  const cpCsv = localFiles.find((f: any) => f.category === 'control_point_csv');
 
   const cpStatus = (): { label: string; color: string; bg: string; border: string } => {
     if (cpImage && cpCsv) {
@@ -133,8 +138,8 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
     startTransition(async () => {
       const result = await deleteFileAction(file.id, projectId, file.storage_path);
       if (result?.success) {
+        setLocalFiles(prev => prev.filter(f => f.id !== file.id));
         toast({ title: 'File Deleted', description: 'The file has been removed from the vault.', variant: 'success' });
-        router.refresh();
       } else {
         toast({ title: 'Error', description: result?.error || 'Deletion failed', variant: 'error' });
       }
@@ -148,9 +153,11 @@ export function DigitalVault({ projectId, files, userRole }: DigitalVaultProps) 
     startTransition(async () => {
       const result = await renameFileAction(renamingFile.id, projectId, newName);
       if (result?.success) {
+        if (result.data) {
+          setLocalFiles(prev => prev.map(f => f.id === result.data.id ? result.data : f));
+        }
         toast({ title: 'File Renamed', description: 'Vault record updated.', variant: 'success' });
         setRenamingFile(null);
-        router.refresh();
       } else {
         toast({ title: 'Error', description: result?.error || 'Rename failed', variant: 'error' });
       }
