@@ -1,8 +1,6 @@
 import React from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
-import { getMyAssignedProjectsAction } from "@/actions/operations.actions";
-import { getSOPsAction } from "@/actions/sop.actions";
-import { getMyEODReportsAction } from "@/actions/eod.actions";
+import { getCADWorkspaceDataAction } from "@/actions/workspace.actions";
 import {
   PenTool, ChevronRight, AlertTriangle, CheckCircle2,
   Clock, FileText, Zap, Upload, Eye
@@ -19,20 +17,15 @@ export default async function CADDashboardPage() {
   const profile = await getUserProfileAction();
   const firstName = profile?.first_name || "CAD Specialist";
 
-  const [assignedRes, sopsRes, eodRes] = await Promise.all([
-    getMyAssignedProjectsAction(),
-    getSOPsAction(),
-    getMyEODReportsAction(),
-  ]);
+  const { success, data } = await getCADWorkspaceDataAction();
+  const workspaceData = success && data ? data : {};
 
-  const projects = (assignedRes.data || []).filter(
+  const projects = (workspaceData.assignedProjects || []).filter(
     (p: any) => !["completed", "archived"].includes(p.status)
   );
   
-
-
-  const sops = sopsRes.data || [];
-  const eodReports = eodRes.success ? eodRes.data : [];
+  const sops = workspaceData.sops || [];
+  const eodReports = workspaceData.eodReports || [];
 
   const pendingSubmissions = projects.filter((p: any) => p.status === "prototype");
   const fieldReviews = projects.filter((p: any) => p.status === "data_sync");
@@ -44,7 +37,7 @@ export default async function CADDashboardPage() {
     { label: "My Queue",      value: projects.length,            color: "text-blue-500",    bg: "bg-blue-500/10",    icon: PenTool },
     { label: "In Progress",   value: pendingSubmissions.length,  color: "text-amber-500",   bg: "bg-amber-500/10",   icon: Clock },
     { label: "Field Reviews", value: fieldReviews.length,        color: "text-cyan-500",    bg: "bg-cyan-500/10",    icon: FileText },
-    { label: "Done",          value: (assignedRes.data || []).filter((p: any) => p.status === "completed").length, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2 },
+    { label: "Done",          value: (workspaceData.assignedProjects || []).filter((p: any) => p.status === "completed").length, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2 },
   ];
 
   return (

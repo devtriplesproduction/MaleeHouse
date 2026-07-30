@@ -6,6 +6,7 @@ import { checkActionRateLimit } from '@/lib/rate-limit';
 
 import { createClient } from '@/lib/supabase/server';
 import { verifyProjectAccess, type Role } from '@/lib/permissions/permissions';
+import { requireAuthContext } from '@/lib/permissions/access-control';
 import { getUserProfileAction } from '@/actions/auth.actions';
 
 export async function uploadFileToServerAction(
@@ -38,20 +39,12 @@ export async function uploadFileToServerAction(
     const supabase = await createClient();
 
     // 1. Auth & Profile Check
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Unauthorized. Please log in to upload files." };
+    const { userId, role, error: authError } = await requireAuthContext();
+    if (authError || !userId) return { success: false, error: "Unauthorized. Please log in to upload files." };
     
-    if (!checkActionRateLimit(user.id, 'uploadFileToServerAction', 15, 60 * 1000)) {
+    if (!checkActionRateLimit(userId, 'uploadFileToServerAction', 15, 60 * 1000)) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single() as { data: { role: string } | null };
-
-    const role = profile?.role || "";
 
     // 2. Assignment Check
     if (projectId === 'company-wide') {
@@ -59,7 +52,7 @@ export async function uploadFileToServerAction(
         return { success: false, error: "Permission denied for company-wide uploads." };
       }
     } else {
-      const accessCheck = await verifyProjectAccess(projectId, user.id, role as Role, true);
+      const accessCheck = await verifyProjectAccess(projectId, userId, role as Role, true);
       if (!accessCheck.isAllowed) {
         return { success: false, error: accessCheck.error || "Permission denied." };
       }

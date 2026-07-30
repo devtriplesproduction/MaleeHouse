@@ -1,19 +1,14 @@
 import React from "react";
-import { getInvoicesAction, getAllMilestonesAction, getProjectBillingSummaryAction, getPaymentsAction } from "@/actions/finance.actions";
+import { getBillingWorkspaceDataAction } from "@/actions/finance.actions";
 import { BillingWorkspaceContent } from "@/features/accounts/BillingWorkspaceContent";
 
 export default async function BillingPage() {
-  const [invoiceRes, milestoneRes, projectRes, paymentRes] = await Promise.all([
-    getInvoicesAction(),
-    getAllMilestonesAction(),
-    getProjectBillingSummaryAction(),
-    getPaymentsAction()
-  ]);
+  const { success, data } = await getBillingWorkspaceDataAction();
   
-  const initialInvoices = invoiceRes?.success && invoiceRes.data ? invoiceRes.data : [];
-  const initialMilestones = milestoneRes?.success && milestoneRes.data ? milestoneRes.data : [];
-  const initialProjectsData = projectRes?.success && projectRes.data ? projectRes.data : [];
-  const initialPayments = paymentRes?.success && paymentRes.data ? paymentRes.data : [];
+  const initialInvoices = success && data?.invoices ? data.invoices : [];
+  const initialMilestones = success && data?.milestones ? data.milestones : [];
+  const initialProjectsData = success && data?.projects ? data.projects : [];
+  const initialPayments = success && data?.payments ? data.payments : [];
 
   return (
     <BillingWorkspaceContent 

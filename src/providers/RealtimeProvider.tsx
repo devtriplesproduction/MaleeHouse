@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/useUser";
 import type { Database } from "@/types/database.types";
 
 type NotificationType =
@@ -82,7 +83,17 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     toastRef.current = toast;
   }, [toast]);
 
+  const { user } = useUser();
+
   useEffect(() => {
+    if (!user?.id) {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      return;
+    }
+
     async function subscribe() {
       if (isSubscribing.current) return;
       isSubscribing.current = true;
@@ -92,12 +103,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           await supabase.removeChannel(channelRef.current);
           channelRef.current = null;
         }
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          isSubscribing.current = false;
-          return;
-        }
+        
+        if (!user) return;
 
         const channelName = `notifications:user:${user.id}`;
         const channel = supabase.channel(channelName);
@@ -133,24 +140,13 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     subscribe();
 
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-      if (event === "SIGNED_IN") {
-        subscribe();
-      } else if (event === "SIGNED_OUT") {
-        if (channelRef.current) {
-          supabase.removeChannel(channelRef.current);
-          channelRef.current = null;
-        }
-      }
-    });
-
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
-      authSubscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, user?.id]);
 
   // FIX: memoize the context value so consumers only re-render when
   // notificationVersion actually changes, not on every RealtimeProvider render.

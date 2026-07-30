@@ -1,9 +1,6 @@
 import React, { Suspense } from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
-import { getMyAssignedProjectsAction } from "@/actions/operations.actions";
-import { getAllMaterialRequestsAction } from "@/actions/field.actions";
-import { getEngineerTasksAction } from "@/actions/task.actions";
-import { getNotificationsAction } from "@/actions/notification.actions";
+import { getEngineerWorkspaceDataAction } from "@/actions/workspace.actions";
 import {
   Shield, ChevronRight, AlertTriangle, FileText,
   CheckCircle2, Clock, PenTool, Zap, Eye, MapPin,
@@ -11,50 +8,33 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { getMyEODReportsAction } from "@/actions/eod.actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow, differenceInDays, format, isPast } from "date-fns";
 import { ActivityFeedTab } from "@/components/modules/ActivityFeedTab";
 import { PaginatedProjectList } from "@/components/modules/PaginatedProjectList";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MaterialApprovalWidget } from "@/components/modules/MaterialApprovalWidget";
-
-
-
 import { filterActivityLogsByRole } from "@/lib/utils";
 
 export default async function EngineerDashboardPage() {
   const profile = await getUserProfileAction();
   const firstName = profile?.first_name || "Engineer";
 
-  const { createClient } = await import("@/lib/supabase/server");
-  const supabase: any = await createClient();
+  const { success, data } = await getEngineerWorkspaceDataAction();
+  const workspaceData = success && data ? data : {};
 
-  const [assignedRes, eodRes, activityLogsRes, commentsRes, filesRes, usersRes, tasksRes, notifRes, visitsRes, matReqRes] = await Promise.all([
-    getMyAssignedProjectsAction(),
-    getMyEODReportsAction(),
-    supabase.from('activity_logs').select('*'),
-    supabase.from('comments').select('*'),
-    supabase.from('files').select('*'),
-    supabase.from('profiles').select('*'),
-    getEngineerTasksAction(profile?.id || ""),
-    getNotificationsAction(),
-    supabase.from('project_visits').select('*, projects(name, client_name)').order('scheduled_date', { ascending: true }),
-    getAllMaterialRequestsAction()
-  ]);
-
-  const rawActivityLogs: any[] = (activityLogsRes.data as any) || [];
+  const rawActivityLogs: any[] = workspaceData.activityLogs || [];
   const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
-  const comments: any[] = (commentsRes.data as any) || [];
-  const files: any[] = (filesRes.data as any) || [];
-  const allUsers: any[] = (usersRes.data as any) || [];
+  const comments: any[] = workspaceData.comments || [];
+  const files: any[] = workspaceData.files || [];
+  const allUsers: any[] = workspaceData.allUsers || [];
 
-  const projects = assignedRes.data || [];
-  const eodReports = eodRes.success ? eodRes.data : [];
+  const projects = workspaceData.assignedProjects || [];
+  const eodReports = workspaceData.eodReports || [];
   
-  const tasks = tasksRes.success ? tasksRes.data : [];
-  const notifications = notifRes.success ? notifRes.data : [];
-  const allMaterialRequests: any[] = (matReqRes?.success ? matReqRes.data : []) || [];
+  const tasks = workspaceData.tasks || [];
+  const notifications = workspaceData.notifications || [];
+  const allMaterialRequests: any[] = workspaceData.materialRequests || [];
 
   // Filter project IDs that have had a QC rejection event
   const qcRejectedProjectIds = new Set(
@@ -105,7 +85,7 @@ export default async function EngineerDashboardPage() {
     .filter((p: any) => p.target_completion_date && p.status !== "completed" && p.status !== "archived")
     .sort((a: any, b: any) => new Date(a.target_completion_date).getTime() - new Date(b.target_completion_date).getTime());
 
-  const siteVisits = visitsRes.data || [];
+  const siteVisits = workspaceData.dailyVisits || [];
 
   const getProjectName = (projId: string) => {
     return allProjects.find((p: any) => p.id === projId)?.name || projId;

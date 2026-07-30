@@ -1,14 +1,12 @@
 import React from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
-import { getOperationsQueueAction } from "@/actions/operations.actions";
+import { getReviewWorkspaceDataAction } from "@/actions/workspace.actions";
 import {
   Shield, CheckCircle2, XCircle, Clock, ChevronRight,
   AlertTriangle, FileText, Zap, TrendingUp, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { getMyEODReportsAction } from "@/actions/eod.actions";
-import { getSOPsAction } from "@/actions/sop.actions";
 import { SOPList } from "@/components/sop/SOPList";
 import { formatDistanceToNow } from "date-fns";
 import DashboardNotificationCenter from "@/components/modules/DashboardNotificationCenter";
@@ -19,15 +17,12 @@ export default async function QCReviewPage() {
   const profile = await getUserProfileAction();
   const firstName = profile?.first_name || "QC Reviewer";
 
-  const [queueRes, sopsRes, eodRes] = await Promise.all([
-    getOperationsQueueAction(),
-    getSOPsAction(),
-    getMyEODReportsAction(),
-  ]);
+  const { success, data } = await getReviewWorkspaceDataAction();
+  const workspaceData = success && data ? data : {};
 
-  const queue = queueRes.data;
-  const sops = sopsRes.data || [];
-  const eodReports = eodRes.success ? eodRes.data : [];
+  const queue = workspaceData.queue || {};
+  const sops = workspaceData.sops || [];
+  const eodReports = workspaceData.eodReports || [];
 
   const reviewQueue = queue?.review || [];
   const allProjects = queue?.all || [];

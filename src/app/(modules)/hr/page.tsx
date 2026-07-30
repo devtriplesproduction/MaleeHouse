@@ -1,17 +1,6 @@
 import { Suspense } from "react";
-import { getAllUsersAction } from "@/actions/admin.actions";
-import { getAllLeavesAction } from "@/actions/leave.actions";
-import { 
-  getHRDashboardStatsAction,
-  getPendingLeaveRequestsAction,
-  getTodayAttendanceSummaryAction,
-  getUpcomingHolidaysAction,
-  getRecentAnnouncementsAction,
-  getOnboardingInProgressAction
-} from "@/actions/hr.actions";
-
+import { getHRWorkspaceDataAction } from "@/actions/workspace.actions";
 import { CreateEmployeeButton } from "@/components/modules/CreateEmployeeButton";
-import { getMyEODReportsAction } from "@/actions/eod.actions";
 import { EODFormModal } from "@/components/eod/EODFormModal";
 import { requireRole } from "@/lib/auth-guard";
 
@@ -30,37 +19,18 @@ export default async function HRDashboard() {
   const currentUserRole = profile?.role || 'hr';
 
   // Fetch data
-  const [
-    statsRes, 
-    pendingLeavesRes, 
-    attendanceTodayRes, 
-    holidaysRes, 
-    announcementsRes, 
-    usersRes,
-    allLeavesRes,
-    onboardingRes,
-    eodRes
-  ] = await Promise.all([
-     getHRDashboardStatsAction(),
-     getPendingLeaveRequestsAction(),
-     getTodayAttendanceSummaryAction(),
-     getUpcomingHolidaysAction(),
-     getRecentAnnouncementsAction(),
-     getAllUsersAction(),
-     getAllLeavesAction(),
-     getOnboardingInProgressAction(),
-     getMyEODReportsAction()
-   ]);
+  const { success, data } = await getHRWorkspaceDataAction();
+  const workspaceData = success && data ? data : {};
 
-  const stats: any = statsRes.data || {};
-  const pendingLeaves = pendingLeavesRes.data || [];
-  const attendanceToday: any = attendanceTodayRes.data || {};
-  const holidays = holidaysRes.data || [];
-  const announcements = announcementsRes.data || [];
-  const users = usersRes.data || [];
-  const allLeaves = allLeavesRes.data || [];
-  const onboardings = onboardingRes.data || [];
-  const eodReports = eodRes.success ? eodRes.data : [];
+  const stats: any = workspaceData.stats || {};
+  const pendingLeaves = workspaceData.pendingLeaves || [];
+  const attendanceToday: any = workspaceData.attendanceToday || {};
+  const holidays = workspaceData.holidays || [];
+  const announcements = workspaceData.announcements || [];
+  const users = workspaceData.users || [];
+  const allLeaves = workspaceData.allLeaves || [];
+  const onboardings = workspaceData.onboarding || [];
+  const eodReports = workspaceData.eodReports || [];
 
   return (
     <div className="space-y-6 pb-12">

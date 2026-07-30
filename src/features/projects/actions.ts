@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createProjectSchema, type CreateProjectInput } from './validations'
 import { revalidatePath } from 'next/cache'
 import { notifyNewProjectAction } from '@/actions/notification.actions'
+import { requireAuthContext } from '@/lib/permissions/access-control'
 
 export async function createProject(input: CreateProjectInput) {
   const supabase: any = await createClient()
@@ -15,8 +16,8 @@ export async function createProject(input: CreateProjectInput) {
   }
 
   // 2. Auth Check
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Unauthorized" }
+  const { userId, error: authError } = await requireAuthContext()
+  if (authError || !userId) return { error: "Unauthorized" }
 
   try {
     // 3. Generate Project ID (e.g., PRJ + sequence)
@@ -49,7 +50,7 @@ export async function createProject(input: CreateProjectInput) {
     await supabase.from('workflow_history').insert({
       project_id: nextId,
       to_stage: 'lead_created',
-      changed_by: user.id,
+      changed_by: userId,
       comment: 'Project initialized'
     })
 

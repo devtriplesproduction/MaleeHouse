@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { verifyProjectAccess, type Role } from "@/lib/permissions/permissions";
+import { requireAuthContext } from "@/lib/permissions/access-control";
 
 interface FileActionResponse {
   success: boolean;
@@ -21,18 +22,10 @@ export async function renameFileAction(
   const supabase: any = await createClient();
 
   // 1. Auth & Profile check
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  const { userId, role, error: authError } = await requireAuthContext();
+  if (authError || !userId) return { success: false, error: authError || "Unauthorized" };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const role = profile?.role || "";
-
-  const accessCheck = await verifyProjectAccess(projectId, user.id, role as Role, true);
+  const accessCheck = await verifyProjectAccess(projectId, userId, role as Role, true);
   if (!accessCheck.isAllowed) {
     return { success: false, error: accessCheck.error || "Permission denied." };
   }
@@ -47,7 +40,7 @@ export async function renameFileAction(
 
   // 3. Audit Log
   await supabase.from("audit_logs").insert({
-    user_id: user.id,
+    user_id: userId,
     project_id: projectId,
     action: "file_rename",
     details: { file_id: fileId, new_name: newName }
@@ -105,18 +98,10 @@ export async function deleteFileAction(
   }
 
   // 3. Role Verification
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  const { userId, role, error: authError } = await requireAuthContext();
+  if (authError || !userId) return { success: false, error: authError || "Unauthorized" };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const role = profile?.role || "";
-
-  const accessCheck = await verifyProjectAccess(projectId, user.id, role as Role, true);
+  const accessCheck = await verifyProjectAccess(projectId, userId, role as Role, true);
   if (!accessCheck.isAllowed) {
     return { success: false, error: accessCheck.error || "Permission denied." };
   }
@@ -149,7 +134,7 @@ export async function deleteFileAction(
 
   // 6. Audit Log
   await supabase.from("audit_logs").insert({
-    user_id: user.id,
+    user_id: userId,
     project_id: projectId,
     action: "file_delete",
     details: { file_id: fileId, path: actualStoragePath }

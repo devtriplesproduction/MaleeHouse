@@ -2059,4 +2059,186 @@ export async function getProjectFinanceTabDataAction(projectId: string): Promise
   }
 }
 
+export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
 
+    const supabase: any = await createClient();
+
+    let query = supabase.from('projects').select(`
+      id, name, client_name, budget, status, deleted_at,
+      invoices (*, payments(amount, status), project_milestones(title, sort_order)),
+      payments (*, bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))),
+      project_milestones (*),
+      quotations (total_amount, status)
+    `).is('deleted_at', null);
+
+    if (auth.role !== 'admin' && auth.role !== 'accountant') {
+      const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
+      if (assignedIds !== null) {
+        if (assignedIds.length === 0) return { success: true, data: { projects: [], invoices: [], payments: [], milestones: [] } };
+        query = query.in('id', assignedIds);
+      }
+    }
+
+    const { data: projectsData, error } = await query;
+    if (error) return { success: false, error: error.message };
+
+    const initialInvoices: any[] = [];
+    const initialMilestones: any[] = [];
+    const initialPayments: any[] = [];
+    const billingSummary: any[] = [];
+
+    projectsData?.forEach((p: any) => {
+      let total_invoiced = 0;
+      let total_paid = 0;
+      let pending_balance = 0;
+      let milestone_sum = 0;
+      let quotation_sum = 0;
+
+      if (p.invoices) {
+        p.invoices.forEach((inv: any) => {
+          if (inv.status !== 'cancelled') {
+            total_invoiced += Number(inv.total_amount || 0);
+          }
+          initialInvoices.push({
+            ...inv,
+            projects: { name: p.name, client_name: p.client_name, budget: p.budget, deleted_at: p.deleted_at, payments: p.payments }
+          });
+        });
+      }
+
+      if (p.payments) {
+        p.payments.forEach((pay: any) => {
+          if (pay.status === 'verified') {
+            total_paid += Number(pay.amount || 0);
+          }
+          initialPayments.push({
+            ...pay,
+            projects: { name: p.name, client_name: p.client_name, deleted_at: p.deleted_at }
+          });
+        });
+      }
+
+      if (p.project_milestones) {
+        p.project_milestones.forEach((m: any) => {
+          milestone_sum += Number(m.amount || 0);
+          initialMilestones.push({
+            ...m,
+            projects: { name: p.name, client_name: p.client_name, budget: p.budget, status: p.status },
+            invoices: p.invoices?.filter((i: any) => i.milestone_id === m.id) || []
+          });
+        });
+      }
+
+      if (p.quotations) {
+        p.quotations.forEach((q: any) => {
+          if (q.status === 'Approved') {
+            quotation_sum += Number(q.total_amount || 0);
+          }
+        });
+      }
+
+      const budget = p.budget || 0;
+      const dynamic_budget = Math.max(budget, quotation_sum, milestone_sum);
+      pending_balance = Math.max(0, dynamic_budget - total_paid);
+
+      billingSummary.push({
+        id: p.id,
+        name: p.name,
+        client_name: p.client_name,
+        status: p.status,
+        base_budget: budget,
+        budget: dynamic_budget,
+        total_invoiced,
+        total_paid,
+        pending_balance,
+        milestone_sum,
+        quotation_sum
+      });
+    });
+    
+    initialInvoices.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    initialPayments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    initialMilestones.sort((a, b) => new Date(a.due_date || 0).getTime() - new Date(b.due_date || 0).getTime());
+
+    return { 
+      success: true, 
+      data: normalizeData({
+        projects: billingSummary,
+        invoices: initialInvoices,
+        payments: initialPayments,
+        milestones: initialMilestones
+      })
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getLedgerWorkspaceDataAction(): Promise<ActionResponse> {
+  try {
+    const { unstable_noStore: noStore } = await import('next/cache');
+    noStore();
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+
+    const supabase: any = await createClient();
+
+    let projectIdsFilter: string[] | null = null;
+    if (auth.role !== 'admin' && auth.role !== 'accountant') {
+      const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
+      if (assignedIds !== null) {
+        if (assignedIds.length === 0) return { success: true, data: { invoices: [], payments: [], expenses: [], projects: [], visits: [], payroll: [] } };
+        projectIdsFilter = assignedIds;
+      }
+    }
+
+    const projectsQuery = supabase.from('projects').select('id, name');
+    const invoicesQuery = supabase.from('invoices').select('id, created_at, project_id, invoice_number, total_amount, status');
+    const paymentsQuery = supabase.from('payments').select('id, created_at, payment_date, project_id, transaction_id, payment_method, amount, status, receipt_url, bank_accounts(bank_name)');
+    const expensesQuery = supabase.from('expenses').select('id, expense_date, project_id, category, description, amount, status, receipt_url, profiles(first_name, last_name), bank_accounts(bank_name)');
+    const visitsQuery = supabase.from('project_visits').select('id, created_at, scheduled_date, project_id, purpose, visit_cost, status');
+    
+    if (projectIdsFilter) {
+      projectsQuery.in('id', projectIdsFilter);
+      invoicesQuery.in('project_id', projectIdsFilter);
+      paymentsQuery.in('project_id', projectIdsFilter);
+      // For expenses, we allow company-wide (project_id is null) plus assigned projects
+      expensesQuery.or(`project_id.in.(${projectIdsFilter.join(',')}),project_id.is.null`);
+      visitsQuery.in('project_id', projectIdsFilter);
+    }
+
+    const [projectsRes, invoicesRes, paymentsRes, expensesRes, visitsRes, payrollRes] = await Promise.all([
+      projectsQuery,
+      invoicesQuery,
+      paymentsQuery,
+      expensesQuery,
+      visitsQuery,
+      supabase.from('payroll_cycles').select('id, month, year, status, created_at, bank_accounts(bank_name), payroll_snapshots(net_payable)').eq('status', 'locked')
+    ]);
+
+    // Build project map in JS to avoid redundant SQL joins
+    const projectsMap = new Map();
+    (projectsRes.data || []).forEach((p: any) => projectsMap.set(p.id, p));
+
+    const attachProject = (arr: any[]) => arr.map(item => ({ ...item, projects: item.project_id ? projectsMap.get(item.project_id) : null }));
+
+    return {
+      success: true,
+      data: normalizeData({
+        projects: projectsRes.data || [],
+        invoices: attachProject(invoicesRes.data || []),
+        payments: attachProject(paymentsRes.data || []),
+        expenses: attachProject(expensesRes.data || []),
+        visits: attachProject(visitsRes.data || []),
+        payroll: payrollRes.data || []
+      })
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

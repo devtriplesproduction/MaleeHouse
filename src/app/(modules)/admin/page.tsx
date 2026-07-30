@@ -1,18 +1,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth-guard';
-import { getTotalBankBalanceAction, getBankAccountsAction } from '@/actions/bank.actions';
-import { getAttendanceLogsAction } from '@/actions/attendance.actions';
-import { getFinancialOverviewAction, getPendingInvoicesCountAction } from '@/actions/finance.actions';
-import { getLatestPayrollStatusAction } from '@/actions/payroll.actions';
-import { getPendingLeavesCountAction } from '@/actions/leave.actions';
-import { getPendingQuotationsCountAction } from '@/actions/quotation.actions';
-import { getPendingMaterialRequestsCountAction, getAllMaterialRequestsAction } from '@/actions/field.actions';
-import { getActiveClientsCountAction } from '@/actions/stats.actions';
-import { getTodayAttendanceSummaryAction } from '@/actions/hr.actions';
-import { getActiveProjectsCountAction, getProjectStatusCountsAction } from '@/actions/project.actions';
-import { getAllOverrideRequestsAction } from '@/actions/workflow.actions';
-import { getAllUsersAction } from '@/actions/admin.actions';
+import { getAdminWorkspaceDataAction } from '@/actions/workspace.actions';
 import { DispatchOverrideRequestsWidget } from '@/components/modules/DispatchOverrideRequestsWidget';
 import { MaterialApprovalWidget } from '@/components/modules/MaterialApprovalWidget';
 import DashboardNotificationCenter from '@/components/modules/DashboardNotificationCenter';
@@ -215,78 +204,36 @@ const formatCurrency = (n: number) => {
 };
 
 async function CommandCenterContent() {
-  const supabase = await createClient();
-  const todayDate = new Date();
-  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(todayDate);
 
-  const [
-    activeProjectsRes,
-    statusCountsRes,
-    totalBankBalanceRes,
-    financialResult,
-    payrollStatusRes,
-    pendingLeavesRes,
-    pendingQuotationsRes,
-    pendingInvoicesRes,
-    pendingMaterialsRes,
-    dispatchOverridesRes,
-    materialRequestsRes,
-    attendanceTodayRes,
-    usersRes,
-    allAttendanceRes,
-    ongoingProjectsQuery,
-    allProjectStatusesQuery,
-    pendingExpensesRes,
-    pendingMilestonesRes,
-    pendingFieldApprovalsRes,
-    equipmentIssuesRes,
-    pendingEodsQuery,
-    upcomingHolidayQuery
-  ] = await Promise.all([
-    getActiveProjectsCountAction(),
-    getProjectStatusCountsAction(),
-    getTotalBankBalanceAction(),
-    getFinancialOverviewAction(),
-    getLatestPayrollStatusAction(),
-    getPendingLeavesCountAction(),
-    getPendingQuotationsCountAction(),
-    getPendingInvoicesCountAction(),
-    getPendingMaterialRequestsCountAction(),
-    getAllOverrideRequestsAction(),
-    getAllMaterialRequestsAction(),
-    getTodayAttendanceSummaryAction(),
-    getAllUsersAction(),
-    getAttendanceLogsAction(),
-    supabase.from('projects').select('*', { count: 'exact', head: true }).in('status', ['prototype', 'review', 'field_work', 'data_sync', 'final_review']).is('deleted_at', null),
-    supabase.from('projects').select('status').is('deleted_at', null),
-    supabase.from('expenses').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('project_milestones').select('*', { count: 'exact', head: true }).in('status', ['pending', 'payment_verification_pending']),
-    supabase.from('field_reports').select('*', { count: 'exact', head: true }).eq('status', 'submitted'),
-    supabase.from('field_reports').select('*', { count: 'exact', head: true }).eq('report_type', 'issue'),
-    supabase.from('eod_reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('holidays').select('name, date').gte('date', todayStr).order('date', { ascending: true }).limit(1).maybeSingle()
-  ]);
+  const { success, data } = await getAdminWorkspaceDataAction();
+  const workspaceData = success && data ? data : {};
 
   // Safely extract action responses to protect against `{ success: false, error }` results
-  const activeProjects = activeProjectsRes.success ? activeProjectsRes.data ?? 0 : 0;
-  const statusCounts = statusCountsRes.success ? statusCountsRes.data ?? {} : {};
-  const totalBankBalance = totalBankBalanceRes.success ? totalBankBalanceRes.data ?? 0 : 0;
-  const financial = financialResult.success ? financialResult.data ?? {} : {};
-  const payrollStatus = payrollStatusRes.success ? payrollStatusRes.data ?? 'Draft' : 'Draft';
-  const pendingLeaves = pendingLeavesRes.success ? pendingLeavesRes.data ?? 0 : 0;
-  const pendingQuotations = pendingQuotationsRes.success ? pendingQuotationsRes.data ?? 0 : 0;
-  const pendingInvoices = pendingInvoicesRes.success ? pendingInvoicesRes.data ?? 0 : 0;
-  const pendingMaterials = pendingMaterialsRes.success ? pendingMaterialsRes.data ?? 0 : 0;
-  const dispatchOverridesRaw = dispatchOverridesRes.success ? dispatchOverridesRes.data ?? [] : [];
-  const materialRequestsRaw = materialRequestsRes.success ? materialRequestsRes.data ?? [] : [];
-  const attendanceToday = attendanceTodayRes.success ? attendanceTodayRes.data ?? {} : {};
-  const users = usersRes.success ? usersRes.data ?? [] : [];
-  const allAttendance = allAttendanceRes.success ? allAttendanceRes.data ?? [] : [];
-  const ongoingProjects = ongoingProjectsQuery.count || 0;
-  const pendingEods = pendingEodsQuery.count || 0;
-  const upcomingHoliday = upcomingHolidayQuery.data;
+  const activeProjects = workspaceData.activeProjects || 0;
+  const statusCounts = workspaceData.statusCounts || {};
+  const totalBankBalance = workspaceData.totalBankBalance || 0;
+  const financial = workspaceData.financial || {};
+  const payrollStatus = workspaceData.payrollStatus || 'Draft';
+  const pendingLeaves = workspaceData.pendingLeaves || 0;
+  const pendingQuotations = workspaceData.pendingQuotations || 0;
+  const pendingInvoices = workspaceData.pendingInvoices || 0;
+  const pendingMaterials = workspaceData.pendingMaterials || 0;
+  const dispatchOverrides = workspaceData.dispatchOverridesRaw || [];
+  const materialRequestsRaw = workspaceData.materialRequestsRaw || [];
+  const attendanceToday = workspaceData.attendanceTodayRaw || {};
+  const users = workspaceData.usersList || [];
+  const allAttendanceLogs = workspaceData.attendanceLogs || [];
 
-  const projectStatuses = allProjectStatusesQuery.data || [];
+  const ongoingProjectsCount = workspaceData.ongoingProjectsCount || 0;
+  const allProjectStatuses = workspaceData.allProjectStatuses || [];
+  const pendingExpensesCount = workspaceData.pendingExpensesCount || 0;
+  const pendingMilestonesCount = workspaceData.pendingMilestonesCount || 0;
+  const pendingFieldApprovalsCount = workspaceData.pendingFieldApprovalsCount || 0;
+  const equipmentIssuesCount = workspaceData.equipmentIssuesCount || 0;
+  const pendingEodsCount = workspaceData.pendingEodsCount || 0;
+  const upcomingHoliday = workspaceData.upcomingHoliday || null;
+
+  const projectStatuses = allProjectStatuses;
   const totalActivePipeline = projectStatuses.filter((p: any) => p.status !== 'completed' && p.status !== 'archived').length;
 
   // Pipeline distribution groupings
@@ -301,12 +248,12 @@ async function CommandCenterContent() {
   };
 
   const outstandingReceivables = financial.accountsReceivable || 0;
-
-  const dispatchOverrides = dispatchOverridesRaw || [];
   const payrollApprovalCount = (payrollStatus === 'Pending' || payrollStatus === 'Draft') ? 1 : 0;
 
   // ── HR Calculations ──
-  const todayLogs = (allAttendance || []).filter((log: any) => log.date === todayStr);
+  const todayDate = new Date();
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(todayDate);
+  const todayLogs = (allAttendanceLogs || []).filter((log: any) => log.date === todayStr);
   const presentCount = todayLogs.filter((log: any) => log.status === 'present').length;
   const lateLogins = todayLogs.filter((log: any) => log.status === 'late').length;
   
@@ -327,13 +274,13 @@ async function CommandCenterContent() {
   const currentMonthExpense = currentMonthData.expense || 0;
 
   // ── Metrics ──
-  const pendingExpenses = pendingExpensesRes.count || 0;
+  const pendingExpenses = workspaceData.pendingExpensesCount || 0;
   const delayedProjects = (statusCounts as any)?.delayed || 0;
   const pendingProjectApprovals = (activeProjects || 0) > 0 ? delayedProjects : 0;
-  const pendingMilestones = pendingMilestonesRes.count || 0;
+  const pendingMilestones = workspaceData.pendingMilestonesCount || 0;
   const qaPendingReview = (statusCounts as any)?.onTrack || 0;
-  const pendingFieldApprovals = pendingFieldApprovalsRes.count || 0;
-  const equipmentIssues = equipmentIssuesRes.count || 0;
+  const pendingFieldApprovals = workspaceData.pendingFieldApprovalsCount || 0;
+  const equipmentIssues = workspaceData.equipmentIssuesCount || 0;
 
   return (
     <div className="space-y-6">
@@ -361,7 +308,7 @@ async function CommandCenterContent() {
         <Card className="p-4 bg-gradient-to-br from-indigo-500/[0.05] to-transparent border-slate-200/80 dark:border-white/5 shadow-xs flex justify-between items-start">
           <div>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ongoing Projects</p>
-            <h3 className="text-2xl font-bold mt-1 text-slate-900 dark:text-white">{ongoingProjects}</h3>
+            <h3 className="text-2xl font-bold mt-1 text-slate-900 dark:text-white">{workspaceData.ongoingProjectsCount || 0}</h3>
           </div>
           <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
             <FolderKanban className="w-4 h-4" />
@@ -451,7 +398,7 @@ async function CommandCenterContent() {
               <ActionCardItem label="Leave Request" description="Apply for personal leaves" count={pendingLeaves} href="/leaves" icon={Users} />
               <ActionCardItem label="Pending Quotation" description="Client quotes awaiting validation" count={pendingQuotations} href="/accounts/intake" icon={Landmark} />
               <ActionCardItem label="HR's Leave Approval" description="Review pending team leaves" count={pendingLeaves} href="/hr" icon={Users} />
-              <ActionCardItem label="EOD Approval" description="Review submitted work logs" count={pendingEods} href="/hr" icon={Clock} />
+              <ActionCardItem label="EOD Approval" description="Review submitted work logs" count={pendingEodsCount} href="/hr" icon={Clock} />
             </CardContent>
           </div>
         </Card>

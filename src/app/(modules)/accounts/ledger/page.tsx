@@ -1,33 +1,23 @@
 import React from "react";
-import { getInvoicesAction, getPaymentsAction } from "@/actions/finance.actions";
-import { getExpensesAction } from "@/actions/expense.actions";
-import { createClient } from "@/lib/supabase/server";
+import { getLedgerWorkspaceDataAction } from "@/actions/finance.actions";
 import { LedgerItem } from "@/features/accounts/LedgerTable";
 import { LedgerWorkspace } from "@/features/accounts/LedgerWorkspace";
 
 export const dynamic = "force-dynamic";
 
 export default async function LedgerPage() {
-  // Fetch all data in parallel — reusing existing actions, no duplication
-  const [invoicesRes, paymentsRes, expensesRes] = await Promise.all([
-    getInvoicesAction(),
-    getPaymentsAction(),
-    getExpensesAction(),
-  ]);
-
-  const supabase: any = await createClient();
-  const [{ data: projectsData }, { data: visitsData }, { data: payrollData }] = await Promise.all([
-    supabase.from("projects").select("id, name"),
-    supabase.from("project_visits").select("*, projects(name)"),
-    supabase.from("payroll_cycles").select("id, month, year, status, created_at, bank_accounts(bank_name), payroll_snapshots(net_payable)").eq("status", "locked"),
-  ]);
-
-  const projects = projectsData || [];
+  const ledgerDataRes = await getLedgerWorkspaceDataAction();
+  const data = ledgerDataRes.success ? ledgerDataRes.data : {};
+  
+  const projects = data?.projects || [];
+  const invoices = data?.invoices || [];
+  const payments = data?.payments || [];
+  const expenses = data?.expenses || [];
+  const visitsData = data?.visits || [];
+  const payrollData = data?.payroll || [];
 
   // --- Income data (mirrors /ledger/income logic exactly) ---
   const incomeData: LedgerItem[] = [];
-  const invoices = invoicesRes.success ? (invoicesRes.data || []) : [];
-  const payments = paymentsRes.success ? (paymentsRes.data || []) : [];
 
   invoices.forEach((inv: any) => {
     if (inv.status === 'paid') return; // Hide paid invoices to avoid duplicating with the actual payment record
@@ -64,7 +54,6 @@ export default async function LedgerPage() {
 
   // --- Expense data (mirrors /ledger/expense logic exactly) ---
   const expenseData: LedgerItem[] = [];
-  const expenses = expensesRes.success ? (expensesRes.data || []) : [];
 
   expenses.forEach((exp: any) => {
     const creator = exp.profiles || exp.created_by_profile;

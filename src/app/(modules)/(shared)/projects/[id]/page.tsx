@@ -29,8 +29,6 @@ import { cn, filterActivityLogsByRole } from "@/lib/utils";
 import { WorkflowStepper } from "@/features/workflow/WorkflowStepper";
 import { ProjectFileSection } from "@/components/modules/ProjectFileSection";
 import { WorkflowCheckpoints } from "@/components/modules/WorkflowCheckpoints";
-import { ProjectTeamStack } from "@/components/modules/ProjectTeamStack";
-import { ProjectTaskProgress } from "@/components/modules/ProjectTaskProgress";
 import { ProjectActivityFeed } from "@/components/modules/ProjectActivityFeed";
 import { ProjectBillingSummary } from "@/components/modules/ProjectBillingSummary";
 
@@ -189,28 +187,61 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
     filesRes,
     assignmentsRes,
     milestonesRes,
-    activityLogsRes,
-    allUsersRes
+    activityLogsRes
   ] = await Promise.all([
-    supabase.from('workflow_history').select('*, changed_by_profile:profiles!changed_by(first_name, last_name, email)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
-    supabase.from('comments').select('*, author_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
+    supabase.from('workflow_history').select('*').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
+    supabase.from('comments').select('*').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
     supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
-    supabaseAdmin.from('project_assignments').select('*, profiles!project_assignments_user_id_fkey(first_name, last_name, email, role)').eq('project_id', params.id),
+    supabaseAdmin.from('project_assignments').select('*').eq('project_id', params.id),
     getMilestonesAction(params.id),
-    supabase.from('activity_logs').select('*, actor_profile:profiles!user_id(first_name, last_name, email, role)').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
-    supabaseAdmin.from('profiles').select('id, first_name, last_name, email, role, designation')
+    supabase.from('activity_logs').select('*').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100)
   ]);
 
-  const history = historyRes.data || [];
-  const comments = commentsRes.data || [];
   const files = filesRes.data || [];
   if (filesRes.error) console.error("Files Fetch Error:", filesRes.error);
-  const assignments = assignmentsRes.data || [];
-  if (assignmentsRes.error) console.error("Assignments Fetch Error:", assignmentsRes.error);
   const milestones = milestonesRes.data || [];
+
+  const rawHistory = historyRes.data || [];
+  const rawComments = commentsRes.data || [];
+  const rawAssignments = assignmentsRes.data || [];
   const rawActivityLogs = activityLogsRes.data || [];
-  const activityLogs = filterActivityLogsByRole(rawActivityLogs, profile?.role || 'user');
-  const allUsers = allUsersRes.data || [];
+  
+  if (assignmentsRes.error) console.error("Assignments Fetch Error:", assignmentsRes.error);
+
+  // Collect unique user IDs from all related records
+  const uniqueUserIds = new Set<string>();
+  rawHistory.forEach((h: any) => h.changed_by && uniqueUserIds.add(h.changed_by));
+  rawComments.forEach((c: any) => c.user_id && uniqueUserIds.add(c.user_id));
+  rawAssignments.forEach((a: any) => a.user_id && uniqueUserIds.add(a.user_id));
+  rawActivityLogs.forEach((l: any) => l.user_id && uniqueUserIds.add(l.user_id));
+
+  // Fetch only referenced profiles in a single query
+  let allUsers: any[] = [];
+  if (uniqueUserIds.size > 0) {
+    const { data } = await supabaseAdmin
+      .from('profiles')
+      .select('id, first_name, last_name, email, role, designation')
+      .in('id', Array.from(uniqueUserIds));
+    if (data) allUsers = data;
+  }
+
+  // Build a Map for fast lookup
+  const userMap = new Map<string, any>();
+  allUsers.forEach((u: any) => userMap.set(u.id, u));
+
+  // Helper to attach profiles in JavaScript using the Map
+  const attachProfile = (data: any[], key: string, profileAlias: string) => {
+    return data.map((item: any) => {
+      return { ...item, [profileAlias]: userMap.get(item[key]) || null };
+    });
+  };
+
+  const history = attachProfile(rawHistory, 'changed_by', 'changed_by_profile');
+  const comments = attachProfile(rawComments, 'user_id', 'author_profile');
+  const assignments = attachProfile(rawAssignments, 'user_id', 'profiles');
+  
+  const mappedActivityLogs = attachProfile(rawActivityLogs, 'user_id', 'actor_profile');
+  const activityLogs = filterActivityLogsByRole(mappedActivityLogs, profile?.role || 'user');
 
   const isStageBlocked = (milestones || []).some(
     (m: any) => m.status !== 'paid' && (m.linked_stage === project.status || m.block_after_stage === project.status)

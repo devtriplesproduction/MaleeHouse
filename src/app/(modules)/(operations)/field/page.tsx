@@ -1,9 +1,6 @@
 import React from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
-import { getMyAssignedProjectsAction } from "@/actions/operations.actions";
-import { getSOPsAction } from "@/actions/sop.actions";
-import { getMyEODReportsAction } from "@/actions/eod.actions";
-import { getMyVisitsAction, getMyPendingFieldReportsAction, getMyMaterialRequestsAction, getFieldMetricsAction } from "@/actions/field.actions";
+import { getFieldWorkspaceDataAction } from "@/actions/workspace.actions";
 import {
   MapPin, ChevronRight, AlertTriangle, CheckCircle2,
   FileText, Zap, Navigation, Send, Upload, ListPlus, Activity, PenTool, CheckCircle
@@ -26,26 +23,19 @@ export default async function FieldDashboardPage() {
   const profile = await getUserProfileAction();
   const firstName = profile?.first_name || "Field Engineer";
 
-  const [assignedRes, sopsRes, eodRes, visitsRes, materialsRes, pendingReportsRes, metricsRes] = await Promise.all([
-    getMyAssignedProjectsAction(),
-    getSOPsAction(),
-    getMyEODReportsAction(),
-    getMyVisitsAction(),
-    getMyMaterialRequestsAction(),
-    getMyPendingFieldReportsAction(),
-    getFieldMetricsAction(),
-  ]);
+  const { success, data } = await getFieldWorkspaceDataAction();
+  const workspaceData = success && data ? data : {};
 
-  const projects = (assignedRes.data || []).filter(
+  const projects = (workspaceData.assignedProjects || []).filter(
     (p: any) => !["completed", "archived"].includes(p.status)
   );
 
-  const sops = sopsRes.data || [];
-  const eodReports = (eodRes.success ? eodRes.data : []) || [];
-  const dailyVisits = (visitsRes.success ? visitsRes.data : []) || [];
-  const materials = (materialsRes.success ? materialsRes.data : []) || [];
-  const pendingReports = (pendingReportsRes?.success ? pendingReportsRes.data : []) || [];
-  const metricsData = metricsRes.data || { activeRevisions: [], productivity: { weeklyHours: 0, weeklyTasksCompleted: 0 } };
+  const sops = workspaceData.sops || [];
+  const eodReports = workspaceData.eodReports || [];
+  const dailyVisits = workspaceData.dailyVisits || [];
+  const materials = workspaceData.materials || [];
+  const pendingReports = workspaceData.pendingReports || [];
+  const metricsData = workspaceData.metricsData || { activeRevisions: [], productivity: { weeklyHours: 0, weeklyTasksCompleted: 0 } };
 
   const activeFieldWork = projects.filter((p: any) =>
     ["field_assigned", "field_work", "data_sync"].includes(p.status)
@@ -55,7 +45,7 @@ export default async function FieldDashboardPage() {
     { label: "My Queue", value: projects.length, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: MapPin },
     { label: "Active Surveys", value: activeFieldWork.length, color: "text-sky-500", bg: "bg-sky-500/10", icon: Navigation },
     { label: "Revisions", value: metricsData.activeRevisions.length, color: "text-amber-500", bg: "bg-amber-500/10", icon: AlertTriangle },
-    { label: "Completed", value: (assignedRes.data || []).filter((p: any) => p.status === "completed").length, color: "text-slate-400", bg: "bg-slate-500/10", icon: CheckCircle2 },
+    { label: "Completed", value: (workspaceData.assignedProjects || []).filter((p: any) => p.status === "completed").length, color: "text-slate-400", bg: "bg-slate-500/10", icon: CheckCircle2 },
   ];
 
   return (

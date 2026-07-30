@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { checkActionRateLimit } from '@/lib/rate-limit';
+import { requireAuthContext } from "@/lib/permissions/access-control";
 
 export type BroadcastType = "info" | "urgent" | "maintenance" | "success";
 
@@ -18,20 +19,14 @@ export async function sendSystemBroadcastAction(
 ): Promise<ActionResult> {
   const supabase: any = await createClient();
   // 1. Auth & Admin Gate
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return { success: false, error: "Authentication required." };
+  const { userId, role, error: authError } = await requireAuthContext();
+  if (authError || !userId) return { success: false, error: "Authentication required." };
 
-  if (!checkActionRateLimit(user.id, 'sendSystemBroadcastAction', 5, 60 * 1000)) {
+  if (!checkActionRateLimit(userId, 'sendSystemBroadcastAction', 5, 60 * 1000)) {
     return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
+  if (role !== "admin") {
     return { success: false, error: "Unauthorized. Only admins can send broadcasts." };
   }
 
