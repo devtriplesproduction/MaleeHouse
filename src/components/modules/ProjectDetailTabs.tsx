@@ -113,6 +113,20 @@ export function ProjectDetailTabs({
   const [financeFetchError, setFinanceFetchError] = useState(false);
   const [lastRenderTime, setLastRenderTime] = useState(serverRenderTime);
 
+  // Local state ownership for optimistic updates
+  const [localProject, setLocalProject] = useState(project);
+  const [localComments, setLocalComments] = useState(comments);
+  const [localFiles, setLocalFiles] = useState(files);
+  const [localTeamMembers, setLocalTeamMembers] = useState(teamMembers);
+
+  // Sync local state when server data changes (via revalidatePath)
+  useEffect(() => {
+    setLocalProject(project);
+    setLocalComments(comments);
+    setLocalFiles(files);
+    setLocalTeamMembers(teamMembers);
+  }, [project, comments, files, teamMembers]);
+
   // Post-render synchronization for cache invalidation
   useEffect(() => {
     if (serverRenderTime !== lastRenderTime) {
@@ -189,13 +203,16 @@ export function ProjectDetailTabs({
             {activeTab === 'overview' && (
               <div className="animate-in fade-in duration-300">
                 <ProjectOverviewTab 
-                  project={project}
+                  project={localProject}
                   userRole={userRole}
                   currentUserId={currentUserId}
-                  teamMembers={teamMembers}
+                  teamMembers={localTeamMembers}
                   allUsers={allUsers}
-                  files={files}
+                  files={localFiles}
                   cadRevisions={cadRevisions}
+                  onUpdateProject={(updatedProject: any) => setLocalProject({ ...localProject, ...updatedProject })}
+                  onUpdateTeamMembers={(updatedTeam: any) => setLocalTeamMembers(updatedTeam)}
+                  onUpdateFiles={(updatedFiles: any) => setLocalFiles(updatedFiles)}
                 />
               </div>
             )}
@@ -203,9 +220,10 @@ export function ProjectDetailTabs({
             {activeTab === 'documents' && (
               <div className="animate-in fade-in duration-300">
                 <ProjectDocumentsTab 
-                  projectId={project.id}
-                  files={files}
+                  projectId={localProject.id}
+                  files={localFiles}
                   userRole={userRole}
+                  onUpdateFiles={(updatedFiles: any) => setLocalFiles(updatedFiles)}
                 />
               </div>
             )}
@@ -213,10 +231,10 @@ export function ProjectDetailTabs({
             {activeTab === 'workflow' && (
               <div className="animate-in fade-in duration-300">
                 <ProjectWorkflowTab 
-                  projectId={project.id}
-                  projectStatus={project.status}
+                  projectId={localProject.id}
+                  projectStatus={localProject.status}
                   userRole={userRole}
-                  isFrozen={project.is_frozen}
+                  isFrozen={localProject.is_frozen}
                   history={history}
                 />
               </div>
@@ -225,10 +243,11 @@ export function ProjectDetailTabs({
             {activeTab === 'communications' && (
               <div className="animate-in fade-in duration-300">
                 <ProjectCommunicationTab 
-                  projectId={project.id}
-                  comments={comments}
+                  projectId={localProject.id}
+                  comments={localComments}
                   userRole={userRole}
                   currentUserId={currentUserId}
+                  onUpdateComments={(updatedComments: any) => setLocalComments(updatedComments)}
                 />
               </div>
             )}
@@ -245,16 +264,17 @@ export function ProjectDetailTabs({
             {activeTab === 'operations' && (
               <div className="animate-in fade-in duration-300">
                 <ProjectOperationsTab 
-                  projectId={project.id}
-                  projectStatus={project.status}
+                  projectId={localProject.id}
+                  projectStatus={localProject.status}
                   userRole={userRole}
                   currentUserId={currentUserId}
                   teamMembers={teamMembers}
                   isFrozen={project.is_frozen}
-                  files={files}
-                  comments={comments}
+                  files={localFiles}
+                  comments={localComments}
                   activityLogs={activityLogs}
                   workflowHistory={history}
+                  onUpdateFiles={(updatedFiles: any) => setLocalFiles(updatedFiles)}
                 />
               </div>
             )}

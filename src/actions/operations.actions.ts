@@ -421,7 +421,7 @@ export async function approveCADRevisionAction(
   revisionId: string,
   projectId: string,
   reviewNote?: string
-): Promise<OpResponse> {
+): Promise<OpResponse<any>> {
   try {
     const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
     if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
@@ -487,7 +487,7 @@ export async function rejectCADRevisionAction(
   revisionId: string,
   projectId: string,
   rejectionReason: string
-): Promise<OpResponse> {
+): Promise<OpResponse<any>> {
   try {
     const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
     if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized." };
@@ -600,7 +600,7 @@ export async function reviewLatestCADRevisionAction(
   projectId: string,
   isApproved: boolean,
   reason: string
-): Promise<OpResponse> {
+): Promise<OpResponse<any>> {
   const revisionsRes = await getCADRevisionsAction(projectId);
   if (!revisionsRes.success) return { success: false, error: revisionsRes.error };
 

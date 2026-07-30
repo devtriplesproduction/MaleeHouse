@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
 import { createProjectSchema, type CreateProjectInput } from "../validations"
 import { createProject } from "../actions"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 
 export function CreateProjectForm() {
+  const router = useRouter()
   const [isPending, setIsPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -34,7 +36,7 @@ export function CreateProjectForm() {
       setIsPending(false)
     } else {
       // Handle success (e.g. redirect or show success message)
-      window.location.href = `/projects/${result.data.id}`
+      router.push(`/projects/${result.data.id}`)
     }
   }
 

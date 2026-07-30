@@ -11,6 +11,7 @@ export type CommentType = 'general' | 'review' | 'rejection' | 'internal'
 interface ActionResult {
   success: boolean
   error?: string
+  data?: any
 }
 
 export async function addProjectCommentAction(
@@ -59,13 +60,14 @@ export async function addProjectCommentAction(
     if (!project) return { success: false, error: 'Project not found.' }
 
     const commentId = `cmt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
-    const { error } = await supabase.from('comments').insert({
+    const { data: newComment, error } = await supabase.from('comments').insert({
       id: commentId,
       project_id: projectId,
       user_id: profile.id,
       content: trimmed,
+      comment_type: type,
       created_at: new Date().toISOString(),
-    })
+    }).select().single()
 
     if (error) return { success: false, error: error.message }
 
@@ -106,16 +108,12 @@ export async function addProjectCommentAction(
 
     if (mentionedUserIds.size > 0) {
       const { notifyMentionAction } = await import('@/actions/notification.actions')
-      await Promise.all(
-        Array.from(mentionedUserIds).map((recipientId: any) =>
-          notifyMentionAction(authorName, recipientId, projectId, trimmed).catch(console.error)
-        )
-      )
+      notifyMentionAction(authorName, Array.from(mentionedUserIds), projectId, trimmed).catch(console.error)
     }
 
     revalidatePath(`/projects/${projectId}`)
     revalidatePath('/admin')
-    return { success: true }
+    return { success: true, data: { ...newComment, author_profile: profile } }
   } catch (err: any) {
     console.error('addProjectCommentAction error:', err)
     return { success: false, error: err.message || 'Failed to add comment.' }

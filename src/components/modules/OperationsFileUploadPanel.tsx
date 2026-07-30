@@ -78,6 +78,7 @@ interface OperationsFileUploadPanelProps {
   projectStatus?: string;
   teamMembers?: any[];
   cadRevisions?: any[];
+  onUpdateFiles?: (files: any[]) => void;
 }
 
 export function OperationsFileUploadPanel({
@@ -86,7 +87,8 @@ export function OperationsFileUploadPanel({
   userRole,
   projectStatus,
   teamMembers = [],
-  cadRevisions = []
+  cadRevisions = [],
+  onUpdateFiles
 }: OperationsFileUploadPanelProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -168,7 +170,7 @@ export function OperationsFileUploadPanel({
       });
 
       handleSendUpdate();
-      router.refresh();
+      onUpdateFiles?.([registerResult.data, ...files]);
 
     } catch (err: any) {
       toast({
@@ -226,11 +228,9 @@ export function OperationsFileUploadPanel({
         variant: 'success'
       });
 
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-        router.refresh();
-      }, 600);
+      setIsUploading(false);
+      setUploadProgress(0);
+      onUpdateFiles?.([registerResult.data, ...files]);
 
     } catch (err: any) {
       console.error(err);
@@ -278,11 +278,9 @@ export function OperationsFileUploadPanel({
         variant: 'success'
       });
 
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-        router.refresh();
-      }, 600);
+      setIsUploading(false);
+      setUploadProgress(0);
+      onUpdateFiles?.([registerResult.data, ...files]);
 
     } catch (err: any) {
       console.error(err);
@@ -426,11 +424,9 @@ export function OperationsFileUploadPanel({
         variant: 'success'
       });
 
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-        router.refresh();
-      }, 600);
+      setIsUploading(false);
+      setUploadProgress(0);
+      onUpdateFiles?.([registerResult.data, ...files]);
 
     } catch (err: any) {
       console.error(err);
@@ -478,11 +474,9 @@ export function OperationsFileUploadPanel({
         variant: 'success'
       });
 
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-        router.refresh();
-      }, 600);
+      setIsUploading(false);
+      setUploadProgress(0);
+      onUpdateFiles?.([registerResult.data, ...files]);
 
     } catch (err: any) {
       console.error(err);
@@ -536,7 +530,6 @@ export function OperationsFileUploadPanel({
           description: 'Project moved to Engineer Review stage.',
           variant: 'success'
         });
-        router.refresh();
       } else {
         toast({
           title: 'Stage Update Failed',
@@ -704,6 +697,7 @@ export function OperationsFileUploadPanel({
           description: 'File has been deleted.',
           variant: 'success'
         });
+        onUpdateFiles?.(files.filter((f: any) => f.id !== fileId));
       } else {
         toast({
           title: 'Delete Failed',

@@ -22,6 +22,7 @@ import { logWorkflowAudit } from "@/lib/workflow/logWorkflowAudit";
 export type WorkflowResponse = {
   success: boolean;
   error: string | null;
+  data?: any;
 };
 
 export async function requestDispatchOverrideAction(projectId: string): Promise<WorkflowResponse> {

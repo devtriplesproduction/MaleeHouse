@@ -49,8 +49,11 @@ interface ProjectOverviewTabProps {
   currentUserId: string;
   teamMembers: any[];
   allUsers: any[];
-  files?: any[];
+  files: any[];
   cadRevisions?: any[];
+  onUpdateProject?: (updatedProject: any) => void;
+  onUpdateTeamMembers?: (updatedTeamMembers: any[]) => void;
+  onUpdateFiles?: (files: any[]) => void;
 }
 
 export default function ProjectOverviewTab({
@@ -59,8 +62,11 @@ export default function ProjectOverviewTab({
   currentUserId,
   teamMembers,
   allUsers,
-  files = [],
-  cadRevisions = []
+  files,
+  cadRevisions = [],
+  onUpdateProject,
+  onUpdateTeamMembers,
+  onUpdateFiles
 }: ProjectOverviewTabProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -139,7 +145,9 @@ export default function ProjectOverviewTab({
       if (res?.success) {
         toast({ title: 'Overview Updated', description: 'Project details updated successfully.', variant: 'success' });
         setIsEditing(false);
-        router.refresh();
+        if (onUpdateProject) {
+          onUpdateProject(res.data || payload);
+        }
       } else {
         toast({ title: 'Update Failed', description: res?.error || 'An error occurred.', variant: 'error' });
       }
@@ -155,7 +163,9 @@ export default function ProjectOverviewTab({
         if (role === 'cad') setSelectedCAD('');
         if (role === 'field') setSelectedField('');
         if (role === 'engineer') setSelectedEngineer('');
-        router.refresh();
+        if (onUpdateTeamMembers && res.data) {
+          onUpdateTeamMembers([...teamMembers, res.data]);
+        }
       } else {
         toast({ title: 'Assignment Failed', description: res?.error || 'An error occurred.', variant: 'error' });
       }
@@ -167,7 +177,9 @@ export default function ProjectOverviewTab({
       const res = await removeUserFromProjectAction(userId, project.id);
       if (res?.success) {
         toast({ title: 'Assignment Removed', description: 'User has been unassigned.', variant: 'success' });
-        router.refresh();
+        if (onUpdateTeamMembers) {
+          onUpdateTeamMembers(teamMembers.filter(m => m.user_id !== userId));
+        }
       } else {
         toast({ title: 'Removal Failed', description: res?.error || 'An error occurred.', variant: 'error' });
       }
@@ -368,6 +380,7 @@ export default function ProjectOverviewTab({
                   projectStatus={project.status}
                   teamMembers={teamMembers}
                   cadRevisions={cadRevisions}
+                  onUpdateFiles={onUpdateFiles}
                 />
                 
                 {(isAdmin || isCad || isEngineer) && (

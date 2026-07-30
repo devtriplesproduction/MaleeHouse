@@ -102,8 +102,9 @@ export function CADRevisionPanel({
         reviewNote
       );
       if (result?.success) {
-        if (result.data) {
-          setLocalRevisions(prev => prev.map((r: any) => r.id === result.data.id ? { ...r, ...result.data } : r));
+        const data: any = (result as any).data;
+        if (data) {
+          setLocalRevisions(prev => prev.map((r: any) => r.id === data.id ? { ...r, ...data } : r));
         }
         toast.success("CAD revision approved.");
         setActiveAction(null);
@@ -123,8 +124,9 @@ export function CADRevisionPanel({
         reviewNote
       );
       if (result?.success) {
-        if (result.data) {
-          setLocalRevisions(prev => prev.map((r: any) => r.id === result.data.id ? { ...r, ...result.data } : r));
+        const data: any = (result as any).data;
+        if (data) {
+          setLocalRevisions(prev => prev.map((r: any) => r.id === data.id ? { ...r, ...data } : r));
         }
         toast.success("CAD revision rejected. CAD team notified.");
         setActiveAction(null);

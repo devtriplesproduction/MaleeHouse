@@ -98,7 +98,7 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
     if (needsGeneration) {
       autoGenerateMilestoneInvoicesAction().then((res) => {
         if (res?.success && res.data?.generated > 0) {
-          router.refresh();
+          // revalidatePath in Server Action automatically updates Server Components
         }
       }).catch(err => {
         console.error("autoGenerateMilestoneInvoicesAction failed:", err);
@@ -325,7 +325,7 @@ export function UpcomingMilestonesWidget({ milestones }: UpcomingMilestonesWidge
           companySettings={companySettings}
           onClose={() => setPreviewInvoice(null)}
           onRefresh={() => {
-            router.refresh();
+            // Parent state or Server Action revalidatePath will handle refresh
           }}
         />
       )}

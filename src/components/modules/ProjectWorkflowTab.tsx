@@ -189,6 +189,7 @@ export default function ProjectWorkflowTab({
 
     startTransition(async () => {
       const res = await transitionWorkflowAction(projectId, nextStage.statusKey, comment || `Advanced to ${nextStage.label} by ${userRole}`);
+      if (res?.success) {
         if (res.data?.status) {
           setLocalStatus(res.data.status);
         }

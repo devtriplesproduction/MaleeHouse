@@ -16,7 +16,7 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
     const profile: any = await getUserProfileAction()
     const supabase: any = await createClient()
 
-    const { data: existing } = await supabase
+    let { data: existing } = await supabase
       .from('project_assignments')
       .select('id')
       .eq('project_id', projectId)
@@ -24,7 +24,7 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
       .maybeSingle()
 
     if (!existing) {
-      const { error } = await supabase
+      const { data: newAssignment, error } = await supabase
         .from('project_assignments')
         .insert({
           id: generateId("asg"),
@@ -34,13 +34,21 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
           assigned_by: profile?.id ?? null,
           assigned_at: new Date().toISOString()
         })
+        .select('*, profiles:user_id(id, first_name, last_name, email, role)')
+        .single()
       if (error) return { success: false, error: error.message || 'Insert error' }
+      
+      existing = newAssignment
     } else {
-      const { error } = await supabase
+      const { data: updatedAssignment, error } = await supabase
         .from('project_assignments')
         .update({ role, assigned_by: profile?.id ?? null, assigned_at: new Date().toISOString() })
         .eq('id', existing.id)
+        .select('*, profiles:user_id(id, first_name, last_name, email, role)')
+        .single()
       if (error) return { success: false, error: error.message || 'Update error' }
+      
+      existing = updatedAssignment
     }
 
     if (profile) {
@@ -83,7 +91,7 @@ export async function assignUserToProjectAction(projectId: string, userId: strin
     revalidatePath('/engineer')
     revalidatePath('/cad')
     revalidatePath('/field')
-    return { success: true, error: null }
+    return { success: true, data: existing, error: null }
   } catch (err) {
     console.error('assignUserToProjectAction error:', err)
     return { success: false, error: 'Failed to assign user to project' }

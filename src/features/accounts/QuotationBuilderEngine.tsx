@@ -58,7 +58,7 @@ interface QuotationBuilderEngineProps {
   project: any | null;
   existingQuotation?: any;
   onCancel: () => void;
-  onSuccess: () => void;
+  onSuccess: (data?: any) => void;
   isRevision?: boolean;
 }
 
@@ -313,11 +313,7 @@ export function QuotationBuilderEngine({
 
       if (res.success) {
         toast.success(isRevision ? `Revision V${(existingQuotation.current_version || 1) + 1} created` : 'Quotation saved');
-        if (project?.id) {
-          window.location.assign(`/accounts/quotations?project=${project.id}&mode=manage`);
-        } else {
-          onSuccess();
-        }
+        onSuccess(res.data);
       } else {
         alert("Failed to save quotation! Reason: " + res.error);
         toast.error('Failed to save quotation', { description: res.error });

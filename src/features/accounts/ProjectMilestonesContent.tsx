@@ -318,7 +318,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
           handleOpenPanel(selectedProject);
         }
 
-        router.refresh();
+        // Server Action's revalidatePath automatically invalidates server cache.
       } else {
         const errorMsg = res?.error || "Failed to save milestones.";
         toast.error(errorMsg);
@@ -361,7 +361,18 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
           return;
         }
       }
-      router.refresh();
+      
+      // Optimistically update local project state
+      setProjects(prev => prev.map(p => {
+        if (p.id === projectToHold.id) {
+          if (isCurrentlyHeld) {
+             return { ...p, status: projectToHold.is_frozen ? p.status : "active", is_frozen: false }; 
+          } else {
+             return { ...p, is_frozen: true };
+          }
+        }
+        return p;
+      }));
     } catch (err: any) {
       toast.error(err.message || "Unexpected error.");
     } finally {

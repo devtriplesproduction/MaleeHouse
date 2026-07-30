@@ -24,7 +24,7 @@ import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 interface QuotationManagementPanelProps {
   project: any;
   userRole: string;
-  onRefresh?: () => void;
+  onRefresh?: (data?: any) => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; bg: string }> = {
@@ -98,11 +98,22 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
     };
   }, [project.id]);
 
-  const handleSuccess = () => {
+  const handleSuccess = (data?: any) => {
     setView('list');
     setSelected(null);
-    fetchQuotations(false);
-    onRefresh?.();
+    if (data) {
+      setQuotations(prev => {
+        const exists = prev.find((q: any) => q.id === data.id);
+        if (exists) return prev.map((q: any) => q.id === data.id ? data : q);
+        return [data, ...prev];
+      });
+      if (typeof onRefresh === 'function') {
+        onRefresh(data);
+      }
+    } else {
+      fetchQuotations(false);
+      onRefresh?.();
+    }
   };
 
   const handleDelete = async (quotationId: string) => {

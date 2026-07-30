@@ -324,16 +324,27 @@ export async function clearAllNotificationsAction() {
   }
 }
 
-export async function notifyMentionAction(authorName: string, recipientId: string, projectId: string, commentSnippet: string) {
+export async function notifyMentionAction(authorName: string, recipientIds: string[], projectId: string, commentSnippet: string) {
+  if (!recipientIds || recipientIds.length === 0) return { success: true }
   const supabase: any = await createClient()
   const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
-  return insertNotification({
-    userId: recipientId,
+  const message = `${authorName} mentioned you in "${project?.name || projectId}": "${commentSnippet.slice(0, 100)}${commentSnippet.length > 100 ? '...' : ''}"`
+
+  const payloads = recipientIds.map(userId => ({
+    user_id: userId,
     title: 'You were mentioned',
-    message: `${authorName} mentioned you in "${project?.name || projectId}": "${commentSnippet.slice(0, 100)}${commentSnippet.length > 100 ? '...' : ''}"`,
+    message,
     type: 'system',
-    relatedProjectId: projectId,
-  })
+    related_project_id: projectId
+  }))
+
+  try {
+    const { error } = await supabase.from('notifications').insert(payloads)
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
 }
 
 export async function notifyStageUpdateAction(projectId: string, fromStage: string | null, toStage: string) {

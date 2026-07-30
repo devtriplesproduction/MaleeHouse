@@ -27,14 +27,33 @@ export function QuotationWorkspaceContent({
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
 
+  const [quotations, setQuotations] = useState(initialQuotations);
+  
+  useEffect(() => {
+    setQuotations(initialQuotations);
+  }, [initialQuotations]);
+
   // Realtime subscription to refresh server data when a quotation changes
   useEffect(() => {
     if (!projectId && !quotationId) {
       const { createClient } = require('@/lib/supabase/client');
       const supabase = createClient();
       const channel = supabase.channel('quotations_all')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations' }, () => {
-          router.refresh();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations' }, (payload: any) => {
+          if (payload.eventType === 'INSERT') {
+            setQuotations((prev: any[]) => {
+              if (prev.some(q => q.id === payload.new.id)) return prev;
+              return [payload.new, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setQuotations((prev: any[]) => {
+              const existing = prev.find(q => q.id === payload.new.id);
+              if (existing && existing.updated_at === payload.new.updated_at) return prev; // Ignore if handled optimistically
+              return prev.map(q => q.id === payload.new.id ? { ...q, ...payload.new } : q);
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setQuotations((prev: any[]) => prev.filter(q => q.id !== payload.old.id));
+          }
         })
         .subscribe();
 
@@ -53,9 +72,15 @@ export function QuotationWorkspaceContent({
           project={null}
           existingQuotation={typeof scratchMode === 'object' ? scratchMode : undefined}
           onCancel={() => setScratchMode(false)}
-          onSuccess={() => {
+          onSuccess={(newQuotation) => {
             setScratchMode(false);
-            router.refresh();
+            if (newQuotation) {
+               setQuotations(prev => {
+                 const exists = prev.find((q: any) => q.id === newQuotation.id);
+                 if (exists) return prev.map((q: any) => q.id === newQuotation.id ? newQuotation : q);
+                 return [newQuotation, ...prev];
+               });
+            }
           }}
         />
       </div>
@@ -100,8 +125,14 @@ export function QuotationWorkspaceContent({
         <QuotationManagementPanel
           project={initialProject}
           userRole="accountant"
-          onRefresh={() => {
-            router.refresh();
+          onRefresh={(updatedQuotation?: any) => {
+            if (updatedQuotation) {
+              setQuotations(prev => {
+                const exists = prev.find((q: any) => q.id === updatedQuotation.id);
+                if (exists) return prev.map((q: any) => q.id === updatedQuotation.id ? updatedQuotation : q);
+                return [updatedQuotation, ...prev];
+              });
+            }
           }}
         />
       </div>
@@ -132,9 +163,9 @@ export function QuotationWorkspaceContent({
 
       {/* Recent Quotations */}
       {(() => {
-        const totalPages = Math.max(1, Math.ceil(initialQuotations.length / PAGE_SIZE));
+        const totalPages = Math.max(1, Math.ceil(quotations.length / PAGE_SIZE));
         const safeCurrentPage = Math.min(currentPage, totalPages);
-        const paginated = initialQuotations.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
+        const paginated = quotations.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
         return (
           <div className="space-y-4">
             {/* Section header */}
@@ -142,9 +173,9 @@ export function QuotationWorkspaceContent({
               <h2 className="text-base font-semibold text-slate-700 dark:text-slate-300">
                 Recent Quotations
               </h2>
-              {initialQuotations.length > 0 && (
+              {quotations.length > 0 && (
                 <span className="text-xs text-slate-400 font-medium">
-                  {initialQuotations.length} quotation{initialQuotations.length !== 1 ? "s" : ""}
+                  {quotations.length} quotation{quotations.length !== 1 ? "s" : ""}
                 </span>
               )}
             </div>
@@ -153,14 +184,25 @@ export function QuotationWorkspaceContent({
             <QuotationList
               quotations={paginated}
               userRole="accountant"
-              onUpdate={() => router.refresh()}
+              onUpdate={(updatedQuotation?: any) => {
+                if (updatedQuotation) {
+                   setQuotations(prev => {
+                     if (updatedQuotation.deleted) {
+                        return prev.filter((q: any) => q.id !== updatedQuotation.id);
+                     }
+                     const exists = prev.find((q: any) => q.id === updatedQuotation.id);
+                     if (exists) return prev.map((q: any) => q.id === updatedQuotation.id ? updatedQuotation : q);
+                     return [updatedQuotation, ...prev];
+                   });
+                }
+              }}
             />
 
             {/* Pagination controls */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-2">
                 <p className="text-xs text-slate-400 font-medium">
-                  Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, initialQuotations.length)} of {initialQuotations.length}
+                  Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, quotations.length)} of {quotations.length}
                 </p>
                 <div className="flex items-center gap-1">
                   <button

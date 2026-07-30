@@ -39,6 +39,7 @@ interface ProjectCommunicationTabProps {
   comments: CommentItem[];
   userRole: string;
   currentUserId: string;
+  onUpdateComments?: (updatedComments: CommentItem[]) => void;
 }
 
 const COMMENT_TYPES = [
@@ -52,7 +53,8 @@ export default function ProjectCommunicationTab({
   projectId,
   comments,
   userRole,
-  currentUserId
+  currentUserId,
+  onUpdateComments
 }: ProjectCommunicationTabProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -77,7 +79,9 @@ export default function ProjectCommunicationTab({
         toast({ title: 'Note Dispatched', description: 'Operational comment successfully logged.', variant: 'success' });
         setContent('');
         setType('general');
-        router.refresh();
+        if (onUpdateComments && res.data) {
+          onUpdateComments([res.data, ...comments]);
+        }
       } else {
         toast({ title: 'Submission Failed', description: res?.error || 'Unable to log note.', variant: 'error' });
       }
@@ -91,7 +95,9 @@ export default function ProjectCommunicationTab({
       const res = await deleteProjectCommentAction(commentId, projectId);
       if (res?.success) {
         toast({ title: 'Note Deleted', description: 'Comment has been removed.', variant: 'success' });
-        router.refresh();
+        if (onUpdateComments) {
+          onUpdateComments(comments.filter(c => c.id !== commentId));
+        }
       } else {
         toast({ title: 'Delete Failed', description: res?.error || 'Failed to delete note.', variant: 'error' });
       }

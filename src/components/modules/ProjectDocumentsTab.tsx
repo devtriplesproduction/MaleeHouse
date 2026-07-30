@@ -44,6 +44,7 @@ interface ProjectDocumentsTabProps {
   projectId: string;
   files: ProjectFile[];
   userRole: string;
+  onUpdateFiles?: (updatedFiles: ProjectFile[]) => void;
 }
 
 interface FolderConfig {
@@ -109,7 +110,8 @@ const FOLDERS: FolderConfig[] = [
 export default function ProjectDocumentsTab({
   projectId,
   files,
-  userRole
+  userRole,
+  onUpdateFiles
 }: ProjectDocumentsTabProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -175,7 +177,9 @@ export default function ProjectDocumentsTab({
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
-        router.refresh();
+        if (onUpdateFiles && registerResult.data) {
+          onUpdateFiles([registerResult.data, ...files]);
+        }
       }, 600);
 
     } catch (err: any) {
@@ -196,7 +200,9 @@ export default function ProjectDocumentsTab({
       const result = await deleteFileAction(file.id, projectId, file.storage_path);
       if (result?.success) {
         toast({ title: 'File Deleted', description: 'Removed from vault folder successfully.', variant: 'success' });
-        router.refresh();
+        if (onUpdateFiles) {
+          onUpdateFiles(files.filter(f => f.id !== file.id));
+        }
       } else {
         toast({ title: 'Delete Failed', description: result?.error || 'Unable to delete', variant: 'error' });
       }
@@ -212,7 +218,9 @@ export default function ProjectDocumentsTab({
       if (result?.success) {
         toast({ title: 'File Renamed', description: 'File name successfully updated.', variant: 'success' });
         setRenamingFile(null);
-        router.refresh();
+        if (onUpdateFiles && result.data) {
+          onUpdateFiles(files.map(f => f.id === renamingFile.id ? result.data : f));
+        }
       } else {
         toast({ title: 'Rename Failed', description: result?.error || 'Rename failed', variant: 'error' });
       }
