@@ -27,7 +27,7 @@ export async function createExpenseAction(payload: CreateExpenseInput): Promise<
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
     
-    if (!checkActionRateLimit(profile.id, 'createExpenseAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'createExpenseAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 
@@ -136,7 +136,7 @@ export async function updateExpenseAction(payload: UpdateExpenseInput): Promise<
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
     
-    if (!checkActionRateLimit(profile.id, 'updateExpenseAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'updateExpenseAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 
@@ -220,7 +220,7 @@ export async function deleteExpenseAction(id: string): Promise<ActionResponse> {
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized. Please log in.' };
     
-    if (!checkActionRateLimit(profile.id, 'deleteExpenseAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'deleteExpenseAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 

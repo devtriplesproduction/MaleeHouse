@@ -1,6 +1,6 @@
 import React from "react";
 import { getBillingWorkspaceDataAction } from "@/actions/finance.actions";
-import { BillingWorkspaceContent } from "@/features/accounts/BillingWorkspaceContent";
+import { BillingWorkspaceLazy } from "@/features/accounts/BillingWorkspaceLazy";
 
 export default async function BillingPage() {
   const { success, data } = await getBillingWorkspaceDataAction();
@@ -11,7 +11,7 @@ export default async function BillingPage() {
   const initialPayments = success && data?.payments ? data.payments : [];
 
   return (
-    <BillingWorkspaceContent 
+    <BillingWorkspaceLazy 
       initialInvoices={initialInvoices}
       initialMilestones={initialMilestones}
       initialProjectsData={initialProjectsData}

@@ -45,19 +45,19 @@ export async function getEngineerWorkspaceDataAction(): Promise<WorkspaceRespons
 
     // 2. Execute related queries strictly filtered by assigned projects
     const logsQuery = projectIds.length > 0 
-      ? supabase.from('activity_logs').select('*').in('project_id', projectIds) 
+      ? supabase.from('activity_logs').select('id, project_id, user_id, action, details, created_at').in('project_id', projectIds).order('created_at', { ascending: false }).limit(100) 
       : Promise.resolve({ data: [] });
     
     const commentsQuery = projectIds.length > 0 
-      ? supabase.from('comments').select('*').in('project_id', projectIds) 
+      ? supabase.from('comments').select('id, project_id, user_id, content, created_at, deleted_at').in('project_id', projectIds).is('deleted_at', null).order('created_at', { ascending: false }).limit(100) 
       : Promise.resolve({ data: [] });
     
     const filesQuery = projectIds.length > 0 
-      ? supabase.from('files').select('*').in('project_id', projectIds) 
+      ? supabase.from('files').select('id, project_id, file_name, file_url, category, mime_type, uploaded_by, uploaded_at').in('project_id', projectIds).order('uploaded_at', { ascending: false }).limit(100) 
       : Promise.resolve({ data: [] });
     
     const visitsQuery = projectIds.length > 0 
-      ? supabase.from('project_visits').select('*, projects(name, client_name)').in('project_id', projectIds).order('scheduled_date', { ascending: true }) 
+      ? supabase.from('project_visits').select('id, project_id, scheduled_date, status, assigned_team, projects(name, client_name)').in('project_id', projectIds).order('scheduled_date', { ascending: true }).limit(50) 
       : Promise.resolve({ data: [] });
 
     // Parallel execution
@@ -269,7 +269,6 @@ import { getPendingQuotationsCountAction } from "./quotation.actions";
 import { getPendingMaterialRequestsCountAction } from "./field.actions";
 import { getActiveProjectsCountAction, getProjectStatusCountsAction } from "./project.actions";
 import { getAllOverrideRequestsAction } from "./workflow.actions";
-import { getAttendanceLogsAction } from "./attendance.actions";
 
 export async function getAdminWorkspaceDataAction(): Promise<WorkspaceResponse<any>> {
   try {
@@ -279,11 +278,12 @@ export async function getAdminWorkspaceDataAction(): Promise<WorkspaceResponse<a
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    
-    // We compute the today string to avoid timezone inconsistencies
-    const todayStr = new Date().toISOString().split('T')[0];
+
+    // One SQL KPI blob (if migration applied) + remaining domain actions in parallel
+    const kpiPromise = supabase.rpc('get_admin_dashboard_kpis').then((r: any) => r).catch(() => ({ data: null, error: true }));
 
     const [
+      kpisRes,
       activeProjectsRes,
       statusCountsRes,
       totalBankBalanceRes,
@@ -297,16 +297,8 @@ export async function getAdminWorkspaceDataAction(): Promise<WorkspaceResponse<a
       materialRequestsRes,
       attendanceTodayRes,
       usersRes,
-      allAttendanceRes,
-      ongoingProjectsQuery,
-      allProjectStatusesQuery,
-      pendingExpensesRes,
-      pendingMilestonesRes,
-      pendingFieldApprovalsRes,
-      equipmentIssuesRes,
-      pendingEodsQuery,
-      upcomingHolidayQuery
     ] = await Promise.all([
+      kpiPromise,
       getActiveProjectsCountAction(),
       getProjectStatusCountsAction(),
       getTotalBankBalanceAction(),
@@ -320,16 +312,59 @@ export async function getAdminWorkspaceDataAction(): Promise<WorkspaceResponse<a
       getAllMaterialRequestsAction(),
       getTodayAttendanceSummaryAction(),
       getAllUsersAction(),
-      getAttendanceLogsAction(),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).in('status', ['prototype', 'review', 'field_work', 'data_sync', 'final_review']).is('deleted_at', null),
-      supabase.from('projects').select('status').is('deleted_at', null),
-      supabase.from('expenses').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('project_milestones').select('*', { count: 'exact', head: true }).in('status', ['pending', 'payment_verification_pending']),
-      supabase.from('field_reports').select('*', { count: 'exact', head: true }).eq('status', 'submitted'),
-      supabase.from('field_reports').select('*', { count: 'exact', head: true }).eq('report_type', 'issue'),
-      supabase.from('eod_reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('holidays').select('name, date').gte('date', todayStr).order('date', { ascending: true }).limit(1).maybeSingle()
     ]);
+
+    const kpis = (!kpisRes?.error && kpisRes?.data) ? kpisRes.data : null;
+
+    // Cap heavy list payloads
+    const dispatchRaw = dispatchOverridesRes.success ? (dispatchOverridesRes.data ?? []).slice(0, 30) : [];
+    const materialsRaw = materialRequestsRes.success ? (materialRequestsRes.data ?? []).slice(0, 30) : [];
+    const usersList = usersRes.success ? (usersRes.data ?? []).slice(0, 100) : [];
+
+    // Fallback counts only if RPC missing (pre-migration environments)
+    let fallback = {
+      ongoingProjectsCount: 0,
+      allProjectStatuses: [] as any[],
+      pendingExpensesCount: 0,
+      pendingMilestonesCount: 0,
+      pendingFieldApprovalsCount: 0,
+      equipmentIssuesCount: 0,
+      pendingEodsCount: 0,
+      upcomingHoliday: null as any,
+    };
+
+    if (!kpis) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const [
+        ongoingProjectsQuery,
+        allProjectStatusesQuery,
+        pendingExpensesRes,
+        pendingMilestonesRes,
+        pendingFieldApprovalsRes,
+        equipmentIssuesRes,
+        pendingEodsQuery,
+        upcomingHolidayQuery,
+      ] = await Promise.all([
+        supabase.from('projects').select('id', { count: 'exact', head: true }).in('status', ['prototype', 'review', 'field_work', 'data_sync', 'final_review']).is('deleted_at', null),
+        supabase.from('projects').select('status').is('deleted_at', null).limit(500),
+        supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('project_milestones').select('id', { count: 'exact', head: true }).in('status', ['pending', 'payment_verification_pending']),
+        supabase.from('field_reports').select('id', { count: 'exact', head: true }).eq('status', 'submitted'),
+        supabase.from('field_reports').select('id', { count: 'exact', head: true }).eq('report_type', 'issue'),
+        supabase.from('eod_reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('holidays').select('name, date').gte('date', todayStr).order('date', { ascending: true }).limit(1).maybeSingle(),
+      ]);
+      fallback = {
+        ongoingProjectsCount: ongoingProjectsQuery.count ?? 0,
+        allProjectStatuses: allProjectStatusesQuery.data ?? [],
+        pendingExpensesCount: pendingExpensesRes.count ?? 0,
+        pendingMilestonesCount: pendingMilestonesRes.count ?? 0,
+        pendingFieldApprovalsCount: pendingFieldApprovalsRes.count ?? 0,
+        equipmentIssuesCount: equipmentIssuesRes.count ?? 0,
+        pendingEodsCount: pendingEodsQuery.count ?? 0,
+        upcomingHoliday: upcomingHolidayQuery.data ?? null,
+      };
+    }
 
     return {
       success: true,
@@ -344,21 +379,19 @@ export async function getAdminWorkspaceDataAction(): Promise<WorkspaceResponse<a
         pendingQuotations: pendingQuotationsRes.success ? pendingQuotationsRes.data ?? 0 : 0,
         pendingInvoices: pendingInvoicesRes.success ? pendingInvoicesRes.data ?? 0 : 0,
         pendingMaterials: pendingMaterialsRes.success ? pendingMaterialsRes.data ?? 0 : 0,
-        dispatchOverridesRaw: dispatchOverridesRes.success ? dispatchOverridesRes.data ?? [] : [],
-        materialRequestsRaw: materialRequestsRes.success ? materialRequestsRes.data ?? [] : [],
+        dispatchOverridesRaw: dispatchRaw,
+        materialRequestsRaw: materialsRaw,
         attendanceTodayRaw: attendanceTodayRes.success ? attendanceTodayRes.data ?? {} : {},
-        usersList: usersRes.success ? usersRes.data ?? [] : [],
-        attendanceLogs: allAttendanceRes.success ? allAttendanceRes.data ?? [] : [],
-        
-        // Supabase direct queries
-        ongoingProjectsCount: ongoingProjectsQuery.count ?? 0,
-        allProjectStatuses: allProjectStatusesQuery.data ?? [],
-        pendingExpensesCount: pendingExpensesRes.count ?? 0,
-        pendingMilestonesCount: pendingMilestonesRes.count ?? 0,
-        pendingFieldApprovalsCount: pendingFieldApprovalsRes.count ?? 0,
-        equipmentIssuesCount: equipmentIssuesRes.count ?? 0,
-        pendingEodsCount: pendingEodsQuery.count ?? 0,
-        upcomingHoliday: upcomingHolidayQuery.data ?? null,
+        usersList,
+        attendanceLogs: [],
+        ongoingProjectsCount: kpis?.ongoing_projects ?? fallback.ongoingProjectsCount,
+        allProjectStatuses: kpis?.project_statuses ?? fallback.allProjectStatuses,
+        pendingExpensesCount: kpis?.pending_expenses ?? fallback.pendingExpensesCount,
+        pendingMilestonesCount: kpis?.pending_milestones ?? fallback.pendingMilestonesCount,
+        pendingFieldApprovalsCount: kpis?.pending_field_approvals ?? fallback.pendingFieldApprovalsCount,
+        equipmentIssuesCount: kpis?.equipment_issues ?? fallback.equipmentIssuesCount,
+        pendingEodsCount: kpis?.pending_eods ?? fallback.pendingEodsCount,
+        upcomingHoliday: kpis?.upcoming_holiday ?? fallback.upcomingHoliday,
       })
     };
   } catch (error: any) {

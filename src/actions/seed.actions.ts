@@ -10,6 +10,9 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function seedTestingAccountsAction() {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return { success: false, error: 'Seed actions are disabled in production.' };
+    }
     const supabase: any = await createClient();
 
     // 2. Seed Projects if none exist

@@ -79,21 +79,20 @@ export async function generateReadableEmployeeId(deptId: string): Promise<string
 export async function getAllUsersAction() {
   try {
     const profile: any = await getUserProfileAction()
-    console.log('getAllUsersAction profile:', profile?.id, profile?.role)
     if (!profile || !['admin', 'engineer', 'hr', 'accountant'].includes(profile.role?.toLowerCase())) {
-      console.log('getAllUsersAction unauthorized:', { profileExists: !!profile, role: profile?.role })
       return { success: false, error: 'Unauthorized' }
     }
     
-    const supabaseAdmin: any = createAdminClient()
-    const { data, error } = await supabaseAdmin
+    // Prefer user-scoped client (RLS) with narrow columns — not full profiles dump
+    const supabase: any = await createClient()
+    const { data, error } = await supabase
       .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false } as any)
-    if (error) {
-      console.log('getAllUsersAction db error:', error)
-      throw error
-    }
+      .select(
+        'id, email, first_name, last_name, role, department, designation, employee_id, is_active, profile_photo, phone_number, joining_date, created_at, status'
+      )
+      .order('created_at', { ascending: false })
+      .limit(300)
+    if (error) throw error
     return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {
     console.error('Directory Fetch Error:', error)
@@ -154,6 +153,8 @@ export async function onboardEmployeeAction(
       password: data.password,
       email_confirm: true,
       user_metadata: { first_name: data.first_name, last_name: data.last_name },
+      // JWT claims for Edge middleware (no profiles round-trip)
+      app_metadata: { role: data.role, is_active: isActive },
     })
     if (authError) return { success: false, error: authError.message }
 
@@ -262,13 +263,19 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
     if (error) return { success: false, error: error.message }
     if (!data) return { success: false, error: "Profile not found or could not be updated." }
 
-    // Sync email and metadata to auth user if they were updated
+    // Sync email, user_metadata, and JWT claims (role/is_active) for Edge gateway
     const authUpdates: any = {};
     if (updates.email) authUpdates.email = updates.email;
     if (updates.first_name || updates.last_name) {
       authUpdates.user_metadata = { 
         first_name: updates.first_name || data.first_name, 
         last_name: updates.last_name || data.last_name 
+      };
+    }
+    if (updates.role !== undefined || statusActive !== undefined) {
+      authUpdates.app_metadata = {
+        role: updates.role ?? data.role,
+        is_active: statusActive ?? data.is_active,
       };
     }
     if (Object.keys(authUpdates).length > 0) {
@@ -332,6 +339,11 @@ export async function toggleUserActiveAction(userId: string, isActive: boolean) 
       .update({ is_active: isActive, status: isActive ? 'active' : 'suspended', updated_at: new Date().toISOString() } as any)
       .eq('id', userId)
 
+    // Keep JWT claims in sync for middleware (trigger also does this when migration applied)
+    await supabaseAdmin.auth.admin.updateUserById(userId, {
+      app_metadata: { is_active: isActive },
+    }).catch(() => null)
+
     await logAdminAuditAction({
       action: isActive ? 'USER_ENABLED' : 'USER_SUSPENDED',
       details: { email: profile?.email },
@@ -364,6 +376,10 @@ export async function updateUserRoleAction(userId: string, role: string) {
 
     await (supabaseAdmin as any).from('profiles').update({ role, updated_at: new Date().toISOString() } as any).eq('id', userId)
 
+    await supabaseAdmin.auth.admin.updateUserById(userId, {
+      app_metadata: { role },
+    }).catch(() => null)
+
     await logAdminAuditAction({
       action: 'ROLE_PERMISSION_OVERRIDE',
       details: { old_role: existing?.role, new_role: role, email: existing?.email },
@@ -387,10 +403,21 @@ export async function updateUserRoleAction(userId: string, role: string) {
 
 export async function adminWipeSystemAction(confirmationString?: string) {
   try {
+    // Hard-block in production unless explicitly opted in
+    if (
+      process.env.NODE_ENV === 'production' &&
+      process.env.ALLOW_SYSTEM_WIPE !== 'true'
+    ) {
+      return {
+        success: false,
+        error: 'System wipe is disabled in production. Set ALLOW_SYSTEM_WIPE=true only in a controlled break-glass scenario.',
+      }
+    }
+
     const adminProfile: any = await getUserProfileAction()
     if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
 
-    if (!checkActionRateLimit(adminProfile.id, 'adminWipeSystemAction', 1, 60 * 60 * 1000)) {
+    if (!(await checkActionRateLimit(adminProfile.id, 'adminWipeSystemAction', 1, 60 * 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded. System wipe is highly restricted.' }
     }
 

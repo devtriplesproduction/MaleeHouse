@@ -179,7 +179,6 @@ interface ProjectDetailPageProps {
 
 async function ProjectContentWrapper({ project, profile, user, role, theme, params }: any) {
   const supabase: any = await createClient();
-  const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
 
   const [
     historyRes,
@@ -189,12 +188,38 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
     milestonesRes,
     activityLogsRes
   ] = await Promise.all([
-    supabase.from('workflow_history').select('*').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
-    supabase.from('comments').select('*').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
-    supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
-    supabaseAdmin.from('project_assignments').select('*').eq('project_id', params.id),
+    supabase
+      .from('workflow_history')
+      .select('id, project_id, from_stage, to_stage, changed_by, comment, created_at')
+      .eq('project_id', params.id)
+      .order('created_at', { ascending: false })
+      .limit(50),
+    supabase
+      .from('comments')
+      .select('id, project_id, user_id, content, comment_type, parent_comment_id, created_at, deleted_at')
+      .eq('project_id', params.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(50),
+    supabase
+      .from('files')
+      .select('id, project_id, file_name, file_url, category, mime_type, file_size_bytes, uploaded_by, uploaded_at, deleted_at')
+      .eq('project_id', params.id)
+      .is('deleted_at', null)
+      .order('uploaded_at', { ascending: false })
+      .limit(100),
+    // User client + RLS — avoid service-role bypass for assignments
+    supabase
+      .from('project_assignments')
+      .select('id, project_id, user_id, role, assigned_at, assigned_by')
+      .eq('project_id', params.id),
     getMilestonesAction(params.id),
-    supabase.from('activity_logs').select('*').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100)
+    supabase
+      .from('activity_logs')
+      .select('id, project_id, user_id, action, details, created_at')
+      .eq('project_id', params.id)
+      .order('created_at', { ascending: false })
+      .limit(50),
   ]);
 
   const files = filesRes.data || [];
@@ -215,10 +240,10 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
   rawAssignments.forEach((a: any) => a.user_id && uniqueUserIds.add(a.user_id));
   rawActivityLogs.forEach((l: any) => l.user_id && uniqueUserIds.add(l.user_id));
 
-  // Fetch only referenced profiles in a single query
+  // Fetch only referenced profiles in a single query (user client)
   let allUsers: any[] = [];
   if (uniqueUserIds.size > 0) {
-    const { data } = await supabaseAdmin
+    const { data } = await supabase
       .from('profiles')
       .select('id, first_name, last_name, email, role, designation')
       .in('id', Array.from(uniqueUserIds));

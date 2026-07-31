@@ -25,17 +25,17 @@ export function NotificationProvider({
   const [isPending, startTransition] = useTransition();
   const { notificationVersion } = useRealtimeContext();
 
-  // Refetch notifications ONLY when notificationVersion changes (i.e. real-time updates)
-  // We skip the initial mount fetch because we have initialNotifications from SSR.
+  // Load once on mount (layout no longer SSR-fetches every navigation),
+  // then again only when Realtime bumps notificationVersion.
   const isInitialMount = React.useRef(true);
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    
     let isMounted = true;
     async function load() {
+      // Skip redundant first fetch only when SSR already provided items
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        if (initialNotifications.length > 0) return;
+      }
       setIsLoading(true);
       try {
         const result = await getNotificationsAction();
@@ -43,14 +43,14 @@ export function NotificationProvider({
           setNotifications(result.data.filter((n: any) => !n.related_project_id));
         }
       } catch (err) {
-        console.error("Failed to fetch notifications on real-time update", err);
+        console.error("Failed to fetch notifications", err);
       } finally {
         if (isMounted) setIsLoading(false);
       }
     }
     load();
     return () => { isMounted = false; };
-  }, [notificationVersion]);
+  }, [notificationVersion, initialNotifications.length]);
 
   const markAsRead = (id: string) => {
     setNotifications((prev) =>

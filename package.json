@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "verify:migrations": "node -r dotenv/config scripts/verify-prod-migrations.mjs dotenv_config_path=.env.local",
+    "smoke:prod": "node scripts/production-smoke.mjs",
+    "go-live": "node -r dotenv/config scripts/go-live-checklist.mjs dotenv_config_path=.env.local",
+    "sync:claims": "node -r dotenv/config scripts/sync-auth-claims.mjs dotenv_config_path=.env.local",
+    "assert:critical": "node scripts/critical-path-assert.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",

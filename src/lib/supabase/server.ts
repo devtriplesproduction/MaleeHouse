@@ -3,6 +3,9 @@ import { cookies } from 'next/headers'
 import { Database } from '@/types/database.types'
 import { cache } from 'react'
 
+/**
+ * One Supabase server client per request (React cache).
+ */
 export const createClient = cache(async () => {
   const cookieStore = await cookies()
 
@@ -17,18 +20,29 @@ export const createClient = cache(async () => {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // Can be ignored if handled by middleware
+          } catch {
+            // Ignored when called from a Server Component (middleware refreshes session)
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // Can be ignored if handled by middleware
+          } catch {
+            // same as set
           }
         },
       },
     }
   )
+})
+
+/**
+ * Cached auth.getUser() for the request — avoids N Auth API hits when
+ * profile + requireAuthContext + page load all need the user.
+ */
+export const getCachedAuthUser = cache(async () => {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.getUser()
+  if (error || !data?.user) return null
+  return data.user
 })

@@ -15,10 +15,11 @@ export async function getLeadsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: leads, error } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, name, client_name, client_contact, client_address, status, stage, priority, created_at, updated_at, created_by')
       .eq('status', 'lead_created')
       .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     if (error) return { success: false, error: error.message };
 
@@ -30,6 +31,9 @@ export async function getLeadsAction(): Promise<ActionResponse> {
 
 export async function getQuotationsAction(): Promise<ActionResponse<any[]>> {
   try {
+    const profile = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+
     const supabase: any = await createClient();
     
     const { data: quotations, error } = await supabase
@@ -45,7 +49,8 @@ export async function getQuotationsAction(): Promise<ActionResponse<any[]>> {
           client_name
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) return { success: false, error: error.message };
 
@@ -88,8 +93,10 @@ export async function getClientsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: activeProjects, error } = await supabase
       .from('projects')
-      .select('*')
-      .is('deleted_at', null);
+      .select('id, client_name, client_contact, client_address, name, status, stage, created_at')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) return { success: false, error: error.message };
     

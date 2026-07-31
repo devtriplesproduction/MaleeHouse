@@ -122,7 +122,7 @@ export async function updateProjectAction(
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
     
-    if (!checkActionRateLimit(profile.id, 'createProjectAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'createProjectAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 
@@ -216,53 +216,83 @@ export async function getSalesPipelineAction(): Promise<ActionResponse> {
 
     const supabase: any = await createClient();
 
+    const PIPELINE_STATUSES = [
+      'lead_created',
+      'requirement_gathering',
+      'quotation_requested',
+      'quotation_sent',
+      'payment_pending',
+    ];
+
     const { data: projects, error: pError } = await supabase
       .from('projects')
-      .select('*')
-      .in('status', ['lead_created', 'requirement_gathering', 'quotation_requested', 'quotation_sent', 'payment_pending'])
+      .select(
+        'id, name, client_name, client_contact, client_address, status, priority, created_at, updated_at, created_by, target_completion_date'
+      )
+      .in('status', PIPELINE_STATUSES)
       .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     if (pError) throw pError;
 
-    const { data: tasks, error: tError } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('status', 'pending');
+    const projectIds = (projects || []).map((p: any) => p.id);
+    if (projectIds.length === 0) return { success: true, data: [] };
 
-    const followUpTasks = (tasks || []).filter((t: any) => t.title?.startsWith('Follow-up'));
+    const [{ data: tasks }, { data: comments }] = await Promise.all([
+      supabase
+        .from('tasks')
+        .select('id, project_id, title, due_date, status')
+        .eq('status', 'pending')
+        .in('project_id', projectIds)
+        .ilike('title', 'Follow-up%')
+        .order('due_date', { ascending: true }),
+      supabase
+        .from('comments')
+        .select('project_id, content, created_at')
+        .eq('comment_type', 'follow_up')
+        .in('project_id', projectIds)
+        .order('created_at', { ascending: false })
+        .limit(400),
+    ]);
 
-    const { data: comments, error: cError } = await supabase
-      .from('comments')
-      .select('project_id, content')
-      .eq('comment_type', 'follow_up')
-      .order('created_at', { ascending: false });
+    const tasksByProject = new Map<string, any[]>();
+    (tasks || []).forEach((t: any) => {
+      const list = tasksByProject.get(t.project_id) || [];
+      list.push(t);
+      tasksByProject.set(t.project_id, list);
+    });
+
+    const commentsByProject = new Map<string, any[]>();
+    (comments || []).forEach((c: any) => {
+      const list = commentsByProject.get(c.project_id) || [];
+      list.push(c);
+      commentsByProject.set(c.project_id, list);
+    });
 
     const pipeline = (projects || []).map((p: any) => {
-      const pTasks = followUpTasks.filter((t: any) => t.project_id === p.id);
-      pTasks.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-      
-      const pComments = (comments || []).filter((c: any) => c.project_id === p.id);
+      const pTasks = tasksByProject.get(p.id) || [];
+      const pComments = commentsByProject.get(p.id) || [];
       let latestFollowUpStatus = '';
       let latestOutcome = '';
-      
+
       if (pComments.length > 0) {
-        const latestContent = pComments[0].content;
+        const latestContent = pComments[0].content || '';
         const contentLines = latestContent.split('\n');
-        const outcomeLine = contentLines.find((l: string) => l.trim().startsWith("Follow-up Outcome:"));
-        const statusLine = contentLines.find((l: string) => l.trim().startsWith("Status:"));
-        
-        latestOutcome = outcomeLine ? outcomeLine.replace(/Follow-up Outcome:\s*/, "").trim() : "";
-        latestFollowUpStatus = statusLine ? statusLine.replace(/Status:\s*/, "").trim() : "";
-        
+        const outcomeLine = contentLines.find((l: string) => l.trim().startsWith('Follow-up Outcome:'));
+        const statusLine = contentLines.find((l: string) => l.trim().startsWith('Status:'));
+
+        latestOutcome = outcomeLine ? outcomeLine.replace(/Follow-up Outcome:\s*/, '').trim() : '';
+        latestFollowUpStatus = statusLine ? statusLine.replace(/Status:\s*/, '').trim() : '';
+
         if (!latestOutcome && !latestFollowUpStatus) {
-           if (latestContent.includes("Follow-up Outcome: ")) {
-              latestOutcome = latestContent.replace("Follow-up Outcome: ", "").split('\n')[0] || '';
-              latestFollowUpStatus = latestContent.split('\n')[1]?.replace('Status: ', '') || 'Follow Up';
-           } else {
-              latestOutcome = latestContent;
-              latestFollowUpStatus = 'Follow Up';
-           }
+          if (latestContent.includes('Follow-up Outcome: ')) {
+            latestOutcome = latestContent.replace('Follow-up Outcome: ', '').split('\n')[0] || '';
+            latestFollowUpStatus = latestContent.split('\n')[1]?.replace('Status: ', '') || 'Follow Up';
+          } else {
+            latestOutcome = latestContent;
+            latestFollowUpStatus = 'Follow Up';
+          }
         }
       }
 
@@ -270,7 +300,7 @@ export async function getSalesPipelineAction(): Promise<ActionResponse> {
         ...p,
         follow_up_date: pTasks[0]?.due_date || null,
         latest_follow_up_status: latestFollowUpStatus,
-        latest_outcome: latestOutcome
+        latest_outcome: latestOutcome,
       };
     });
 
@@ -384,7 +414,38 @@ export async function assignUserAction(
   }
 }
 
-export async function getProjectsListAction(): Promise<ActionResponse> {
+/** Columns needed by directory table + dropdowns — avoid select('*') */
+const PROJECT_LIST_SELECT =
+  'id, name, client_name, client_contact, client_address, status, site_type, services, is_frozen, target_completion_date, created_at, created_by, creator:profiles!projects_created_by_fkey(first_name, last_name)';
+
+export type ProjectsListQuery = {
+  /** 1-based page. When set, response is paginated: { items, total, page, pageSize, clients } */
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+  client?: string;
+};
+
+export type ProjectsListPage = {
+  items: any[];
+  total: number;
+  page: number;
+  pageSize: number;
+  clients: string[];
+};
+
+function sanitizeSearch(raw: string): string {
+  // PostgREST or() is sensitive to , ( ) — strip control chars
+  return raw.replace(/[%_,.()]/g, ' ').trim().slice(0, 80);
+}
+
+/**
+ * Project directory list.
+ * - With `page`: server-paginated page payload (Projects table).
+ * - Without `page`: flat array capped at 500 (dropdowns / reports / milestones) for backward compat.
+ */
+export async function getProjectsListAction(params?: ProjectsListQuery): Promise<ActionResponse> {
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
@@ -393,44 +454,103 @@ export async function getProjectsListAction(): Promise<ActionResponse> {
 
     const role = profile.role as Role;
     const isGlobalRole = ['admin', 'sales', 'accountant', 'hr'].includes(role);
+    const paginated = params?.page != null && params.page >= 1;
+    const page = paginated ? Math.max(1, Math.floor(params!.page!)) : 1;
+    const pageSize = Math.min(100, Math.max(1, Math.floor(params?.pageSize || (paginated ? 10 : 500))));
+    const search = params?.search ? sanitizeSearch(params.search) : '';
+    const status = params?.status && params.status !== 'all' ? params.status : '';
+    const client = params?.client && params.client !== 'all' ? params.client : '';
 
     const supabase: any = await createClient();
 
-    if (isGlobalRole) {
-      const { data: activeProjects, error } = await supabase
-        .from('projects')
-        .select('*, creator:profiles!projects_created_by_fkey(first_name, last_name)')
-        .neq('status', 'archived')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return { success: true, data: normalizeData(activeProjects) };
-    } else {
+    let assignedIds: string[] | null = null;
+    if (!isGlobalRole) {
       const { data: assignments, error: aError } = await supabase
         .from('project_assignments')
         .select('project_id')
         .eq('user_id', profile.id);
-
       if (aError) throw aError;
-
-      const userProjectIds = (assignments || []).map((a: any) => a.project_id);
-
-      if (userProjectIds.length === 0) {
+      assignedIds = (assignments || []).map((a: any) => a.project_id);
+      if (assignedIds!.length === 0) {
+        if (paginated) {
+          return {
+            success: true,
+            data: { items: [], total: 0, page, pageSize, clients: [] } satisfies ProjectsListPage,
+          };
+        }
         return { success: true, data: [] };
       }
+    }
 
-      const { data: assignedProjects, error: pError } = await supabase
+    const applyFilters = (q: any) => {
+      let query = q.neq('status', 'archived').is('deleted_at', null);
+      if (assignedIds) query = query.in('id', assignedIds);
+      if (client) query = query.eq('client_name', client);
+      if (status) {
+        if (role === 'sales' && status === 'send_to_accountant') {
+          query = query.in('status', ['quotation_requested', 'quotation_sent', 'payment_pending']);
+        } else {
+          query = query.eq('status', status);
+        }
+      }
+      if (search) {
+        query = query.or(
+          `name.ilike.%${search}%,id.ilike.%${search}%,client_name.ilike.%${search}%`
+        );
+      }
+      return query;
+    };
+
+    // Lightweight client names for filter dropdown (paginated mode only)
+    let clients: string[] = [];
+    if (paginated) {
+      let clientsQuery = supabase
         .from('projects')
-        .select('*, creator:profiles!projects_created_by_fkey(first_name, last_name)')
-        .in('id', userProjectIds)
+        .select('client_name')
         .neq('status', 'archived')
         .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      if (pError) throw pError;
-      return { success: true, data: normalizeData(assignedProjects) };
+        .not('client_name', 'is', null)
+        .limit(500);
+      if (assignedIds) clientsQuery = clientsQuery.in('id', assignedIds);
+      const { data: clientRows } = await clientsQuery;
+      clients = Array.from(
+        new Set((clientRows || []).map((r: any) => r.client_name).filter(Boolean))
+      ).sort() as string[];
     }
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let listQuery = applyFilters(
+      supabase.from('projects').select(PROJECT_LIST_SELECT, paginated ? { count: 'exact' } : undefined)
+    ).order('created_at', { ascending: false });
+
+    if (paginated) {
+      listQuery = listQuery.range(from, to);
+    } else {
+      listQuery = listQuery.limit(pageSize);
+    }
+
+    const { data, error, count } = await listQuery;
+    if (error) throw error;
+
+    const items = normalizeData(data || []);
+
+    if (paginated) {
+      return {
+        success: true,
+        data: {
+          items,
+          total: count ?? items.length,
+          page,
+          pageSize,
+          clients,
+        } satisfies ProjectsListPage,
+      };
+    }
+
+    // Legacy: flat array for reports / milestones dropdowns
+    return { success: true, data: items };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -444,7 +564,9 @@ export async function getProjectByIdAction(projectId: string): Promise<ActionRes
     const supabase: any = await createClient();
     const { data: project, error } = await supabase
       .from('projects')
-      .select('*')
+      .select(
+        'id, name, client_name, client_contact, client_address, status, stage, priority, budget, is_frozen, gst_number, target_completion_date, created_by, created_at, updated_at, deleted_at, site_type, services'
+      )
       .eq('id', projectId)
       .is('deleted_at', null)
       .single();

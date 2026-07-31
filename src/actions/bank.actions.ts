@@ -5,18 +5,20 @@ import { normalizeData } from '@/lib/normalize';
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-import { createClient as createServiceRoleClient } from "@supabase/supabase-js";
 import { getUserProfileAction } from "@/actions/auth.actions";
 
 export async function getBankAccountsAction() {
   try {
-    const supabase = createServiceRoleClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized" };
+
+    // User-scoped client — bank_accounts RLS gates rows; no service-role bypass
+    const supabase: any = await createClient();
     const { data, error } = await supabase
       .from("bank_accounts")
-      .select("*")
+      .select(
+        "id, bank_name, account_name, account_number, ifsc_code, branch_name, is_default, account_usage, opening_balance, current_balance, created_at, updated_at"
+      )
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
 
@@ -274,10 +276,15 @@ export async function setDefaultBankAccountAction(id: string) {
 
 export async function getBankAccountDetailsAction(bankId: string) {
   try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: "Unauthorized" };
+
     const supabase = await createClient();
     const { data, error } = await (supabase as any)
       .from("bank_accounts")
-      .select("*")
+      .select(
+        "id, bank_name, account_name, account_number, ifsc_code, branch_name, is_default, account_usage, opening_balance, current_balance, created_at, updated_at"
+      )
       .eq("id", bankId)
       .single();
 
@@ -448,6 +455,12 @@ export async function getBankAccountLedgerAction(bankId: string, limit: number =
 
 export async function getTotalBankBalanceAction() {
   try {
+    const profile: any = await getUserProfileAction();
+    if (!profile) return { success: false, error: 'Unauthorized' };
+    if (!['admin', 'accountant'].includes(profile.role)) {
+      return { success: false, error: 'Access denied' };
+    }
+
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('bank_accounts')

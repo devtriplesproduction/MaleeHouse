@@ -22,7 +22,7 @@ export async function sendSystemBroadcastAction(
   const { userId, role, error: authError } = await requireAuthContext();
   if (authError || !userId) return { success: false, error: "Authentication required." };
 
-  if (!checkActionRateLimit(userId, 'sendSystemBroadcastAction', 5, 60 * 1000)) {
+  if (!(await checkActionRateLimit(userId, 'sendSystemBroadcastAction', 5, 60 * 1000))) {
     return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
   }
 

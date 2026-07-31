@@ -118,7 +118,7 @@ export async function getProjectFilesAction(projectId: string): Promise<ActionRe
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
     
-    if (!checkActionRateLimit(profile.id, 'registerFileAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'registerFileAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 

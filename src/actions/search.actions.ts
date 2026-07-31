@@ -19,7 +19,7 @@ export async function globalSearchAction(query: string) {
   const profile: any = await getUserProfileAction();
   if (!profile) return { projects: [], users: [], tasks: [] };
 
-  if (!checkActionRateLimit(profile.id, 'globalSearchAction', 30, 60 * 1000)) {
+  if (!(await checkActionRateLimit(profile.id, 'globalSearchAction', 30, 60 * 1000))) {
     return { projects: [], users: [], tasks: [] };
   }
 

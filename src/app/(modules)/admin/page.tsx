@@ -222,8 +222,6 @@ async function CommandCenterContent() {
   const materialRequestsRaw = workspaceData.materialRequestsRaw || [];
   const attendanceToday = workspaceData.attendanceTodayRaw || {};
   const users = workspaceData.usersList || [];
-  const allAttendanceLogs = workspaceData.attendanceLogs || [];
-
   const ongoingProjectsCount = workspaceData.ongoingProjectsCount || 0;
   const allProjectStatuses = workspaceData.allProjectStatuses || [];
   const pendingExpensesCount = workspaceData.pendingExpensesCount || 0;
@@ -250,12 +248,9 @@ async function CommandCenterContent() {
   const outstandingReceivables = financial.accountsReceivable || 0;
   const payrollApprovalCount = (payrollStatus === 'Pending' || payrollStatus === 'Draft') ? 1 : 0;
 
-  // ── HR Calculations ──
-  const todayDate = new Date();
-  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(todayDate);
-  const todayLogs = (allAttendanceLogs || []).filter((log: any) => log.date === todayStr);
-  const presentCount = todayLogs.filter((log: any) => log.status === 'present').length;
-  const lateLogins = todayLogs.filter((log: any) => log.status === 'late').length;
+  // ── HR Calculations (use summary action, not full attendance history) ──
+  const presentCount = Number((attendanceToday as any)?.present || 0);
+  const lateLogins = 0; // late status not in EOD summary; keep metric without full log scan
   
   const recentEods = (attendanceToday as any)?.recentEods || [];
   const submittedUserIds = new Set(recentEods.map((eod: any) => eod.user_id));

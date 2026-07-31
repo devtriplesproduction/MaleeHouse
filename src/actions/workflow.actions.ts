@@ -212,29 +212,35 @@ async function verifyProjectNotLocked(projectId: string): Promise<{ success: boo
 /**
  * validateStageTransition
  * Enforces strict prerequisite checking for each transition in the project lifecycle.
+ * Pass `projectSnapshot` from the caller to avoid re-fetching projects.
  */
 async function validateStageTransition(
   projectId: string,
-  newStage: string
+  newStage: string,
+  projectSnapshot?: { status?: string; dispatch_override_approved?: boolean } | null
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     const supabase: any = await createClient();
 
-    // Check if there is an active override that bypasses checks
-    const { data: projectOverride } = await supabase
-      .from('projects')
-      .select('dispatch_override_approved')
-      .eq('id', projectId)
-      .single();
-
-    if (projectOverride?.dispatch_override_approved) {
-      return { success: true, error: null }; // Gate checks bypassed!
+    // Reuse caller's project row when available (saves 1–2 queries per transition)
+    let projectOverride = projectSnapshot;
+    if (!projectOverride) {
+      const { data } = await supabase
+        .from('projects')
+        .select('status, dispatch_override_approved')
+        .eq('id', projectId)
+        .single();
+      projectOverride = data;
     }
 
-    // Dynamic Milestone Gate Check
+    if (projectOverride?.dispatch_override_approved) {
+      return { success: true, error: null };
+    }
+
+    // Dynamic Milestone Gate Check — only columns needed
     const { data: linkedMilestone } = await supabase
       .from('project_milestones')
-      .select('*')
+      .select('id, title, status')
       .eq('project_id', projectId)
       .eq('linked_stage', newStage)
       .maybeSingle();
@@ -268,15 +274,16 @@ async function validateStageTransition(
         break;
       }
       case "payment_done": {
-        const { data: payment } = await supabase.from("payments").select("status").eq("project_id", projectId).eq("status", "verified").maybeSingle();
-        if (!payment) {
-          const { data: invoice } = await supabase.from("invoices").select("id").eq("project_id", projectId).eq("status", "paid").maybeSingle();
-          if (!invoice) {
-            return {
-              success: false,
-              error: "Cannot transition to Payment Done: Payment verification is pending or rejected."
-            };
-          }
+        // Parallel payment/invoice check
+        const [paymentRes, invoiceRes] = await Promise.all([
+          supabase.from("payments").select("status").eq("project_id", projectId).eq("status", "verified").limit(1).maybeSingle(),
+          supabase.from("invoices").select("id").eq("project_id", projectId).eq("status", "paid").limit(1).maybeSingle(),
+        ]);
+        if (!paymentRes.data && !invoiceRes.data) {
+          return {
+            success: false,
+            error: "Cannot transition to Payment Done: Payment verification is pending or rejected."
+          };
         }
         break;
       }
@@ -291,8 +298,7 @@ async function validateStageTransition(
         break;
       }
       case "project_created": {
-        const { data: project } = await supabase.from("projects").select("status").eq("id", projectId).single();
-        if (project?.status !== "ready_for_dispatch") {
+        if (projectOverride?.status !== "ready_for_dispatch") {
           return {
             success: false,
             error: "Cannot transition to Engineering: The project must be Ready For Dispatch before it can be sent to Engineering."
@@ -490,74 +496,103 @@ export async function transitionWorkflowAction(
     const isRollback = newStageIndex < currentStageIndex;
 
     if (role !== "admin" && !isRollback) {
-      const gateCheck = await validateStageTransition(projectId, newStage);
+      const gateCheck = await validateStageTransition(projectId, newStage, project);
       if (!gateCheck.success) {
         return { success: false, error: gateCheck.error || "Stage transition gate check failed." };
       }
     }
 
-    // 4. Update Project Status using Admin Client (Bypass RLS after application-level verification)
-    const adminClient: any = createAdminClient();
-    const { error: updateError, data: updatedProject } = await adminClient.from("projects").update({
-      status: newStage,
-      updated_at: new Date().toISOString()
-    }).eq("id", projectId).select().single();
-
-    if (updateError || !updatedProject) {
-      console.error("Project update failed. updateError:", updateError, "updatedProject:", updatedProject);
-      return { success: false, error: `Project not found or update failed (RLS or Admin Error). DB Error: ${updateError?.message || 'None'}` };
-    }
-
-    // 5. Log in Workflow History (audit trail)
-    await adminClient.from("workflow_history").insert({
-      id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      project_id: projectId,
-      from_stage: fromStage,
-      to_stage: newStage,
-      changed_by: auth.userId,
-      comment: comment || `Status updated by ${role}`,
-      created_at: new Date().toISOString()
-    });
-
-    // 6. Log in Activity Logs
-    await adminClient.from("activity_logs").insert({
-      project_id: projectId,
-      user_id: auth.userId,
-      action: "STAGE_UPDATE",
-      details: { from_status: fromStage, new_status: newStage, role },
-      created_at: new Date().toISOString()
-    });
-
-    // 6b. Consume override if it was used
-    if (project?.dispatch_override_approved && role !== "admin") {
-      await adminClient.from("projects").update({ dispatch_override_approved: false }).eq("id", projectId);
-    }
-
-    // 7. Trigger notifications for assigned team members
-    await notifyStageUpdateAction(projectId, fromStage || "lead", newStage).catch(console.error);
-
-    // 8. Generate Default Tasks for new stage
+    const clearOverride = !!(project?.dispatch_override_approved && role !== "admin");
+    let taskTitles: string[] = [];
     try {
-      const generatedTaskTitles = getTasksForStage(newStage);
-      if (generatedTaskTitles && generatedTaskTitles.length > 0) {
-        const defaultDueDate = new Date();
-        defaultDueDate.setDate(defaultDueDate.getDate() + 2); // default +48 hours
-        
-        const tasksToInsert = generatedTaskTitles.map((title: any) => ({
-          project_id: projectId,
-          stage: newStage,
-          title: title.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
-          status: "pending",
-          due_date: defaultDueDate.toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
-        
-        await supabase.from("tasks").insert(tasksToInsert);
-      }
-    } catch (taskErr) {
-      console.error("Auto-task generation failed:", taskErr);
+      taskTitles = getTasksForStage(newStage) || [];
+    } catch {
+      taskTitles = [];
     }
+
+    // Prefer single DB RPC (update + history + activity + tasks) — fewer round-trips
+    let updatedProject: any = null;
+    let fromStageFinal = fromStage;
+
+    const { data: rpcResult, error: rpcError } = await supabase.rpc("transition_project_stage", {
+      p_project_id: projectId,
+      p_to_stage: newStage,
+      p_user_id: auth.userId,
+      p_role: role,
+      p_comment: comment || `Status updated by ${role}`,
+      p_clear_override: clearOverride,
+      p_task_titles: taskTitles.length > 0 ? taskTitles : null,
+    });
+
+    if (!rpcError && rpcResult?.ok) {
+      updatedProject = rpcResult.project;
+      fromStageFinal = rpcResult.from_stage || fromStage;
+    } else {
+      // Fallback path if RPC not migrated yet
+      if (rpcError) {
+        console.warn("transition_project_stage RPC unavailable, using multi-query fallback:", rpcError.message);
+      } else if (rpcResult && !rpcResult.ok) {
+        return { success: false, error: rpcResult.error || "Stage transition failed." };
+      }
+
+      const adminClient: any = createAdminClient();
+      const { error: updateError, data: proj } = await adminClient
+        .from("projects")
+        .update({
+          status: newStage,
+          updated_at: new Date().toISOString(),
+          ...(clearOverride ? { dispatch_override_approved: false } : {}),
+        })
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (updateError || !proj) {
+        return {
+          success: false,
+          error: `Project not found or update failed. DB Error: ${updateError?.message || "None"}`,
+        };
+      }
+      updatedProject = proj;
+
+      await Promise.all([
+        adminClient.from("workflow_history").insert({
+          id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          project_id: projectId,
+          from_stage: fromStage,
+          to_stage: newStage,
+          changed_by: auth.userId,
+          comment: comment || `Status updated by ${role}`,
+          created_at: new Date().toISOString(),
+        }),
+        adminClient.from("activity_logs").insert({
+          project_id: projectId,
+          user_id: auth.userId,
+          action: "STAGE_UPDATE",
+          details: { from_status: fromStage, new_status: newStage, role },
+          created_at: new Date().toISOString(),
+        }),
+      ]);
+
+      if (taskTitles.length > 0) {
+        const defaultDueDate = new Date();
+        defaultDueDate.setDate(defaultDueDate.getDate() + 2);
+        await supabase.from("tasks").insert(
+          taskTitles.map((title: string) => ({
+            project_id: projectId,
+            stage: newStage,
+            title: title.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+            status: "pending",
+            due_date: defaultDueDate.toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }))
+        ).catch((e: any) => console.error("Auto-task generation failed:", e));
+      }
+    }
+
+    // Notifications stay in app (recipient rules) — fire-and-forget
+    await notifyStageUpdateAction(projectId, fromStageFinal || "lead", newStage).catch(console.error);
 
     await revalidateAccountsPaths(projectId);
 

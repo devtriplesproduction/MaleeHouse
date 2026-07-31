@@ -115,10 +115,21 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             event: "INSERT",
             schema: "public",
             table: "notifications",
-            filter: `recipientId=eq.${user.id}`,
+            // Column is user_id (see notifications table), not recipientId
+            filter: `user_id=eq.${user.id}`,
           },
           (payload: any) => {
-            const notification = payload.new as RealtimeNotificationPayload;
+            const row = payload.new as any;
+            const notification = {
+              id: row.id,
+              recipientId: row.user_id,
+              title: row.title,
+              message: row.message,
+              type: row.type as NotificationType,
+              read: row.is_read,
+              metadata: null,
+              createdAt: row.created_at,
+            } satisfies RealtimeNotificationPayload;
             const config = NOTIFICATION_TOAST_CONFIG[notification.type] ?? NOTIFICATION_TOAST_CONFIG.system;
             toastRef.current({
               title: config.title,

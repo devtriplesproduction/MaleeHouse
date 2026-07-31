@@ -416,8 +416,10 @@ export async function getProjectBudgetSheetAction(projectId: string): Promise<Re
 
     const { data: budgetItems, error } = await supabase
       .from('expenses')
-      .select('*')
-      .eq('project_id', projectId);
+      .select('id, project_id, category, description, amount, status, expense_date, created_at')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (error) throw error;
     

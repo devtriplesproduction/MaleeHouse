@@ -281,7 +281,7 @@ export async function removeTeamMemberAction(
       return { success: false, error: "Only Admins and Engineers can remove team members." };
 
     const supabase: any = await createClient();
-    const { data: assignment } = await supabase.from('project_assignments').select('*').eq('id', assignmentId).single();
+    const { data: assignment } = await supabase.from('project_assignments').select('user_id, role').eq('id', assignmentId).single();
     if (!assignment) return { success: false, error: "Assignment not found." };
 
     await supabase.from('project_assignments').delete().eq('id', assignmentId);
@@ -361,9 +361,9 @@ export async function submitCADRevisionAction(
       return { success: false, error: "Only CAD users can submit revisions." } as any;
 
     const supabase: any = await createClient();
-    const { data: projectRevisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
+    const { data: projectRevisions } = await supabase.from('cad_revisions').select('status').eq('project_id', projectId);
 
-    const { data: project } = await supabase.from('projects').select('*').eq('id', projectId).single();
+    const { data: project } = await supabase.from('projects').select('bypass_active').eq('id', projectId).single();
     const rejectedCount = (projectRevisions || []).filter((r: any) => r.status === "rejected").length;
 
     if (rejectedCount >= 10 && !project?.bypass_active) {
@@ -574,7 +574,7 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
     if (!auth.authorized) return { success: false, error: auth.error || null, data: [] };
 
     const supabase: any = await createClient();
-    const { data: revisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
+    const { data: revisions } = await supabase.from('cad_revisions').select('id, project_id, submitted_by, file_name, file_url, revision_number, revision_notes, status, review_notes, reviewed_by, reviewed_at, created_at').eq('project_id', projectId);
     
     const userIds = Array.from(new Set((revisions || []).flatMap((r: any) => [r.submitted_by, r.reviewed_by]))).filter(Boolean);
     let profiles: any[] = [];

@@ -20,6 +20,7 @@ export function DashboardLayout({
   initialBirthdays = [],
 }: {
   children: React.ReactNode;
+  /** Optional SSR birthdays; usually empty — notifier loads client-side once */
   initialBirthdays?: any[];
 }) {
   const { role, isLoading } = useUser();

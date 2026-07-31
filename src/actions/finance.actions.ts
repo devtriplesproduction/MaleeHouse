@@ -326,7 +326,7 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
     }
 
     const supabase: any = await createClient();
-    const { data: payment, error: fetchErr } = await supabase.from('payments').select('*').eq('id', paymentId).single();
+    const { data: payment, error: fetchErr } = await supabase.from('payments').select('project_id, invoice_id, amount, bank_id, payment_date, created_at').eq('id', paymentId).single();
     if (fetchErr || !payment) return { success: false, error: 'Payment not found' };
 
     const lockCheck = await verifyProjectNotLocked(payment.project_id);
@@ -382,7 +382,7 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
         }
       }
 
-      const { data: project } = await supabase.from('projects').select('*').eq('id', payment.project_id).single();
+      const { data: project } = await supabase.from('projects').select('status, is_frozen, freeze_reason').eq('id', payment.project_id).single();
 
       if (isActivationGatePaid || !project || ['lead_created', 'quotation_sent', 'payment_pending', 'payment_done'].includes(project.status)) {
         const stageRes = await updateProjectStageAction(payment.project_id, 'ready_for_dispatch', 'Payment verified. Project ready for dispatch.');
@@ -400,7 +400,7 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
         await unfreezeProjectAction(payment.project_id, 'Payment verification complete. Auto-unfreezing project.');
       }
 
-      const { data: currentFinance } = await supabase.from('project_finances').select('*').eq('project_id', payment.project_id).maybeSingle();
+      const { data: currentFinance } = await supabase.from('project_finances').select('total_paid_amount').eq('project_id', payment.project_id).maybeSingle();
       if (currentFinance) {
         await supabase.from('project_finances').update({
           total_paid_amount: Number(currentFinance.total_paid_amount) + Number(payment.amount),
@@ -464,11 +464,40 @@ export async function getInvoiceByIdAction(invoiceId: string): Promise<ActionRes
   }
 }
 
-export async function getInvoicesAction(projectId?: string): Promise<ActionResponse> {
+const INVOICE_LIST_SELECT =
+  'id, invoice_number, project_id, milestone_id, amount, gst_amount, total_amount, status, due_date, created_at, projects!inner(name, client_name, budget, deleted_at), payments(amount, status), project_milestones(title, sort_order)';
+
+const PAYMENT_LIST_SELECT =
+  'id, project_id, invoice_id, amount, status, payment_method, transaction_id, payment_date, created_at, bank_id, projects!inner(name, client_name, deleted_at), bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))';
+
+export type InvoiceListQuery = {
+  projectId?: string;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+};
+
+/**
+ * Invoice list. Pass `page` for server pagination; omit for flat array (capped).
+ */
+export async function getInvoicesAction(
+  projectIdOrQuery?: string | InvoiceListQuery
+): Promise<ActionResponse> {
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
-    
+
+    const opts: InvoiceListQuery =
+      typeof projectIdOrQuery === 'string' || projectIdOrQuery == null
+        ? { projectId: projectIdOrQuery }
+        : projectIdOrQuery;
+
+    const projectId = opts.projectId;
+    const paginated = opts.page != null && opts.page >= 1;
+    const page = paginated ? Math.max(1, Math.floor(opts.page!)) : 1;
+    const pageSize = Math.min(100, Math.max(1, Math.floor(opts.pageSize || (paginated ? 20 : 100))));
+    const search = (opts.search || '').replace(/[%_,.()]/g, ' ').trim().slice(0, 80);
+
     let authContext;
     if (projectId) {
       const auth = await requireProjectAccess(projectId);
@@ -481,29 +510,55 @@ export async function getInvoicesAction(projectId?: string): Promise<ActionRespo
     }
 
     const supabase: any = await createClient();
-    let query = supabase.from('invoices').select('*, projects(name, client_name, budget, deleted_at, payments(amount, status)), payments(amount, status), project_milestones(title, sort_order)');
+    let query = supabase
+      .from('invoices')
+      .select(INVOICE_LIST_SELECT, paginated ? { count: 'exact' } : undefined)
+      .is('projects.deleted_at', null);
 
     if (projectId) {
       query = query.eq('project_id', projectId);
     } else {
       const assignedIds = await getAssignedProjectIds(authContext.userId, authContext.role);
       if (assignedIds !== null) {
-        if (assignedIds.length === 0) return { success: true, data: [] };
+        if (assignedIds.length === 0) {
+          return paginated
+            ? { success: true, data: { items: [], total: 0, page, pageSize } }
+            : { success: true, data: [] };
+        }
         query = query.in('project_id', assignedIds);
       }
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
+    // Server-side search on invoice_number only (FK text filters are unreliable in PostgREST or())
+    if (search) {
+      query = query.ilike('invoice_number', `%${search}%`);
+    }
 
+    query = query.order('created_at', { ascending: false });
+    if (paginated) {
+      const from = (page - 1) * pageSize;
+      query = query.range(from, from + pageSize - 1);
+    } else {
+      query = query.limit(pageSize);
+    }
+
+    const { data, error, count } = await query;
     if (error) return { success: false, error: error.message };
-    const activeData = data.filter((item: any) => item.projects?.deleted_at === null);
-    return { success: true, data: normalizeData(activeData) };
+
+    const items = normalizeData(data || []);
+    if (paginated) {
+      return { success: true, data: { items, total: count ?? items.length, page, pageSize } };
+    }
+    return { success: true, data: items };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-export async function getPaymentsAction(projectId?: string): Promise<ActionResponse> {
+export async function getPaymentsAction(
+  projectId?: string,
+  opts?: { page?: number; pageSize?: number }
+): Promise<ActionResponse> {
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
@@ -519,8 +574,14 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
       authContext = auth;
     }
 
+    const pageSize = Math.min(100, Math.max(1, opts?.pageSize || 100));
+    const page = Math.max(1, opts?.page || 1);
+
     const supabase: any = await createClient();
-    let query = supabase.from('payments').select('*, projects(name, client_name, deleted_at), bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))');
+    let query = supabase
+      .from('payments')
+      .select(PAYMENT_LIST_SELECT)
+      .is('projects.deleted_at', null);
 
     if (projectId) {
       query = query.eq('project_id', projectId);
@@ -532,11 +593,13 @@ export async function getPaymentsAction(projectId?: string): Promise<ActionRespo
       }
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const from = (page - 1) * pageSize;
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
 
     if (error) return { success: false, error: error.message };
-    const activeData = data.filter((item: any) => item.projects?.deleted_at === null);
-    return { success: true, data: normalizeData(activeData) };
+    return { success: true, data: normalizeData(data || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -1110,7 +1173,8 @@ export async function rescheduleMilestoneAction(
 
 export async function autoGenerateMilestoneInvoicesAction(cronSecret?: string): Promise<ActionResponse> {
   try {
-    if (process.env.NODE_ENV === 'production' && cronSecret !== process.env.CRON_SECRET) {
+    const expectedSecret = process.env.CRON_SECRET;
+    if (!expectedSecret || cronSecret !== expectedSecret) {
       return { success: false, error: 'Unauthorized cron request.' };
     }
 
@@ -1343,12 +1407,22 @@ export async function getFinancialOverviewAction(): Promise<{ success: boolean; 
 
     const supabase: any = await createClient();
 
-    // Fetch all relevant data
+    // Prefer single SQL aggregate RPC (migration 20260731150000)
+    try {
+      const { data: summary, error: rpcErr } = await supabase.rpc('get_financial_overview_summary');
+      if (!rpcErr && summary) {
+        return { success: true, data: summary };
+      }
+    } catch {
+      // fall through to JS aggregation
+    }
+
+    // Fallback: lean column selects (no select('*'))
     const [paymentsRes, expensesRes, invoicesRes, visitsRes] = await Promise.all([
-      supabase.from('payments').select('*'),
-      supabase.from('expenses').select('*'),
-      supabase.from('invoices').select('*'),
-      supabase.from('project_visits').select('*')
+      supabase.from('payments').select('status, amount, payment_date, created_at'),
+      supabase.from('expenses').select('amount, expense_date, created_at, status, category'),
+      supabase.from('invoices').select('status, total_amount'),
+      supabase.from('project_visits').select('visit_cost, scheduled_date, created_at')
     ]);
 
     const payments = paymentsRes.data || [];
@@ -2060,6 +2134,10 @@ export async function getProjectFinanceTabDataAction(projectId: string): Promise
   }
 }
 
+/**
+ * Billing workspace — parallel lean queries instead of one giant nested select('*').
+ * Caps list tables at 100 rows; project summary keeps aggregates via nested amount fields only.
+ */
 export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
@@ -2069,85 +2147,103 @@ export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
 
     const supabase: any = await createClient();
 
-    let query = supabase.from('projects').select(`
-      id, name, client_name, budget, status, deleted_at,
-      invoices (*, payments(amount, status), project_milestones(title, sort_order)),
-      payments (*, bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))),
-      project_milestones (*),
-      quotations (total_amount, status)
-    `).is('deleted_at', null);
-
+    let assignedIds: string[] | null = null;
     if (auth.role !== 'admin' && auth.role !== 'accountant') {
-      const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
-      if (assignedIds !== null) {
-        if (assignedIds.length === 0) return { success: true, data: { projects: [], invoices: [], payments: [], milestones: [] } };
-        query = query.in('id', assignedIds);
+      assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
+      if (assignedIds !== null && assignedIds.length === 0) {
+        return { success: true, data: { projects: [], invoices: [], payments: [], milestones: [] } };
       }
     }
 
-    const { data: projectsData, error } = await query;
-    if (error) return { success: false, error: error.message };
+    const applyProjectScope = (q: any, col = 'project_id') => {
+      if (assignedIds) return q.in(col, assignedIds);
+      return q;
+    };
 
-    const initialInvoices: any[] = [];
-    const initialMilestones: any[] = [];
-    const initialPayments: any[] = [];
-    const billingSummary: any[] = [];
+    let projectsQuery = supabase
+      .from('projects')
+      .select(`
+        id, name, client_name, budget, status, deleted_at,
+        invoices (id, total_amount, status),
+        payments (id, amount, status),
+        project_milestones (id, amount),
+        quotations (total_amount, status)
+      `)
+      .is('deleted_at', null)
+      .order('updated_at', { ascending: false })
+      .limit(200);
 
-    projectsData?.forEach((p: any) => {
+    if (assignedIds) projectsQuery = projectsQuery.in('id', assignedIds);
+
+    let invoicesQuery = applyProjectScope(
+      supabase
+        .from('invoices')
+        .select(
+          'id, invoice_number, project_id, milestone_id, amount, gst_amount, total_amount, status, due_date, created_at, projects!inner(name, client_name, budget, deleted_at), payments(amount, status), project_milestones(title, sort_order)'
+        )
+        .is('projects.deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(100)
+    );
+
+    let paymentsQuery = applyProjectScope(
+      supabase
+        .from('payments')
+        .select(
+          'id, project_id, invoice_id, amount, status, payment_method, transaction_id, payment_date, created_at, bank_id, projects!inner(name, client_name, deleted_at), bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))'
+        )
+        .is('projects.deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(100)
+    );
+
+    let milestonesQuery = applyProjectScope(
+      supabase
+        .from('project_milestones')
+        .select(
+          'id, project_id, title, amount, status, due_date, sort_order, linked_stage, block_after_stage, created_at, projects!inner(name, client_name, budget, status, deleted_at)'
+        )
+        .is('projects.deleted_at', null)
+        .neq('status', 'paid')
+        .order('due_date', { ascending: true })
+        .limit(100)
+    );
+
+    const [projectsRes, invoicesRes, paymentsRes, milestonesRes] = await Promise.all([
+      projectsQuery,
+      invoicesQuery,
+      paymentsQuery,
+      milestonesQuery,
+    ]);
+
+    if (projectsRes.error) return { success: false, error: projectsRes.error.message };
+    if (invoicesRes.error) return { success: false, error: invoicesRes.error.message };
+    if (paymentsRes.error) return { success: false, error: paymentsRes.error.message };
+    if (milestonesRes.error) return { success: false, error: milestonesRes.error.message };
+
+    const billingSummary = (projectsRes.data || []).map((p: any) => {
       let total_invoiced = 0;
       let total_paid = 0;
-      let pending_balance = 0;
       let milestone_sum = 0;
       let quotation_sum = 0;
 
-      if (p.invoices) {
-        p.invoices.forEach((inv: any) => {
-          if (inv.status !== 'cancelled') {
-            total_invoiced += Number(inv.total_amount || 0);
-          }
-          initialInvoices.push({
-            ...inv,
-            projects: { name: p.name, client_name: p.client_name, budget: p.budget, deleted_at: p.deleted_at, payments: p.payments }
-          });
-        });
-      }
+      (p.invoices || []).forEach((inv: any) => {
+        if (inv.status !== 'cancelled') total_invoiced += Number(inv.total_amount || 0);
+      });
+      (p.payments || []).forEach((pay: any) => {
+        if (pay.status === 'verified') total_paid += Number(pay.amount || 0);
+      });
+      (p.project_milestones || []).forEach((m: any) => {
+        milestone_sum += Number(m.amount || 0);
+      });
+      (p.quotations || []).forEach((q: any) => {
+        if (q.status === 'Approved') quotation_sum += Number(q.total_amount || 0);
+      });
 
-      if (p.payments) {
-        p.payments.forEach((pay: any) => {
-          if (pay.status === 'verified') {
-            total_paid += Number(pay.amount || 0);
-          }
-          initialPayments.push({
-            ...pay,
-            projects: { name: p.name, client_name: p.client_name, deleted_at: p.deleted_at }
-          });
-        });
-      }
-
-      if (p.project_milestones) {
-        p.project_milestones.forEach((m: any) => {
-          milestone_sum += Number(m.amount || 0);
-          initialMilestones.push({
-            ...m,
-            projects: { name: p.name, client_name: p.client_name, budget: p.budget, status: p.status },
-            invoices: p.invoices?.filter((i: any) => i.milestone_id === m.id) || []
-          });
-        });
-      }
-
-      if (p.quotations) {
-        p.quotations.forEach((q: any) => {
-          if (q.status === 'Approved') {
-            quotation_sum += Number(q.total_amount || 0);
-          }
-        });
-      }
-
-      const budget = p.budget || 0;
+      const budget = Number(p.budget || 0);
       const dynamic_budget = Math.max(budget, quotation_sum, milestone_sum);
-      pending_balance = Math.max(0, dynamic_budget - total_paid);
 
-      billingSummary.push({
+      return {
         id: p.id,
         name: p.name,
         client_name: p.client_name,
@@ -2156,24 +2252,36 @@ export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
         budget: dynamic_budget,
         total_invoiced,
         total_paid,
-        pending_balance,
+        pending_balance: Math.max(0, dynamic_budget - total_paid),
         milestone_sum,
-        quotation_sum
-      });
+        quotation_sum,
+      };
     });
-    
-    initialInvoices.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    initialPayments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    initialMilestones.sort((a, b) => new Date(a.due_date || 0).getTime() - new Date(b.due_date || 0).getTime());
 
-    return { 
-      success: true, 
+    const invoices = (invoicesRes.data || []).map((inv: any) => ({
+      ...inv,
+      projects: inv.projects,
+    }));
+
+    const payments = (paymentsRes.data || []).map((pay: any) => ({
+      ...pay,
+      projects: pay.projects,
+    }));
+
+    const milestones = (milestonesRes.data || []).map((m: any) => ({
+      ...m,
+      projects: m.projects,
+      invoices: invoices.filter((i: any) => i.milestone_id === m.id),
+    }));
+
+    return {
+      success: true,
       data: normalizeData({
         projects: billingSummary,
-        invoices: initialInvoices,
-        payments: initialPayments,
-        milestones: initialMilestones
-      })
+        invoices,
+        payments,
+        milestones,
+      }),
     };
   } catch (error: any) {
     return { success: false, error: error.message };

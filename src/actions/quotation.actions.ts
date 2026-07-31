@@ -176,7 +176,7 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
 
-    if (!checkActionRateLimit(profile.id, 'createQuotationAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'createQuotationAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 
@@ -495,14 +495,18 @@ export async function getAllQuotationsAction(): Promise<ActionResponse> {
     }
 
     const supabase: any = await createClient();
-    const { data: sorted } = await supabase
+    const { data: sorted, error } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status, gst_number, project_milestones(id), deleted_at)')
-      .order('created_at', { ascending: false });
+      .select(
+        'id, quotation_number, project_id, total_amount, status, version, created_at, updated_at, created_by, assigned_to, project:projects!inner(id, name, client_name, status, gst_number, deleted_at)'
+      )
+      .is('project.deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(100);
 
-    const activeQuotations = (sorted || []).filter((q: any) => !q.project || !q.project.deleted_at);
+    if (error) return { success: false, error: error.message };
 
-    return { success: true, data: normalizeData(activeQuotations) };
+    return { success: true, data: normalizeData(sorted || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

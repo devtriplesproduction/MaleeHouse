@@ -23,7 +23,7 @@ export async function createTaskAction(
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: "Unauthorized" };
 
-    if (!checkActionRateLimit(profile.id, 'createTaskAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'createTaskAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 

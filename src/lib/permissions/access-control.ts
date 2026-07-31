@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import { Role } from './roles'
 import { cache } from 'react'
 
@@ -8,27 +7,26 @@ export type AuthContext = {
   error?: string
 }
 
+/**
+ * Single auth path for the request: reuses getUserProfileAction's React cache
+ * so requireAuthContext + getUserProfileAction share one getUser + one profiles row.
+ */
 export const requireAuthContext = cache(async (): Promise<AuthContext> => {
-  const supabase: any = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  // Dynamic import avoids circular deps with actions that import this helper
+  const { getUserProfileAction } = await import('@/actions/auth.actions')
+  const profile: any = await getUserProfileAction()
 
-  if (authError || !user) {
+  if (!profile) {
     return { userId: '', role: 'field' as Role, error: 'Unauthorized access. Please log in.' }
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || !profile) {
-    return { userId: user.id, role: 'field' as Role, error: 'Profile not found.' }
-  }
-
   if (!profile.is_active) {
-    return { userId: user.id, role: profile.role as Role, error: 'Account suspended.' }
+    return {
+      userId: profile.id,
+      role: profile.role as Role,
+      error: 'Account suspended.',
+    }
   }
 
-  return { userId: user.id, role: profile.role as Role }
+  return { userId: profile.id, role: profile.role as Role }
 })

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutGrid, 
@@ -13,17 +14,47 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// Import tab components
-import ProjectOverviewTab from './ProjectOverviewTab';
-import ProjectDocumentsTab from './ProjectDocumentsTab';
-import ProjectOperationsTab from './ProjectOperationsTab';
-import ProjectWorkflowTab from './ProjectWorkflowTab';
-import ProjectCommunicationTab from './ProjectCommunicationTab';
-import ProjectActivityLogTab from './ProjectActivityLogTab';
-import { ProjectFinanceTabContent } from './ProjectFinanceTabContent';
-import { ProjectFinanceDashboardTab } from './ProjectFinanceDashboardTab';
 import { getProjectFinanceTabDataAction } from '@/actions/finance.actions';
+
+function TabPanelSkeleton() {
+  return (
+    <div className="h-64 rounded-2xl border border-slate-200/60 dark:border-white/10 animate-pulse bg-slate-50/50 dark:bg-white/5" />
+  );
+}
+
+// Code-split tab panels so /projects/[id] first load stays lean
+const ProjectOverviewTab = dynamic(() => import('./ProjectOverviewTab'), {
+  ssr: false,
+  loading: () => <TabPanelSkeleton />,
+});
+const ProjectDocumentsTab = dynamic(() => import('./ProjectDocumentsTab'), {
+  ssr: false,
+  loading: () => <TabPanelSkeleton />,
+});
+const ProjectOperationsTab = dynamic(() => import('./ProjectOperationsTab'), {
+  ssr: false,
+  loading: () => <TabPanelSkeleton />,
+});
+const ProjectWorkflowTab = dynamic(() => import('./ProjectWorkflowTab'), {
+  ssr: false,
+  loading: () => <TabPanelSkeleton />,
+});
+const ProjectCommunicationTab = dynamic(() => import('./ProjectCommunicationTab'), {
+  ssr: false,
+  loading: () => <TabPanelSkeleton />,
+});
+const ProjectActivityLogTab = dynamic(() => import('./ProjectActivityLogTab'), {
+  ssr: false,
+  loading: () => <TabPanelSkeleton />,
+});
+const ProjectFinanceTabContent = dynamic(
+  () => import('./ProjectFinanceTabContent').then((m) => m.ProjectFinanceTabContent),
+  { ssr: false, loading: () => <TabPanelSkeleton /> }
+);
+const ProjectFinanceDashboardTab = dynamic(
+  () => import('./ProjectFinanceDashboardTab').then((m) => m.ProjectFinanceDashboardTab),
+  { ssr: false, loading: () => <TabPanelSkeleton /> }
+);
 
 interface ProjectDetailTabsProps {
   project: any;

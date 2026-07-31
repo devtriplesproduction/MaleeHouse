@@ -1,1 +1,22 @@
-import { createClient } from "@supabase/supabase-js"; const s = createClient("https://ewgbhzyphxbjrkkjprqy.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3Z2JoenlwaHhianJra2pwcnF5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTUwMzgyMCwiZXhwIjoyMDk3MDc5ODIwfQ.cCnoz9GjKKEVftglrsCkjAdWzZUjsYJFdxBcs1cA0Xg"); s.from("invoices").select("id, due_date, milestone_id").then(r => console.log(r.data));
+/**
+ * Local DB smoke check — set env vars, never hardcode keys.
+ * Usage: npx ts-node --compiler-options '{"module":"commonjs"}' check.ts
+ */
+import { createClient } from '@supabase/supabase-js'
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!url || !key) {
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  process.exit(1)
+}
+
+const s = createClient(url, key)
+s.from('invoices')
+  .select('id, due_date, milestone_id')
+  .limit(5)
+  .then((r) => {
+    console.log(r.data ?? r.error)
+    process.exit(r.error ? 1 : 0)
+  })

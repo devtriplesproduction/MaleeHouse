@@ -34,7 +34,7 @@ export async function createIssueAction(
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: "Unauthorized" };
 
-    if (!checkActionRateLimit(profile.id, 'createIssueAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'createIssueAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 

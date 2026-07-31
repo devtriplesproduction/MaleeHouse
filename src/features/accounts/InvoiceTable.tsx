@@ -54,12 +54,19 @@ const statusConfig: Record<string, { label: string; className: string; icon: any
   in_review: { label: 'In Review', className: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Clock },
 };
 
+const PAGE_SIZE = 15;
+
 export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceTableProps) {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentInvoice, setSelectedPaymentInvoice] = useState<Invoice | null>(null);
   const { settings: companySettings } = useCompanySettings();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, invoices]);
 
   const handleDeleteInvoice = async (invoiceId: string) => {
     if (!confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return;
@@ -82,14 +89,18 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
 
   const filtered = invoices.filter((invoice) => {
     if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
     const projName = invoice.projects?.name || '';
     const clientName = invoice.projects?.client_name || '';
     const invNum = invoice.invoice_number || '';
     
-    return projName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           invNum.toLowerCase().includes(searchQuery.toLowerCase());
+    return projName.toLowerCase().includes(q) ||
+           clientName.toLowerCase().includes(q) ||
+           invNum.toLowerCase().includes(q);
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="space-y-3.5">
@@ -101,7 +112,7 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
           </div>
         </div>
       ) : (
-        filtered.map((invoice) => {
+        pageItems.map((invoice) => {
           const StatusIcon = statusConfig[invoice.status]?.icon || Clock;
           return (
             <div
@@ -211,6 +222,36 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
             </div>
           );
         })
+      )}
+
+      {filtered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between pt-2 px-1">
+          <p className="text-xs text-slate-400 font-medium">
+            Showing {(page - 1) * PAGE_SIZE + 1}–
+            {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-slate-500">
+              {page}/{totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
 
       {selectedInvoice && (
