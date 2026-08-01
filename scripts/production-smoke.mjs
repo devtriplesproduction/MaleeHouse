@@ -29,12 +29,12 @@ await check('health endpoint', async () => {
   const res = await fetch(`${base}/api/health`)
   const json = await res.json()
   if (!res.ok && res.status !== 503) throw new Error(`status ${res.status}`)
-  if (!json.status) throw new Error('missing status field')
-  if (json.env === 'missing_vars') {
-    throw new Error(`env missing: ${(json.missing || []).join(', ')}`)
+  if (!json.status || !['ok', 'degraded'].includes(json.status)) {
+    throw new Error('missing/invalid status field')
   }
-  if (json.database === 'error') {
-    throw new Error(`database: ${json.database_error || 'error'}`)
+  // Public probe must not leak env var names or DB error strings
+  if (json.missing || json.database_error) {
+    throw new Error('health response leaked internal detail')
   }
 })
 

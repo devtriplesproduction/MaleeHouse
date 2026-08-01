@@ -14,7 +14,7 @@ Last code hardening pass includes auth gateway, public finance RPCs, health chec
 | `NEXT_PUBLIC_SITE_URL` | Strongly recommended |
 | `ALLOW_SYSTEM_WIPE` | Must stay **unset** / not `true` |
 
-Verify: `GET /api/health` → `"status":"ok"`.
+Verify: `GET /api/health` → `"status":"ok"` (public body is status/latency only; use `?detail=1` + `X-Health-Secret` when `HEALTH_CHECK_SECRET` is set for ops detail).
 
 ## 2. Supabase migrations (critical)
 

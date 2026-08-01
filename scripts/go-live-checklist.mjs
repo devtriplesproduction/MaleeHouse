@@ -39,6 +39,37 @@ for (const k of envKeys) {
 if (process.env.ALLOW_SYSTEM_WIPE === 'true') {
   fail('ALLOW_SYSTEM_WIPE', 'must not be true in production')
 } else pass('ALLOW_SYSTEM_WIPE not enabled')
+if (process.env.ALLOW_SEED === 'true') {
+  fail('ALLOW_SEED', 'must not be true in production')
+} else pass('ALLOW_SEED not enabled')
+
+// Secrets hygiene — fail closed if dumps / keys reappear
+const forbiddenPaths = [
+  'production-data.sql',
+  'production.sql',
+  'production-full.sql',
+  'testsprite_tests/tmp/config.json',
+]
+for (const p of forbiddenPaths) {
+  if (existsSync(p)) fail(`Forbidden path present: ${p}`, 'remove before deploy')
+  else pass(`No ${p}`)
+}
+if (existsSync('package.json')) {
+  const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+  const nextVer = pkg.dependencies?.next || ''
+  const m = String(nextVer).match(/(\d+)\.(\d+)\.(\d+)/)
+  if (m) {
+    const [maj, min, pat] = m.slice(1).map(Number)
+    const ok =
+      maj > 14 ||
+      (maj === 14 && min > 2) ||
+      (maj === 14 && min === 2 && pat >= 25) ||
+      (maj === 15 && min > 2) ||
+      (maj === 15 && min === 2 && pat >= 3)
+    if (ok) pass(`Next.js ${nextVer} ≥ CVE-2025-29927 floor`)
+    else fail(`Next.js ${nextVer}`, 'upgrade to ≥14.2.25 or ≥15.2.3')
+  } else fail('Next.js version', 'unparseable')
+}
 
 // Migrations / RPCs
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL

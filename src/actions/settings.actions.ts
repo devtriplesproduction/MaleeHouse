@@ -43,13 +43,17 @@ const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
 const SETTINGS_SELECT =
   'id, name, address, cityStateZip, gstin, telephone, mobile, bankName, accountName, accountNumber, ifscCode, branchName, upiId';
 
-/** Cross-request cache (no cookies) — company_settings is world-readable under RLS. */
+/**
+ * Server-side company settings load (no cookies — safe for unstable_cache).
+ * Uses service role so public invoice/receipt pages work without exposing
+ * company_settings (GSTIN, bank details) to the anon Supabase REST role.
+ */
 async function fetchCompanySettingsFromDb(): Promise<CompanySettings> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) return DEFAULT_COMPANY_SETTINGS;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return DEFAULT_COMPANY_SETTINGS;
 
-  const supabase = createAnonClient(url, anon, {
+  const supabase = createAnonClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const { data } = await supabase
@@ -63,7 +67,7 @@ async function fetchCompanySettingsFromDb(): Promise<CompanySettings> {
 
 const getCrossRequestCompanySettings = unstable_cache(
   fetchCompanySettingsFromDb,
-  ["company-settings-v1"],
+  ["company-settings-v2"],
   { revalidate: 300, tags: ["company-settings"] }
 );
 

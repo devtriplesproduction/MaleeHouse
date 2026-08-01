@@ -64,5 +64,48 @@ assert(
 // Rate limit
 assert(existsSync('src/lib/rate-limit.ts'), 'rate-limit module present')
 
+// Secrets hygiene — dumps / third-party keys must not reappear
+for (const p of [
+  'production-data.sql',
+  'production.sql',
+  'production-full.sql',
+  'testsprite_tests/tmp/config.json',
+]) {
+  assert(!existsSync(join(root, p)), `forbidden path absent: ${p}`)
+}
+
+// Next.js past CVE-2025-29927 floor
+const pkg = JSON.parse(read('package.json'))
+const nextVer = String(pkg.dependencies?.next || '')
+const nm = nextVer.match(/(\d+)\.(\d+)\.(\d+)/)
+if (nm) {
+  const [maj, min, pat] = nm.slice(1).map(Number)
+  const ok =
+    maj > 14 ||
+    (maj === 14 && min > 2) ||
+    (maj === 14 && min === 2 && pat >= 25) ||
+    (maj === 15 && (min > 2 || (min === 2 && pat >= 3)))
+  assert(ok, `next ${nextVer} patches CVE-2025-29927`)
+} else {
+  assert(false, 'next version parseable')
+}
+
+// Local seed scripts must require ALLOW_SEED
+assert(
+  existsSync('scripts/local/seed_db.mjs') &&
+    read('scripts/local/seed_db.mjs').includes('ALLOW_SEED'),
+  'local seed gated by ALLOW_SEED'
+)
+assert(
+  read('src/app/api/health/route.ts').includes('HEALTH_CHECK_SECRET') ||
+    read('src/app/api/health/route.ts').includes('x-health-secret'),
+  'health detail gated'
+)
+assert(
+  read('next.config.mjs').includes('Content-Security-Policy') &&
+    read('next.config.mjs').includes('Strict-Transport-Security'),
+  'CSP and HSTS headers configured'
+)
+
 console.log(failed ? `\n${failed} invariant(s) failed\n` : '\nAll critical invariants OK\n')
 process.exit(failed ? 1 : 0)
