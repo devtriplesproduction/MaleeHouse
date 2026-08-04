@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Download, MapPin, Phone, Mail, Globe, Users, FileText, User as UserIcon } from "lucide-react";
+import { Download, MapPin, Phone, Mail, Globe, Users, FileText, User as UserIcon, CalendarDays } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { cn } from "@/lib/utils";
@@ -46,6 +46,13 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
    };
 
+   const getValidityDate = (joiningDateString?: string) => {
+      if (!joiningDateString) return "N/A";
+      const d = new Date(joiningDateString);
+      d.setFullYear(d.getFullYear() + 1);
+      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+   };
+
    // Card data binding state
    const [editData] = useState({
       firstName: profile.first_name || "",
@@ -55,6 +62,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       department: profile.department || "N/A",
       dob: formatDate(profile.dob),
       joiningDate: formatDate(profile.joining_date),
+      validity: getValidityDate(profile.joining_date),
       contactNo: profile.phone_number || profile.mobile || "N/A",
       email: profile.personal_email || profile.email || "N/A",
       emergencyName: profile.emergency_contact?.split('-')?.[0]?.trim() || "Kiran Kirdat",
@@ -122,8 +130,11 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
    // Reusable card content definitions
    const FrontCardContent = () => (
       <div className="font-sans flex flex-col h-full bg-white select-none">
+         {/* Google Font Link for Signature Handwriting style */}
+         <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet" />
+
          {/* Top Header Section */}
-         <div className="relative pt-5 pb-0.5 px-5 flex flex-col items-center bg-white z-10">
+         <div className="relative pt-4 pb-0 px-5 flex flex-col items-center bg-white z-10">
             <div className="flex items-center gap-3.5 w-full justify-center">
                <LogoSVG />
                <div className="flex flex-col">
@@ -152,8 +163,8 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
          </div>
 
          {/* Body */}
-         <div className="flex-1 px-5 py-4 flex flex-col justify-between relative bg-white">
-            <div className="flex flex-col gap-4 relative z-10 mt-1">
+         <div className="flex-1 px-5 py-3 flex flex-col justify-between relative bg-white">
+            <div className="flex flex-col gap-3 relative z-10">
                <div className="flex gap-4 items-center">
                   {/* Profile Photo */}
                   <div className="w-[110px] h-[135px] rounded-2xl overflow-hidden bg-gray-50 border-[3px] border-slate-200 shadow-sm shrink-0 flex items-center justify-center">
@@ -169,7 +180,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                      <div className="grid grid-cols-[80px_10px_1fr] gap-0 mb-1.5 items-start">
                         <span className="font-bold text-gray-455 text-[10px] uppercase tracking-wider mt-0.5">Name</span>
                         <span className="font-bold text-gray-300 text-[10px] mt-0.5">:</span>
-                        <span className="text-[#0c2e5c] font-bold text-[13px] leading-tight capitalize break-words">{editData.firstName} {editData.lastName}</span>
+                        <span className="text-[#0c2e5c] font-bold text-[13.5px] leading-tight capitalize break-words">{editData.firstName} {editData.lastName}</span>
                      </div>
                      {renderField("Employee ID", editData.employeeId)}
                      {renderField("Designation", editData.designation)}
@@ -178,21 +189,22 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                </div>
 
                {/* Details Card Container */}
-               <div className="flex flex-col bg-white rounded-[20px] p-4 border border-slate-100 shadow-sm gap-3 mt-1">
+               <div className="flex flex-col bg-white rounded-[20px] p-3.5 border border-slate-100 shadow-sm gap-2.5 mt-0.5">
                   {renderBottomField(<FileText className="w-3.5 h-3.5" />, "D.O.B.", editData.dob)}
                   {renderBottomField(<FileText className="w-3.5 h-3.5" />, "Joined Date", editData.joiningDate)}
+                  {renderBottomField(<CalendarDays className="w-3.5 h-3.5" />, "Validity", editData.validity)}
                   {renderBottomField(<Phone className="w-3.5 h-3.5" />, "Contact No.", editData.contactNo)}
                   {renderBottomField(<Mail className="w-3.5 h-3.5" />, "Email", editData.email)}
                </div>
             </div>
 
             {/* Stamp & Authorized Signature */}
-            <div className="mt-auto flex justify-between items-end relative z-10 pb-1">
+            <div className="mt-auto flex justify-between items-end relative z-10 pb-0.5">
                <div className="flex flex-col items-start pl-2">
                   <div className="h-8 border-b border-slate-300 w-28 mb-1 flex items-end justify-center">
-                     <span className="font-sans text-[12px] font-bold italic tracking-wide text-slate-700 pr-2 leading-none">{editData.firstName} {editData.lastName}</span>
+                     <span className="text-[19px] text-slate-800 pr-2 leading-none" style={{ fontFamily: "'Dancing Script', 'Caveat', 'Brush Script MT', cursive" }}>{editData.firstName} {editData.lastName}</span>
                   </div>
-                  <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider">Authorized Signature</span>
+                  <span className="text-[7.5px] text-gray-400 font-bold uppercase tracking-wider">Authorized Signature</span>
                </div>
             </div>
 
@@ -211,7 +223,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
    const BackCardContent = () => (
       <div className="font-sans flex flex-col h-full bg-white select-none text-gray-800">
          {/* Top Header Section */}
-         <div className="relative pt-5 pb-0.5 px-5 flex flex-col items-center bg-white z-10">
+         <div className="relative pt-4 pb-0 px-5 flex flex-col items-center bg-white z-10">
             <div className="flex items-center gap-3.5 w-full justify-center">
                <LogoSVG />
                <div className="flex flex-col">
