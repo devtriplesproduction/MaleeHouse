@@ -233,26 +233,39 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
   
   if (assignmentsRes.error) console.error("Assignments Fetch Error:", assignmentsRes.error);
 
-  // Collect unique user IDs from all related records
+  // Collect unique user IDs from all related records (for activity/comment names)
   const uniqueUserIds = new Set<string>();
   rawHistory.forEach((h: any) => h.changed_by && uniqueUserIds.add(h.changed_by));
   rawComments.forEach((c: any) => c.user_id && uniqueUserIds.add(c.user_id));
   rawAssignments.forEach((a: any) => a.user_id && uniqueUserIds.add(a.user_id));
   rawActivityLogs.forEach((l: any) => l.user_id && uniqueUserIds.add(l.user_id));
 
-  // Fetch only referenced profiles in a single query (user client)
-  let allUsers: any[] = [];
-  if (uniqueUserIds.size > 0) {
-    const { data } = await supabase
+  // Full staff directory for team assignment (must not be limited to people already on the project)
+  // + referenced profiles for activity names
+  const [{ data: staffDirectory }, { data: mentionedProfiles }] = await Promise.all([
+    supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, role, designation')
-      .in('id', Array.from(uniqueUserIds));
-    if (data) allUsers = data;
-  }
+      .select('id, first_name, last_name, email, role, designation, is_active')
+      .eq('is_active', true)
+      .in('role', ['admin', 'engineer', 'cad', 'field'])
+      .order('first_name'),
+    uniqueUserIds.size > 0
+      ? supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email, role, designation')
+          .in('id', Array.from(uniqueUserIds))
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
 
-  // Build a Map for fast lookup
+  // allUsers = assignable staff for Project Team / Ops pickers
+  const allUsers: any[] = staffDirectory || [];
+
+  // Build a Map for fast lookup (staff + anyone mentioned in activity)
   const userMap = new Map<string, any>();
   allUsers.forEach((u: any) => userMap.set(u.id, u));
+  (mentionedProfiles || []).forEach((u: any) => {
+    if (!userMap.has(u.id)) userMap.set(u.id, u);
+  });
 
   // Helper to attach profiles in JavaScript using the Map
   const attachProfile = (data: any[], key: string, profileAlias: string) => {

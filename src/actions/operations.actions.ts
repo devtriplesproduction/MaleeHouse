@@ -121,10 +121,11 @@ async function getProjectName(projectId: string): Promise<string> {
 
 export async function getOpsTeamMembersAction() {
   try {
-    const supabaseAdmin: any = await createClient();
-    const { data, error } = await supabaseAdmin
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, role')
+      .select('id, first_name, last_name, email, role, designation, is_active')
+      .eq('is_active', true)
       .in('role', ['cad', 'field', 'engineer'])
       .order('first_name');
 

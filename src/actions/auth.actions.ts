@@ -166,7 +166,7 @@ export async function getStaffMembersAction() {
     const supabase: any = await createClient()
     const { data: staff, error } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, role, department')
+      .select('id, first_name, last_name, role, department, designation, email, is_active')
       .eq('is_active', true)
       .order('first_name')
 
@@ -177,6 +177,8 @@ export async function getStaffMembersAction() {
       first_name: u.first_name,
       last_name: u.last_name,
       role: u.role,
+      designation: u.designation || '',
+      email: u.email || '',
       department: (u.department || u.role || '').toUpperCase(),
     }))
   } catch (error) {
