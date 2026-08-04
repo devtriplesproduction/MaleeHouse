@@ -50,23 +50,15 @@ export function PendingProjectListCard({ project, showAccept = false, extraBadge
           </span>
         )}
 
-        {showAccept ? (
-          <Link
-            href={`/projects/${project.id}`}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold shadow-sm shadow-indigo-600/20 transition-all"
-          >
-            Accept Assignment
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        ) : (
-          <Link
-            href={`/projects/${project.id}`}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-350 text-[11px] font-bold border border-slate-200/40 dark:border-white/5 transition-all"
-          >
-            View Details
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        )}
+
+        <Link
+          href={`/projects/${project.id}`}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-350 text-[11px] font-bold border border-slate-200/40 dark:border-white/5 transition-all"
+        >
+          View Details
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
+
       </div>
     </div>
   );

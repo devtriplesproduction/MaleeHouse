@@ -27,19 +27,30 @@ export type WorkflowResponse = {
 
 export async function requestDispatchOverrideAction(projectId: string): Promise<WorkflowResponse> {
   try {
-    const supabase: any = await createClient();
+    const auth = await requireProjectAccess(projectId, { requireUnlocked: true });
+    if (!auth.authorized) return { success: false, error: auth.error || 'Unauthorized' };
+
+    if (auth.role !== 'admin' && auth.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Only Admins or Accountants can request overrides.' };
+    }
+
+    const adminSupabase = await createAdminClient();
     
     // Update the project to store the requested state
-    const { data: updatedProject, error } = await supabase
+    const { data: updatedProject, error } = await adminSupabase
       .from('projects')
       .update({ dispatch_override_requested: true })
       .eq('id', projectId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error setting override state:", error);
-      return { success: false, error: `Failed to save override request status. DB Error: ${error.message || JSON.stringify(error)}` };
+      return { success: false, error: `Failed to save override request status. Please try again later.` };
+    }
+
+    if (!updatedProject) {
+      return { success: false, error: `Project not found or update failed.` };
     }
 
     // Optional: Could store this in metadata or a custom column. For now, we just rely on sending the notification.
@@ -49,7 +60,7 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
     return { success: true, error: null, data: updatedProject };
   } catch (err) {
     console.error("requestDispatchOverrideAction error:", err);
-    return { success: false, error: "Failed to request override." };
+    return { success: false, error: "Failed to request override due to an unexpected error." };
   }
 }
 
@@ -144,13 +155,16 @@ export async function approveDispatchOverrideAction(projectId: string) {
         dispatch_override_approved: true
       })
       .eq('id', projectId)
-      .select()
+      .select('status, id')
       .single();
       
     if (error) throw error;
       
-    // Auto-advance project to project_created so it appears in Engineer's queue
-    await transitionWorkflowAction(projectId, "project_created", "Admin approved dispatch override without payment");
+    // Only auto-advance if the project is stuck in a pre-dispatch stage
+    const preDispatchStages = ['lead_created', 'quotation_requested', 'quotation_sent', 'payment_pending', 'payment_done', 'ready_for_dispatch'];
+    if (updatedProject && preDispatchStages.includes(updatedProject.status)) {
+      await transitionWorkflowAction(projectId, "project_created", "Admin approved dispatch override without payment");
+    }
 
     revalidatePath('/admin');
     await revalidateAccountsPaths(projectId);
