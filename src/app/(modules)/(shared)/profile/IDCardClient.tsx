@@ -26,9 +26,9 @@ const LogoSVG = () => (
 );
 
 const GoldFlourish = () => (
-  <svg viewBox="0 0 100 10" className="w-16 h-1.5 mx-auto mt-1 opacity-70" fill="none" stroke="#d97706" strokeWidth="1.5">
+  <svg viewBox="0 0 100 10" className="w-20 h-2 mx-auto mt-1 opacity-80" fill="none" stroke="#d97706" strokeWidth="1">
     <path d="M 10 5 Q 30 2 50 5 T 90 5" />
-    <circle cx="50" cy="5" r="1.5" fill="#d97706" />
+    <circle cx="50" cy="5" r="2" fill="#d97706" />
   </svg>
 );
 
@@ -95,19 +95,32 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       }
    };
 
-   const renderField = (label: string, valueKey: keyof typeof editData) => (
-      <div className="grid grid-cols-[95px_10px_1fr] gap-0 mb-1.5 items-center">
-         <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider">{label}</span>
-         <span className="font-bold text-slate-300 text-[10px]">:</span>
-         <span className="text-[#0c2e5c] font-bold text-[10.5px] truncate">{editData[valueKey]}</span>
+   const renderField = (label: string, value: string) => (
+      <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
+         <span className="font-bold text-gray-500 text-[10px] uppercase tracking-wide">{label}</span>
+         <span className="font-bold text-gray-300 text-[10px]">:</span>
+         <span className="text-[#0c2e5c] font-bold text-[11px] truncate">{value}</span>
       </div>
    );
 
-   const renderEmergencyField = (label: string, valueKey: keyof typeof editData) => (
+   const renderBottomField = (icon: React.ReactNode, label: string, value: string) => (
+      <div className="flex items-center gap-3">
+         <div className="w-6 h-6 rounded-full bg-[#0c2e5c] text-white flex items-center justify-center shrink-0">
+            {icon}
+         </div>
+         <div className="grid grid-cols-[90px_15px_1fr] w-full items-center">
+            <span className="font-bold text-gray-500 text-[9.5px] uppercase tracking-wide">{label}</span>
+            <span className="font-bold text-gray-300 text-[9.5px]">:</span>
+            <span className="text-[#0c2e5c] font-bold text-[10.5px] truncate">{value}</span>
+         </div>
+      </div>
+   );
+
+   const renderEmergencyField = (label: string, value: string) => (
       <div className="grid grid-cols-[70px_10px_1fr] gap-0 text-[10.5px] ml-9 mb-1">
          <span className="font-semibold text-slate-500">{label}</span>
-         <span className="font-semibold text-slate-300">:</span>
-         <span className="text-[#0c2e5c] font-bold">{editData[valueKey]}</span>
+         <span className="font-semibold text-slate-350">:</span>
+         <span className="text-[#0c2e5c] font-bold">{value}</span>
       </div>
    );
 
@@ -122,10 +135,10 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
 
          <div className="flex flex-col lg:flex-row gap-8 items-center justify-center">
             {/* Front Card */}
-            <div ref={frontCardRef} className="w-[350px] h-[580px] bg-white rounded-[24px] shadow-2xl overflow-hidden relative flex flex-col border border-gray-150/80">
-               {/* Top Header Area */}
+            <div ref={frontCardRef} className="w-[350px] h-[580px] bg-[#fdfdfd] rounded-[24px] shadow-2xl overflow-hidden relative flex flex-col border border-gray-150/80">
+               {/* Top Header Section */}
                <div className="relative pt-6 pb-2 px-5 flex flex-col items-center bg-white z-10">
-                  <div className="flex items-center gap-3 w-full justify-center">
+                  <div className="flex items-center gap-3.5 w-full justify-center">
                      <LogoSVG />
                      <div className="flex flex-col">
                         <h2 className="text-[#0e3b75] font-extrabold text-[24px] leading-none tracking-tight">Malee House</h2>
@@ -135,99 +148,72 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                   </div>
                </div>
 
-               {/* Curved Divider & Identity Card Pill */}
-               <div className="relative h-14 w-full flex items-center justify-center overflow-hidden shrink-0">
-                  {/* Accent Curve Bottom Layers */}
-                  <div className="absolute top-0 inset-x-0 h-10 bg-[#0070d2] rounded-b-[40%] z-0"></div>
-                  <div className="absolute top-1 inset-x-0 h-10 bg-[#e11d48] rounded-b-[40%] z-0"></div>
-                  <div className="absolute top-2 inset-x-0 h-12 bg-[#0c2e5c] rounded-b-[45%] z-0"></div>
+               {/* Wave Divider with pill banner */}
+               <div className="relative h-15 w-full overflow-hidden shrink-0 z-10">
+                  <svg viewBox="0 0 350 70" className="w-full h-full" preserveAspectRatio="none">
+                     {/* Blue wave stripe */}
+                     <path d="M 0,15 Q 175,60 350,15 L 350,35 Q 175,80 0,35 Z" fill="#0070d2" />
+                     {/* Pink wave stripe */}
+                     <path d="M 0,22 Q 175,65 350,22 L 350,42 Q 175,82 0,42 Z" fill="#e11d48" />
+                     {/* Dark blue wave stripe */}
+                     <path d="M 0,30 Q 175,70 350,30 L 350,52 Q 175,90 0,52 Z" fill="#0c2e5c" />
+                  </svg>
                   
-                  {/* Identity Card Banner */}
-                  <div className="bg-[#0b1b33] text-white text-[9px] font-bold tracking-widest px-8 py-1.5 rounded-full z-10 shadow-sm uppercase border border-white/5 mt-2">
+                  {/* Identity Card Pill Banner */}
+                  <div className="absolute top-[28px] left-1/2 -translate-x-1/2 bg-[#0b1b33] text-white text-[9px] font-bold tracking-widest px-8 py-1 rounded-full shadow-md uppercase border border-white/10">
                      Identity Card
                   </div>
                </div>
 
                {/* Body */}
-               <div className="flex-1 px-5 py-5 flex flex-col justify-between relative bg-white">
-                  <div className="flex flex-col gap-4 relative z-10">
+               <div className="flex-1 px-5 py-4 flex flex-col justify-between relative bg-white">
+                  <div className="flex flex-col gap-4 relative z-10 mt-1">
                      <div className="flex gap-4 items-center">
                         {/* Profile Photo */}
-                        <div className="w-[115px] h-[140px] rounded-2xl overflow-hidden bg-gray-50 border-[3.5px] border-slate-200 shadow-sm shrink-0 flex items-center justify-center">
-                           <div className="w-full h-full rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-                              {profile.profile_photo ? (
-                                 <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
-                              ) : (
-                                 <UserIcon className="w-12 h-12 text-gray-300" />
-                              )}
-                           </div>
+                        <div className="w-[110px] h-[135px] rounded-2xl overflow-hidden bg-gray-50 border-[3px] border-slate-200 shadow-sm shrink-0 flex items-center justify-center">
+                           {profile.profile_photo ? (
+                              <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
+                           ) : (
+                              <UserIcon className="w-12 h-12 text-gray-300" />
+                           )}
                         </div>
 
-                        {/* Top Details (Name, ID, etc.) */}
+                        {/* Top Details next to Photo */}
                         <div className="flex flex-col justify-center text-[11px] w-full pr-1">
-                           <div className="grid grid-cols-[85px_10px_1fr] gap-0 mb-2 items-start">
-                              <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider mt-0.5">Name</span>
-                              <span className="font-bold text-slate-300 text-[10px] mt-0.5">:</span>
-                              <span className="text-[#0c2e5c] font-extrabold text-[13px] leading-tight capitalize">{editData.firstName} {editData.lastName}</span>
+                           <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-start">
+                              <span className="font-bold text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Name</span>
+                              <span className="font-bold text-gray-300 text-[10px] mt-0.5">:</span>
+                              <span className="text-[#0c2e5c] font-black text-[12.5px] leading-tight capitalize">{editData.firstName} {editData.lastName}</span>
                            </div>
-                           <div className="grid grid-cols-[85px_10px_1fr] gap-0 mb-2 items-center">
-                              <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider">Employee ID</span>
-                              <span className="font-bold text-slate-300 text-[10px]">:</span>
-                              <span className="text-[#0c2e5c] font-extrabold text-[11px]">{editData.employeeId}</span>
+                           {renderField("Employee ID", editData.employeeId)}
+                           <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
+                              <span className="font-bold text-gray-500 text-[10px] uppercase tracking-wide">Designation</span>
+                              <span className="font-bold text-gray-300 text-[10px]">:</span>
+                              <span className="text-[#0c2e5c] font-bold text-[11px] capitalize">{editData.designation}</span>
                            </div>
-                           <div className="grid grid-cols-[85px_10px_1fr] gap-0 mb-2 items-center">
-                              <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider">Designation</span>
-                              <span className="font-bold text-slate-300 text-[10px]">:</span>
-                              <span className="text-[#0c2e5c] font-extrabold text-[11px] capitalize">{editData.designation}</span>
-                           </div>
-                           <div className="grid grid-cols-[85px_10px_1fr] gap-0 mb-2 items-center">
-                              <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider">Department</span>
-                              <span className="font-bold text-slate-300 text-[10px]">:</span>
-                              <span className="text-[#0c2e5c] font-extrabold text-[11px] uppercase">{editData.department}</span>
+                           <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
+                              <span className="font-bold text-gray-500 text-[10px] uppercase tracking-wide">Department</span>
+                              <span className="font-bold text-gray-300 text-[10px]">:</span>
+                              <span className="text-[#0c2e5c] font-bold text-[11px] uppercase">{editData.department}</span>
                            </div>
                         </div>
                      </div>
 
-                     {/* Bottom Card Fields list with circular icon indicators */}
-                     <div className="flex flex-col bg-slate-50/50 rounded-2xl p-3.5 border border-slate-100/80 shadow-sm gap-2.5 mt-1">
-                        <div className="flex items-center gap-3">
-                           <div className="w-6 h-6 rounded-full bg-[#0c2e5c] text-white flex items-center justify-center shrink-0">
-                              <UserIcon className="w-3.5 h-3.5" />
-                           </div>
-                           {renderField("D.O.B.", "dob")}
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <div className="w-6 h-6 rounded-full bg-[#0c2e5c] text-white flex items-center justify-center shrink-0">
-                              <FileText className="w-3.5 h-3.5" />
-                           </div>
-                           {renderField("Joined Date", "joiningDate")}
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <div className="w-6 h-6 rounded-full bg-[#0c2e5c] text-white flex items-center justify-center shrink-0">
-                              <FileText className="w-3.5 h-3.5" />
-                           </div>
-                           {renderField("Validity", "validity")}
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <div className="w-6 h-6 rounded-full bg-[#0c2e5c] text-white flex items-center justify-center shrink-0">
-                              <Phone className="w-3.5 h-3.5" />
-                           </div>
-                           {renderField("Contact No.", "contactNo")}
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <div className="w-6 h-6 rounded-full bg-[#0c2e5c] text-white flex items-center justify-center shrink-0">
-                              <Mail className="w-3.5 h-3.5" />
-                           </div>
-                           {renderField("Email", "email")}
-                        </div>
+                     {/* Details Card Container */}
+                     <div className="flex flex-col bg-white rounded-[20px] p-4 border border-slate-100 shadow-sm gap-3 mt-1">
+                        {renderBottomField(<FileText className="w-3.5 h-3.5" />, "D.O.B.", editData.dob)}
+                        {renderBottomField(<FileText className="w-3.5 h-3.5" />, "Joined Date", editData.joiningDate)}
+                        {renderBottomField(<FileText className="w-3.5 h-3.5" />, "Validity", editData.validity)}
+                        {renderBottomField(<Phone className="w-3.5 h-3.5" />, "Contact No.", editData.contactNo)}
+                        {renderBottomField(<Mail className="w-3.5 h-3.5" />, "Email", editData.email)}
                      </div>
                   </div>
 
-                  {/* Signatures & Bottom Curve */}
-                  <div className="mt-auto flex justify-between items-end relative z-10 pb-1 pt-4">
+                  {/* Stamp & Authorized Signature */}
+                  <div className="mt-auto flex justify-between items-end relative z-10 pb-1">
                      <div className="flex flex-col items-start pl-2">
-                        <div className="h-8 border-b border-slate-350 w-28 mb-1 flex items-end justify-center">
-                           <span className="font-serif text-[17px] text-gray-800 italic pr-2 leading-none">{editData.firstName} {editData.lastName}</span>
+                        <div className="h-8 border-b border-slate-300 w-28 mb-1 flex items-end justify-center">
+                           <span className="font-serif text-[17px] text-slate-800 italic pr-2 leading-none">{editData.firstName} {editData.lastName}</span>
                         </div>
                         <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wide">Authorized Signature</span>
                      </div>
@@ -246,9 +232,9 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
 
             {/* Back Card */}
             <div ref={backCardRef} className="w-[350px] h-[580px] bg-white rounded-[24px] shadow-2xl overflow-hidden relative flex flex-col border border-gray-150/80">
-               {/* Top Header Area */}
+               {/* Top Header Section */}
                <div className="relative pt-6 pb-2 px-5 flex flex-col items-center bg-white z-10">
-                  <div className="flex items-center gap-3 w-full justify-center">
+                  <div className="flex items-center gap-3.5 w-full justify-center">
                      <LogoSVG />
                      <div className="flex flex-col">
                         <h2 className="text-[#0e3b75] font-extrabold text-[24px] leading-none tracking-tight">Malee House</h2>
@@ -258,16 +244,19 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                   </div>
                </div>
 
-               {/* Curved Divider */}
-               <div className="relative h-14 w-full flex items-center justify-center overflow-hidden shrink-0">
-                  <div className="absolute top-0 inset-x-0 h-10 bg-[#0070d2] rounded-b-[40%] z-0"></div>
-                  <div className="absolute top-1 inset-x-0 h-10 bg-[#e11d48] rounded-b-[40%] z-0"></div>
-                  <div className="absolute top-2 inset-x-0 h-12 bg-[#0c2e5c] rounded-b-[45%] z-0"></div>
+               {/* Wave Divider */}
+               <div className="relative h-12 w-full overflow-hidden shrink-0 z-10">
+                  <svg viewBox="0 0 350 50" className="w-full h-full" preserveAspectRatio="none">
+                     {/* Blue wave stripe */}
+                     <path d="M 0,15 Q 175,55 350,15 L 350,30 Q 175,70 0,30 Z" fill="#0070d2" />
+                     {/* Pink wave stripe */}
+                     <path d="M 0,22 Q 175,59 350,22 L 350,34 Q 175,71 0,34 Z" fill="#e11d48" />
+                  </svg>
                </div>
 
                {/* Body */}
                <div className="flex-1 px-5 py-4 flex flex-col gap-4 text-xs relative text-gray-800 bg-white justify-between">
-                  {/* Contact details with custom themed circle icons */}
+                  {/* Contact details with themed circles */}
                   <div className="flex flex-col gap-3.5 relative z-10 mt-1">
                      <div className="flex gap-4 items-start">
                         <div className="text-white bg-[#e11d48] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><MapPin className="w-3.5 h-3.5" /></div>
@@ -280,52 +269,52 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                         <div className="text-white bg-[#fbbf24] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Phone className="w-3.5 h-3.5" /></div>
                         <div className="w-full pr-4">
                            <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">CONTACT</p>
-                           <p className="text-[10px] text-slate-650 font-bold">{editData.companyContact}</p>
+                           <p className="text-[10.5px] text-slate-700 font-bold">{editData.companyContact}</p>
                         </div>
                      </div>
                      <div className="flex gap-4 items-start">
                         <div className="text-white bg-[#0070d2] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Mail className="w-3.5 h-3.5" /></div>
                         <div className="w-full pr-4">
                            <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">EMAIL</p>
-                           <p className="text-[10px] text-[#0c2e5c] font-bold">{editData.companyEmail}</p>
+                           <p className="text-[10.5px] text-[#0c2e5c] font-bold">{editData.companyEmail}</p>
                         </div>
                      </div>
                      <div className="flex gap-4 items-start">
                         <div className="text-white bg-[#e11d48] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Globe className="w-3.5 h-3.5" /></div>
                         <div>
                            <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">WEBSITE</p>
-                           <p className="text-[10px] text-[#0c2e5c] font-bold">www.maleehouse.com</p>
+                           <p className="text-[10.5px] text-[#0c2e5c] font-bold">www.maleehouse.com</p>
                         </div>
                      </div>
                   </div>
 
                   <hr className="border-slate-100" />
 
-                  {/* Emergency Contact */}
+                  {/* Emergency Contact Section */}
                   <div className="relative z-10 flex flex-col gap-1.5">
-                     <div className="bg-[#0070d2] text-white flex items-center gap-2 px-4 py-1.5 rounded-full w-max text-[8.5px] font-bold tracking-widest uppercase shadow-sm">
+                     <div className="bg-[#0070d2] text-white flex items-center gap-2 px-4 py-1 rounded-full w-max text-[8.5px] font-bold tracking-widest uppercase shadow-sm">
                         <Users className="w-3 h-3" />
                         <span>Emergency Contact</span>
                      </div>
-                     {renderEmergencyField("Name", "emergencyName")}
-                     {renderEmergencyField("Relation", "emergencyRelation")}
-                     {renderEmergencyField("Mobile No.", "emergencyMobile")}
+                     {renderEmergencyField("Name", editData.emergencyName)}
+                     {renderEmergencyField("Relation", editData.emergencyRelation)}
+                     {renderEmergencyField("Mobile No.", editData.emergencyMobile)}
                   </div>
 
-                  {/* Terms & Conditions */}
-                  <div className="relative z-10 mt-1 mb-2">
-                     <div className="bg-[#0070d2] text-white flex items-center gap-2 px-4 py-1.5 rounded-full w-max text-[8.5px] font-bold tracking-widest uppercase shadow-sm mb-2">
+                  {/* Terms & Conditions Section */}
+                  <div className="relative z-10">
+                     <div className="bg-[#0070d2] text-white flex items-center gap-2 px-4 py-1 rounded-full w-max text-[8.5px] font-bold tracking-widest uppercase shadow-sm mb-2">
                         <FileText className="w-3 h-3" />
                         <span>Terms & Conditions</span>
                      </div>
-                     <ol className="list-decimal pl-5 pr-1 text-[9px] text-slate-500 font-semibold space-y-1.5 leading-snug">
+                     <ol className="list-decimal pl-5 pr-1 text-[9px] text-slate-500 font-semibold space-y-1 leading-snug">
                         <li>This card is the property of Malee House Survey & Mapping Services.</li>
                         <li>This card must be carried during office hours and field visits.</li>
                         <li>Loss of card should be reported immediately.</li>
                      </ol>
                   </div>
 
-                  {/* Footer */}
+                  {/* Themed Center Footer */}
                   <div className="bg-[#0070d2] py-2.5 text-center text-white text-[8px] font-bold tracking-widest shrink-0 uppercase">
                      — WE BUILD TRUST WITH QUALITY & SERVICE —
                   </div>
