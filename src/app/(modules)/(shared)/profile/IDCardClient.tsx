@@ -91,10 +91,10 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
    };
 
    const renderField = (label: string, value: string) => (
-      <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-1.5 items-center font-sans">
-         <span className="font-bold text-gray-450 text-[10px] uppercase tracking-wider">{label}</span>
+      <div className="grid grid-cols-[80px_10px_1fr] gap-0 mb-1.5 items-center font-sans">
+         <span className="font-bold text-gray-455 text-[10px] uppercase tracking-wider">{label}</span>
          <span className="font-bold text-gray-300 text-[10px]">:</span>
-         <span className="text-[#0c2e5c] font-semibold text-[11px] truncate capitalize">{value}</span>
+         <span className="text-[#0c2e5c] font-semibold text-[11px] capitalize break-words">{value}</span>
       </div>
    );
 
@@ -103,10 +103,10 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
          <div className="w-6 h-6 rounded-full bg-[#0c2e5c] text-white flex items-center justify-center shrink-0">
             {icon}
          </div>
-         <div className="grid grid-cols-[90px_15px_1fr] w-full items-center">
-            <span className="font-bold text-gray-450 text-[9.5px] uppercase tracking-wider">{label}</span>
+         <div className="grid grid-cols-[80px_10px_1fr] w-full items-center">
+            <span className="font-bold text-gray-455 text-[9.5px] uppercase tracking-wider">{label}</span>
             <span className="font-bold text-gray-300 text-[9.5px]">:</span>
-            <span className="text-[#0c2e5c] font-semibold text-[10.5px] truncate">{value}</span>
+            <span className="text-[#0c2e5c] font-semibold text-[10.5px] break-all">{value}</span>
          </div>
       </div>
    );
@@ -115,7 +115,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       <div className="grid grid-cols-[70px_10px_1fr] gap-0 text-[10.5px] ml-9 mb-1 font-sans">
          <span className="font-semibold text-slate-400">{label}</span>
          <span className="font-semibold text-slate-300">:</span>
-         <span className="text-[#0c2e5c] font-semibold truncate">{value}</span>
+         <span className="text-[#0c2e5c] font-semibold break-words">{value}</span>
       </div>
    );
 
@@ -123,7 +123,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
    const FrontCardContent = () => (
       <div className="font-sans flex flex-col h-full bg-white select-none">
          {/* Top Header Section */}
-         <div className="relative pt-6 pb-2 px-5 flex flex-col items-center bg-white z-10">
+         <div className="relative pt-5 pb-0.5 px-5 flex flex-col items-center bg-white z-10">
             <div className="flex items-center gap-3.5 w-full justify-center">
                <LogoSVG />
                <div className="flex flex-col">
@@ -135,7 +135,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
          </div>
 
          {/* Wave Divider with pill banner */}
-         <div className="relative h-15 w-full overflow-hidden shrink-0 z-10">
+         <div className="relative h-13 w-full overflow-hidden shrink-0 z-10">
             <svg viewBox="0 0 350 70" className="w-full h-full" preserveAspectRatio="none">
                {/* Blue wave stripe */}
                <path d="M 0,15 Q 175,60 350,15 L 350,35 Q 175,80 0,35 Z" fill="#0070d2" />
@@ -146,7 +146,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
             </svg>
             
             {/* Identity Card Pill Banner */}
-            <div className="absolute top-[28px] left-1/2 -translate-x-1/2 bg-[#0b1b33] text-white text-[9px] font-bold tracking-widest px-8 py-1 rounded-full shadow-md uppercase border border-white/10">
+            <div className="absolute top-[22px] left-1/2 -translate-x-1/2 bg-[#0b1b33] text-white text-[9px] font-bold tracking-widest px-8 py-1 rounded-full shadow-md uppercase border border-white/10">
                Identity Card
             </div>
          </div>
@@ -166,10 +166,10 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
 
                   {/* Top Details next to Photo */}
                   <div className="flex flex-col justify-center text-[11px] w-full pr-1">
-                     <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-1.5 items-start">
+                     <div className="grid grid-cols-[80px_10px_1fr] gap-0 mb-1.5 items-start">
                         <span className="font-bold text-gray-455 text-[10px] uppercase tracking-wider mt-0.5">Name</span>
                         <span className="font-bold text-gray-300 text-[10px] mt-0.5">:</span>
-                        <span className="text-[#0c2e5c] font-bold text-[13px] leading-tight capitalize truncate">{editData.firstName} {editData.lastName}</span>
+                        <span className="text-[#0c2e5c] font-bold text-[13px] leading-tight capitalize break-words">{editData.firstName} {editData.lastName}</span>
                      </div>
                      {renderField("Employee ID", editData.employeeId)}
                      {renderField("Designation", editData.designation)}
@@ -211,7 +211,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
    const BackCardContent = () => (
       <div className="font-sans flex flex-col h-full bg-white select-none text-gray-800">
          {/* Top Header Section */}
-         <div className="relative pt-6 pb-2 px-5 flex flex-col items-center bg-white z-10">
+         <div className="relative pt-5 pb-0.5 px-5 flex flex-col items-center bg-white z-10">
             <div className="flex items-center gap-3.5 w-full justify-center">
                <LogoSVG />
                <div className="flex flex-col">
@@ -223,7 +223,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
          </div>
 
          {/* Wave Divider */}
-         <div className="relative h-12 w-full overflow-hidden shrink-0 z-10">
+         <div className="relative h-10 w-full overflow-hidden shrink-0 z-10">
             <svg viewBox="0 0 350 50" className="w-full h-full" preserveAspectRatio="none">
                {/* Blue wave stripe */}
                <path d="M 0,15 Q 175,55 350,15 L 350,30 Q 175,70 0,30 Z" fill="#0070d2" />
