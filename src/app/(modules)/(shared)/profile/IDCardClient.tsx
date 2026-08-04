@@ -338,19 +338,31 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                "relative w-full h-full duration-700 [transform-style:preserve-3d]",
                isFlipped ? "[transform:rotateY(180deg)]" : ""
             )}>
-               {/* Front Side */}
-               <div className="absolute inset-0 w-full h-full [backface-visibility:hidden]">
-                  <div className="w-full h-full bg-[#fdfdfd] rounded-[24px] shadow-2xl flex flex-col border border-gray-150/80 overflow-hidden">
-                     <FrontCardContent />
-                  </div>
-               </div>
-               
-               {/* Back Side */}
-               <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                  <div className="w-full h-full bg-[#fdfdfd] rounded-[24px] shadow-2xl flex flex-col border border-gray-150/80 overflow-hidden">
-                     <BackCardContent />
-                  </div>
-               </div>
+                {/* Front Side */}
+                <div 
+                   className={cn(
+                      "absolute inset-0 w-full h-full transition-opacity duration-300",
+                      isFlipped ? "opacity-0 pointer-events-none" : "opacity-100"
+                   )}
+                   style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+                >
+                   <div className="w-full h-full bg-[#fdfdfd] rounded-[24px] shadow-2xl flex flex-col border border-gray-150/80 overflow-hidden">
+                      <FrontCardContent />
+                   </div>
+                </div>
+                
+                {/* Back Side */}
+                <div 
+                   className={cn(
+                      "absolute inset-0 w-full h-full [transform:rotateY(180deg)] transition-opacity duration-300",
+                      isFlipped ? "opacity-100" : "opacity-0 pointer-events-none"
+                   )}
+                   style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+                >
+                   <div className="w-full h-full bg-[#fdfdfd] rounded-[24px] shadow-2xl flex flex-col border border-gray-150/80 overflow-hidden">
+                      <BackCardContent />
+                   </div>
+                </div>
             </div>
          </div>
 
