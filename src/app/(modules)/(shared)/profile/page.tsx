@@ -1,11 +1,12 @@
 import React from "react";
 import { requireAuth } from "@/lib/auth-guard";
-import { Shield, User as UserIcon, Lock } from "lucide-react";
+import { Shield, User as UserIcon, Lock, Download } from "lucide-react";
 import { PageHeader } from "@/components/modules/PageHeader";
 import UpdatePasswordClient from "./UpdatePasswordClient";
 import ActiveSessionsClient from "./ActiveSessionsClient";
 import IDCardClient from "./IDCardClient";
 import { getCompanySettingsAction } from "@/actions/settings.actions";
+import DownloadButtonClient from "./DownloadButtonClient";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function ProfilePage() {
    return (
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 pt-0 px-4 md:px-8 pb-8 text-slate-900 dark:text-white">
          
-         {/* ── Page Header ── */}
+         {/* ── Page Header with Download Button Action ── */}
          <PageHeader 
             title={
                <>
@@ -26,17 +27,14 @@ export default async function ProfilePage() {
             }
             subtitle="Manage your personal identity credentials and access sessions."
             icon={UserIcon}
+            actions={<DownloadButtonClient />}
          />
 
          {/* ── Responsive Side-by-Side Grid ── */}
-         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start pt-2">
+         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-center pt-2">
             
-            {/* Left Side: Identity Card Panel */}
-            <div className="flex flex-col items-center justify-center p-6 md:p-10 rounded-3xl bg-slate-50/50 dark:bg-[#070a13]/30 border border-slate-150 dark:border-white/5 w-full">
-               <div className="w-full text-center mb-6">
-                  <h3 className="text-base font-bold text-slate-800 dark:text-white">Digital ID Badge</h3>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Click the card to flip between front and back views</p>
-               </div>
+            {/* Left Side: ID Card (directly, no wrapper boxes or outer borders) */}
+            <div className="flex flex-col items-center justify-center w-full">
                <IDCardClient profile={profile} companySettings={companySettings} />
             </div>
 

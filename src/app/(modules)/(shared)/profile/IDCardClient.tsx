@@ -309,25 +309,19 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       </>
    );
 
+   React.useEffect(() => {
+      const handleDownloadEvent = () => {
+         // Create a synthetic event
+         const e = { stopPropagation: () => {} } as any;
+         handleDownload(e);
+      };
+      window.addEventListener("download-profile-id", handleDownloadEvent);
+      return () => window.removeEventListener("download-profile-id", handleDownloadEvent);
+   }, [profile]);
+
    return (
       <div className="flex flex-col items-center w-full">
          
-         {/* Action Bar with Download Trigger */}
-         <div className="w-full flex justify-end gap-3 mb-6 max-w-[350px]">
-            <button 
-               onClick={handleDownload} 
-               disabled={isDownloading} 
-               className="px-4 py-2 bg-gradient-to-r from-[#0c2e5c] to-[#0b1b33] hover:opacity-90 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-sm"
-            >
-               {isDownloading ? (
-                  <span className="animate-spin text-lg border-2 border-white border-t-transparent rounded-full w-3.5 h-3.5"></span>
-               ) : (
-                  <Download className="w-3.5 h-3.5" />
-               )}
-               Download PDF
-            </button>
-         </div>
-
          {/* Interactive Flip Card Frame */}
          <div 
             onClick={() => setIsFlipped(!isFlipped)} 
