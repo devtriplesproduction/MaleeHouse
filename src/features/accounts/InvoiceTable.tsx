@@ -8,8 +8,7 @@ import {
   XCircle, 
   ArrowUpRight,
   Building,
-  Calendar,
-  Trash2
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -17,7 +16,6 @@ import { toast } from 'sonner';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { LogPaymentModal } from './LogPaymentModal';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
-import { deleteInvoiceAction } from '@/actions/finance.actions';
 
 interface Invoice {
   id: string;
@@ -61,31 +59,11 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentInvoice, setSelectedPaymentInvoice] = useState<Invoice | null>(null);
   const { settings: companySettings } = useCompanySettings();
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setPage(1);
   }, [searchQuery, invoices]);
-
-  const handleDeleteInvoice = async (invoiceId: string) => {
-    if (!confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return;
-    
-    setIsDeleting(invoiceId);
-    try {
-      const res = await deleteInvoiceAction(invoiceId);
-      if (res.success) {
-        toast.success('Invoice deleted successfully');
-        if (onRefresh) onRefresh();
-      } else {
-        toast.error('Failed to delete invoice', { description: res.error });
-      }
-    } catch (err: any) {
-      toast.error('An error occurred', { description: err.message });
-    } finally {
-      setIsDeleting(null);
-    }
-  };
 
   const filtered = invoices.filter((invoice) => {
     if (!searchQuery) return true;
@@ -203,21 +181,6 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
                   <FileText className="w-3.5 h-3.5" />
                   View invoice
                 </button>
-                {invoice.status === 'draft' && (
-                  <button 
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeleteInvoice(invoice.id);
-                    }}
-                    disabled={isDeleting === invoice.id}
-                    className="h-8 w-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 ml-1"
-                    title="Delete Invoice"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
               </div>
             </div>
           );
