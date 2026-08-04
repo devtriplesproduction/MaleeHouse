@@ -203,7 +203,6 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                      <div className="flex flex-col bg-white rounded-[20px] p-4 border border-slate-100 shadow-sm gap-3 mt-1">
                         {renderBottomField(<FileText className="w-3.5 h-3.5" />, "D.O.B.", editData.dob)}
                         {renderBottomField(<FileText className="w-3.5 h-3.5" />, "Joined Date", editData.joiningDate)}
-                        {renderBottomField(<FileText className="w-3.5 h-3.5" />, "Validity", editData.validity)}
                         {renderBottomField(<Phone className="w-3.5 h-3.5" />, "Contact No.", editData.contactNo)}
                         {renderBottomField(<Mail className="w-3.5 h-3.5" />, "Email", editData.email)}
                      </div>
