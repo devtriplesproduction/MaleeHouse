@@ -59,6 +59,10 @@ function getStoragePathFromUrl(pdfUrl: string): string {
   return decodeURIComponent(parts[parts.length - 1]);
 }
 
+const MOCK_PDF_BUFFER = Buffer.from(
+  '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
+);
+
 async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileId?: string) {
   const { data: existing } = await supabaseAdmin.from('salary_slips').select('id, pdf_url').eq('snapshot_id', snapshotId).maybeSingle();
   
@@ -98,10 +102,7 @@ async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileI
       });
 
       if (!fileExists || fileExists.length === 0) {
-        const mockPdfBuffer = Buffer.from(
-          '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
-        );
-        await supabaseAdmin.storage.from('salary_slips').upload(fileName, mockPdfBuffer, {
+        await supabaseAdmin.storage.from('salary_slips').upload(fileName, MOCK_PDF_BUFFER, {
           contentType: 'application/pdf',
           upsert: true
         });
@@ -119,14 +120,22 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
   const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id').eq('cycle_id', cycleId);
   if (!snaps || snaps.length === 0) return;
 
+  // Bulk fetch existing slips to resolve N+1 queries
+  const { data: existingSlips } = await supabaseAdmin
+    .from('salary_slips')
+    .select('id, snapshot_id, pdf_url')
+    .eq('cycle_id', cycleId);
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
+  const slipsToInsert: any[] = [];
+  const slipsToCheckStorage: any[] = [];
+
   for (const snap of snaps) {
-    const { data: existing } = await supabaseAdmin.from('salary_slips').select('id, pdf_url').eq('snapshot_id', snap.id).maybeSingle();
-    let slip = existing;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
+    const existing = existingSlips?.find((s: any) => s.snapshot_id === snap.id);
     const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
 
-    if (!slip) {
-      const { data: newSlip } = await supabaseAdmin.from('salary_slips').insert({
+    if (!existing) {
+      slipsToInsert.push({
         employee_id: snap.employee_id,
         cycle_id: cycleId,
         snapshot_id: snap.id,
@@ -135,11 +144,24 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
         generated_by: profileId,
         emailed: false,
         shared: false
-      }).select().single();
-      slip = newSlip;
+      });
+    } else {
+      slipsToCheckStorage.push(existing);
     }
+  }
 
-    if (slip && slip.pdf_url) {
+  // Bulk insert new slip records if any are missing
+  if (slipsToInsert.length > 0) {
+    const { data: inserted } = await supabaseAdmin.from('salary_slips').insert(slipsToInsert).select();
+    if (inserted) {
+      slipsToCheckStorage.push(...inserted);
+    }
+  }
+
+  // Check and upload storage files in parallel to prevent sequential latency bottlenecks
+  await Promise.allSettled(
+    slipsToCheckStorage.map(async (slip) => {
+      if (!slip.pdf_url) return;
       try {
         const fileName = getStoragePathFromUrl(slip.pdf_url);
         const parts = fileName.split('/');
@@ -151,10 +173,7 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
         });
 
         if (!fileExists || fileExists.length === 0) {
-          const mockPdfBuffer = Buffer.from(
-            '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
-          );
-          await supabaseAdmin.storage.from('salary_slips').upload(fileName, mockPdfBuffer, {
+          await supabaseAdmin.storage.from('salary_slips').upload(fileName, MOCK_PDF_BUFFER, {
             contentType: 'application/pdf',
             upsert: true
           });
@@ -162,8 +181,8 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
       } catch (e) {
         console.error("[ensureSlipsExistForCycle] storage error:", e);
       }
-    }
-  }
+    })
+  );
 }
 
 
