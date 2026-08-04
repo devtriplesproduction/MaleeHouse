@@ -20,6 +20,7 @@ import {
   type CreatePaymentInput
 } from '@/validations/finance.schema';
 import { generateSequentialCode } from '@/lib/id-generator';
+import { isProjectDispatchedToOps } from '@/lib/project-commercial';
 
 export type ActionResponse<T = any> = {
   success: boolean;
@@ -252,7 +253,7 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
     
     // Only update to payment_pending if the project is in its early stages
     const { data: currentProject } = await supabase.from('projects').select('status').eq('id', payload.project_id).single();
-    if (currentProject && ['lead_created', 'quotation_requested', 'quotation_sent', 'payment_pending'].includes(currentProject.status)) {
+    if (currentProject && ['lead', 'lead_created', 'requirement_gathering', 'quotation_requested', 'quotation_sent', 'payment_pending'].includes(currentProject.status)) {
       await updateProjectStageAction(payload.project_id, 'payment_pending', 'Payment manually logged.');
     }
 
@@ -384,13 +385,19 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
 
       const { data: project } = await supabase.from('projects').select('status, is_frozen, freeze_reason').eq('id', payment.project_id).single();
 
-      if (isActivationGatePaid || !project || ['lead_created', 'quotation_sent', 'payment_pending', 'payment_done'].includes(project.status)) {
+      // Early commercial stages → ready_for_dispatch (then auto-dispatch to ops)
+      const earlyCommercial = ['lead', 'lead_created', 'requirement_gathering', 'quotation_requested', 'quotation_sent', 'payment_pending', 'payment_done'];
+      if (isActivationGatePaid || !project || earlyCommercial.includes(project.status)) {
         const stageRes = await updateProjectStageAction(payment.project_id, 'ready_for_dispatch', 'Payment verified. Project ready for dispatch.');
         if (stageRes?.success) {
           // Auto-forward to engineering queue, skipping the manual dispatch button
           await updateProjectStageAction(payment.project_id, 'project_created', 'Auto-dispatched to Engineering after payment verification.');
         }
-      } else if (milestoneLinkedStage && !['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'ready_for_dispatch', 'project_created'].includes(project.status)) {
+      } else if (
+        milestoneLinkedStage &&
+        isProjectDispatchedToOps(project.status) &&
+        project.status !== 'project_created'
+      ) {
         await updateProjectStageAction(payment.project_id, milestoneLinkedStage, `Payment verified. Stage unlocked.`);
       }
 
@@ -1105,9 +1112,14 @@ export async function updateMilestoneStatusAction(
         .eq('id', milestone.project_id)
         .single();
 
-      if (milestone.is_activation_gate || !project || ['lead_created', 'quotation_sent', 'payment_pending', 'payment_done'].includes(project.status)) {
+      const earlyCommercial = ['lead', 'lead_created', 'requirement_gathering', 'quotation_requested', 'quotation_sent', 'payment_pending', 'payment_done'];
+      if (milestone.is_activation_gate || !project || earlyCommercial.includes(project.status)) {
         await updateProjectStageAction(milestone.project_id, 'ready_for_dispatch', comment || 'Activation gate milestone marked as paid. Project ready for dispatch.');
-      } else if (milestone.linked_stage && !['lead_created', 'quotation_sent', 'payment_pending', 'payment_done', 'ready_for_dispatch'].includes(project.status)) {
+      } else if (
+        milestone.linked_stage &&
+        isProjectDispatchedToOps(project.status) &&
+        project.status !== 'project_created'
+      ) {
         await updateProjectStageAction(milestone.project_id, milestone.linked_stage, comment || `Linked milestone "${milestone.title}" marked as paid.`);
       }
     }
@@ -2186,6 +2198,7 @@ export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
         .limit(100)
     );
 
+    // Note: payment_date + bank_id exist via migrations (types may lag).
     let paymentsQuery = applyProjectScope(
       supabase
         .from('payments')
@@ -2197,11 +2210,12 @@ export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
         .limit(100)
     );
 
+    // block_after_stage does NOT exist on project_milestones — never select it.
     let milestonesQuery = applyProjectScope(
       supabase
         .from('project_milestones')
         .select(
-          'id, project_id, title, amount, status, due_date, sort_order, linked_stage, block_after_stage, created_at, projects!inner(name, client_name, budget, status, deleted_at)'
+          'id, project_id, title, amount, status, due_date, sort_order, linked_stage, is_activation_gate, created_at, projects!inner(name, client_name, budget, status, deleted_at)'
         )
         .is('projects.deleted_at', null)
         .neq('status', 'paid')
@@ -2216,10 +2230,11 @@ export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
       milestonesQuery,
     ]);
 
+    // Fail hard only if projects (summary spine) fails; partial lists still usable.
     if (projectsRes.error) return { success: false, error: projectsRes.error.message };
-    if (invoicesRes.error) return { success: false, error: invoicesRes.error.message };
-    if (paymentsRes.error) return { success: false, error: paymentsRes.error.message };
-    if (milestonesRes.error) return { success: false, error: milestonesRes.error.message };
+    if (invoicesRes.error) console.error('[billing] invoices:', invoicesRes.error.message);
+    if (paymentsRes.error) console.error('[billing] payments:', paymentsRes.error.message);
+    if (milestonesRes.error) console.error('[billing] milestones:', milestonesRes.error.message);
 
     const billingSummary = (projectsRes.data || []).map((p: any) => {
       let total_invoiced = 0;

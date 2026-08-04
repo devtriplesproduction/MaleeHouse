@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useRouter } from 'next/navigation';
+import { stashQuoteProject } from '@/lib/quote-project-handoff';
 
 interface Project {
   id: string;
@@ -235,7 +236,11 @@ export function QuotationIntakeQueue({
                       </button>
 
                       <Button
-                        onClick={() => router.push(`/accounts/quotations?project=${project.id}&mode=create`)}
+                        onClick={() => {
+                          // Stash project so create form opens even if server re-fetch fails
+                          stashQuoteProject(project);
+                          router.push(`/accounts/quotations?project=${project.id}&mode=create`);
+                        }}
                         size="sm"
                         className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 h-8 rounded-lg gap-1.5"
                       >

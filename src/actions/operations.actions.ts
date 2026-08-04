@@ -257,11 +257,18 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
       }
     });
 
-    const { updateProjectStageAction } = await import('@/actions/workflow.actions');
-    await updateProjectStageAction(projectId, 'data_collection', 'Engineer claimed project and started data collection.');
+    // Only auto-advance when still sitting in the engineer intake stage
+    const { data: proj } = await supabase.from('projects').select('status').eq('id', projectId).single();
+    if (auth.role === 'engineer' && proj?.status === 'project_created') {
+      const { updateProjectStageAction } = await import('@/actions/workflow.actions');
+      await updateProjectStageAction(projectId, 'data_collection', 'Engineer claimed project and started data collection.');
+    }
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/operations");
+    revalidatePath("/engineer");
+    revalidatePath("/cad");
+    revalidatePath("/field");
     return { success: true, error: null };
   } catch (err: any) {
     console.error("claimProjectAction error:", err);

@@ -17,11 +17,28 @@ import { notifyStageUpdateAction, notifyQuotationCreatedAction } from './notific
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
 import { generateSequentialCode } from '@/lib/id-generator';
 import { createClient } from '@/lib/supabase/server';
+
 export type ActionResponse<T = any> = {
   success: boolean;
   data?: T;
   error?: string;
 };
+
+/** Project embed used whenever UI needs dispatch / milestone button state. */
+const PROJECT_WITH_MILESTONES =
+  'project:projects(id, name, client_name, status, gst_number, deleted_at, project_milestones(id, title))';
+
+/** List shape for Client Approvals + Draft Quotations workspace. */
+const QUOTATION_LIST_SELECT = `
+  id, quotation_number, project_id, total_amount, status, current_version,
+  created_at, updated_at, created_by, assigned_to,
+  client_details, items, subtotal, gst_rate, gst_amount, client_token,
+  client_approver_phone, client_approved_at,
+  project:projects!inner(
+    id, name, client_name, status, gst_number, deleted_at,
+    project_milestones(id, title)
+  )
+`;
 
 async function getUserProfileById(userId: string) {
   const supabase: any = await createClient();
@@ -414,15 +431,17 @@ export async function getQuotationIntakeQueueAction(): Promise<ActionResponse> {
     }
 
     const supabase: any = await createClient();
-    const { data: intakeProjects } = await supabase
+    const { data: intakeProjects, error } = await supabase
       .from('projects')
       .select('*, creator:profiles!projects_created_by_fkey(*), files(*)')
       .in('status', ['quotation_requested', 'lead_created'])
       .is('deleted_at', null)
       .order('updated_at', { ascending: false });
 
-    const filteredProjects = (intakeProjects || []).filter((p: any) => 
-      p.status === 'quotation_requested' || 
+    if (error) return { success: false, error: error.message };
+
+    const filteredProjects = (intakeProjects || []).filter((p: any) =>
+      p.status === 'quotation_requested' ||
       (p.status === 'lead_created' && p.creator?.role === 'accountant')
     );
 
@@ -444,21 +463,24 @@ export async function getProjectQuotationsAction(projectId: string, _cacheBuster
     }
 
     const supabase: any = await createClient();
+    const select = `*, ${PROJECT_WITH_MILESTONES}`;
 
     if (projectId.startsWith('QUO-')) {
-      const { data: standalone } = await supabase
+      const { data: standalone, error } = await supabase
         .from('quotations')
-        .select('*, project:projects(id, name, client_name, status, gst_number)')
+        .select(select)
         .eq('id', projectId);
+      if (error) return { success: false, error: error.message };
       return { success: true, data: normalizeData(standalone || []) };
     }
 
-    const { data: projectQuotations } = await supabase
+    const { data: projectQuotations, error } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status, gst_number)')
+      .select(select)
       .eq('project_id', projectId)
       .order('created_at', { ascending: false });
 
+    if (error) return { success: false, error: error.message };
     return { success: true, data: normalizeData(projectQuotations || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -471,12 +493,13 @@ export async function getQuotationByIdAction(id: string): Promise<ActionResponse
     if (auth.error) return { success: false, error: auth.error };
 
     const supabase: any = await createClient();
-    const { data: quotation } = await supabase
+    const { data: quotation, error } = await supabase
       .from('quotations')
-      .select('*, project:projects(id, name, client_name, status, gst_number)')
+      .select(`*, ${PROJECT_WITH_MILESTONES}`)
       .eq('id', id)
       .single();
 
+    if (error) return { success: false, error: error.message };
     return { success: true, data: normalizeData(quotation) };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -495,11 +518,10 @@ export async function getAllQuotationsAction(): Promise<ActionResponse> {
     }
 
     const supabase: any = await createClient();
+    // current_version (not version). project_milestones required for button state.
     const { data: sorted, error } = await supabase
       .from('quotations')
-      .select(
-        'id, quotation_number, project_id, total_amount, status, version, created_at, updated_at, created_by, assigned_to, project:projects!inner(id, name, client_name, status, gst_number, deleted_at)'
-      )
+      .select(QUOTATION_LIST_SELECT)
       .is('project.deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(100);

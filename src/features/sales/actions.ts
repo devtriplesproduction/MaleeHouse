@@ -43,10 +43,13 @@ export async function getQuotationsAction(): Promise<ActionResponse<any[]>> {
         quotation_number,
         total_amount,
         status,
+        current_version,
         created_at,
         projects:project_id (
+          id,
           name,
-          client_name
+          client_name,
+          status
         )
       `)
       .order('created_at', { ascending: false })

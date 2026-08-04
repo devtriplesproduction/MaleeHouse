@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuthContext } from "@/lib/permissions/access-control";
 import { normalizeData } from "@/lib/normalize";
+import { OPS_ACTIVE_STATUSES } from "@/lib/project-commercial";
+import { PERMISSIONS } from "@/lib/permissions/constants";
 import { getMyEODReportsAction } from "./eod.actions";
 import { getEngineerTasksAction } from "./task.actions";
 import { getNotificationsAction } from "./notification.actions";
@@ -16,6 +18,41 @@ export type WorkspaceResponse<T = null> = {
   data?: T;
 };
 
+/** Ops dashboards: engineers see the full ops queue; others only their assignments. */
+function buildOpsProjectsQuery(supabase: any, userId: string, role: string) {
+  const seesAllOps =
+    role === "admin" || (PERMISSIONS.VIEW_ALL_PROJECTS as string[]).includes(role);
+
+  if (seesAllOps) {
+    // Left-join assignments so unassigned dispatches (project_created) still appear
+    return supabase
+      .from("projects")
+      .select("*, project_assignments(*)")
+      .in("status", [...OPS_ACTIVE_STATUSES])
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false });
+  }
+
+  return supabase
+    .from("projects")
+    .select("*, project_assignments!inner(*)")
+    .in("status", [...OPS_ACTIVE_STATUSES])
+    .is("deleted_at", null)
+    .eq("project_assignments.user_id", userId)
+    .order("updated_at", { ascending: false });
+}
+
+function enrichOpsProjects(projects: any[], userId: string) {
+  return (projects || []).map((p: any) => {
+    const mine = (p.project_assignments || []).find((a: any) => a.user_id === userId);
+    return {
+      ...p,
+      assigned_at: mine?.assigned_at || p.updated_at || p.created_at,
+      is_claimed_by_me: Boolean(mine),
+    };
+  });
+}
+
 // ─── ENGINEER WORKSPACE ────────────────────────────────────────────────────────
 
 export async function getEngineerWorkspaceDataAction(): Promise<WorkspaceResponse<any>> {
@@ -27,20 +64,12 @@ export async function getEngineerWorkspaceDataAction(): Promise<WorkspaceRespons
 
     const supabase: any = await createClient();
 
-    // 1. Fetch assigned projects
-    let projectsQuery = supabase
-      .from('projects')
-      .select('*, project_assignments!inner(*)')
-      .neq('status', 'completed')
-      .neq('status', 'archived')
-      .order('created_at', { ascending: false });
-    
-    if (auth.role !== 'admin') {
-      projectsQuery = projectsQuery.eq('project_assignments.user_id', auth.userId);
-    }
+    // Engineers: full ops queue (dispatched + in progress), not only personal assignments.
+    // Dispatch to Engineering sets status project_created with no assignment yet.
+    const projectsQuery = buildOpsProjectsQuery(supabase, auth.userId!, auth.role!);
     const { data: projectsData, error: projError } = await projectsQuery;
     if (projError) throw projError;
-    const assignedProjects = projectsData || [];
+    const assignedProjects = enrichOpsProjects(projectsData || [], auth.userId!);
     const projectIds = assignedProjects.map((p: any) => p.id);
 
     // 2. Execute related queries strictly filtered by assigned projects
@@ -134,17 +163,7 @@ export async function getFieldWorkspaceDataAction(): Promise<WorkspaceResponse<a
 
     const supabase: any = await createClient();
 
-    // 1. Fetch assigned projects
-    let projectsQuery = supabase
-      .from('projects')
-      .select('*, project_assignments!inner(*)')
-      .neq('status', 'completed')
-      .neq('status', 'archived')
-      .order('created_at', { ascending: false });
-    
-    if (auth.role !== 'admin') {
-      projectsQuery = projectsQuery.eq('project_assignments.user_id', auth.userId);
-    }
+    const projectsQuery = buildOpsProjectsQuery(supabase, auth.userId!, auth.role!);
 
     const [
       projectsRes,
@@ -165,7 +184,7 @@ export async function getFieldWorkspaceDataAction(): Promise<WorkspaceResponse<a
     ]);
 
     if (projectsRes.error) throw projectsRes.error;
-    const assignedProjects = projectsRes.data || [];
+    const assignedProjects = enrichOpsProjects(projectsRes.data || [], auth.userId!);
 
     return {
       success: true,
@@ -196,16 +215,8 @@ export async function getCADWorkspaceDataAction(): Promise<WorkspaceResponse<any
 
     const supabase: any = await createClient();
 
-    let projectsQuery = supabase
-      .from('projects')
-      .select('*, project_assignments!inner(*)')
-      .neq('status', 'completed')
-      .neq('status', 'archived')
-      .order('created_at', { ascending: false });
-    
-    if (auth.role !== 'admin') {
-      projectsQuery = projectsQuery.eq('project_assignments.user_id', auth.userId);
-    }
+    // CAD: same ops queue as engineer (unassigned dispatches must be visible)
+    const projectsQuery = buildOpsProjectsQuery(supabase, auth.userId!, auth.role!);
 
     const [projectsRes, sopsRes, eodRes] = await Promise.all([
       projectsQuery,
@@ -219,7 +230,7 @@ export async function getCADWorkspaceDataAction(): Promise<WorkspaceResponse<any
       success: true,
       error: null,
       data: normalizeData({
-        assignedProjects: projectsRes.data || [],
+        assignedProjects: enrichOpsProjects(projectsRes.data || [], auth.userId!),
         sops: sopsRes.success ? sopsRes.data : [],
         eodReports: eodRes.success ? eodRes.data : []
       })

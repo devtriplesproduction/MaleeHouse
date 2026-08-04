@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getAllQuotationsAction } from "@/actions/quotation.actions";
 import { transitionWorkflowAction, requestDispatchOverrideAction } from "@/actions/workflow.actions";
@@ -20,6 +20,14 @@ import DashboardLoading from "@/app/(modules)/loading";
 import { generateQuotationPDF } from "@/lib/pdf-generator";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCompanySettings } from "@/providers/CompanySettingsProvider";
+import {
+  isAwaitingClientStatus,
+  isClientApprovalStatus,
+  isProjectDispatchedToOps,
+  isReadyForDispatch,
+  hasActiveMilestones,
+} from "@/lib/project-commercial";
+import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 
 const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string; border: string; label: string }> = {
   Sent: {
@@ -73,25 +81,26 @@ export default function ClientApprovalsPage() {
   const [overrideRequests, setOverrideRequests] = useState<Record<string, boolean>>({});
   const { settings: companySettings } = useCompanySettings();
 
-  const fetchData = async () => {
-    if (quotations.length === 0) setLoading(true);
+  const fetchData = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     const res = await getAllQuotationsAction();
-    
+
     setIsAdmin(role === "admin");
-    
-    if (res && res.data) {
-      setQuotations(
-        res.data.filter((q: any) =>
-          ["Sent", "Viewed", "Revision Requested", "Approved", "Rejected"].includes(q.status)
-        )
-      );
+
+    if (res?.success && res.data) {
+      setQuotations(res.data.filter((q: any) => isClientApprovalStatus(q.status)));
+    } else {
+      setQuotations([]);
+      toast.error(res?.error || "Failed to load client approvals");
     }
     setLoading(false);
-  };
+  }, [role]);
 
   useEffect(() => {
-    fetchData();
+    fetchData(true);
   }, [role]);
+
+  useRefetchOnFocus(() => fetchData(false));
 
   const handleRequestOverride = async (quotation: any) => {
     if (!quotation.project_id) return;
@@ -168,7 +177,7 @@ export default function ClientApprovalsPage() {
     if (!matchesSearch) return false;
 
     if (activeTab === "pending") {
-      return q.status === "Sent" || q.status === "Viewed" || q.status === "Revision Requested";
+      return isAwaitingClientStatus(q.status);
     }
     if (activeTab === "approved") {
       return q.status === "Approved";
@@ -197,7 +206,7 @@ export default function ClientApprovalsPage() {
   });
 
   // Calculate Metrics
-  const pendingQuotes = quotations.filter((q) => q.status === "Sent" || q.status === "Viewed" || q.status === "Revision Requested");
+  const pendingQuotes = quotations.filter((q) => isAwaitingClientStatus(q.status));
   const approvedQuotes = quotations.filter((q) => q.status === "Approved");
   const totalPendingValue = pendingQuotes.reduce((acc: any, q: any) => acc + (q.total_amount || 0), 0);
   const totalApprovedValue = approvedQuotes.reduce((acc: any, q: any) => acc + (q.total_amount || 0), 0);
@@ -219,7 +228,7 @@ export default function ClientApprovalsPage() {
         {/* Action Controls */}
         <div className="flex items-center gap-2">
           <button
-            onClick={fetchData}
+            onClick={() => fetchData(true)}
             className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400 transition-all hover:text-slate-900 dark:hover:text-white active:scale-95"
             title="Refresh Data"
           >
@@ -499,9 +508,10 @@ export default function ClientApprovalsPage() {
 
                         {/* Approved actions */}
                         {isApproved && (() => {
-                          const isDispatched = q.project?.status && !["lead", "quotation_requested", "quotation_sent", "payment_pending", "payment_done", "ready_for_dispatch"].includes(q.project.status);
-                          const isReadyForDispatch = q.project?.status === "ready_for_dispatch";
+                          const isDispatched = isProjectDispatchedToOps(q.project?.status);
+                          const readyForDispatch = isReadyForDispatch(q.project?.status);
                           const isDispatching = dispatching === q.id;
+                          const hasMilestones = hasActiveMilestones(q.project?.project_milestones);
 
                           if (isDispatched) {
                             return (
@@ -510,8 +520,6 @@ export default function ClientApprovalsPage() {
                               </div>
                             );
                           }
-
-                          const hasMilestones = q.project?.project_milestones && q.project.project_milestones.length > 0;
 
                           if (!hasMilestones) {
                             return (
@@ -526,7 +534,7 @@ export default function ClientApprovalsPage() {
                             );
                           }
 
-                          if (isReadyForDispatch) {
+                          if (readyForDispatch) {
                             return (
                               <button
                                 onClick={() => handleSendToEngineering(q)}
@@ -543,6 +551,7 @@ export default function ClientApprovalsPage() {
                             );
                           }
 
+                          // Milestones exist but activation payment not verified yet
                           return (
                             <div className="h-8 w-[140px] justify-center flex items-center gap-1.5 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
                               <Clock className="w-3 h-3 animate-pulse" /> Awaiting Payment
@@ -766,9 +775,9 @@ export default function ClientApprovalsPage() {
 
                 {selectedQuote.status === "Approved" && (
                   (() => {
-                    const isDispatched = selectedQuote.project?.status && !["lead", "quotation_requested", "quotation_sent", "payment_pending", "payment_done", "ready_for_dispatch"].includes(selectedQuote.project.status);
-                    const isReadyForDispatch = selectedQuote.project?.status === "ready_for_dispatch";
-                    const hasMilestones = selectedQuote.project?.project_milestones && selectedQuote.project.project_milestones.length > 0;
+                    const isDispatched = isProjectDispatchedToOps(selectedQuote.project?.status);
+                    const readyForDispatch = isReadyForDispatch(selectedQuote.project?.status);
+                    const hasMilestones = hasActiveMilestones(selectedQuote.project?.project_milestones);
 
                     if (isDispatched) {
                       return (
@@ -794,7 +803,7 @@ export default function ClientApprovalsPage() {
                       );
                     }
 
-                    if (isReadyForDispatch) {
+                    if (readyForDispatch) {
                       return (
                         <button
                           onClick={() => {
