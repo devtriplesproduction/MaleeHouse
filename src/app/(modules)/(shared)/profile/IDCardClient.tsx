@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Download, MapPin, Phone, Mail, Globe, Users, FileText, User as UserIcon, CalendarDays } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { Download, MapPin, Phone, Mail, Globe, Users, FileText, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const LogoSVG = () => (
@@ -38,7 +38,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
    const [isFlipped, setIsFlipped] = useState(false);
    const frontCardRef = useRef<HTMLDivElement>(null);
    const backCardRef = useRef<HTMLDivElement>(null);
-   const [isDownloading, setIsDownloading] = useState(false);
+
 
    const formatDate = (dateString?: string) => {
       if (!dateString) return "N/A";
@@ -46,12 +46,25 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
    };
 
-   const getValidityDate = (joiningDateString?: string) => {
-      if (!joiningDateString) return "N/A";
-      const d = new Date(joiningDateString);
-      d.setFullYear(d.getFullYear() + 1);
-      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+   // Robust emergency contact parser
+   const parseEmergencyContact = (contactStr?: string) => {
+      const defaultContact = { name: "Kiran Kirdat", relation: "Family", mobile: "+91 98221 12345" };
+      if (!contactStr) return defaultContact;
+      const parts = contactStr.split('-').map(p => p.trim());
+      if (parts.length >= 3) {
+         return { name: parts[0], relation: parts[1], mobile: parts[2] };
+      } else if (parts.length === 2) {
+         const isMobileFirst = /^\+?[\d\s]+$/.test(parts[0]);
+         if (isMobileFirst) {
+            return { name: "Kiran Kirdat", relation: parts[1], mobile: parts[0] };
+         } else {
+            return { name: parts[0], relation: "Family", mobile: parts[1] };
+         }
+      }
+      return { name: "Kiran Kirdat", relation: "Family", mobile: contactStr };
    };
+
+   const emergency = parseEmergencyContact(profile.emergency_contact);
 
    // Card data binding state
    const [editData] = useState({
@@ -62,37 +75,104 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       department: profile.department || "N/A",
       dob: formatDate(profile.dob),
       joiningDate: formatDate(profile.joining_date),
-      validity: getValidityDate(profile.joining_date),
       contactNo: profile.phone_number || profile.mobile || "N/A",
       email: profile.personal_email || profile.email || "N/A",
-      emergencyName: profile.emergency_contact?.split('-')?.[0]?.trim() || "Kiran Kirdat",
-      emergencyRelation: profile.emergency_contact?.split('-')?.[1]?.trim() || "Family",
-      emergencyMobile: profile.emergency_contact?.split('-')?.[2]?.trim() || profile.emergency_contact || "+91 98221 12345",
+      emergencyName: emergency.name,
+      emergencyRelation: emergency.relation,
+      emergencyMobile: emergency.mobile,
       companyContact: `${companySettings.telephone || '7385238481'} | ${companySettings.mobile || '9270097679'}`,
       companyEmail: "info@maleehouse.com",
    });
 
+   const [isDownloading, setIsDownloading] = useState(false);
+
    const handleDownload = async (e: React.MouseEvent) => {
-      e.stopPropagation(); // Avoid triggering card flip
+      e.stopPropagation();
       if (!frontCardRef.current || !backCardRef.current) return;
       setIsDownloading(true);
 
       try {
-         const frontCanvas = await html2canvas(frontCardRef.current, { scale: 3, useCORS: true });
-         const backCanvas = await html2canvas(backCardRef.current, { scale: 3, useCORS: true });
+         // Temporarily remove scaling from cards for accurate capture
+         const frontElement = frontCardRef.current;
+         const backElement = backCardRef.current;
+         const originalFrontTransform = frontElement.style.transform;
+         const originalBackTransform = backElement.style.transform;
+         frontElement.style.transform = 'none';
+         backElement.style.transform = 'none';
 
+         // We use onclone to inject a real DOM image for the profile photo to avoid CORS tainting
+         let photoDataUrl = "";
+         if (profile.profile_photo) {
+            try {
+               const res = await fetch(profile.profile_photo);
+               const blob = await res.blob();
+               photoDataUrl = await new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(blob);
+               });
+            } catch (err) {
+               console.error("Failed to fetch photo for PDF", err);
+            }
+         }
+
+         const canvasOptions = {
+            scale: 4, // High resolution
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null,
+            onclone: (clonedDoc: Document) => {
+               if (photoDataUrl) {
+                  const imgs = clonedDoc.querySelectorAll('img');
+                  imgs.forEach((img) => {
+                     if (img.src.includes(profile.profile_photo)) {
+                        img.src = photoDataUrl;
+                        img.srcset = "";
+                     }
+                  });
+               }
+            }
+         };
+
+         const frontCanvas = await html2canvas(frontElement, canvasOptions);
+         const backCanvas = await html2canvas(backElement, canvasOptions);
+
+         // Restore original scaling
+         frontElement.style.transform = originalFrontTransform;
+         backElement.style.transform = originalBackTransform;
+
+         const frontImgData = frontCanvas.toDataURL('image/jpeg', 1.0);
+         const backImgData = backCanvas.toDataURL('image/jpeg', 1.0);
+
+         // Create landscape A4 PDF
          const pdf = new jsPDF({
-            orientation: "portrait",
-            unit: "px",
-            format: [frontCanvas.width, frontCanvas.height * 2 + 20]
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
          });
 
-         pdf.addImage(frontCanvas.toDataURL("image/png"), "PNG", 0, 0, frontCanvas.width, frontCanvas.height);
-         pdf.addImage(backCanvas.toDataURL("image/png"), "PNG", 0, frontCanvas.height + 20, backCanvas.width, backCanvas.height);
+         const pageWidth = pdf.internal.pageSize.getWidth(); // 297mm for A4 landscape
+         const pageHeight = pdf.internal.pageSize.getHeight(); // 210mm for A4 landscape
+
+         // Card dimensions in pixels: 380x580.
+         // Increase physical size to make them larger: height = 130mm
+         const targetHeight = 130; 
+         const targetWidth = targetHeight * (380 / 580); // ~85.17mm
+         
+         // Calculate positions to perfectly center them side-by-side
+         const gap = 15; // 15mm gap between cards
+         const totalWidth = (targetWidth * 2) + gap;
+         
+         const startX = (pageWidth - totalWidth) / 2;
+         const startY = (pageHeight - targetHeight) / 2;
+
+         pdf.addImage(frontImgData, 'JPEG', startX, startY, targetWidth, targetHeight);
+         pdf.addImage(backImgData, 'JPEG', startX + targetWidth + gap, startY, targetWidth, targetHeight);
 
          pdf.save(`${editData.firstName}_${editData.lastName}_ID_Card.pdf`);
-      } catch (err) {
-         console.error("Failed to generate PDF", err);
+      } catch (error) {
+         console.error('Error generating PDF:', error);
+         alert('Failed to generate PDF. Please try again.');
       } finally {
          setIsDownloading(false);
       }
@@ -120,170 +200,101 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
    );
 
    const renderEmergencyField = (label: string, value: string) => (
-      <div className="grid grid-cols-[70px_10px_1fr] gap-0 text-[10.5px] ml-9 mb-1 font-sans">
+      <div className="grid grid-cols-[70px_10px_1fr] gap-0 text-[10.5px] ml-9 mb-0.5 font-sans">
          <span className="font-semibold text-slate-400">{label}</span>
-         <span className="font-semibold text-slate-300">:</span>
-         <span className="text-[#0c2e5c] font-semibold break-words">{value}</span>
+         <span className="font-semibold text-slate-350">:</span>
+         <span className="text-[#0c2e5c] font-bold break-words">{value}</span>
       </div>
    );
 
    // Reusable card content definitions
    const FrontCardContent = () => (
-      <div className="font-sans flex flex-col h-full bg-white select-none">
+      <div className="font-sans relative w-full h-full select-none animate-fade-in" style={{ backgroundImage: "url('/id-card-bg.png')", backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
          {/* Google Font Link for Signature Handwriting style */}
          <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet" />
 
-         {/* Top Header Section */}
-         <div className="relative pt-4 pb-0 px-5 flex flex-col items-center bg-white z-10">
-            <div className="flex items-center gap-3.5 w-full justify-center">
-               <LogoSVG />
-               <div className="flex flex-col">
-                  <h2 className="text-[#0e3b75] font-extrabold text-[24px] leading-none tracking-tight">Malee House</h2>
-                  <p className="text-gray-400 text-[8.5px] font-semibold tracking-[0.05em] mt-1 font-sans">We Build Trust With Quality & Service</p>
-                  <GoldFlourish />
+         {/* Top Details container overlay */}
+         <div className="absolute top-[148px] left-[25px] right-[25px] flex gap-4 items-center">
+            {/* Profile Photo */}
+            <div className="w-[108px] h-[130px] rounded-2xl overflow-hidden bg-gray-50 border-[3px] border-slate-200 shadow-sm shrink-0 flex items-center justify-center">
+               {profile.profile_photo ? (
+                  <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
+               ) : (
+                  <UserIcon className="w-12 h-12 text-gray-300" />
+               )}
+            </div>
+
+            {/* Top Details next to Photo */}
+            <div className="flex flex-col justify-center text-[11px] w-full pr-1">
+               <div className="grid grid-cols-[80px_10px_1fr] gap-0 mb-1.5 items-start">
+                  <span className="font-bold text-gray-455 text-[10px] uppercase tracking-wider mt-0.5">Name</span>
+                  <span className="font-bold text-gray-300 text-[10px] mt-0.5">:</span>
+                  <span className="text-[#0c2e5c] font-bold text-[13.5px] leading-tight capitalize break-words">{editData.firstName} {editData.lastName}</span>
                </div>
+               {renderField("Employee ID", editData.employeeId)}
+               {renderField("Designation", editData.designation)}
+               {renderField("Department", editData.department)}
             </div>
          </div>
 
-         {/* Wave Divider with pill banner */}
-         <div className="relative h-13 w-full overflow-hidden shrink-0 z-10">
-            <svg viewBox="0 0 350 70" className="w-full h-full" preserveAspectRatio="none">
-               {/* Blue wave stripe */}
-               <path d="M 0,15 Q 175,60 350,15 L 350,35 Q 175,80 0,35 Z" fill="#0070d2" />
-               {/* Pink wave stripe */}
-               <path d="M 0,22 Q 175,65 350,22 L 350,42 Q 175,82 0,42 Z" fill="#e11d48" />
-               {/* Dark blue wave stripe */}
-               <path d="M 0,30 Q 175,70 350,30 L 350,52 Q 175,90 0,52 Z" fill="#0c2e5c" />
-            </svg>
-            
-            {/* Identity Card Pill Banner */}
-            <div className="absolute top-[22px] left-1/2 -translate-x-1/2 bg-[#0b1b33] text-white text-[9px] font-bold tracking-widest px-8 py-1 rounded-full shadow-md uppercase border border-white/10">
-               Identity Card
-            </div>
+         {/* Bottom Details Card Container overlay */}
+         <div className="absolute top-[292px] left-[25px] right-[25px] flex flex-col bg-white rounded-[20px] p-3.5 border border-slate-100 shadow-sm gap-2.5">
+            {renderBottomField(<FileText className="w-3.5 h-3.5" />, "D.O.B.", editData.dob)}
+            {renderBottomField(<FileText className="w-3.5 h-3.5" />, "Joined Date", editData.joiningDate)}
+            {renderBottomField(<Phone className="w-3.5 h-3.5" />, "Contact No.", editData.contactNo)}
+            {renderBottomField(<Mail className="w-3.5 h-3.5" />, "Email", editData.email)}
          </div>
 
-         {/* Body */}
-         <div className="flex-1 px-5 py-3 flex flex-col justify-between relative bg-white">
-            <div className="flex flex-col gap-3 relative z-10">
-               <div className="flex gap-4 items-center">
-                  {/* Profile Photo */}
-                  <div className="w-[110px] h-[135px] rounded-2xl overflow-hidden bg-gray-50 border-[3px] border-slate-200 shadow-sm shrink-0 flex items-center justify-center">
-                     {profile.profile_photo ? (
-                        <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
-                     ) : (
-                        <UserIcon className="w-12 h-12 text-gray-300" />
-                     )}
-                  </div>
-
-                  {/* Top Details next to Photo */}
-                  <div className="flex flex-col justify-center text-[11px] w-full pr-1">
-                     <div className="grid grid-cols-[80px_10px_1fr] gap-0 mb-1.5 items-start">
-                        <span className="font-bold text-gray-455 text-[10px] uppercase tracking-wider mt-0.5">Name</span>
-                        <span className="font-bold text-gray-300 text-[10px] mt-0.5">:</span>
-                        <span className="text-[#0c2e5c] font-bold text-[13.5px] leading-tight capitalize break-words">{editData.firstName} {editData.lastName}</span>
-                     </div>
-                     {renderField("Employee ID", editData.employeeId)}
-                     {renderField("Designation", editData.designation)}
-                     {renderField("Department", editData.department)}
-                  </div>
-               </div>
-
-               {/* Details Card Container */}
-               <div className="flex flex-col bg-white rounded-[20px] p-3.5 border border-slate-100 shadow-sm gap-2.5 mt-0.5">
-                  {renderBottomField(<FileText className="w-3.5 h-3.5" />, "D.O.B.", editData.dob)}
-                  {renderBottomField(<FileText className="w-3.5 h-3.5" />, "Joined Date", editData.joiningDate)}
-                  {renderBottomField(<CalendarDays className="w-3.5 h-3.5" />, "Validity", editData.validity)}
-                  {renderBottomField(<Phone className="w-3.5 h-3.5" />, "Contact No.", editData.contactNo)}
-                  {renderBottomField(<Mail className="w-3.5 h-3.5" />, "Email", editData.email)}
-               </div>
+         {/* Stamp & Authorized Signature overlay */}
+         <div className="absolute bottom-[28px] left-[25px] flex flex-col items-start pl-2">
+            <div className="h-8 border-b border-slate-300 w-28 mb-1 flex items-end justify-center">
+               <span className="text-[20px] text-slate-800 pr-2 leading-none" style={{ fontFamily: "'Dancing Script', 'Caveat', 'Brush Script MT', cursive" }}>{editData.firstName} {editData.lastName}</span>
             </div>
-
-            {/* Stamp & Authorized Signature */}
-            <div className="mt-auto flex justify-between items-end relative z-10 pb-0.5">
-               <div className="flex flex-col items-start pl-2">
-                  <div className="h-8 border-b border-slate-300 w-28 mb-1 flex items-end justify-center">
-                     <span className="text-[19px] text-slate-800 pr-2 leading-none" style={{ fontFamily: "'Dancing Script', 'Caveat', 'Brush Script MT', cursive" }}>{editData.firstName} {editData.lastName}</span>
-                  </div>
-                  <span className="text-[7.5px] text-gray-400 font-bold uppercase tracking-wider">Authorized Signature</span>
-               </div>
-            </div>
-
-            {/* Bottom Right Wave */}
-            <div className="absolute bottom-0 right-0 w-36 h-20 overflow-hidden pointer-events-none z-0">
-               <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
-                  <path d="M0,100 C40,90 60,60 100,50 L100,100 Z" fill="#e11d48" opacity="0.85" />
-                  <path d="M20,100 C50,90 70,75 100,65 L100,100 Z" fill="#0070d2" />
-                  <path d="M40,100 C65,95 80,85 100,75 L100,100 Z" fill="#0c2e5c" />
-               </svg>
-            </div>
+            <span className="text-[7.5px] text-gray-400 font-bold uppercase tracking-wider">Authorized Signature</span>
          </div>
       </div>
    );
 
    const BackCardContent = () => (
-      <div className="font-sans flex flex-col h-full bg-white select-none text-gray-800">
-         {/* Top Header Section */}
-         <div className="relative pt-4 pb-0 px-5 flex flex-col items-center bg-white z-10">
-            <div className="flex items-center gap-3.5 w-full justify-center">
-               <LogoSVG />
-               <div className="flex flex-col">
-                  <h2 className="text-[#0e3b75] font-extrabold text-[24px] leading-none tracking-tight">Malee House</h2>
-                  <p className="text-gray-400 text-[8.5px] font-semibold tracking-[0.05em] mt-1 font-sans">We Build Trust With Quality & Service</p>
-                  <GoldFlourish />
-               </div>
-            </div>
-         </div>
-
-         {/* Wave Divider */}
-         <div className="relative h-10 w-full overflow-hidden shrink-0 z-10">
-            <svg viewBox="0 0 350 50" className="w-full h-full" preserveAspectRatio="none">
-               {/* Blue wave stripe */}
-               <path d="M 0,15 Q 175,55 350,15 L 350,30 Q 175,70 0,30 Z" fill="#0070d2" />
-               {/* Pink wave stripe */}
-               <path d="M 0,22 Q 175,59 350,22 L 350,34 Q 175,71 0,34 Z" fill="#e11d48" />
-            </svg>
-         </div>
-
-         {/* Body */}
-         <div className="flex-1 px-5 py-4 flex flex-col gap-4 text-xs relative bg-white justify-between">
+      <div className="font-sans relative w-full h-full select-none" style={{ backgroundImage: "url('/id-card-bg-back.png')", backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+         {/* Body content flowing naturally inside the blank middle area */}
+         <div className="absolute top-[140px] left-[24px] right-[24px] bottom-[36px] flex flex-col gap-2 text-gray-800">
             {/* Contact details with themed circles */}
-            <div className="flex flex-col gap-3.5 relative z-10 mt-1">
-               <div className="flex gap-4 items-start">
+            <div className="flex flex-col gap-2 relative z-10 mt-2">
+               <div className="flex gap-3.5 items-center">
                   <div className="text-white bg-[#e11d48] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><MapPin className="w-3.5 h-3.5" /></div>
                   <div>
-                     <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">OFFICE ADDRESS</p>
-                     <p className="text-[10px] text-slate-650 font-medium leading-relaxed pr-2">Malee House, Flat No.1, Wimbledon Building, In front of Azad College, D.G College Chowk, Satara, MAHARASHTRA 415002</p>
+                     <p className="font-bold text-[#0070d2] text-[9.5px] mb-0.5 tracking-wider">OFFICE ADDRESS</p>
+                     <p className="text-[10px] text-slate-650 font-semibold leading-relaxed pr-2">Malee House, Flat No.1, Wimbledon Building, In front of Azad College, D.G College Chowk, Satara, MAHARASHTRA 415002</p>
                   </div>
                </div>
-               <div className="flex gap-4 items-start">
+               <div className="flex gap-3.5 items-center">
                   <div className="text-white bg-[#fbbf24] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Phone className="w-3.5 h-3.5" /></div>
                   <div className="w-full pr-4">
-                     <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">CONTACT</p>
-                     <p className="text-[10.5px] text-slate-700 font-semibold">{editData.companyContact}</p>
+                     <p className="font-bold text-[#0070d2] text-[9.5px] mb-0.5 tracking-wider">CONTACT</p>
+                     <p className="text-[11px] text-slate-700 font-bold">{editData.companyContact}</p>
                   </div>
                </div>
-               <div className="flex gap-4 items-start">
+               <div className="flex gap-3.5 items-center">
                   <div className="text-white bg-[#0070d2] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Mail className="w-3.5 h-3.5" /></div>
                   <div className="w-full pr-4">
-                     <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">EMAIL</p>
-                     <p className="text-[10.5px] text-[#0c2e5c] font-semibold">{editData.companyEmail}</p>
+                     <p className="font-bold text-[#0070d2] text-[9.5px] mb-0.5 tracking-wider">EMAIL</p>
+                     <p className="text-[11px] text-[#0c2e5c] font-bold">{editData.companyEmail}</p>
                   </div>
                </div>
-               <div className="flex gap-4 items-start">
+               <div className="flex gap-3.5 items-center">
                   <div className="text-white bg-[#e11d48] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Globe className="w-3.5 h-3.5" /></div>
                   <div>
-                     <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">WEBSITE</p>
-                     <p className="text-[10.5px] text-[#0c2e5c] font-semibold">www.maleehouse.com</p>
+                     <p className="font-bold text-[#0070d2] text-[9.5px] mb-0.5 tracking-wider">WEBSITE</p>
+                     <p className="text-[11px] text-[#0c2e5c] font-bold font-sans">www.maleehouse.com</p>
                   </div>
                </div>
             </div>
-
-            <hr className="border-slate-100" />
 
             {/* Emergency Contact Section */}
             <div className="relative z-10 flex flex-col gap-1.5">
                <div className="bg-[#0070d2] text-white flex items-center gap-2 px-4 py-1 rounded-full w-max text-[8.5px] font-bold tracking-widest uppercase shadow-sm">
-                  <Users className="w-3 h-3" />
+                  <Users className="w-2.5 h-2.5" />
                   <span>Emergency Contact</span>
                </div>
                {renderEmergencyField("Name", editData.emergencyName)}
@@ -294,7 +305,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
             {/* Terms & Conditions Section */}
             <div className="relative z-10">
                <div className="bg-[#0070d2] text-white flex items-center gap-2 px-4 py-1 rounded-full w-max text-[8.5px] font-bold tracking-widest uppercase shadow-sm mb-2">
-                  <FileText className="w-3 h-3" />
+                  <FileText className="w-2.5 h-2.5" />
                   <span>Terms & Conditions</span>
                </div>
                <ol className="list-decimal pl-5 pr-1 text-[9px] text-slate-500 font-semibold space-y-0.5 leading-snug">
@@ -303,11 +314,10 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                   <li>Loss of card should be reported immediately.</li>
                </ol>
             </div>
-
-            {/* Themed Center Footer */}
-            <div className="bg-[#0070d2] py-2 text-center text-white text-[8px] font-bold tracking-widest shrink-0 uppercase">
-               — WE BUILD TRUST WITH QUALITY & SERVICE —
-            </div>
+         </div>
+         {/* Bottom Footer — absolutely pinned to sit centered in the blue stripe */}
+         <div className="absolute bottom-0 left-0 right-0 h-[36px] flex items-center justify-center text-white text-[10.5px] font-bold tracking-[0.15em] uppercase">
+            — WE BUILD TRUST WITH QUALITY & SERVICE —
          </div>
       </div>
    );
@@ -366,17 +376,21 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
          {/* ── Bulletproof PDF Export References ── */}
          {/* Rendered flat side-by-side in hidden container to allow HTML2Canvas to capture without 3D rotation bugs */}
          <div className="absolute left-[-9999px] top-[-9999px] flex gap-5 pointer-events-none">
-            <div 
-               ref={frontCardRef} 
-               className="w-[380px] h-[580px] bg-[#fdfdfd] rounded-[24px] flex flex-col border border-gray-150/80 overflow-hidden"
-            >
-               <FrontCardContent />
+         <div className="p-[2px] bg-transparent">
+               <div 
+                  ref={frontCardRef} 
+                  className="w-[380px] h-[580px] bg-[#fdfdfd] rounded-[24px] flex flex-col border border-gray-200 overflow-hidden"
+               >
+                  <FrontCardContent />
+               </div>
             </div>
-            <div 
-               ref={backCardRef} 
-               className="w-[380px] h-[580px] bg-[#fdfdfd] rounded-[24px] flex flex-col border border-gray-150/80 overflow-hidden"
-            >
-               <BackCardContent />
+            <div className="p-[2px] bg-transparent">
+               <div 
+                  ref={backCardRef} 
+                  className="w-[380px] h-[580px] bg-[#fdfdfd] rounded-[24px] flex flex-col border border-gray-200 overflow-hidden"
+               >
+                  <BackCardContent />
+               </div>
             </div>
          </div>
 

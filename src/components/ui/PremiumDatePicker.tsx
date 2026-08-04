@@ -275,7 +275,7 @@ export function PremiumDatePicker({ value, onChange, className, align = 'left', 
       >
         <CalendarIcon className="w-4 h-4 text-slate-500 group-hover:text-indigo-500 transition-colors" />
         <span className={cn("flex-1 font-medium", !value ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-200")}>
-          {value ? format(new Date(value), "PPP") : "Select Date"}
+          {value ? format(new Date(value), "dd-MM-yyyy") : "Select Date"}
         </span>
         <ChevronDown className="w-4 h-4 text-slate-500" />
       </div>
