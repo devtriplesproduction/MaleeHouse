@@ -1,7 +1,6 @@
 import React from "react";
 import { requireAuth } from "@/lib/auth-guard";
-import { Shield, User as UserIcon, Lock, Download } from "lucide-react";
-import { PageHeader } from "@/components/modules/PageHeader";
+import { Shield, Lock } from "lucide-react";
 import UpdatePasswordClient from "./UpdatePasswordClient";
 import ActiveSessionsClient from "./ActiveSessionsClient";
 import IDCardClient from "./IDCardClient";
@@ -16,29 +15,33 @@ export default async function ProfilePage() {
    const companySettings = await getCompanySettingsAction();
 
    return (
-      <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 pt-0 px-4 md:px-8 pb-8 text-slate-900 dark:text-white">
+      <div className="w-full space-y-6 animate-in fade-in duration-750 pb-8 text-slate-900 dark:text-white">
          
-         {/* ── Page Header with Download Button Action ── */}
-         <PageHeader 
-            title={
-               <>
-                  User <span className="text-indigo-500">Profile</span>
-               </>
-            }
-            subtitle="Manage your personal identity credentials and access sessions."
-            icon={UserIcon}
-            actions={<DownloadButtonClient />}
-         />
-
-         {/* ── Responsive Side-by-Side Grid ── */}
-         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-center pt-2">
+         {/* ── Heading Row matching Team Management style exactly ── */}
+         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+               <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  User <span className="text-indigo-500 dark:text-indigo-400">Profile</span>
+               </h1>
+               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
+                  Manage your personal identity credentials and access sessions.
+               </p>
+            </div>
             
-            {/* Left Side: ID Card (directly, no wrapper boxes or outer borders) */}
+            <div className="flex items-center gap-3">
+               <DownloadButtonClient />
+            </div>
+         </div>
+
+         {/* ── Side-by-Side Content Grid ── */}
+         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start pt-2">
+            
+            {/* Left Column: ID Card */}
             <div className="flex flex-col items-center justify-center w-full">
                <IDCardClient profile={profile} companySettings={companySettings} />
             </div>
 
-            {/* Right Side: Security Block */}
+            {/* Right Column: Security Controls */}
             <div className="glass-card p-6 border-slate-200 dark:border-white/5 bg-white dark:bg-[#090d16] rounded-2xl shadow-sm space-y-6 sticky top-24 w-full">
                <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
