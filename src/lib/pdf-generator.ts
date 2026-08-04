@@ -556,22 +556,22 @@ export const generateQuotationPDF = (quotation: any, project: any, companySettin
                 ` : ''}
                 ${(!quotation.client_details?.gst_type && (quotation.gst_amount ?? 0) > 0) ? `
                   <tr>
-                    <td class="totals-label">GST (${quotation.gst_rate ?? 18}%)</td>
+                    <td class="totals-label">GST (${quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18}%)</td>
                     <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
                   </tr>
                 ` : quotation.client_details?.gst_type === 'NO_GST' || (quotation.gst_amount ?? 0) === 0 ? '' : 
                   quotation.client_details?.gst_type === 'IGST' ? `
                   <tr>
-                    <td class="totals-label">IGST (${quotation.gst_rate ?? 18}%)</td>
+                    <td class="totals-label">IGST (${quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18}%)</td>
                     <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
                   </tr>
                   ` : `
                   <tr>
-                    <td class="totals-label">CGST (${(quotation.gst_rate ?? 18) / 2}%)</td>
+                    <td class="totals-label">CGST (${(quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18) / 2}%)</td>
                     <td class="totals-val">INR ${((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</td>
                   </tr>
                   <tr>
-                    <td class="totals-label">SGST (${(quotation.gst_rate ?? 18) / 2}%)</td>
+                    <td class="totals-label">SGST (${(quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18) / 2}%)</td>
                     <td class="totals-val">INR ${((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</td>
                   </tr>
                   `

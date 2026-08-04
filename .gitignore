@@ -24,6 +24,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+tsc-output.log
 
 # local env files
 .env*.local
@@ -40,3 +41,21 @@ yarn-error.log*
 release/
 release-build/
 *.zip
+
+# --- Secrets & data hygiene (never commit) ---
+# Real DB dumps / hand-exports (use seed scripts + synthetic data only)
+/production*.sql
+/*-data.sql
+/*.dump
+/*.pgdump
+# Keep supabase/migrations/** (schema only). Ignore loose dumps outside migrations:
+/supabase/*.sql
+!/supabase/migrations/
+
+# Third-party test tooling temp (often contains API keys + local paths)
+/testsprite_tests/
+testsprite_tests/**/tmp/
+**/tmp/config.json
+
+# Local service-role one-offs may leave artifacts
+scripts/local/.cache/

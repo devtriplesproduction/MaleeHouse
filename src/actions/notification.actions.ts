@@ -205,10 +205,12 @@ export async function getNotificationsAction() {
     const supabase: any = await createClient()
     const { data: notifications, error } = await supabase
       .from('notifications')
-      .select('*, projects!related_project_id(name, status)')
+      .select(
+        'id, user_id, title, message, type, is_read, related_project_id, created_at, projects!related_project_id(name, status)'
+      )
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
-      .limit(100)
+      .limit(50)
 
     if (error) throw error
 
@@ -349,28 +351,28 @@ export async function notifyMentionAction(authorName: string, recipientIds: stri
 
 export async function notifyStageUpdateAction(projectId: string, fromStage: string | null, toStage: string) {
   const supabase: any = await createAdminClient()
-  const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
+
+  // Parallel fetch: project + team + admins (was sequential)
+  const [projectRes, assignmentsRes, adminsRes] = await Promise.all([
+    supabase.from('projects').select('name').eq('id', projectId).single(),
+    supabase.from('project_assignments').select('user_id, role').eq('project_id', projectId),
+    supabase.from('profiles').select('id, role').in('role', ['admin', 'accountant']),
+  ])
+
+  const project = projectRes.data
   if (!project) return { success: true }
 
-  const { data: assignments } = await supabase
-    .from('project_assignments')
-    .select('user_id, role, profiles(role)')
-    .eq('project_id', projectId)
-
-  const { data: admins } = await supabase.from('profiles').select('id').in('role', ['admin', 'accountant'])
-  const adminIds = (admins || []).map((a: any) => a.id)
+  const assignments = assignmentsRes.data || []
+  const adminIds = (adminsRes.data || []).filter((a: any) => a.role === 'admin' || a.role === 'accountant').map((a: any) => a.id)
+  const accountantIds = (adminsRes.data || []).filter((a: any) => a.role === 'accountant').map((a: any) => a.id)
 
   const getAssignedByRole = (role: string) =>
-    (assignments || [])
-      .filter((a: any) => a.role === role)
-      .map((a: any) => a.user_id)
+    assignments.filter((a: any) => a.role === role).map((a: any) => a.user_id)
 
-  // Notification target map: stage → who should be notified and what message they should see
   const stageNotifications: Record<string, { recipients: string[]; title: string; message: string }[]> = {
     quotation_requested: [
       {
-        recipients: (await supabase.from('profiles').select('id').eq('role', 'accountant')
-          .then((r: any) => (r.data || []).map((a: any) => a.id))),
+        recipients: accountantIds,
         title: 'New Quotation Request',
         message: `A new quotation has been requested for project "${project.name}".`,
       },
@@ -439,21 +441,29 @@ export async function notifyStageUpdateAction(projectId: string, fromStage: stri
   }
 
   const notificationsForStage = stageNotifications[toStage]
-  if (!notificationsForStage) return { success: true } // No notification needed for this stage
+  if (!notificationsForStage) return { success: true }
 
-  await Promise.all(
-    notificationsForStage.flatMap(({ recipients, title, message }) =>
-      Array.from(new Set(recipients)).map((userId: any) =>
-        insertNotification({
-          userId,
-          title,
-          message,
-          type: 'stage_update',
-          relatedProjectId: projectId,
-        })
-      )
-    )
-  )
+  // Single bulk insert instead of N RPCs
+  const rows: any[] = []
+  const now = new Date().toISOString()
+  for (const { recipients, title, message } of notificationsForStage) {
+    for (const userId of Array.from(new Set(recipients.filter(Boolean)))) {
+      rows.push({
+        id: `ntf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        user_id: userId,
+        title,
+        message,
+        type: 'stage_update',
+        is_read: false,
+        related_project_id: projectId,
+        created_at: now,
+      })
+    }
+  }
+
+  if (rows.length > 0) {
+    await supabase.from('notifications').insert(rows)
+  }
   return { success: true }
 }
 
@@ -582,7 +592,7 @@ export async function notifyNewHolidayAction(holidayName: string, date: string, 
 export async function notifyUpcomingHolidaysAction(cronSecret?: string) {
   try {
     const expectedSecret = process.env.CRON_SECRET
-    if (expectedSecret && cronSecret !== expectedSecret) {
+    if (!expectedSecret || cronSecret !== expectedSecret) {
       return { success: false, error: 'Unauthorized cron request' }
     }
 

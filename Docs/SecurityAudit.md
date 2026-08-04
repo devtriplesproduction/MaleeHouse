@@ -1,50 +1,48 @@
 # Security & RLS Audit Report: Malee House ERP
 
-**Date:** 2026-05-10  
-**Status:** ✅ HARDENED  
-**Scope:** Supabase RLS Policies & Server Action RBAC
+**Last code review update:** 2026-08-01  
+**Prior design audit date:** 2026-05-10 (RLS/RBAC architecture only — **superseded for deploy go/no-go**)  
+**Status:** Hardened in application code; **deploy blocked until ops items in `Docs/SecurityRemediation-2026-08.md` are complete**
 
-## 1. Data Isolation Strategy
-The system utilizes a dual-layer security model:
-1.  **Row Level Security (RLS)**: Enforced at the database level to ensure users can only access rows they are authorized to see.
-2.  **Server Action RBAC**: Enforced in the application layer (`src/actions`) to prevent unauthorized triggers of sensitive business logic.
+## Scope
 
-## 2. Table-Specific RLS Policies
+| Layer | Covered by older audit (2026-05) | Covered by 2026-08 remediation |
+|-------|----------------------------------|--------------------------------|
+| RLS / RBAC design | Yes | Partial (settings policies tightened) |
+| Secrets hygiene | No | Yes (dumps, TestSprite key removed from tree) |
+| Dependency CVEs | No | Yes (Next.js → 14.2.35) |
+| Seed / default passwords | No | Yes (local-only synthetic seeds) |
+| Headers (CSP/HSTS) | No | Yes |
+| Health disclosure | No | Yes |
 
-### `profiles` (Table)
--   **SELECT**: Authenticated users can view all profiles (to enable @mentions and team management).
--   **UPDATE**: Users can only update their own profile (except for `role` and `is_active`, which are restricted to Admin).
--   **INSERT**: Restrict to `service_role` or triggered by Auth Hook.
+## Dual-layer model (still valid)
 
-### `projects` (Table)
--   **SELECT**: Authenticated users can view projects they are assigned to. Admins/Sales can view all.
--   **INSERT**: Restricted to `admin` and `sales` roles.
--   **UPDATE**: Restricted to `admin`, `sales`, and assigned `engineers`.
--   **DELETE**: Restricted to `admin` (Soft-delete only).
+1. **Row Level Security (RLS)** at Postgres  
+2. **Server Action RBAC** in `src/actions`
 
-### `tasks` (Table)
--   **SELECT**: Assigned users and project members.
--   **UPDATE**: Assigned user (status only) and Admins (all fields).
+Debug/probe API routes remain 404 in production (routes + `middleware.ts`).  
+System wipe remains gated by `ALLOW_SYSTEM_WIPE`.  
+`src/lib/env.ts` fails fast on missing required production env.
 
-### `system_settings` (Table)
--   **SELECT**: Public/Authenticated (read-only for app config).
--   **INSERT/UPDATE/DELETE**: STRICTLY `admin` role only.
+## Settings tables (updated 2026-08)
 
-## 3. Server Action Security Sweep
-The following critical actions have been audited and hardened with mandatory role-checks:
+- **`company_settings`**: SELECT for `authenticated` only; writes admin/accountant. **Not** anon-readable. Server loads use service role for public invoice/receipt rendering.
+- **`system_settings`**: No public SELECT; admin/accountant via existing policies.
 
-| Action | Restricted Role | Security Measure |
-| :--- | :--- | :--- |
-| `inviteUserAction` | Admin | Mandatory Profile Role Check |
-| `updateUserRoleAction` | Admin | Mandatory Profile Role Check |
-| `adminWipeSystemAction` | Admin | Mandatory Profile Role Check + Keyphrase |
-| `deleteProjectAction` | Admin | Soft-delete + Admin Role Check |
-| `createProjectAction` | Admin, Sales | Zod Validation + Role Check |
-| `submitProjectReviewAction` | QC, Admin | Role-based logic branching |
+## Seed / local tooling
 
-## 4. Mitigation of Multi-tenancy Risks
--   Every query targeting `projects` or `tasks` includes an explicit or implicit filter based on `project_id` or `assigned_to`.
--   The `profiles` table acts as the authoritative source for role verification, checked via `supabase.auth.getUser()` to prevent session spoofing.
+- Live under `scripts/local/` only.
+- Require `ALLOW_SEED=true` and non-production URL.
+- Synthetic `@localhost.dev` accounts — never real staff emails or `password123`.
 
----
-**Audit Conclusion:** The platform is deemed secure for production deployment. All identified administrative gaps have been closed.
+## Deploy gate (minimum)
+
+1. Ops: history purge + key rotation + force password resets (see remediation doc)  
+2. `npm run predeploy` (`tsc --noEmit` + `next build`)  
+3. Migrations applied through latest  
+4. `ALLOW_SYSTEM_WIPE` and `ALLOW_SEED` not enabled in production  
+
+## Audit conclusion
+
+**Application architecture and current-tree hygiene are suitable to continue hardening toward production.**  
+**Not deployable** until remediation ops A–C (history rewrite, secret rotation, production password resets) are finished. The 2026-05 conclusion that the platform was “secure for production deployment” applied only to RLS/RBAC design and is **withdrawn** as a full go-live statement.

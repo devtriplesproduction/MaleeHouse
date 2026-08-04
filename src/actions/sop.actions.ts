@@ -12,12 +12,14 @@ export async function getSOPsAction(): Promise<ActionResponse> {
     const profile: any = await getUserProfileAction()
     if (!profile) return { success: false, error: 'Unauthorized' }
 
+    // Note: cannot use unstable_cache here — createClient() needs cookies()
     const supabase: any = await createClient()
     const { data, error } = await supabase
       .from('sops')
-      .select('*')
+      .select('id, title, content, target_role, category, is_active, created_at, updated_at')
       .or(`target_role.is.null,target_role.eq.${profile.role}`)
       .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) return { success: false, error: error.message }
     return { success: true, data: normalizeData(data || []) }
@@ -32,7 +34,11 @@ export async function getAllSOPsAction(): Promise<ActionResponse> {
     if (profile?.role !== 'admin') return { success: false, error: 'Access denied. Admins only.' }
 
     const supabase: any = await createClient()
-    const { data, error } = await supabase.from('sops').select('*').order('created_at', { ascending: false })
+    const { data, error } = await supabase
+      .from('sops')
+      .select('id, title, content, target_role, category, is_active, created_at, updated_at, created_by')
+      .order('created_at', { ascending: false })
+      .limit(200)
     if (error) return { success: false, error: error.message }
     return { success: true, data: normalizeData(data || []) }
   } catch (error: any) {

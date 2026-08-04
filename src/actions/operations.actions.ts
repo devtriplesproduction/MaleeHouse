@@ -121,10 +121,11 @@ async function getProjectName(projectId: string): Promise<string> {
 
 export async function getOpsTeamMembersAction() {
   try {
-    const supabaseAdmin: any = await createClient();
-    const { data, error } = await supabaseAdmin
+    const supabase: any = await createClient();
+    const { data, error } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, role')
+      .select('id, first_name, last_name, email, role, designation, is_active')
+      .eq('is_active', true)
       .in('role', ['cad', 'field', 'engineer'])
       .order('first_name');
 
@@ -257,11 +258,18 @@ export async function claimProjectAction(projectId: string): Promise<OpResponse>
       }
     });
 
-    const { updateProjectStageAction } = await import('@/actions/workflow.actions');
-    await updateProjectStageAction(projectId, 'data_collection', 'Engineer claimed project and started data collection.');
+    // Only auto-advance when still sitting in the engineer intake stage
+    const { data: proj } = await supabase.from('projects').select('status').eq('id', projectId).single();
+    if (auth.role === 'engineer' && proj?.status === 'project_created') {
+      const { updateProjectStageAction } = await import('@/actions/workflow.actions');
+      await updateProjectStageAction(projectId, 'data_collection', 'Engineer claimed project and started data collection.');
+    }
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/operations");
+    revalidatePath("/engineer");
+    revalidatePath("/cad");
+    revalidatePath("/field");
     return { success: true, error: null };
   } catch (err: any) {
     console.error("claimProjectAction error:", err);
@@ -281,7 +289,7 @@ export async function removeTeamMemberAction(
       return { success: false, error: "Only Admins and Engineers can remove team members." };
 
     const supabase: any = await createClient();
-    const { data: assignment } = await supabase.from('project_assignments').select('*').eq('id', assignmentId).single();
+    const { data: assignment } = await supabase.from('project_assignments').select('user_id, role').eq('id', assignmentId).single();
     if (!assignment) return { success: false, error: "Assignment not found." };
 
     await supabase.from('project_assignments').delete().eq('id', assignmentId);
@@ -361,9 +369,9 @@ export async function submitCADRevisionAction(
       return { success: false, error: "Only CAD users can submit revisions." } as any;
 
     const supabase: any = await createClient();
-    const { data: projectRevisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
+    const { data: projectRevisions } = await supabase.from('cad_revisions').select('status').eq('project_id', projectId);
 
-    const { data: project } = await supabase.from('projects').select('*').eq('id', projectId).single();
+    const { data: project } = await supabase.from('projects').select('bypass_active').eq('id', projectId).single();
     const rejectedCount = (projectRevisions || []).filter((r: any) => r.status === "rejected").length;
 
     if (rejectedCount >= 10 && !project?.bypass_active) {
@@ -574,7 +582,7 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
     if (!auth.authorized) return { success: false, error: auth.error || null, data: [] };
 
     const supabase: any = await createClient();
-    const { data: revisions } = await supabase.from('cad_revisions').select('*').eq('project_id', projectId);
+    const { data: revisions } = await supabase.from('cad_revisions').select('id, project_id, submitted_by, file_name, file_url, revision_number, revision_notes, status, review_notes, reviewed_by, reviewed_at, created_at').eq('project_id', projectId);
     
     const userIds = Array.from(new Set((revisions || []).flatMap((r: any) => [r.submitted_by, r.reviewed_by]))).filter(Boolean);
     let profiles: any[] = [];

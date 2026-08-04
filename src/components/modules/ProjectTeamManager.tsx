@@ -38,9 +38,18 @@ export function ProjectTeamManager({ projectId, initialTeam }: ProjectTeamManage
   const loadUsers = async () => {
     const result = await getAllUsersAction();
     if (result?.success) {
-      // Filter out users already on the team
+      // Filter out users already on the team; prefer ops roles for assignment
       const teamUserIds = new Set(team.map((m: any) => m.user_id));
-      setAllUsers(result.data?.filter((u: any) => !teamUserIds.has(u.id)) || []);
+      const ops = (result.data || []).filter(
+        (u: any) =>
+          !teamUserIds.has(u.id) &&
+          u.is_active !== false &&
+          ['engineer', 'cad', 'field', 'admin'].includes((u.role || '').toLowerCase())
+      );
+      setAllUsers(ops.length > 0 ? ops : (result.data || []).filter((u: any) => !teamUserIds.has(u.id)));
+    } else {
+      toast({ title: "Could not load staff", description: result?.error || "Unauthorized", variant: "error" });
+      setAllUsers([]);
     }
   };
 

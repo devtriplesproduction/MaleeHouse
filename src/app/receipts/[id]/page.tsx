@@ -1,122 +1,84 @@
-import { notFound } from 'next/navigation';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { getCompanySettingsAction } from '@/actions/settings.actions';
-import { ClientReceiptViewer } from './ClientReceiptViewer';
-import { Metadata } from 'next';
+import { notFound } from 'next/navigation'
+import { getCompanySettingsAction } from '@/actions/settings.actions'
+import { ClientReceiptViewer } from './ClientReceiptViewer'
+import { fetchPublicReceipt } from '@/lib/public-finance'
+import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Receipt | Malee House',
   description: 'View your payment receipt',
-};
+}
 
-export default async function ReceiptPage({ params, searchParams }: { params: { id: string }, searchParams: { type?: string } }) {
-  const supabase = createAdminClient();
-  const type = searchParams.type || 'milestone'; // Default to milestone if not provided
-  let receiptData = null;
+export const dynamic = 'force-dynamic'
 
-  let searchId = params.id;
-  let queryType = type;
+export default async function ReceiptPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string }
+  searchParams: { type?: string; token?: string }
+}) {
+  let searchId = params.id
+  let queryType: 'milestone' | 'invoice' =
+    searchParams.type === 'milestone' ? 'milestone' : 'invoice'
 
-  // Handle legacy URLs like REC-MS-1783339058887 or REC-INV-12345
   if (params.id.startsWith('REC-MS-')) {
-    searchId = params.id.replace('REC-MS-', '');
-    queryType = 'milestone';
+    searchId = params.id.replace('REC-MS-', '')
+    queryType = 'milestone'
   } else if (params.id.startsWith('REC-INV-')) {
-    searchId = params.id.replace('REC-INV-', '');
-    queryType = 'invoice';
+    searchId = params.id.replace('REC-INV-', '')
+    queryType = 'invoice'
   }
 
+  const lookupId = params.id.startsWith('REC-') ? searchId : params.id
+  const data = await fetchPublicReceipt(lookupId, queryType, searchParams.token)
+
+  if (!data) {
+    notFound()
+  }
+
+  const row = data as any
+  let receiptData
+
   if (queryType === 'milestone') {
-    // Search exact ID first, fallback to partial match for legacy URLs
-    let { data, error } = await supabase
-      .from('milestones')
-      .select('*, projects(name, client_name, gst_number)')
-      .eq('id', params.id)
-      .maybeSingle();
-
-    if (!data && searchId !== params.id) {
-       // Legacy fallback
-       const fallbackRes = await supabase
-         .from('milestones')
-         .select('*, projects(name, client_name, gst_number)')
-         .ilike('id', `%${searchId}%`)
-         .limit(1)
-         .maybeSingle();
-       
-       data = fallbackRes.data;
-       error = fallbackRes.error;
-    }
-
-    if (error || !data) {
-      notFound();
-    }
-    
-    const milestone = data as any;
-
-    const cleanId = milestone.id.includes('-') ? milestone.id.split('-')[1].toUpperCase() : milestone.id.substring(0, 5).toUpperCase();
+    const cleanId = row.id?.includes?.('-')
+      ? row.id.split('-')[1].toUpperCase()
+      : String(row.id || '').substring(0, 5).toUpperCase()
 
     receiptData = {
       id: `REC-MS-${cleanId}`,
       type: 'milestone' as const,
-      projectName: milestone.projects?.name || 'Standalone Assignment',
-      clientName: milestone.projects?.client_name || 'Direct Client',
-      title: milestone.title,
-      amount: milestone.amount,
-      dateCleared: milestone.updated_at || milestone.created_at,
-      originalId: milestone.id,
-      projectId: milestone.project_id,
-      clientGstNumber: milestone.projects?.gst_number
-    };
-  } else if (queryType === 'invoice') {
-    let { data, error } = await supabase
-      .from('invoices')
-      .select('*, projects(name, client_name, id, gst_number)')
-      .eq('id', params.id)
-      .maybeSingle();
-
-    if (!data && searchId !== params.id) {
-       // Legacy fallback: invoice numbers might just be numeric or have INV-
-       const fallbackRes = await supabase
-         .from('invoices')
-         .select('*, projects(name, client_name, id, gst_number)')
-         .ilike('invoice_number', `%${searchId}%`)
-         .limit(1)
-         .maybeSingle();
-       
-       data = fallbackRes.data;
-       error = fallbackRes.error;
+      projectName: row.projects?.name || 'Standalone Assignment',
+      clientName: row.projects?.client_name || 'Direct Client',
+      title: row.title,
+      amount: row.amount,
+      dateCleared: row.updated_at || row.created_at,
+      originalId: row.id,
+      projectId: row.project_id,
+      clientGstNumber: row.projects?.gst_number,
     }
-
-    if (error || !data) {
-      notFound();
-    }
-    
-    const invoice = data as any;
-
-    const cleanId = invoice.invoice_number.replace(/\D/g, '') || invoice.id.substring(0, 5).toUpperCase();
+  } else {
+    const cleanId =
+      String(row.invoice_number || '').replace(/\D/g, '') ||
+      String(row.id || '').substring(0, 5).toUpperCase()
 
     receiptData = {
       id: `REC-INV-${cleanId}`,
       type: 'invoice' as const,
-      projectName: invoice.projects?.name || 'Standalone Assignment',
-      clientName: invoice.projects?.client_name || 'Direct Client',
-      title: `Invoice Payout: ${invoice.invoice_number}`,
-      amount: invoice.total_amount,
-      dateCleared: invoice.created_at, // Use created_at or updated_at for invoices too
-      originalId: invoice.id,
-      projectId: invoice.projects?.id,
-      clientGstNumber: invoice.projects?.gst_number
-    };
-  } else {
-    notFound();
+      projectName: row.projects?.name || 'Standalone Assignment',
+      clientName: row.projects?.client_name || 'Direct Client',
+      title: `Invoice Payout: ${row.invoice_number}`,
+      amount: row.total_amount,
+      dateCleared: row.created_at,
+      originalId: row.id,
+      projectId: row.projects?.id || row.project_id,
+      clientGstNumber: row.projects?.gst_number,
+    }
   }
 
-  const companySettings = await getCompanySettingsAction();
+  const companySettings = await getCompanySettingsAction()
 
   return (
-    <ClientReceiptViewer 
-      receipt={receiptData} 
-      companySettings={companySettings} 
-    />
-  );
+    <ClientReceiptViewer receipt={receiptData} companySettings={companySettings} />
+  )
 }

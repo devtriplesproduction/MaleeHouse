@@ -32,7 +32,7 @@ export async function addProjectCommentAction(
     const profile: any = await getUserProfileAction()
     if (!profile) return { success: false, error: 'Unauthorized. Please log in.' }
 
-    if (!checkActionRateLimit(profile.id, 'addProjectCommentAction', 15, 60 * 1000)) {
+    if (!(await checkActionRateLimit(profile.id, 'addProjectCommentAction', 15, 60 * 1000))) {
       return { success: false, error: 'Rate limit exceeded for this action. Please try again later.' };
     }
 

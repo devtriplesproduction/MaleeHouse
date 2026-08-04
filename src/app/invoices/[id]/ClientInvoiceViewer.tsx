@@ -368,35 +368,37 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
 
 
 
-            <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl shadow-sm">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                  <CreditCard className="w-4 h-4" />
+            {invoice.bank && (
+              <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl shadow-sm">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Payment Details</h4>
+                    <p className="text-[10px] text-indigo-700 mt-1 font-medium">Please include invoice number in payment reference.</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Payment Details</h4>
-                  <p className="text-[10px] text-indigo-700 mt-1 font-medium">Please include invoice number in payment reference.</p>
+                <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium">
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">Bank</span>
+                      <span>{invoice.bank.bank_name}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">A/C Name</span>
+                      <span>{invoice.bank.account_name}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">A/C No</span>
+                      <span className="font-mono">{invoice.bank.account_number}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-indigo-600">IFSC</span>
+                      <span className="font-mono">{invoice.bank.ifsc_code}</span>
+                   </div>
                 </div>
               </div>
-              <div className="bg-white/60 p-3 rounded-lg border border-indigo-200/50 space-y-2 text-[11px] text-indigo-900 font-medium">
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">Bank</span>
-                    <span>State Bank of India</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">A/C Name</span>
-                    <span>Malee House Services</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">A/C No</span>
-                    <span className="font-mono">09876543212345</span>
-                 </div>
-                 <div className="flex justify-between">
-                    <span className="text-indigo-600">IFSC</span>
-                    <span className="font-mono">SBIN0001234</span>
-                 </div>
-              </div>
-            </div>
+            )}
 
           </div>
 

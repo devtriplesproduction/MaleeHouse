@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import DashboardLoading from "@/app/(modules)/loading";
-import { QuotationWorkspaceContent } from "@/features/accounts/QuotationWorkspaceContent";
+import { QuotationWorkspaceLazy } from "@/features/accounts/QuotationWorkspaceLazy";
 import { getProjectByIdAction } from "@/actions/project.actions";
 import { getAllQuotationsAction, getQuotationByIdAction } from "@/actions/quotation.actions";
 
@@ -40,7 +40,7 @@ export default async function QuotationWorkspacePage({
 
   return (
     <Suspense fallback={<DashboardLoading />}>
-      <QuotationWorkspaceContent 
+      <QuotationWorkspaceLazy 
         initialProject={initialProject}
         initialQuotations={initialQuotations}
       />

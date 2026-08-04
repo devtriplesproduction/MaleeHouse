@@ -12,7 +12,9 @@ import {
   Building,
   X,
   Link2,
-  Mail
+  Mail,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -80,6 +82,8 @@ const formatCurrency = (amount: number) => {
 export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsTableProps) {
   const [selectedReceipt, setSelectedReceipt] = useState(null as ReceiptItem | null);
   const [mounted, setMounted] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const { settings: companySettings } = useCompanySettings();
 
   React.useEffect(() => {
@@ -130,6 +134,14 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
            title.toLowerCase().includes(q);
   });
 
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedReceipts = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Reset to first page when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const handlePrint = () => {
     window.print();
   };
@@ -179,7 +191,7 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
             </div>
           </div>
         ) : (
-          filtered.map((r) => (
+          paginatedReceipts.map((r) => (
             <div
               key={r.id}
               className="relative rounded-2xl border bg-white dark:bg-[#0f121b] pt-[18px] pb-[18px] pl-3 pr-4 md:py-[15px] md:pl-4 md:pr-6 hover:shadow-md hover:border-slate-300 dark:hover:border-white/10 transition-all duration-300 flex flex-col md:flex-row md:items-center gap-4 md:gap-0 group border-slate-200/60 dark:border-white/5 shadow-sm"
@@ -252,6 +264,46 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
           ))
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/5 pt-4">
+          <p className="text-xs text-slate-500 font-medium">
+            Showing <span className="font-semibold text-slate-700 dark:text-slate-300">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-semibold text-slate-700 dark:text-slate-300">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> of <span className="font-semibold text-slate-700 dark:text-slate-300">{filtered.length}</span> entries
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={cn(
+                    "w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors",
+                    currentPage === i + 1 
+                      ? "bg-indigo-600 text-white" 
+                      : "text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
+                  )}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Receipt Details Modal */}
       {mounted && typeof document !== 'undefined' && createPortal(

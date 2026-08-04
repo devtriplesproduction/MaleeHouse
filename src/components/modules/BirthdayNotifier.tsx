@@ -132,7 +132,25 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
 
     if (initialBirthdays && initialBirthdays.length > 0) {
       setNotifications(initialBirthdays);
+      return;
     }
+
+    // Client-only fetch once (removed from layout SSR to cut per-page DB cost)
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getTodayBirthdaysAction } = await import("@/actions/auth.actions");
+        const res = await getTodayBirthdaysAction();
+        if (!cancelled && res.success && res.data?.length) {
+          setNotifications(res.data);
+        }
+      } catch {
+        /* non-critical */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [currentUser, role, initialBirthdays]);
 
   const handleAcknowledge = () => {

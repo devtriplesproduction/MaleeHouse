@@ -46,8 +46,8 @@ export default async function AccountantDashboardPage() {
 
   const pendingQuoteRequests = intakeRes.success && intakeRes.data ? intakeRes.data.length : 0;
   
-  const waitingClientApproval = quotations.filter((q: any) => 
-    q.status === 'Sent' || q.status === 'Pending Approval' || q.status === 'Review'
+  const waitingClientApproval = quotations.filter((q: any) =>
+    q.status === 'Sent' || q.status === 'Viewed' || q.status === 'Revision Requested'
   ).length;
 
   const milestonesPending = milestones.filter((m: any) => 

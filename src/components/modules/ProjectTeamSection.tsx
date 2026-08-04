@@ -33,6 +33,30 @@ const ROLE_COLORS: Record<string, string> = {
   lidar_specialist: 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400',
 };
 
+/** Match staff to assignment slot by role and/or designation (e.g. cad_eng → cad). */
+function staffMatchesRole(s: { role?: string; designation?: string }, selectedRole: string): boolean {
+  const role = (s.role || '').toLowerCase();
+  const desig = (s.designation || '').toLowerCase();
+  const want = selectedRole.toLowerCase();
+
+  if (role === want || desig === want) return true;
+
+  // designation prefixes / aliases used in HR onboarding
+  if (want === 'cad') {
+    return role === 'cad' || desig.includes('cad') || desig.includes('lidar');
+  }
+  if (want === 'field') {
+    return role === 'field' || desig.includes('field') || desig.includes('survey');
+  }
+  if (want === 'lidar_specialist') {
+    return desig.includes('lidar') || role === 'lidar_specialist';
+  }
+  if (want === 'engineer') {
+    return role === 'engineer' || desig.includes('engineer');
+  }
+  return false;
+}
+
 function getInitials(firstName?: string | null, lastName?: string | null) {
   const f = (firstName || '').trim();
   const l = (lastName || '').trim();
@@ -45,8 +69,6 @@ export function ProjectTeamSection({ projectId, assignments, staff, canAssign }:
   const [selectedRole, setSelectedRole] = useState(ASSIGNMENT_ROLES[0].id);
   const [selectedUser, setSelectedUser] = useState("");
   const [loading, setLoading] = useState(false);
-
-  console.log("DEBUG TEAM SECTION:", { staffCount: staff.length, staffSample: staff.slice(0, 3), selectedRole });
 
   const handleAssign = async () => {
     if (!selectedUser) {
@@ -144,20 +166,32 @@ export function ProjectTeamSection({ projectId, assignments, staff, canAssign }:
               <Select
                 value={selectedUser}
                 onValueChange={setSelectedUser}
-                placeholder="Select..."
+                placeholder={
+                  staff.filter((s: any) => staffMatchesRole(s, selectedRole)).length === 0
+                    ? "No staff for this role"
+                    : "Select..."
+                }
               >
                 {staff
-                  .filter((s: any) => {
-                    const matches = s.role === selectedRole || s.designation === selectedRole;
-                    if (selectedRole === 'cad' && s.designation === 'lidar_specialist') return false;
-                    return matches;
-                  })
+                  .filter((s: any) => staffMatchesRole(s, selectedRole))
                   .map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.first_name} {s.last_name}
+                    {(s.first_name || s.last_name)
+                      ? `${s.first_name || ''} ${s.last_name || ''}`.trim()
+                      : s.email || s.id}
                   </SelectItem>
                 ))}
               </Select>
+              {staff.length === 0 && (
+                <p className="text-[10px] text-rose-500 font-medium">
+                  Staff list failed to load. Refresh the page or check profile access.
+                </p>
+              )}
+              {staff.length > 0 && staff.filter((s: any) => staffMatchesRole(s, selectedRole)).length === 0 && (
+                <p className="text-[10px] text-amber-600 font-medium">
+                  No active users with role “{selectedRole}”. Onboard staff with that role first.
+                </p>
+              )}
             </div>
           </div>
           <button

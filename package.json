@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "verify:migrations": "node -r dotenv/config scripts/verify-prod-migrations.mjs dotenv_config_path=.env.local",
+    "smoke:prod": "node scripts/production-smoke.mjs",
+    "go-live": "node -r dotenv/config scripts/go-live-checklist.mjs dotenv_config_path=.env.local",
+    "sync:claims": "node -r dotenv/config scripts/sync-auth-claims.mjs dotenv_config_path=.env.local",
+    "assert:critical": "node scripts/critical-path-assert.mjs",
+    "typecheck": "tsc --noEmit",
+    "predeploy": "npm run typecheck && next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -28,7 +35,7 @@
     "libphonenumber-js": "^1.13.6",
     "lucide-react": "^0.363.0",
     "marked": "^18.0.5",
-    "next": "14.1.4",
+    "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.51.1",
@@ -51,7 +58,7 @@
     "@typescript-eslint/parser": "^8.64.0",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
-    "eslint-config-next": "14.1.4",
+    "eslint-config-next": "14.2.35",
     "eslint-plugin-react-hooks": "^7.1.1",
     "fallow": "^2.96.0",
     "postcss": "^8",

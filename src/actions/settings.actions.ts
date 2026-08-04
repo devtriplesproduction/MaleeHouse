@@ -3,7 +3,8 @@
 import { normalizeData } from '@/lib/normalize';
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import { createClient as createAnonClient } from "@supabase/supabase-js";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { z } from "zod";
 import { getUserProfileAction } from "./auth.actions";
 
@@ -38,6 +39,37 @@ const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   branchName: "",
   upiId: ""
 };
+
+const SETTINGS_SELECT =
+  'id, name, address, cityStateZip, gstin, telephone, mobile, bankName, accountName, accountNumber, ifscCode, branchName, upiId';
+
+/**
+ * Server-side company settings load (no cookies — safe for unstable_cache).
+ * Uses service role so public invoice/receipt pages work without exposing
+ * company_settings (GSTIN, bank details) to the anon Supabase REST role.
+ */
+async function fetchCompanySettingsFromDb(): Promise<CompanySettings> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return DEFAULT_COMPANY_SETTINGS;
+
+  const supabase = createAnonClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data } = await supabase
+    .from("company_settings")
+    .select(SETTINGS_SELECT)
+    .limit(1);
+
+  if (data && data.length > 0) return data[0] as CompanySettings;
+  return DEFAULT_COMPANY_SETTINGS;
+}
+
+const getCrossRequestCompanySettings = unstable_cache(
+  fetchCompanySettingsFromDb,
+  ["company-settings-v2"],
+  { revalidate: 300, tags: ["company-settings"] }
+);
 
 const stageTargetsSchema = z.record(z.string(), z.number());
 const orgProfileSchema = z.object({
@@ -154,31 +186,10 @@ export async function getSystemHealthAction() {
   }
 }
 
-// FIX: dedupe repeated getCompanySettingsAction() calls within a single
-// request. Multiple server components under (modules)/layout.tsx (which
-// already fetches company settings once) were each independently calling
-// this action, resulting in duplicate DB queries per page load. React's
-// cache() memoizes the result per request so every caller in the same
-// render pass shares one lookup, without caching across separate requests
-// (each request gets its own fresh cache() call, unlike a module-level
-// singleton). The exported Server Action itself stays a plain async
-// function — only the internal lookup is wrapped, so this keeps working
-// correctly as a Server Action.
+// Per-request + cross-request cache: layout no longer hits DB every navigation.
 const getCachedCompanySettings = cache(async (): Promise<CompanySettings> => {
   try {
-    const supabase: any = await createClient();
-    const { data, error } = await supabase.from('company_settings').select('*').limit(1);
-
-    if (data && data.length > 0) {
-      return data[0] as CompanySettings;
-    }
-
-    // Create it with default if it doesn't exist (Only if Admin or Accountant)
-    const profile: any = await getUserProfileAction();
-    if (profile && (profile.role === "admin" || profile.role === "accountant")) {
-      await supabase.from('company_settings').insert([DEFAULT_COMPANY_SETTINGS]);
-    }
-    return DEFAULT_COMPANY_SETTINGS;
+    return await getCrossRequestCompanySettings();
   } catch (err) {
     console.error("Error reading company settings:", err);
     return DEFAULT_COMPANY_SETTINGS;
@@ -207,8 +218,10 @@ export async function updateCompanySettingsAction(settings: Partial<CompanySetti
 
     if (error) throw error;
 
+    revalidateTag("company-settings");
     revalidatePath("/accounts");
     revalidatePath("/projects");
+    revalidatePath("/settings/details");
     return { success: true, data: normalizeData(updatedSettings) };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update settings" };

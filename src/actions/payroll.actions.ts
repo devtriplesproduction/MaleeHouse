@@ -214,7 +214,14 @@ export interface PayrollSnapshot {
 export async function getPayrollCyclesAction() {
   try {
     const supabase: any = await createClient();
-    const { data: cycles, error } = await supabase.from('payroll_cycles').select('*');
+    const { data: cycles, error } = await supabase
+      .from('payroll_cycles')
+      .select(
+        'id, month, year, status, locked_at, locked_by, bank_id, total_gross, total_net, created_at, updated_at'
+      )
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .limit(48);
     if (error) throw error;
     return { success: true, data: normalizeData(cycles) };
   } catch (error: any) {
@@ -248,7 +255,9 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     // Check if cycle is already locked
     const { data: cycles, error: cyclesError } = await supabaseAdmin
       .from('payroll_cycles')
-      .select('*')
+      .select(
+        'id, month, year, status, locked_at, locked_by, bank_id, total_gross, total_net, created_at, updated_at'
+      )
       .eq('month', month)
       .eq('year', year);
 
@@ -313,27 +322,31 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     // Fetch all salary increments up to this month
     const { data: incrementsData } = await supabase
       .from('salary_increments')
-      .select('*')
+      .select('id, employee_id, amount, effective_date, reason, created_at')
       .lte('effective_date', endOfMonth)
-      .order('effective_date', { ascending: false });
+      .order('effective_date', { ascending: false })
+      .limit(500);
 
     // Days in Month (fixed working days = 26)
     const workingDaysLimit = 26;
 
     // Fetch all active financial ledger entries
+    const empIds = employees.map((e: any) => e.id);
     const { data: ledgerData, error: ledgerError } = await supabaseAdmin
       .from('employee_financial_ledger')
-      .select('*')
-      .in('employee_id', employees.map((e: any) => e.id))
-      .eq('status', 'pending');
+      .select('id, employee_id, amount, type, status, description, created_at')
+      .in('employee_id', empIds.length ? empIds : ['00000000-0000-0000-0000-000000000000'])
+      .eq('status', 'pending')
+      .limit(1000);
       
     // Fetch draft applications for the current cycle, if any
     let currentApps: any[] = [];
     if (existing?.id) {
       const { data } = await supabaseAdmin
         .from('payroll_adjustment_applications')
-        .select('*')
-        .eq('cycle_id', existing.id);
+        .select('id, cycle_id, employee_id, amount, type, status, created_at')
+        .eq('cycle_id', existing.id)
+        .limit(500);
       currentApps = data || [];
     }
 

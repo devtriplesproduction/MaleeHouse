@@ -309,6 +309,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
             toast.success("Project set to Payment Pending.");
             setTimeout(() => {
               router.push("/accounts/approvals");
+              router.refresh();
             }, 1000);
           } else {
             toast.error(dispatchRes?.error || "Failed to update project status.");

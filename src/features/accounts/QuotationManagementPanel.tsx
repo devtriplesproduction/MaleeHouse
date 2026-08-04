@@ -69,9 +69,14 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
   const fetchQuotations = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     const res = await getProjectQuotationsAction(project.id, Date.now());
-    if (res.success) setQuotations(res.data || []);
+    if (res.success) {
+      setQuotations(res.data || []);
+    } else {
+      setQuotations([]);
+      toast.error(res.error || 'Failed to load quotations');
+    }
     if (showLoading) setLoading(false);
-    return res.data;
+    return res.success ? res.data : [];
   };
 
   useEffect(() => { 

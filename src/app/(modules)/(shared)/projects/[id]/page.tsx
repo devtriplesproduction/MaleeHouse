@@ -179,7 +179,6 @@ interface ProjectDetailPageProps {
 
 async function ProjectContentWrapper({ project, profile, user, role, theme, params }: any) {
   const supabase: any = await createClient();
-  const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
 
   const [
     historyRes,
@@ -189,12 +188,38 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
     milestonesRes,
     activityLogsRes
   ] = await Promise.all([
-    supabase.from('workflow_history').select('*').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100),
-    supabase.from('comments').select('*').eq('project_id', params.id).is('deleted_at', null).order('created_at', { ascending: false }).limit(100),
-    supabase.from('files').select('*').eq('project_id', params.id).order('uploaded_at', { ascending: false }).limit(200),
-    supabaseAdmin.from('project_assignments').select('*').eq('project_id', params.id),
+    supabase
+      .from('workflow_history')
+      .select('id, project_id, from_stage, to_stage, changed_by, comment, created_at')
+      .eq('project_id', params.id)
+      .order('created_at', { ascending: false })
+      .limit(50),
+    supabase
+      .from('comments')
+      .select('id, project_id, user_id, content, comment_type, parent_comment_id, created_at, deleted_at')
+      .eq('project_id', params.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(50),
+    supabase
+      .from('files')
+      .select('id, project_id, file_name, file_url, category, mime_type, file_size_bytes, uploaded_by, uploaded_at, deleted_at')
+      .eq('project_id', params.id)
+      .is('deleted_at', null)
+      .order('uploaded_at', { ascending: false })
+      .limit(100),
+    // User client + RLS — avoid service-role bypass for assignments
+    supabase
+      .from('project_assignments')
+      .select('id, project_id, user_id, role, assigned_at, assigned_by')
+      .eq('project_id', params.id),
     getMilestonesAction(params.id),
-    supabase.from('activity_logs').select('*').eq('project_id', params.id).order('created_at', { ascending: false }).limit(100)
+    supabase
+      .from('activity_logs')
+      .select('id, project_id, user_id, action, details, created_at')
+      .eq('project_id', params.id)
+      .order('created_at', { ascending: false })
+      .limit(50),
   ]);
 
   const files = filesRes.data || [];
@@ -208,26 +233,39 @@ async function ProjectContentWrapper({ project, profile, user, role, theme, para
   
   if (assignmentsRes.error) console.error("Assignments Fetch Error:", assignmentsRes.error);
 
-  // Collect unique user IDs from all related records
+  // Collect unique user IDs from all related records (for activity/comment names)
   const uniqueUserIds = new Set<string>();
   rawHistory.forEach((h: any) => h.changed_by && uniqueUserIds.add(h.changed_by));
   rawComments.forEach((c: any) => c.user_id && uniqueUserIds.add(c.user_id));
   rawAssignments.forEach((a: any) => a.user_id && uniqueUserIds.add(a.user_id));
   rawActivityLogs.forEach((l: any) => l.user_id && uniqueUserIds.add(l.user_id));
 
-  // Fetch only referenced profiles in a single query
-  let allUsers: any[] = [];
-  if (uniqueUserIds.size > 0) {
-    const { data } = await supabaseAdmin
+  // Full staff directory for team assignment (must not be limited to people already on the project)
+  // + referenced profiles for activity names
+  const [{ data: staffDirectory }, { data: mentionedProfiles }] = await Promise.all([
+    supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, role, designation')
-      .in('id', Array.from(uniqueUserIds));
-    if (data) allUsers = data;
-  }
+      .select('id, first_name, last_name, email, role, designation, is_active')
+      .eq('is_active', true)
+      .in('role', ['admin', 'engineer', 'cad', 'field'])
+      .order('first_name'),
+    uniqueUserIds.size > 0
+      ? supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email, role, designation')
+          .in('id', Array.from(uniqueUserIds))
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
 
-  // Build a Map for fast lookup
+  // allUsers = assignable staff for Project Team / Ops pickers
+  const allUsers: any[] = staffDirectory || [];
+
+  // Build a Map for fast lookup (staff + anyone mentioned in activity)
   const userMap = new Map<string, any>();
   allUsers.forEach((u: any) => userMap.set(u.id, u));
+  (mentionedProfiles || []).forEach((u: any) => {
+    if (!userMap.has(u.id)) userMap.set(u.id, u);
+  });
 
   // Helper to attach profiles in JavaScript using the Map
   const attachProfile = (data: any[], key: string, profileAlias: string) => {

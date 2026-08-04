@@ -1,14 +1,14 @@
 import React, { Suspense } from 'react';
-import { ProjectCreationWizard } from '@/components/modules/ProjectCreationWizard';
 import { getUserProfileAction } from '@/actions/auth.actions';
 import { ProjectsTableWrapper } from '@/components/modules/ProjectsTableWrapper';
 import { Briefcase, FolderKanban } from 'lucide-react';
 import { getAllOverrideRequestsAction } from '@/actions/workflow.actions';
-import { DispatchOverridesTable } from '@/components/modules/DispatchOverridesTable';
+import { ProjectCreateButton } from '@/components/modules/ProjectCreateButton';
+import { DispatchOverridesLazy } from '@/components/modules/DispatchOverridesLazy';
 
 async function DispatchOverridesTableWrapper() {
   const result = await getAllOverrideRequestsAction();
-  return <DispatchOverridesTable requests={result.data || []} />;
+  return <DispatchOverridesLazy requests={result.data || []} />;
 }
 
 export const metadata = {
@@ -67,7 +67,7 @@ export default async function ProjectsPage() {
         {/* Primary CTA */}
         {role !== 'engineer' && (
           <div className="flex-shrink-0">
-            <ProjectCreationWizard />
+            <ProjectCreateButton />
           </div>
         )}
       </div>

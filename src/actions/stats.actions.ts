@@ -20,10 +20,10 @@ export async function getGlobalStatsAction(): Promise<StatItem[]> {
       { count: fieldCount },
       { count: completedCount }
     ] = await Promise.all([
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'field_work'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'completed')
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null),
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending'),
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'field_work'),
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'completed')
     ]);
 
     return [
@@ -50,9 +50,9 @@ export async function getSalesStatsAction(): Promise<StatItem[]> {
       { count: quoteCount },
       { count: paymentCount }
     ] = await Promise.all([
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'lead'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'quotation_sent'),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending')
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'lead'),
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'quotation_sent'),
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'payment_pending')
     ]);
 
     return [
@@ -77,8 +77,8 @@ export async function getEngineerStatsAction(userId: string): Promise<StatItem[]
       { count: queueCount },
       { count: overdueCount }
     ] = await Promise.all([
-      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed'),
-      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed').lt('due_date', now)
+      supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed'),
+      supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('assigned_to', userId).neq('status', 'completed').lt('due_date', now)
     ]);
     
     return [
@@ -105,9 +105,9 @@ export async function getAccountantStatsAction(): Promise<StatItem[]> {
       { count: totalQuotations },
       { data: recentQuotations }
     ] = await Promise.all([
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).gte('created_at', firstOfMonth),
-      supabase.from('projects').select('*', { count: 'exact', head: true }).is('deleted_at', null).not('status', 'in', '("completed","archived")'),
-      supabase.from('quotations').select('*', { count: 'exact', head: true }),
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null).gte('created_at', firstOfMonth),
+      supabase.from('projects').select('id', { count: 'exact', head: true }).is('deleted_at', null).not('status', 'in', '("completed","archived")'),
+      supabase.from('quotations').select('id', { count: 'exact', head: true }),
       supabase.from('quotations').select('total_amount').eq('status', 'Approved').gte('updated_at', firstOfMonth),
     ]);
 
@@ -134,7 +134,7 @@ export async function getQCStatsAction(): Promise<StatItem[]> {
     const supabase: any = await createClient()
     const { count: reviewCount } = await supabase
       .from('projects')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .in('status', ['review'])
       .is('deleted_at', null)
 

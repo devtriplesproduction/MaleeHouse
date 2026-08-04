@@ -218,23 +218,23 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
 
                  {(!quotation.client_details?.gst_type && (quotation.gst_amount ?? 0) > 0) ? (
                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                       <span>GST ({quotation.gst_rate ?? 18}%)</span>
+                       <span>GST ({quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18}%)</span>
                        <span>INR {(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</span>
                     </div>
                  ) : quotation.client_details?.gst_type === 'NO_GST' || (quotation.gst_amount ?? 0) === 0 ? null : 
                  quotation.client_details?.gst_type === 'IGST' ? (
                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                       <span>IGST ({quotation.gst_rate ?? 18}%)</span>
+                       <span>IGST ({quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18}%)</span>
                        <span>INR {(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</span>
                     </div>
                  ) : (
                     <>
                        <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums mb-1">
-                          <span>CGST ({(quotation.gst_rate ?? 18) / 2}%)</span>
+                          <span>CGST ({(quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18) / 2}%)</span>
                           <span>INR {((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</span>
                        </div>
                        <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                          <span>SGST ({(quotation.gst_rate ?? 18) / 2}%)</span>
+                          <span>SGST ({(quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18) / 2}%)</span>
                           <span>INR {((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</span>
                        </div>
                     </>

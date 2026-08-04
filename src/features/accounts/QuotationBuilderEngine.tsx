@@ -91,7 +91,7 @@ export function QuotationBuilderEngine({
 
   // GST
   const defaultGstType = existingQuotation?.client_details?.gst_type;
-  const defaultGstRate = existingQuotation?.gst_rate;
+  const defaultGstRate = existingQuotation?.gst_rate !== undefined && existingQuotation?.gst_rate !== null ? Number(existingQuotation.gst_rate) : 18;
   let initialGstType = defaultGstType || 'CGST_SGST_18';
   if (defaultGstType === 'CGST_SGST') {
     initialGstType = defaultGstRate === 5 ? 'CGST_SGST_5' : 'CGST_SGST_18';

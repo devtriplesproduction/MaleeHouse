@@ -2,15 +2,64 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { ROLE_REDIRECTS, PATH_PERMISSIONS, Role } from '../permissions/roles'
 
-// [DIAG] Remove this block when bug is resolved.
-const DEV = process.env.NODE_ENV === 'development'
-function mwLog(tag: string, data?: Record<string, unknown>) {
-  if (!DEV) return
-  console.log(`[MW ${new Date().toISOString()}] ${tag}`, data ? JSON.stringify(data) : '')
+// Pre-sort once at module load (not per request)
+const SORTED_PATH_PERMISSIONS = Object.entries(PATH_PERMISSIONS).sort(
+  (a, b) => b[0].length - a[0].length
+)
+
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some(
+      (c) =>
+        c.name.includes('auth-token') ||
+        c.name.startsWith('sb-') ||
+        c.name.includes('supabase')
+    )
 }
 
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => to.cookies.set(cookie.name, cookie.value))
+}
+
+function isPublicPath(path: string, isAuthPage: boolean): boolean {
+  return (
+    isAuthPage ||
+    path === '/' ||
+    path.startsWith('/client-portal') ||
+    path.startsWith('/api/cron') ||
+    path.startsWith('/invoices/') ||
+    path.startsWith('/receipts/') ||
+    path.startsWith('/hire/') ||
+    path.startsWith('/unauthorized') ||
+    path.startsWith('/api/health') ||
+    path.startsWith('/api/')
+  )
+}
+
+/**
+ * Edge session + RBAC gateway.
+ * Optimizations:
+ * - Skip Auth network call when public route has no session cookie
+ * - Prefer JWT app_metadata.role / is_active (no profiles query)
+ * - Pre-sorted path permissions
+ */
 export async function updateSession(request: NextRequest) {
-  mwLog('REQUEST', { path: request.nextUrl.pathname, method: request.method })
+  const path = request.nextUrl.pathname
+  const isAuthPage = path.startsWith('/login')
+  const publicRoute = isPublicPath(path, isAuthPage)
+  const hasCookie = hasSupabaseAuthCookie(request)
+
+  // Fast path: public page, no session cookie → zero Auth / DB calls
+  if (publicRoute && !hasCookie && !isAuthPage) {
+    return NextResponse.next({ request })
+  }
+
+  // Login page without cookie: no need to call getUser
+  if (isAuthPage && !hasCookie) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -22,14 +71,10 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          // [DIAG]
-          if (DEV && name.includes('auth')) mwLog('COOKIE_SET', { name })
           request.cookies.set({ name, value, ...options })
           supabaseResponse.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
-          // [DIAG]
-          if (DEV && name.includes('auth')) mwLog('COOKIE_REMOVE', { name })
           request.cookies.set({ name, value: '', ...options })
           supabaseResponse.cookies.set({ name, value: '', ...options })
         },
@@ -39,115 +84,98 @@ export async function updateSession(request: NextRequest) {
 
   let user = null
   try {
+    // getUser validates JWT with Auth API (secure); required when cookie present
     const { data } = await supabase.auth.getUser()
-    user = data?.user
-    // [DIAG]
-    mwLog('GET_USER', { uid: user?.id ?? null, email: user?.email ?? null, hasUser: !!user })
+    user = data?.user ?? null
   } catch (e) {
-    mwLog('GET_USER_THREW', { error: String(e) })
     console.error('Middleware getUser failed:', e)
     return supabaseResponse
   }
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login')
-  const isPublicRoute =
-    isAuthPage ||
-    request.nextUrl.pathname === '/' ||
-    request.nextUrl.pathname.startsWith('/client-portal') ||
-    request.nextUrl.pathname.startsWith('/api/cron')
-
-  if (!user && !isPublicRoute) {
-    // [DIAG]
-    mwLog('NO_USER_REDIRECT_LOGIN', { path: request.nextUrl.pathname })
+  if (!user && !publicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     const response = NextResponse.redirect(url)
-    supabaseResponse.cookies.getAll().forEach((cookie: any) =>
-      response.cookies.set(cookie.name, cookie.value)
-    )
+    copyCookies(supabaseResponse, response)
     return response
   }
 
-  if (user) {
-    let role = user.app_metadata?.role as Role | undefined
-    let isActive = user.app_metadata?.is_active as boolean | undefined
+  if (!user) {
+    return supabaseResponse
+  }
 
-    // [DIAG]
-    mwLog('APP_METADATA', { uid: user.id, roleFromMeta: role ?? null, isActiveFromMeta: isActive ?? null })
+  // Prefer JWT claims — zero DB when role + is_active are in app_metadata
+  let role = user.app_metadata?.role as Role | undefined
+  let isActive =
+    typeof user.app_metadata?.is_active === 'boolean'
+      ? (user.app_metadata.is_active as boolean)
+      : user.app_metadata?.is_active === undefined
+        ? undefined
+        : user.app_metadata?.is_active === true || user.app_metadata?.is_active === 'true'
 
-    if (role === undefined || isActive === undefined) {
-      // [DIAG]
-      mwLog('DB_PROFILE_FETCH', { uid: user.id, reason: 'app_metadata missing role or is_active' })
-      try {
-        const { data: profile, error: profileFetchError } = await supabase
-          .from('profiles')
-          .select('role, is_active')
-          .eq('id', user.id)
-          .single()
+  // Fallback only when claims missing (legacy sessions before claims backfill)
+  if (role === undefined || isActive === undefined) {
+    try {
+      const { data: profile, error: profileFetchError } = await supabase
+        .from('profiles')
+        .select('role, is_active')
+        .eq('id', user.id)
+        .single()
 
-        if (profileFetchError) {
-          mwLog('DB_PROFILE_FETCH_ERROR', { uid: user.id, error: profileFetchError.message })
-          console.error('Middleware profile fetch query failed:', profileFetchError)
-          return supabaseResponse
-        }
-
-        role = profile?.role as Role | undefined
-        isActive = profile?.is_active ?? true
-        // [DIAG]
-        mwLog('DB_PROFILE_RESULT', { uid: user.id, role, isActive })
-      } catch (e) {
-        mwLog('DB_PROFILE_THREW', { uid: user.id, error: String(e) })
-        console.error('Middleware profile fetch failed:', e)
+      if (profileFetchError) {
+        console.error('Middleware profile fetch failed:', profileFetchError)
         return supabaseResponse
       }
+
+      role = profile?.role as Role | undefined
+      isActive = profile?.is_active ?? true
+    } catch (e) {
+      console.error('Middleware profile fetch threw:', e)
+      return supabaseResponse
     }
+  }
 
-    if (!isActive) {
-      // [DIAG]
-      mwLog('MIDDLEWARE_SIGNOUT', { uid: user.id, reason: 'is_active=false', role })
-      await supabase.auth.signOut()
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      url.searchParams.set('error', 'Account Suspended')
-      const response = NextResponse.redirect(url)
-      supabaseResponse.cookies.getAll().forEach((cookie: any) =>
-        response.cookies.set(cookie.name, cookie.value)
-      )
-      return response
+  if (isActive === false) {
+    await supabase.auth.signOut()
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('error', 'Account Suspended')
+    const response = NextResponse.redirect(url)
+    copyCookies(supabaseResponse, response)
+    return response
+  }
+
+  const defaultRedirect =
+    role && ROLE_REDIRECTS[role] ? ROLE_REDIRECTS[role] : '/projects'
+
+  const skipRoleRedirect =
+    path.startsWith('/api/') ||
+    path.startsWith('/invoices/') ||
+    path.startsWith('/receipts/') ||
+    path.startsWith('/hire/')
+
+  if (!skipRoleRedirect && (isAuthPage || path === '/')) {
+    const url = request.nextUrl.clone()
+    url.pathname = defaultRedirect
+    const response = NextResponse.redirect(url)
+    copyCookies(supabaseResponse, response)
+    return response
+  }
+
+  let isAllowed = true
+  for (const [prefix, allowedRoles] of SORTED_PATH_PERMISSIONS) {
+    if (path.startsWith(prefix)) {
+      if (!allowedRoles.includes(role as Role)) isAllowed = false
+      break
     }
+  }
 
-    // [DIAG]
-    mwLog('USER_ALLOWED', { uid: user.id, role, isActive, path: request.nextUrl.pathname })
-
-    const defaultRedirect = role && ROLE_REDIRECTS[role] ? ROLE_REDIRECTS[role] : '/projects'
-
-    if (isAuthPage || request.nextUrl.pathname === '/') {
-      const url = request.nextUrl.clone()
-      url.pathname = defaultRedirect
-      const response = NextResponse.redirect(url)
-      supabaseResponse.cookies.getAll().forEach((cookie: any) =>
-        response.cookies.set(cookie.name, cookie.value)
-      )
-      return response
-    }
-
-    let isAllowed = true
-    for (const [path, allowedRoles] of Object.entries(PATH_PERMISSIONS)) {
-      if (request.nextUrl.pathname.startsWith(path)) {
-        if (!allowedRoles.includes(role as Role)) isAllowed = false
-        break
-      }
-    }
-
-    if (!isAllowed) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/unauthorized'
-      const response = NextResponse.redirect(url)
-      supabaseResponse.cookies.getAll().forEach((cookie: any) =>
-        response.cookies.set(cookie.name, cookie.value)
-      )
-      return response
-    }
+  if (!isAllowed) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/unauthorized'
+    const response = NextResponse.redirect(url)
+    copyCookies(supabaseResponse, response)
+    return response
   }
 
   return supabaseResponse

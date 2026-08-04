@@ -1,33 +1,33 @@
-import { notFound } from 'next/navigation';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { getCompanySettingsAction } from '@/actions/settings.actions';
-import { ClientInvoiceViewer } from './ClientInvoiceViewer';
-import { Metadata } from 'next';
+import { notFound } from 'next/navigation'
+import { getCompanySettingsAction } from '@/actions/settings.actions'
+import { ClientInvoiceViewer } from './ClientInvoiceViewer'
+import { fetchPublicInvoice } from '@/lib/public-finance'
+import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Invoice | Malee House',
   description: 'View your invoice',
-};
+}
 
-export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const supabase = createAdminClient();
+export const dynamic = 'force-dynamic'
 
-  const { data: invoice, error } = await supabase
-    .from('invoices')
-    .select('*, projects(name, client_name, budget, payments(amount, status), quotations(total_amount, status)), payments(amount, status)')
-    .eq('id', params.id)
-    .single();
+export default async function InvoicePage({
+  params,
+  searchParams,
+}: {
+  params: { id: string }
+  searchParams: { token?: string }
+}) {
+  // Prefer signed token when present; else public RPC by id (status-filtered)
+  const invoice = await fetchPublicInvoice(params.id, searchParams.token)
 
-  if (error || !invoice) {
-    notFound();
+  if (!invoice) {
+    notFound()
   }
 
-  const companySettings = await getCompanySettingsAction();
+  const companySettings = await getCompanySettingsAction()
 
   return (
-    <ClientInvoiceViewer 
-      invoice={invoice} 
-      companySettings={companySettings} 
-    />
-  );
+    <ClientInvoiceViewer invoice={invoice as any} companySettings={companySettings} />
+  )
 }

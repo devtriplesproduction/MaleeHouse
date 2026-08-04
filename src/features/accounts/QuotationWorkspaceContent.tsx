@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { QuotationBuilderEngine } from "@/features/accounts/QuotationBuilderEngine";
 import { QuotationManagementPanel } from "@/features/accounts/QuotationManagementPanel";
 import { QuotationList } from "@/features/accounts/QuotationList";
-import { ArrowLeft, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, ChevronLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { getProjectByIdAction } from "@/actions/project.actions";
+import { peekQuoteProject } from "@/lib/quote-project-handoff";
 
 interface QuotationWorkspaceContentProps {
   initialProject: any;
@@ -28,10 +30,65 @@ export function QuotationWorkspaceContent({
   const PAGE_SIZE = 10;
 
   const [quotations, setQuotations] = useState(initialQuotations);
-  
+  // Resolve project for create/manage: server prop → session handoff → client fetch
+  const [resolvedProject, setResolvedProject] = useState<any>(initialProject);
+  const [projectLoadState, setProjectLoadState] = useState<'idle' | 'loading' | 'error'>(
+    initialProject || !projectId ? 'idle' : 'loading'
+  );
+  const [projectError, setProjectError] = useState<string | null>(null);
+
   useEffect(() => {
     setQuotations(initialQuotations);
   }, [initialQuotations]);
+
+  useEffect(() => {
+    if (initialProject) {
+      setResolvedProject(initialProject);
+      setProjectLoadState('idle');
+      setProjectError(null);
+      return;
+    }
+
+    if (!projectId) {
+      setResolvedProject(null);
+      setProjectLoadState('idle');
+      return;
+    }
+
+    // Fast path: project stashed by Quote button on intake
+    const stashed = peekQuoteProject(projectId);
+    if (stashed?.id === projectId) {
+      setResolvedProject(stashed);
+      setProjectLoadState('idle');
+      setProjectError(null);
+      return;
+    }
+
+    // Fallback: client fetch (works after cookie/session refresh when RSC failed)
+    let cancelled = false;
+    setProjectLoadState('loading');
+    getProjectByIdAction(projectId).then((res) => {
+      if (cancelled) return;
+      if (res?.data) {
+        setResolvedProject(res.data);
+        setProjectLoadState('idle');
+        setProjectError(null);
+      } else {
+        setResolvedProject(null);
+        setProjectLoadState('error');
+        setProjectError(res?.error || 'Project not found');
+      }
+    }).catch((e: any) => {
+      if (cancelled) return;
+      setResolvedProject(null);
+      setProjectLoadState('error');
+      setProjectError(e?.message || 'Failed to load project');
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialProject, projectId]);
 
   // Realtime subscription to refresh server data when a quotation changes
   useEffect(() => {
@@ -48,7 +105,7 @@ export function QuotationWorkspaceContent({
           } else if (payload.eventType === 'UPDATE') {
             setQuotations((prev: any[]) => {
               const existing = prev.find(q => q.id === payload.new.id);
-              if (existing && existing.updated_at === payload.new.updated_at) return prev; // Ignore if handled optimistically
+              if (existing && existing.updated_at === payload.new.updated_at) return prev;
               return prev.map(q => q.id === payload.new.id ? { ...q, ...payload.new } : q);
             });
           } else if (payload.eventType === 'DELETE') {
@@ -87,15 +144,56 @@ export function QuotationWorkspaceContent({
     );
   }
 
-  // ── Project create mode ─────────────────────────────────────────────────
-  if (projectId && mode === "create" && initialProject) {
+  // ── Project create mode — never fall through to draft list ─────────────
+  if (projectId && mode === "create") {
+    if (projectLoadState === 'loading' && !resolvedProject) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-500">
+          <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+          <p className="text-sm font-medium">Opening quotation builder…</p>
+        </div>
+      );
+    }
+
+    if (!resolvedProject) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center px-6">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-rose-500" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-slate-900 dark:text-white">
+              Could not open create form for this project
+            </p>
+            <p className="text-sm text-slate-500 max-w-md">
+              {projectError || 'Project could not be loaded. Sign in again if your session expired.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/accounts/intake')}
+              className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700"
+            >
+              Back to Intake
+            </button>
+            <button
+              onClick={() => router.push('/accounts/quotations')}
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-medium text-slate-600 dark:text-slate-300"
+            >
+              Draft Quotations
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6 pb-20 animate-in fade-in duration-300">
         <QuotationBuilderEngine
-          project={initialProject}
+          project={resolvedProject}
           onCancel={() => router.push("/accounts/quotations")}
           onSuccess={() =>
-            router.push(`/accounts/quotations?project=${initialProject.id}&mode=manage`)
+            router.push(`/accounts/quotations?project=${resolvedProject.id}&mode=manage`)
           }
         />
       </div>
@@ -103,16 +201,16 @@ export function QuotationWorkspaceContent({
   }
 
   // ── Project manage mode ─────────────────────────────────────────────────
-  if ((projectId || quotationId) && mode === "manage" && initialProject) {
+  if ((projectId || quotationId) && mode === "manage" && resolvedProject) {
     return (
       <div className="space-y-6 pb-20 animate-in fade-in duration-300">
         <div className="border-b border-slate-200/60 dark:border-white/5 pb-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {initialProject.name}
+              {resolvedProject.name}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {initialProject.client_name}
+              {resolvedProject.client_name}
             </p>
           </div>
           <button
@@ -123,7 +221,7 @@ export function QuotationWorkspaceContent({
           </button>
         </div>
         <QuotationManagementPanel
-          project={initialProject}
+          project={resolvedProject}
           userRole="accountant"
           onRefresh={(updatedQuotation?: any) => {
             if (updatedQuotation) {
@@ -139,7 +237,17 @@ export function QuotationWorkspaceContent({
     );
   }
 
-  // ── Default workspace view ──────────────────────────────────────────────
+  // Loading manage when project still resolving
+  if ((projectId || quotationId) && mode === "manage" && projectLoadState === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-500">
+        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+        <p className="text-sm font-medium">Loading project…</p>
+      </div>
+    );
+  }
+
+  // ── Default workspace view (Draft Quotations list) ──────────────────────
   return (
     <div className="space-y-6 pb-20 animate-in fade-in duration-500">
       {/* Header */}
