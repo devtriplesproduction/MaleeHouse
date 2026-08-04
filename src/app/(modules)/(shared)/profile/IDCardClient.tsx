@@ -325,7 +325,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
          {/* Interactive Flip Card Frame */}
          <div 
             onClick={() => setIsFlipped(!isFlipped)} 
-            className="w-[310px] h-[510px] cursor-pointer group [perspective:1000px] select-none"
+            className="w-[350px] h-[580px] cursor-pointer group [perspective:1000px] select-none transform origin-center scale-[0.85] md:scale-[0.9] -my-10"
             title="Click to flip card"
          >
             <div className={cn(
@@ -365,13 +365,13 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
          <div className="absolute left-[-9999px] top-[-9999px] flex gap-5 pointer-events-none">
             <div 
                ref={frontCardRef} 
-               className="w-[310px] h-[510px] bg-[#fdfdfd] rounded-[24px] flex flex-col border border-gray-150/80 overflow-hidden"
+               className="w-[350px] h-[580px] bg-[#fdfdfd] rounded-[24px] flex flex-col border border-gray-150/80 overflow-hidden"
             >
                <FrontCardContent />
             </div>
             <div 
                ref={backCardRef} 
-               className="w-[310px] h-[510px] bg-[#fdfdfd] rounded-[24px] flex flex-col border border-gray-150/80 overflow-hidden"
+               className="w-[350px] h-[580px] bg-[#fdfdfd] rounded-[24px] flex flex-col border border-gray-150/80 overflow-hidden"
             >
                <BackCardContent />
             </div>
