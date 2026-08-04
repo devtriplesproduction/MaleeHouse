@@ -22,7 +22,7 @@ const LogoSVG = () => (
     {/* Center circle */}
     <circle cx="50" cy="50" r="19" fill="#38bdf8" stroke="#0284c7" strokeWidth="2" />
     {/* Stylized m in white */}
-    <text x="50" y="56" fontFamily="serif" fontSize="19" fontWeight="bold" fontStyle="italic" fill="white" textAnchor="middle">m</text>
+    <text x="50" y="56" fontFamily="sans-serif" fontSize="19" fontWeight="bold" fontStyle="italic" fill="white" textAnchor="middle">m</text>
   </svg>
 );
 
@@ -70,7 +70,6 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
       setIsDownloading(true);
 
       try {
-         // Target the flat print-only reference nodes to avoid 3D transform capture glitches
          const frontCanvas = await html2canvas(frontCardRef.current, { scale: 3, useCORS: true });
          const backCanvas = await html2canvas(backCardRef.current, { scale: 3, useCORS: true });
 
@@ -92,44 +91,44 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
    };
 
    const renderField = (label: string, value: string) => (
-      <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
-         <span className="font-bold text-gray-500 text-[10px] uppercase tracking-wide">{label}</span>
+      <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-1.5 items-center font-sans">
+         <span className="font-bold text-gray-450 text-[10px] uppercase tracking-wider">{label}</span>
          <span className="font-bold text-gray-300 text-[10px]">:</span>
-         <span className="text-[#0c2e5c] font-bold text-[11.5px] truncate">{value}</span>
+         <span className="text-[#0c2e5c] font-semibold text-[11px] truncate capitalize">{value}</span>
       </div>
    );
 
    const renderBottomField = (icon: React.ReactNode, label: string, value: string) => (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 font-sans">
          <div className="w-6 h-6 rounded-full bg-[#0c2e5c] text-white flex items-center justify-center shrink-0">
             {icon}
          </div>
          <div className="grid grid-cols-[90px_15px_1fr] w-full items-center">
-            <span className="font-bold text-gray-500 text-[9.5px] uppercase tracking-wide">{label}</span>
+            <span className="font-bold text-gray-450 text-[9.5px] uppercase tracking-wider">{label}</span>
             <span className="font-bold text-gray-300 text-[9.5px]">:</span>
-            <span className="text-[#0c2e5c] font-bold text-[10.5px] truncate">{value}</span>
+            <span className="text-[#0c2e5c] font-semibold text-[10.5px] truncate">{value}</span>
          </div>
       </div>
    );
 
    const renderEmergencyField = (label: string, value: string) => (
-      <div className="grid grid-cols-[70px_10px_1fr] gap-0 text-[10.5px] ml-9 mb-1">
-         <span className="font-semibold text-slate-500">{label}</span>
-         <span className="font-semibold text-slate-350">:</span>
-         <span className="text-[#0c2e5c] font-bold">{value}</span>
+      <div className="grid grid-cols-[70px_10px_1fr] gap-0 text-[10.5px] ml-9 mb-1 font-sans">
+         <span className="font-semibold text-slate-400">{label}</span>
+         <span className="font-semibold text-slate-300">:</span>
+         <span className="text-[#0c2e5c] font-semibold truncate">{value}</span>
       </div>
    );
 
    // Reusable card content definitions
    const FrontCardContent = () => (
-      <>
+      <div className="font-sans flex flex-col h-full bg-white select-none">
          {/* Top Header Section */}
          <div className="relative pt-6 pb-2 px-5 flex flex-col items-center bg-white z-10">
             <div className="flex items-center gap-3.5 w-full justify-center">
                <LogoSVG />
                <div className="flex flex-col">
                   <h2 className="text-[#0e3b75] font-extrabold text-[24px] leading-none tracking-tight">Malee House</h2>
-                  <p className="text-gray-500 text-[8.5px] font-bold tracking-[0.05em] mt-1 font-sans">We Build Trust With Quality & Service</p>
+                  <p className="text-gray-400 text-[8.5px] font-semibold tracking-[0.05em] mt-1 font-sans">We Build Trust With Quality & Service</p>
                   <GoldFlourish />
                </div>
             </div>
@@ -167,22 +166,14 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
 
                   {/* Top Details next to Photo */}
                   <div className="flex flex-col justify-center text-[11px] w-full pr-1">
-                     <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-start">
-                        <span className="font-bold text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Name</span>
+                     <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-1.5 items-start">
+                        <span className="font-bold text-gray-455 text-[10px] uppercase tracking-wider mt-0.5">Name</span>
                         <span className="font-bold text-gray-300 text-[10px] mt-0.5">:</span>
-                        <span className="text-[#0c2e5c] font-black text-[12.5px] leading-tight capitalize">{editData.firstName} {editData.lastName}</span>
+                        <span className="text-[#0c2e5c] font-bold text-[13px] leading-tight capitalize truncate">{editData.firstName} {editData.lastName}</span>
                      </div>
                      {renderField("Employee ID", editData.employeeId)}
-                     <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
-                        <span className="font-bold text-gray-500 text-[10px] uppercase tracking-wide">Designation</span>
-                        <span className="font-bold text-gray-300 text-[10px]">:</span>
-                        <span className="text-[#0c2e5c] font-bold text-[11px] capitalize">{editData.designation}</span>
-                     </div>
-                     <div className="grid grid-cols-[90px_10px_1fr] gap-0 mb-2 items-center">
-                        <span className="font-bold text-gray-500 text-[10px] uppercase tracking-wide">Department</span>
-                        <span className="font-bold text-gray-300 text-[10px]">:</span>
-                        <span className="text-[#0c2e5c] font-bold text-[11px] uppercase">{editData.department}</span>
-                     </div>
+                     {renderField("Designation", editData.designation)}
+                     {renderField("Department", editData.department)}
                   </div>
                </div>
 
@@ -199,9 +190,9 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
             <div className="mt-auto flex justify-between items-end relative z-10 pb-1">
                <div className="flex flex-col items-start pl-2">
                   <div className="h-8 border-b border-slate-300 w-28 mb-1 flex items-end justify-center">
-                     <span className="font-serif text-[17px] text-slate-800 italic pr-2 leading-none">{editData.firstName} {editData.lastName}</span>
+                     <span className="font-sans text-[12px] font-bold italic tracking-wide text-slate-700 pr-2 leading-none">{editData.firstName} {editData.lastName}</span>
                   </div>
-                  <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wide">Authorized Signature</span>
+                  <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider">Authorized Signature</span>
                </div>
             </div>
 
@@ -214,18 +205,18 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                </svg>
             </div>
          </div>
-      </>
+      </div>
    );
 
    const BackCardContent = () => (
-      <>
+      <div className="font-sans flex flex-col h-full bg-white select-none text-gray-800">
          {/* Top Header Section */}
          <div className="relative pt-6 pb-2 px-5 flex flex-col items-center bg-white z-10">
             <div className="flex items-center gap-3.5 w-full justify-center">
                <LogoSVG />
                <div className="flex flex-col">
                   <h2 className="text-[#0e3b75] font-extrabold text-[24px] leading-none tracking-tight">Malee House</h2>
-                  <p className="text-gray-500 text-[8.5px] font-bold tracking-[0.05em] mt-1 font-sans">We Build Trust With Quality & Service</p>
+                  <p className="text-gray-400 text-[8.5px] font-semibold tracking-[0.05em] mt-1 font-sans">We Build Trust With Quality & Service</p>
                   <GoldFlourish />
                </div>
             </div>
@@ -242,35 +233,35 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
          </div>
 
          {/* Body */}
-         <div className="flex-1 px-5 py-4 flex flex-col gap-4 text-xs relative text-gray-800 bg-white justify-between">
+         <div className="flex-1 px-5 py-4 flex flex-col gap-4 text-xs relative bg-white justify-between">
             {/* Contact details with themed circles */}
             <div className="flex flex-col gap-3.5 relative z-10 mt-1">
                <div className="flex gap-4 items-start">
                   <div className="text-white bg-[#e11d48] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><MapPin className="w-3.5 h-3.5" /></div>
                   <div>
                      <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">OFFICE ADDRESS</p>
-                     <p className="text-[10px] text-slate-600 font-semibold leading-relaxed pr-2">Malee House, Flat No.1, Wimbledon Building, In front of Azad College, D.G College Chowk, Satara, MAHARASHTRA 415002</p>
+                     <p className="text-[10px] text-slate-650 font-medium leading-relaxed pr-2">Malee House, Flat No.1, Wimbledon Building, In front of Azad College, D.G College Chowk, Satara, MAHARASHTRA 415002</p>
                   </div>
                </div>
                <div className="flex gap-4 items-start">
                   <div className="text-white bg-[#fbbf24] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Phone className="w-3.5 h-3.5" /></div>
                   <div className="w-full pr-4">
                      <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">CONTACT</p>
-                     <p className="text-[10.5px] text-slate-700 font-bold">{editData.companyContact}</p>
+                     <p className="text-[10.5px] text-slate-700 font-semibold">{editData.companyContact}</p>
                   </div>
                </div>
                <div className="flex gap-4 items-start">
                   <div className="text-white bg-[#0070d2] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Mail className="w-3.5 h-3.5" /></div>
                   <div className="w-full pr-4">
                      <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">EMAIL</p>
-                     <p className="text-[10.5px] text-[#0c2e5c] font-bold">{editData.companyEmail}</p>
+                     <p className="text-[10.5px] text-[#0c2e5c] font-semibold">{editData.companyEmail}</p>
                   </div>
                </div>
                <div className="flex gap-4 items-start">
                   <div className="text-white bg-[#e11d48] w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-sm shrink-0"><Globe className="w-3.5 h-3.5" /></div>
                   <div>
                      <p className="font-bold text-[#0070d2] text-[10px] mb-0.5 tracking-wider">WEBSITE</p>
-                     <p className="text-[10.5px] text-[#0c2e5c] font-bold">www.maleehouse.com</p>
+                     <p className="text-[10.5px] text-[#0c2e5c] font-semibold">www.maleehouse.com</p>
                   </div>
                </div>
             </div>
@@ -294,7 +285,7 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
                   <FileText className="w-3 h-3" />
                   <span>Terms & Conditions</span>
                </div>
-               <ol className="list-decimal pl-5 pr-1 text-[9px] text-slate-500 font-semibold space-y-1 leading-snug">
+               <ol className="list-decimal pl-5 pr-1 text-[9px] text-slate-500 font-semibold space-y-0.5 leading-snug">
                   <li>This card is the property of Malee House Survey & Mapping Services.</li>
                   <li>This card must be carried during office hours and field visits.</li>
                   <li>Loss of card should be reported immediately.</li>
@@ -302,11 +293,11 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
             </div>
 
             {/* Themed Center Footer */}
-            <div className="bg-[#0070d2] py-2.5 text-center text-white text-[8px] font-bold tracking-widest shrink-0 uppercase">
+            <div className="bg-[#0070d2] py-2 text-center text-white text-[8px] font-bold tracking-widest shrink-0 uppercase">
                — WE BUILD TRUST WITH QUALITY & SERVICE —
             </div>
          </div>
-      </>
+      </div>
    );
 
    React.useEffect(() => {
