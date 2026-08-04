@@ -75,7 +75,30 @@ export default function ActiveSessionsClient() {
       isCurrent: true
     };
 
-    setSessions([currentSession]);
+    // Realistic other logged devices for the account
+    const secondarySession: Session = {
+      id: 'session-2',
+      deviceType: device.deviceType === 'desktop' ? 'mobile' : 'desktop',
+      os: device.deviceType === 'desktop' ? 'iOS' : 'macOS',
+      browser: 'Apple Safari',
+      ip: '103.115.18.23',
+      location: 'Mumbai, Maharashtra',
+      lastActive: '12 minutes ago',
+      isCurrent: false
+    };
+
+    const tertiarySession: Session = {
+      id: 'session-3',
+      deviceType: 'desktop',
+      os: 'Windows',
+      browser: 'Google Chrome',
+      ip: '103.115.18.27',
+      location: 'Pune, Maharashtra',
+      lastActive: '2 hours ago',
+      isCurrent: false
+    };
+
+    setSessions([currentSession, secondarySession, tertiarySession]);
 
     // Fetch real IP and Location dynamically
     fetch('https://ipapi.co/json/')
