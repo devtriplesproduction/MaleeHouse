@@ -104,8 +104,9 @@ export default function ActiveSessionsClient() {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="w-full py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/10 transition-all"
+        className="w-full py-2.5 rounded-xl border border-indigo-500/80 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-500/30 dark:text-indigo-400 dark:hover:bg-indigo-950/20 text-xs font-semibold shadow-sm transition-all duration-205 flex items-center justify-center gap-2"
       >
+        <Monitor className="w-4 h-4" />
         Active Sessions
       </button>
 

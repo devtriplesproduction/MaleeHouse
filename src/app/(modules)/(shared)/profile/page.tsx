@@ -1,6 +1,6 @@
 import React from "react";
 import { requireAuth } from "@/lib/auth-guard";
-import { Shield, Lock } from "lucide-react";
+import { Shield, Lock, CheckCircle2, User, Key, Globe } from "lucide-react";
 import UpdatePasswordClient from "./UpdatePasswordClient";
 import ActiveSessionsClient from "./ActiveSessionsClient";
 import IDCardClient from "./IDCardClient";
@@ -17,7 +17,7 @@ export default async function ProfilePage() {
    return (
       <div className="w-full space-y-6 animate-in fade-in duration-750 pb-8 text-slate-900 dark:text-white">
          
-         {/* ── Heading Row matching Team Management style exactly ── */}
+         {/* ── Title Row ── */}
          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -33,34 +33,92 @@ export default async function ProfilePage() {
             </div>
          </div>
 
-         {/* ── Side-by-Side Content Grid ── */}
-         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start pt-2">
+         {/* ── Interactive Layout Grid ── */}
+         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 items-stretch pt-2">
             
-            {/* Left Column: ID Card */}
-            <div className="flex flex-col items-center justify-center w-full">
-               <IDCardClient profile={profile} companySettings={companySettings} />
-            </div>
-
-            {/* Right Column: Security Controls */}
-            <div className="glass-card p-6 border-slate-200 dark:border-white/5 bg-white dark:bg-[#090d16] rounded-2xl shadow-sm space-y-6 sticky top-24 w-full">
-               <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
-                     <Shield className="w-4 h-4" />
-                  </div>
-                  <div>
-                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">Security & Access</h3>
-                     <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">Manage authorization credentials</p>
-                  </div>
-               </div>
-
-               <div className="p-4 rounded-xl bg-amber-500/[0.02] border border-amber-500/15 flex items-start gap-3">
-                  <Lock className="w-3.5 h-3.5 text-amber-550 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400/90 leading-relaxed font-semibold">
-                     We recommend updating your password periodically and auditing active sessions to secure system transactions.
+            {/* Left Panel: Digital Badge Showcase */}
+            <div className="relative rounded-3xl bg-slate-50/40 dark:bg-white/[0.01] border border-slate-150 dark:border-white/5 p-6 md:p-12 flex flex-col items-center justify-center overflow-hidden min-h-[640px]">
+               {/* Decorative background grid and glow */}
+               <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+               <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+               <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-rose-500/5 dark:bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+               
+               <div className="relative z-10 w-full flex flex-col items-center">
+                  <IDCardClient profile={profile} companySettings={companySettings} />
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest mt-6 bg-slate-100 dark:bg-white/5 px-4 py-1.5 rounded-full select-none">
+                     Click badge to flip
                   </p>
                </div>
+            </div>
 
-               <div className="grid grid-cols-1 gap-3">
+            {/* Right Panel: Account Security Matrix */}
+            <div className="rounded-3xl border border-slate-200 dark:border-white/5 bg-white dark:bg-[#090d16] p-6 shadow-sm flex flex-col justify-between space-y-6">
+               <div className="space-y-6">
+                  {/* Panel Header */}
+                  <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
+                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20 shrink-0">
+                        <Shield className="w-5 h-5" />
+                     </div>
+                     <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Security & Access</h3>
+                        <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">System authorization metrics</p>
+                     </div>
+                  </div>
+
+                  {/* Warning Info box */}
+                  <div className="p-4 rounded-2xl bg-amber-500/[0.02] border border-amber-500/15 flex items-start gap-3">
+                     <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                     <p className="text-[11px] text-amber-600 dark:text-amber-400/90 leading-relaxed font-semibold">
+                        Keep your security settings updated to prevent unauthorized access. Rotating credentials periodicially increases data safety.
+                     </p>
+                  </div>
+
+                  {/* Inline Stats/Metadata Rows */}
+                  <div className="space-y-2 pt-2">
+                     
+                     {/* Row 1: Profile identity */}
+                     <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                           <User className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Account Access</span>
+                        </div>
+                        <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-500/25 uppercase tracking-wider">
+                           {profile.role || "Employee"}
+                        </span>
+                     </div>
+
+                     {/* Row 2: Password Status */}
+                     <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                           <Key className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Password Integrity</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                           <CheckCircle2 className="w-3.5 h-3.5" />
+                           <span>Secured</span>
+                        </div>
+                     </div>
+
+                     {/* Row 3: Active connection state */}
+                     <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                           <Globe className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Active Connection</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                           </span>
+                           <span className="text-xs font-black text-slate-800 dark:text-slate-200">1 Device Online</span>
+                        </div>
+                     </div>
+
+                  </div>
+               </div>
+
+               {/* Action triggers */}
+               <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
                   <UpdatePasswordClient userId={profile.id} />
                   <ActiveSessionsClient />
                </div>

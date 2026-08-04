@@ -54,8 +54,9 @@ export default function UpdatePasswordClient({ userId }: { userId: string }) {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold uppercase tracking-widest hover:opacity-90 transition-all shadow-lg shadow-indigo-500/5"
+        className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-205 flex items-center justify-center gap-2 border-none"
       >
+        <KeyRound className="w-4 h-4" />
         Update Password
       </button>
 
