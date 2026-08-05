@@ -79,14 +79,12 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
           .order('created_at', { ascending: false });
           
         const activeProforma = existingInvoices?.find((inv: any) => 
-          Number(inv.amount) === Number(milestone.amount) &&
-          inv.due_date === milestone.due_date &&
           inv.status !== 'cancelled' && 
           inv.status !== 'rejected'
         );
         
         if (activeProforma) {
-          return { success: false, error: 'An active Invoice already exists for the current milestone configuration.' };
+          return { success: false, error: 'An active Invoice already exists for the current milestone.' };
         }
       }
     }
@@ -159,21 +157,23 @@ export async function deleteInvoiceAction(invoiceId: string): Promise<ActionResp
 
     const supabase: any = await createClient();
 
-    // Fetch invoice to check status
-    const { data: invoice, error: fetchError } = await supabase.from('invoices').select('status, project_id').eq('id', invoiceId).single();
+    // Fetch invoice to check status and project_id for locking check
+    const { data: invoice, error: fetchError } = await supabase.from('invoices').select('project_id').eq('id', invoiceId).single();
     if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
-
-    if (invoice.status !== 'draft') {
-      return { success: false, error: 'Only draft invoices can be deleted.' };
-    }
 
     const lockCheck = await verifyProjectNotLocked(invoice.project_id);
     if (!lockCheck.success) {
       return { success: false, error: lockCheck.error || "Project is locked." };
     }
 
-    const { error: deleteError } = await supabase.from('invoices').delete().eq('id', invoiceId);
-    if (deleteError) return { success: false, error: deleteError.message };
+    // Call the transactional RPC to delete the invoice
+    const { error: rpcError } = await supabase.rpc('delete_invoice_transactionally', {
+      p_invoice_id: invoiceId
+    });
+
+    if (rpcError) {
+      return { success: false, error: rpcError.message };
+    }
 
     await supabase.from('activity_logs').insert({
       id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,

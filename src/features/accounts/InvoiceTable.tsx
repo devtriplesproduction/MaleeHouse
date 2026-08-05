@@ -8,7 +8,8 @@ import {
   XCircle, 
   ArrowUpRight,
   Building,
-  Calendar
+  Calendar,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { LogPaymentModal } from './LogPaymentModal';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
+import { deleteInvoiceAction } from '@/actions/finance.actions';
 
 interface Invoice {
   id: string;
@@ -181,6 +183,38 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
                 >
                   <FileText className="w-3.5 h-3.5" />
                   View invoice
+                </button>
+                <button
+                  type="button"
+                  disabled={invoice.status === 'paid' || (invoice as any).payments?.length > 0}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+                      const loadingId = toast.loading('Deleting invoice...');
+                      try {
+                        const res = await deleteInvoiceAction(invoice.id);
+                        if (res.success) {
+                          toast.success('Invoice deleted successfully.', { id: loadingId });
+                          if (onRefresh) onRefresh();
+                        } else {
+                          toast.error(res.error || 'Failed to delete invoice.', { id: loadingId });
+                        }
+                      } catch (err) {
+                        toast.error('An unexpected error occurred.', { id: loadingId });
+                      }
+                    }
+                  }}
+                  title={(invoice.status === 'paid' || (invoice as any).payments?.length > 0) ? 'Invoice cannot be deleted because payment has already been logged.' : 'Delete invoice'}
+                  className={cn(
+                    "h-8 px-3 rounded-lg text-xs font-semibold border shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap",
+                    (invoice.status === 'paid' || (invoice as any).payments?.length > 0)
+                      ? "border-slate-200 dark:border-white/10 text-slate-400 bg-slate-50 dark:bg-white/5 cursor-not-allowed"
+                      : "border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20 hover:text-rose-700 dark:hover:text-rose-300 active:scale-95"
+                  )}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline">Delete</span>
                 </button>
               </div>
             </div>

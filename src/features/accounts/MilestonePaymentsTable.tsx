@@ -65,8 +65,6 @@ export interface MilestonePayment {
 const getActiveInvoice = (m: MilestonePayment) => {
   if (!m.invoices || m.invoices.length === 0) return null;
   return m.invoices.find((inv: any) => 
-    Number(inv.amount) === Number(m.amount) && 
-    inv.due_date === m.due_date && 
     inv.status !== 'cancelled' && 
     inv.status !== 'rejected'
   ) || null;
@@ -174,7 +172,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
       if (filterStatus === 'paid') return m.status === 'paid';
       if (filterStatus === 'hold') return m.status === 'hold';
       if (filterStatus === 'overdue') return m.status === 'pending' && m.due_date && days < 0;
-      if (filterStatus === 'upcoming') return m.status === 'pending' || m.status === 'payment_verification_pending';
+      if (filterStatus === 'upcoming') return m.status === 'pending' || m.status === 'payment_verification_pending' || m.status === 'invoiced';
 
       return true;
     })
@@ -511,15 +509,15 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                             setSelectedInvoiceMilestone(m);
                             setInvoiceModalOpen(true);
                           }}
-                          disabled={isProjectFrozen || !!getActiveInvoice(m) || (m.status as string) === 'invoiced'}
-                          title={isProjectFrozen ? "Project is frozen. Resume project to create invoice." : (getActiveInvoice(m) || (m.status as string) === 'invoiced') ? "Active invoice already exists or milestone is invoiced" : "Create Invoice"}
+                          disabled={isProjectFrozen || !!getActiveInvoice(m)}
+                          title={isProjectFrozen ? "Project is frozen. Resume project to create invoice." : getActiveInvoice(m) ? "An invoice already exists for this milestone." : "Create Invoice"}
                           className={cn(
                             "h-8 px-3 rounded-lg text-xs font-semibold border border-indigo-600 text-indigo-600 dark:border-indigo-500/50 dark:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap",
-                            (isProjectFrozen || !!getActiveInvoice(m) || (m.status as string) === 'invoiced') && "opacity-50 cursor-not-allowed active:scale-100"
+                            (isProjectFrozen || !!getActiveInvoice(m)) && "opacity-50 cursor-not-allowed active:scale-100"
                           )}
                         >
                           <FilePlus className="w-3.5 h-3.5" />
-                          {(getActiveInvoice(m) || (m.status as string) === 'invoiced') ? 'Invoice Created' : 'Create PF Invoice'}
+                          {getActiveInvoice(m) ? 'Invoice Created' : 'Create PF Invoice'}
                         </button>
 
                         <button
