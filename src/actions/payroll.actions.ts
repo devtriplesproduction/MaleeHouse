@@ -217,7 +217,7 @@ export async function getPayrollCyclesAction() {
     const { data: cycles, error } = await supabase
       .from('payroll_cycles')
       .select(
-        'id, month, year, status, locked_at, locked_by, bank_id, total_gross, total_net, created_at, updated_at'
+        'id, month, year, status, locked_at, locked_by, bank_id, created_at'
       )
       .order('year', { ascending: false })
       .order('month', { ascending: false })
@@ -256,7 +256,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     const { data: cycles, error: cyclesError } = await supabaseAdmin
       .from('payroll_cycles')
       .select(
-        'id, month, year, status, locked_at, locked_by, bank_id, total_gross, total_net, created_at, updated_at'
+        'id, month, year, status, locked_at, locked_by, bank_id, created_at'
       )
       .eq('month', month)
       .eq('year', year);

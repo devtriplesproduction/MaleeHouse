@@ -174,10 +174,10 @@ export const generateFinancialReportPDF = (
           <table>
             <tr>
               <td colspan="13" style="font-weight: bold;">
-                Company Name-MALEE HOUSE<br/>
-                Address-Flat no-1 Wimbledon Building, In front of azad Colledge, D.G College Chowk Satara,Maharashtra<br/>
-                GST NO-27CLTPM1596F1ZI<br/>
-                Contact No-7385238481/9270097679
+                Company Name-${companySettings?.name || 'Company Name'}<br/>
+                Address-${companySettings?.address || ''}${companySettings?.cityStateZip ? `, ${companySettings.cityStateZip}` : ''}<br/>
+                GST NO-${companySettings?.gstin || 'GST Not Provided'}<br/>
+                Contact No-${companySettings?.telephone || ''}${companySettings?.mobile ? ` / ${companySettings.mobile}` : ''}
               </td>
             </tr>
             <tr>
@@ -376,43 +376,93 @@ export const generateFinancialReportPDF = (
         <head>
           <title>${title}</title>
           <style>
-            body { font-family: sans-serif; font-size: 11px; margin: 40px; color: black; }
-            table { width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; border: 1px solid black; }
-            th, td { border: 1px solid black; padding: 4px; text-align: left; }
-            .details-box { max-width: 600px; margin: 0 auto; border: 1px solid black; padding: 10px; margin-bottom: 10px; font-weight: bold; border-bottom: none; }
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+            
+            body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 40px; color: #1e293b; background-color: #f8fafc; }
+            .report-container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius: 8px; }
+            .header-title { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; text-align: left; }
+            th { font-family: 'Outfit', sans-serif; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; background-color: #f8fafc; }
+            .details-box { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+            .detail-item { margin-bottom: 8px; }
+            .detail-label { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+            .detail-value { font-size: 12px; font-weight: 600; color: #0f172a; }
+            .text-right { text-align: right; }
+            .summary-row td { font-weight: 700; color: #0f172a; background-color: #f8fafc; }
+            .grand-total td { font-size: 13px; font-weight: 800; color: #4f46e5; border-top: 2px solid #e2e8f0; }
+            .totals-container { width: 100%; display: flex; justify-content: flex-end; margin-top: 20px; }
+            .totals-table { width: 300px; margin-top: 0; }
+            @media print {
+              body { background-color: white; padding: 0; }
+              .report-container { box-shadow: none; padding: 0; width: 100%; max-width: 100%; }
+            }
           </style>
         </head>
         <body>
-          <div class="details-box">
-            Project Details<br/>
-            - Project Name: ${project?.name || 'ABC'}<br/>
-            - Client Name: ${project?.client_name || 'ABC'}<br/>
-            - Location: ${project?.client_address || 'Koregaon'}<br/>
-            - Service Type: Plot Measurement<br/>
-            - Survey Duration: 2 Days<br/>
-            - Quotation Amount: ₹ 8000
+          <div class="report-container">
+            <div class="header-title">${title}</div>
+            <div class="details-box">
+              <div>
+                <div class="detail-item">
+                  <div class="detail-label">Project Name</div>
+                  <div class="detail-value">${project?.name || 'N/A'}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Client Name</div>
+                  <div class="detail-value">${project?.client_name || 'N/A'}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Location</div>
+                  <div class="detail-value">${project?.client_address || 'N/A'}</div>
+                </div>
+              </div>
+              <div>
+                <div class="detail-item">
+                  <div class="detail-label">Service Type</div>
+                  <div class="detail-value">${project?.service_type || 'N/A'}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Survey Duration</div>
+                  <div class="detail-value">${project?.survey_duration || 'N/A'}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Quotation Amount</div>
+                  <div class="detail-value">${project?.quotation_amount ? '₹ ' + project.quotation_amount : '₹ ' + (reportData.total || 0)}</div>
+                </div>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Particulars</th>
+                  <th class="text-right">Debit</th>
+                  <th class="text-right">Credit</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows || `
+                  <tr>
+                    <td colspan="4" style="text-align: center; color: #64748b; font-style: italic;">No ledger records found</td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+            
+            <div class="totals-container">
+              <table class="totals-table">
+                <tr class="summary-row">
+                  <td>Net Profit/Loss</td>
+                  <td class="text-right" style="color: ${Number(reportData.netProfitLoss || 0) >= 0 ? '#10b981' : '#ef4444'}">${reportData.netProfitLoss || 0}</td>
+                </tr>
+                <tr class="grand-total">
+                  <td>Total</td>
+                  <td class="text-right">${reportData.total || 0}</td>
+                </tr>
+              </table>
+            </div>
           </div>
-          <table>
-            <tr><th>Date</th><th>Particulars</th><th>Debit</th><th>Credit</th></tr>
-            ${rows || `
-              <tr><td>20-06-2026</td><td>Payment In Advance</td><td></td><td>5000</td></tr>
-              <tr><td>22-06-2026</td><td>Travelling Charges</td><td>500</td><td></td></tr>
-              <tr><td>23-06-2026</td><td>Accomodation</td><td>1500</td><td></td></tr>
-              <tr><td>23-06-2026</td><td>Equipment Rent (DGPS)</td><td>2000</td><td></td></tr>
-              <tr><td>23-06-2026</td><td>Food/Breakfast</td><td>1000</td><td></td></tr>
-              <tr><td>25-06-2026</td><td>Payment Recived</td><td></td><td>3000</td></tr>
-            `}
-            <tr>
-              <td colspan="2" style="text-align: right; font-weight: bold;">Net Profit/Loss</td>
-              <td>${reportData.netProfitLoss || 2900}</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td colspan="2" style="text-align: center; font-weight: bold;">Total</td>
-              <td>${reportData.total || 8000}</td>
-              <td>${reportData.total || 8000}</td>
-            </tr>
-          </table>
           <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); };</script>
         </body>
       </html>

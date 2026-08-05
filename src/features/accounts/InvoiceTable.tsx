@@ -26,6 +26,7 @@ interface Invoice {
   status: 'draft' | 'sent' | 'paid' | 'cancelled' | 'overdue' | 'accepted' | 'rejected' | 'in_review';
   due_date: string | null;
   created_at: string;
+  bank_id?: string;
   projects?: {
     name: string;
     client_name: string;

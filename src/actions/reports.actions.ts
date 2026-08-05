@@ -574,3 +574,88 @@ export async function getProjectActualSheetAction(projectId: string): Promise<Re
     return { success: false, error: error.message };
   }
 }
+
+export async function getAllProjectSummaryAction(start: string, end: string): Promise<ReportResponse> {
+  try {
+    const auth = await requireAuthContext();
+    if (auth.error) return { success: false, error: auth.error };
+    if (auth.role !== 'admin' && auth.role !== 'accountant') {
+      return { success: false, error: 'Access denied. Accountant or Admin only.' };
+    }
+
+    const supabase: any = await createClient();
+
+    const { data: projectsData, error: projError } = await supabase
+      .from('projects')
+      .select('id, name, client_name, client_contact, client_address, site_type, created_at, project_finances(total_quoted_amount)');
+      
+    if (projError) throw projError;
+
+    const filteredProjects = filterByDate(projectsData || [], 'created_at', start, end);
+
+    if (filteredProjects.length === 0) {
+      return { success: true, data: { projects: [] } };
+    }
+
+    const projectIds = filteredProjects.map((p: any) => p.id);
+
+    const [invoicesRes, paymentsRes, expensesRes, visitsRes, companySettings] = await Promise.all([
+      supabase.from('invoices').select('project_id, amount, status').in('project_id', projectIds),
+      supabase.from('payments').select('project_id, amount, status').in('project_id', projectIds),
+      supabase.from('expenses').select('project_id, amount, status').in('project_id', projectIds),
+      supabase.from('project_visits').select('project_id, visit_cost, status').in('project_id', projectIds),
+      getCompanySettingsAction()
+    ]);
+
+    const invoices = invoicesRes.data || [];
+    const payments = paymentsRes.data || [];
+    const expenses = expensesRes.data || [];
+    const visits = visitsRes.data || [];
+
+    const projectsSummary = filteredProjects.map((p: any) => {
+      const pId = p.id;
+      
+      const pInvoices = invoices.filter((i: any) => i.project_id === pId && i.status !== 'cancelled' && i.status !== 'rejected');
+      const pPayments = payments.filter((payment: any) => payment.project_id === pId && payment.status !== 'rejected');
+      const pExpenses = expenses.filter((e: any) => e.project_id === pId);
+      const pVisits = visits.filter((v: any) => v.project_id === pId);
+
+      const totalInvoiceValue = pInvoices.reduce((sum: number, i: any) => sum + Number(i.amount || 0), 0);
+      const totalReceived = pPayments.reduce((sum: number, payment: any) => sum + Number(payment.amount || 0), 0);
+      
+      let totalExpences = 0;
+      pExpenses.forEach((e: any) => { totalExpences += Number(e.amount || 0); });
+      pVisits.forEach((v: any) => { totalExpences += Number(v.visit_cost || 0); });
+
+      const budgetExpences = p.project_finances && p.project_finances.length > 0 ? Number(p.project_finances[0].total_quoted_amount || 0) : 0;
+      
+      const totalPending = Math.max(0, totalInvoiceValue - totalReceived);
+      const totalProfitLoss = totalInvoiceValue - totalExpences;
+      
+      return {
+        projectId: p.id,
+        quotationNo: 'N/A', 
+        projectName: `${p.name} / ${p.client_name || 'N/A'}`,
+        contactNo: p.client_contact || 'N/A',
+        serviceType: p.site_type || 'General',
+        location: p.client_address || 'N/A',
+        totalInvoiceValue,
+        budgetExpences, 
+        totalExpences,
+        totalReceived,
+        totalPending,
+        totalProfitLoss
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        projects: projectsSummary,
+        company: companySettings
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

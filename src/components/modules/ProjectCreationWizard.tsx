@@ -201,7 +201,7 @@ export function ProjectCreationWizard() {
     try {
       const result = await createProjectAction(data);
       if (!result) return; // Action was intercepted (e.g., session expired -> redirect to login)
-      
+
       if (result.success) {
         toast.success('Project Created Successfully', {
           description: 'The new project record and survey workflow have been initialized.',
@@ -342,23 +342,28 @@ export function ProjectCreationWizard() {
                         <div className="space-y-6">
 
                           {/* Project Name & Client Entity */}
-                          <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                              <label htmlFor="input-name" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
-                                Project Name
-                              </label>
-                              <div className="relative group">
-                                <Building2 className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
-                                <input
-                                  id="input-name"
-                                  {...methods.register('name')}
-                                  placeholder="e.g. Pune Highway Survey"
-                                  className={cn("glass-input h-14 !pl-12 font-medium text-sm placeholder:font-normal placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
-                                />
-                              </div>
-                              {errors.name && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.name.message}</p>}
-                            </div>
 
+                          <div className="space-y-2">
+                            <label htmlFor="input-name" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                              Project Name
+                            </label>
+                            <div className="relative group">
+                              <Building2 className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
+                              <input
+                                id="input-name"
+                                {...methods.register('name')}
+                                placeholder="e.g. Pune Highway Survey"
+                                className={cn("glass-input h-14 !pl-12 font-medium text-sm placeholder:font-normal placeholder:text-slate-400/70", c.focusBorder, c.focusRing)}
+                              />
+                            </div>
+                            {errors.name && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.name.message}</p>}
+                          </div>
+
+
+
+
+                          {/* GST Number */}
+                          <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
                               <label htmlFor="input-client" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
                                 Client / Company Name
@@ -374,23 +379,21 @@ export function ProjectCreationWizard() {
                               </div>
                               {errors.client_name && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.client_name.message}</p>}
                             </div>
-                          </div>
-
-                          {/* GST Number */}
-                          <div className="space-y-2">
-                            <label htmlFor="input-gst" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
-                              GST Number (Optional)
-                            </label>
-                            <div className="relative group">
-                              <Building2 className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
-                              <input
-                                id="input-gst"
-                                {...methods.register('gst_number')}
-                                placeholder="e.g. 27AAAAA0000A1Z5"
-                                className={cn("glass-input h-14 !pl-12 font-medium text-sm placeholder:font-normal placeholder:text-slate-400/70 uppercase", c.focusBorder, c.focusRing)}
-                              />
+                            <div className="space-y-2">
+                              <label htmlFor="input-gst" className="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 block px-1">
+                                GST Number (Optional)
+                              </label>
+                              <div className="relative group">
+                                <Building2 className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors z-10 shrink-0", c.focusWithin)} />
+                                <input
+                                  id="input-gst"
+                                  {...methods.register('gst_number')}
+                                  placeholder="e.g. 27AAAAA0000A1Z5"
+                                  className={cn("glass-input h-14 !pl-12 font-medium text-sm placeholder:font-normal placeholder:text-slate-400/70 uppercase", c.focusBorder, c.focusRing)}
+                                />
+                              </div>
+                              {errors.gst_number && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.gst_number.message}</p>}
                             </div>
-                            {errors.gst_number && <p className="text-xs font-medium text-rose-500 uppercase tracking-wide px-1">{errors.gst_number.message}</p>}
                           </div>
 
                           {/* Contact Phone & Email */}

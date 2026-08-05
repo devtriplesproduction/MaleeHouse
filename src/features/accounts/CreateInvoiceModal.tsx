@@ -90,6 +90,9 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
               if (project.quotations[0].gst_rate !== undefined && project.quotations[0].gst_rate !== null) projectGstRate = Number(project.quotations[0].gst_rate);
             }
           }
+          if (visitId) {
+            projectGstRate = 0; // Field visits do not apply GST by default
+          }
           project.calculated_budget = activeBudget;
           setProjectData(project);
           setFormData(prev => ({ 
@@ -105,7 +108,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
         const res = await getBankAccountsAction();
         if (res && res.success && res.data) {
           setBanks(res.data as any[]);
-          const defaultBank = (res.data as any[]).find((b: any) => b.is_default);
+          const defaultBank = (res.data as any[]).find((b: any) => b.is_default) || (res.data as any[])[0];
           if (defaultBank && !formData.bank_id) {
             setFormData(prev => ({ ...prev, bank_id: defaultBank.id }));
           }
@@ -406,15 +409,18 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                                       .reduce((sum: number, p: any) => sum + Number(p.amount), 0)).toLocaleString('en-IN')}</span>
                      </div>
                      <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums pt-2 border-t border-slate-100">
-                        <span>Current Invoice Amount</span>
+                        <span>Current Invoice Amount {visitId && <span className="text-emerald-500 lowercase ml-1">(extra charge)</span>}</span>
                         <span>INR {totalAmount.toLocaleString('en-IN')}</span>
                      </div>
                      <div className={`flex justify-between items-end p-3 rounded-lg mt-2 ${totalAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                        <p className="text-[11px] font-bold uppercase tracking-wider">Project Balance Remaining</p>
+                        <div className="space-y-0.5">
+                          <p className="text-[11px] font-bold uppercase tracking-wider">Project Balance Remaining</p>
+                          {visitId && <p className="text-[9px] font-medium opacity-80">* Field visit charges do not deduct from this total.</p>}
+                        </div>
                         <p className="text-lg font-bold tracking-tight nums">
                           INR {Math.max(0, Number(projectData?.calculated_budget || 0) - ((projectData?.payments || [])
                             .filter((p: any) => p.status === 'verified' || p.status === 'paid')
-                            .reduce((sum: number, p: any) => sum + Number(p.amount), 0)) - totalAmount).toLocaleString('en-IN')}
+                            .reduce((sum: number, p: any) => sum + Number(p.amount), 0)) - (visitId ? 0 : totalAmount)).toLocaleString('en-IN')}
                         </p>
                      </div>
                   </div>

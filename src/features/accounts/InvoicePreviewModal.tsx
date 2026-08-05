@@ -336,17 +336,17 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                  {(!gstType || gstType === 'CGST_SGST') && Number(invoice.gst_amount) > 0 ? (
                     <>
                        <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                          <span>CGST ({Number(invoice.gst_rate) / 2}%)</span>
+                          <span>CGST ({(Number(invoice.gst_rate || Math.round((Number(invoice.gst_amount) / Number(invoice.amount)) * 100) || 0)) / 2}%)</span>
                           <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
                        </div>
                        <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                          <span>SGST ({Number(invoice.gst_rate) / 2}%)</span>
+                          <span>SGST ({(Number(invoice.gst_rate || Math.round((Number(invoice.gst_amount) / Number(invoice.amount)) * 100) || 0)) / 2}%)</span>
                           <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
                        </div>
                     </>
                  ) : gstType === 'IGST' && Number(invoice.gst_amount) > 0 ? (
                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                       <span>IGST ({Number(invoice.gst_rate)}%)</span>
+                       <span>IGST ({Number(invoice.gst_rate || Math.round((Number(invoice.gst_amount) / Number(invoice.amount)) * 100) || 0)}%)</span>
                        <span>INR {Number(invoice.gst_amount).toLocaleString('en-IN')}</span>
                     </div>
                  ) : null}
@@ -452,9 +452,11 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                   <p className="text-[10px] text-indigo-700 mt-1 font-medium">Please include invoice number in payment reference.</p>
                 </div>
               </div>
-              {invoice.status === 'draft' ? (
+              {invoice.status === 'draft' && amountPaid === 0 ? (
                 <div className="mb-3 space-y-2">
-                  <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider mb-1 block">Select Bank Account</label>
+                  <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider mb-1 block">
+                    {bank ? 'Change Bank Account' : 'Select Bank Account'}
+                  </label>
                   <select 
                     value={bank?.id || ''}
                     onChange={(e) => handleBankChange(e.target.value)}

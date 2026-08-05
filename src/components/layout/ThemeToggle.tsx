@@ -8,6 +8,16 @@ import { motion, AnimatePresence } from "framer-motion";
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="w-[34px] h-[34px]" />;
+  }
+
   return (
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

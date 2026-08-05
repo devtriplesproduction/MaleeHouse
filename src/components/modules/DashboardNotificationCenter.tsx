@@ -75,7 +75,7 @@ export default function DashboardNotificationCenter({ className }: { className?:
   };
 
   return (
-    <Card className={cn("shadow-sm border-slate-200 dark:border-white/10 flex flex-col justify-between overflow-hidden bg-white/50 backdrop-blur-sm dark:bg-slate-900/50 transition-all hover:shadow-md h-full min-h-[350px]", className)}>
+    <Card className={cn("shadow-sm border-slate-200 dark:border-white/10 flex flex-col justify-between overflow-hidden bg-white/50 backdrop-blur-sm dark:bg-slate-900/50 transition-all hover:shadow-md h-full min-h-[350px] max-h-[600px]", className)}>
         <CardHeader className="pb-4 pt-5 px-5 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-rose-50/50 to-transparent dark:from-rose-950/20 dark:to-transparent">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

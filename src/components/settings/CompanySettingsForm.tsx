@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { updateCompanySettingsAction, type CompanySettings } from "@/actions/settings.actions";
-import { Building2, MapPin, Phone, Hash, Save, ShieldCheck, Mail, Smartphone, Star } from "lucide-react";
+import { Building2, MapPin, Phone, Hash, Save, ShieldCheck, Mail, Smartphone, Star, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -100,6 +100,20 @@ export function CompanySettingsForm({ initialSettings, canEdit = true, activeTab
                 </div>
               </div>
             </div>
+
+            <div className="space-y-1">
+              <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Digital Channels</div>
+              <div className="grid grid-cols-1 gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-1.5 truncate">
+                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">{formData.email || "Email"}</span>
+                </div>
+                <div className="flex items-center gap-1.5 truncate">
+                  <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">{formData.website || "Website"}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -173,6 +187,24 @@ export function CompanySettingsForm({ initialSettings, canEdit = true, activeTab
               maxLength={10} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, ''); }}
               className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/25 text-sm font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-[#0c1222] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
               required disabled={!canEdit} />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5 text-indigo-500" /> Email
+            </label>
+            <input type="email" name="email" value={formData.email || ""} onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/25 text-sm font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-[#0c1222] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
+              required disabled={!canEdit} placeholder="e.g. info@maleehouse.com" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <Globe className="h-3.5 w-3.5 text-indigo-500" /> Website
+            </label>
+            <input type="text" name="website" value={formData.website || ""} onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-black/25 text-sm font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-[#0c1222] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
+              required disabled={!canEdit} placeholder="e.g. www.maleehouse.com" />
           </div>
         </div>
 

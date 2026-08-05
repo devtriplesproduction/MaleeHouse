@@ -3,6 +3,7 @@
 import { normalizeData } from '@/lib/normalize';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 import { logWorkflowAudit } from "@/lib/workflow/logWorkflowAudit";
@@ -87,6 +88,21 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
         if (activeProforma) {
           return { success: false, error: 'An active Invoice already exists for the current milestone configuration.' };
         }
+      }
+    }
+
+    if (payload.visit_id) {
+      const { data: existingVisitInvoices } = await supabase
+        .from('invoices')
+        .select('status')
+        .eq('visit_id', payload.visit_id);
+        
+      const activeVisitInvoice = existingVisitInvoices?.find((inv: any) => 
+        inv.status !== 'cancelled' && inv.status !== 'rejected'
+      );
+      
+      if (activeVisitInvoice) {
+        return { success: false, error: 'An active invoice already exists for this field visit.' };
       }
     }
 
@@ -472,7 +488,7 @@ export async function getInvoiceByIdAction(invoiceId: string): Promise<ActionRes
 }
 
 const INVOICE_LIST_SELECT =
-  'id, invoice_number, project_id, milestone_id, amount, gst_amount, total_amount, status, due_date, created_at, projects!inner(name, client_name, budget, deleted_at), payments(amount, status), project_milestones(title, sort_order)';
+  'id, invoice_number, project_id, milestone_id, amount, gst_amount, total_amount, status, due_date, created_at, bank_id, projects!inner(name, client_name, budget, deleted_at), payments(amount, status), project_milestones(title, sort_order)';
 
 const PAYMENT_LIST_SELECT =
   'id, project_id, invoice_id, amount, status, payment_method, transaction_id, payment_date, created_at, bank_id, projects!inner(name, client_name, deleted_at), bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))';
@@ -922,10 +938,11 @@ export async function freezeProjectAction(
     }
 
     const supabase: any = await createClient();
+    const adminSupabase: any = await createAdminClient();
 
     const { data: currentProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
 
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('projects')
       .update({
         is_frozen: true,
@@ -976,17 +993,18 @@ export async function unfreezeProjectAction(projectId: string, comment?: string)
     }
 
     const supabase: any = await createClient();
+    const adminSupabase = await createAdminClient();
 
     const { data: currentProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
 
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('projects')
       .update({
         is_frozen: false,
         freeze_reason: null,
         frozen_at: null,
         frozen_by: null
-      })
+      } as any)
       .eq('id', projectId)
       .select()
       .single();
@@ -2190,9 +2208,7 @@ export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
     let invoicesQuery = applyProjectScope(
       supabase
         .from('invoices')
-        .select(
-          'id, invoice_number, project_id, milestone_id, amount, gst_amount, total_amount, status, due_date, created_at, projects!inner(name, client_name, budget, deleted_at), payments(amount, status), project_milestones(title, sort_order)'
-        )
+        .select(INVOICE_LIST_SELECT)
         .is('projects.deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(100)

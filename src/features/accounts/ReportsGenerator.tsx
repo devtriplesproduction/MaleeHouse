@@ -15,7 +15,8 @@ import {
   getProjectStatementAction,
   getProjectBudgetSheetAction,
   getExpensesFundAllocationAction,
-  getProjectActualSheetAction
+  getProjectActualSheetAction,
+  getAllProjectSummaryAction
 } from '@/actions/reports.actions';
 import { Select, SelectItem } from "@/components/ui/select";
 import { PageHeader } from "@/components/modules/PageHeader";
@@ -108,6 +109,9 @@ export function ReportsGenerator() {
           break;
         case 'balance_sheet':
           res = await getBalanceSheetAction(dateTo, pid);
+          break;
+        case 'all_project_summary':
+          res = await getAllProjectSummaryAction(dateFrom, dateTo);
           break;
         case 'project_statement':
           if (!pid) { toast.error('Project Required', { description: 'Please select a specific project.' }); setIsLoading(false); return; }
@@ -217,9 +221,31 @@ export function ReportsGenerator() {
       const summaryData = [{ 'Metric': 'Total Equity', 'Value': reportData.equity }];
       const wsSummary = XLSX.utils.json_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+    } else if (generatedConfig.type === 'all_project_summary') {
+      const data = (reportData.projects || []).map((p: any, idx: number) => ({
+        'SR NO': idx + 1,
+        'Project ID': p.projectId,
+        'Quotation No': p.quotationNo,
+        'Project/Client Name': p.projectName,
+        'Contact No': p.contactNo,
+        'Service Type': p.serviceType,
+        'Location': p.location,
+        'Total Invoice Value': p.totalInvoiceValue,
+        'Budget Expenses': p.budgetExpences,
+        'Total Expenses': p.totalExpences,
+        'Total Received': p.totalReceived,
+        'Total Pending': p.totalPending,
+        'Total Profit/Loss': p.totalProfitLoss
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, "Project Summary");
     }
 
-    XLSX.writeFile(wb, `${generatedConfig.type}_report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    if (wb.SheetNames.length > 0) {
+      XLSX.writeFile(wb, `${generatedConfig.type}_report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    } else {
+      toast.error('Export Not Supported', { description: 'Excel export is not yet configured for this report type.' });
+    }
   };
 
   const renderTableData = () => {

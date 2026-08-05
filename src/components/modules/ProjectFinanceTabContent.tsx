@@ -611,9 +611,9 @@ export function ProjectFinanceTabContent({
         {showMilestoneForm && (
           <form
             onSubmit={handleMilestoneSubmit}
-            className="p-6 bg-slate-950/60 rounded-2xl border border-slate-800 space-y-6 animate-in slide-in-from-top duration-300"
+            className="p-6 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-in slide-in-from-top duration-300"
           >
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-indigo-500" /> Configure
               Milestone Schedule (INR, 18% GST Compliance)
             </h4>
@@ -622,10 +622,10 @@ export function ProjectFinanceTabContent({
               {milestoneItems.map((item, idx) => (
                 <div
                   key={idx}
-                  className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end p-4 bg-slate-900/40 rounded-2xl border border-slate-850"
+                  className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end p-4 bg-white dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm"
                 >
                   <div className="md:col-span-2 space-y-1">
-                    <label className="text-xs font-bold text-slate-500">
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-500">
                       Milestone Title
                     </label>
                     <input
@@ -636,11 +636,11 @@ export function ProjectFinanceTabContent({
                         handleMilestoneFieldChange(idx, "title", e.target.value)
                       }
                       placeholder="e.g., CAD Prototype Approval"
-                      className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-500">
                       Percentage (%)
                     </label>
                     <input
@@ -654,11 +654,11 @@ export function ProjectFinanceTabContent({
                         )
                       }
                       placeholder="%"
-                      className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-500">
                       Base Cost (INR)
                     </label>
                     <input
@@ -673,11 +673,11 @@ export function ProjectFinanceTabContent({
                         )
                       }
                       placeholder="₹ Base cost"
-                      className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-500">
                       Due Date
                     </label>
                     <input
@@ -690,11 +690,11 @@ export function ProjectFinanceTabContent({
                           e.target.value,
                         )
                       }
-                      className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500">
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-500">
                       Linked Stage
                     </label>
                     <select
@@ -706,7 +706,7 @@ export function ProjectFinanceTabContent({
                           e.target.value,
                         )
                       }
-                      className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-300"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     >
                       <option value="">None (Unrestricted)</option>
                       {Object.keys(STAGE_LABELS).map((stg: any) => (
@@ -729,11 +729,11 @@ export function ProjectFinanceTabContent({
                             e.target.checked,
                           )
                         }
-                        className="rounded bg-slate-950 border-slate-800 text-indigo-600 w-4 h-4 focus:ring-0"
+                        className="rounded bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-indigo-600 w-4 h-4 focus:ring-2 focus:ring-indigo-500"
                       />
                       <label
                         htmlFor={`act-gate-${idx}`}
-                        className="text-xs font-bold text-slate-400 select-none"
+                        className="text-xs font-bold text-slate-600 dark:text-slate-400 select-none"
                       >
                         Activates
                       </label>
@@ -774,7 +774,7 @@ export function ProjectFinanceTabContent({
                 <button
                   type="button"
                   onClick={() => setShowMilestoneForm(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 >
                   Cancel
                 </button>
@@ -954,24 +954,6 @@ export function ProjectFinanceTabContent({
           </div>
           {isAccountant && (
             <div className="flex gap-3 items-center">
-              {selectedExpenseIds.size > 0 && (
-                <button
-                  onClick={() => {
-                    const selected = expenses.filter(e => selectedExpenseIds.has(e.id));
-                    const totalAmount = selected.reduce((sum, e) => sum + Number(e.amount), 0);
-                    const title = `Reimbursement for ${selected.length} items: ` + selected.map(e => e.description).join(', ');
-                    setSelectedExpenseForInvoice({
-                      id: 'multiple',
-                      amount: totalAmount,
-                      description: title.substring(0, 150) + (title.length > 150 ? '...' : '')
-                    });
-                    setExpenseInvoiceModalOpen(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
-                >
-                  Bill Selected ({selectedExpenseIds.size})
-                </button>
-              )}
               <button
                 onClick={() => setExpenseModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
@@ -1041,19 +1023,7 @@ export function ProjectFinanceTabContent({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-900/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                {isAccountant && (
-                  <th className="p-4 w-12 text-center">
-                    <input 
-                      type="checkbox" 
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedExpenseIds(new Set(expenses.map(exp => exp.id)));
-                        else setSelectedExpenseIds(new Set());
-                      }}
-                      checked={selectedExpenseIds.size === expenses.length && expenses.length > 0}
-                      className="rounded bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-indigo-600 focus:ring-0"
-                    />
-                  </th>
-                )}
+
                 <th className="p-4">Date</th>
                 <th className="p-4">Category</th>
                 <th className="p-4">Description</th>
@@ -1071,21 +1041,7 @@ export function ProjectFinanceTabContent({
                 </tr>
               ) : expenses.map((exp) => (
                 <tr key={exp.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200">
-                  {isAccountant && (
-                    <td className="p-4 text-center">
-                      <input 
-                        type="checkbox"
-                        checked={selectedExpenseIds.has(exp.id)}
-                        onChange={(e) => {
-                          const newSet = new Set(selectedExpenseIds);
-                          if (e.target.checked) newSet.add(exp.id);
-                          else newSet.delete(exp.id);
-                          setSelectedExpenseIds(newSet);
-                        }}
-                        className="rounded bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-indigo-600 focus:ring-0"
-                      />
-                    </td>
-                  )}
+
                   <td className="p-4 text-slate-700 dark:text-slate-300 nums font-bold">
                     {new Date(exp.expense_date).toLocaleDateString()}
                   </td>
@@ -1130,18 +1086,6 @@ export function ProjectFinanceTabContent({
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      {isAccountant && (
-                        <button
-                          onClick={() => {
-                            setSelectedExpenseForInvoice(exp);
-                            setExpenseInvoiceModalOpen(true);
-                          }}
-                          className="px-3 py-1 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:text-indigo-400 font-semibold rounded-lg text-xs transition-all shadow-sm"
-                          title="Generate Invoice for this Expense"
-                        >
-                          Bill
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -1150,16 +1094,7 @@ export function ProjectFinanceTabContent({
               {/* Inject visits as expenses */}
               {visits.filter(v => Number(v.visit_cost || 0) > 0).map((v) => (
                 <tr key={`visit-${v.id}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-white/[0.02] text-xs transition duration-200 bg-slate-50/30 dark:bg-slate-900/10">
-                  {isAccountant && (
-                    <td className="p-4 text-center">
-                      <input 
-                        type="checkbox"
-                        disabled
-                        className="rounded bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-50 cursor-not-allowed focus:ring-0"
-                        title="System generated visit cannot be billed from here"
-                      />
-                    </td>
-                  )}
+
                   <td className="p-4 text-slate-700 dark:text-slate-300 nums font-bold">
                     {new Date(v.scheduled_date || v.created_at || new Date()).toLocaleDateString()}
                   </td>
@@ -1477,14 +1412,7 @@ export function ProjectFinanceTabContent({
       </div>
 
       {/* Modals */}
-      <CreateInvoiceModal
-        projectId={project.id}
-        projectName={project.name}
-        clientName={project.client_name}
-        onSuccess={() => {
-          onRefresh?.();
-        }}
-      />
+
 
       <LogPaymentModal
         isOpen={paymentModalOpen}

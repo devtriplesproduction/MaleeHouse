@@ -7,6 +7,7 @@ import { createClient as createAnonClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { z } from "zod";
 import { getUserProfileAction } from "./auth.actions";
+import { DEFAULT_COMPANY_SETTINGS } from "@/constants/company";
 
 export interface CompanySettings {
   id: string;
@@ -16,6 +17,8 @@ export interface CompanySettings {
   gstin: string;
   telephone: string;
   mobile: string;
+  email?: string;
+  website?: string;
   bankName?: string;
   accountName?: string;
   accountNumber?: string;
@@ -24,24 +27,10 @@ export interface CompanySettings {
   upiId?: string;
 }
 
-const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
-  id: "company-settings-1",
-  name: "Malee House Head Office",
-  address: "4th Floor, Alpha Block, Sigma Tech Park",
-  cityStateZip: "Whitefield, Bangalore, Karnataka 560066",
-  gstin: "36AAAAA1111A1Z1",
-  telephone: "+91 80 4987 6543",
-  mobile: "+91 98765 43210",
-  bankName: "",
-  accountName: "",
-  accountNumber: "",
-  ifscCode: "",
-  branchName: "",
-  upiId: ""
-};
+
 
 const SETTINGS_SELECT =
-  'id, name, address, cityStateZip, gstin, telephone, mobile, bankName, accountName, accountNumber, ifscCode, branchName, upiId';
+  'id, name, address, cityStateZip, gstin, telephone, mobile, email, website, bankName, accountName, accountNumber, ifscCode, branchName, upiId';
 
 /**
  * Server-side company settings load (no cookies — safe for unstable_cache).
