@@ -417,18 +417,23 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Share Invoice</h3>
               <div className="space-y-3">
                 <button 
-                  onClick={copyClientLink}
+                  onClick={() => {
+                    if (invoice.status === 'draft') handleSend();
+                    copyClientLink();
+                  }}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
                 >
                   <Link2 className="w-4 h-4" /> Copy Link
                 </button>
                 <a
+                  onClick={() => { if (invoice.status === 'draft') handleSend(); }}
                   href={`mailto:?subject=Malee House - Invoice ${invoice.invoice_number}&body=Dear Client,%0D%0A%0D%0APlease find your invoice ${invoice.invoice_number} ready for your review and payment here:%0D%0A${invoiceLink}%0D%0A%0D%0ABest regards,%0D%0AMalee House Finance`}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-700 hover:text-indigo-700 rounded-xl text-xs font-bold transition-all"
                 >
                   <Mail className="w-4 h-4" /> Email Invoice
                 </a>
                 <a
+                  onClick={() => { if (invoice.status === 'draft') handleSend(); }}
                   href={`https://wa.me/?text=Hi, please find the invoice ${invoice.invoice_number} from Malee House for your payment here: ${invoiceLink}`}
                   target="_blank"
                   rel="noopener noreferrer"

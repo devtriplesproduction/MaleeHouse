@@ -59,6 +59,10 @@ function getStoragePathFromUrl(pdfUrl: string): string {
   return decodeURIComponent(parts[parts.length - 1]);
 }
 
+const MOCK_PDF_BUFFER = Buffer.from(
+  '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
+);
+
 async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileId?: string) {
   const { data: existing } = await supabaseAdmin.from('salary_slips').select('id, pdf_url').eq('snapshot_id', snapshotId).maybeSingle();
   
@@ -98,10 +102,7 @@ async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileI
       });
 
       if (!fileExists || fileExists.length === 0) {
-        const mockPdfBuffer = Buffer.from(
-          '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
-        );
-        await supabaseAdmin.storage.from('salary_slips').upload(fileName, mockPdfBuffer, {
+        await supabaseAdmin.storage.from('salary_slips').upload(fileName, MOCK_PDF_BUFFER, {
           contentType: 'application/pdf',
           upsert: true
         });
@@ -119,14 +120,22 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
   const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id').eq('cycle_id', cycleId);
   if (!snaps || snaps.length === 0) return;
 
+  // Bulk fetch existing slips to resolve N+1 queries
+  const { data: existingSlips } = await supabaseAdmin
+    .from('salary_slips')
+    .select('id, snapshot_id, pdf_url')
+    .eq('cycle_id', cycleId);
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
+  const slipsToInsert: any[] = [];
+  const slipsToCheckStorage: any[] = [];
+
   for (const snap of snaps) {
-    const { data: existing } = await supabaseAdmin.from('salary_slips').select('id, pdf_url').eq('snapshot_id', snap.id).maybeSingle();
-    let slip = existing;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
+    const existing = existingSlips?.find((s: any) => s.snapshot_id === snap.id);
     const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
 
-    if (!slip) {
-      const { data: newSlip } = await supabaseAdmin.from('salary_slips').insert({
+    if (!existing) {
+      slipsToInsert.push({
         employee_id: snap.employee_id,
         cycle_id: cycleId,
         snapshot_id: snap.id,
@@ -135,11 +144,24 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
         generated_by: profileId,
         emailed: false,
         shared: false
-      }).select().single();
-      slip = newSlip;
+      });
+    } else {
+      slipsToCheckStorage.push(existing);
     }
+  }
 
-    if (slip && slip.pdf_url) {
+  // Bulk insert new slip records if any are missing
+  if (slipsToInsert.length > 0) {
+    const { data: inserted } = await supabaseAdmin.from('salary_slips').insert(slipsToInsert).select();
+    if (inserted) {
+      slipsToCheckStorage.push(...inserted);
+    }
+  }
+
+  // Check and upload storage files in parallel to prevent sequential latency bottlenecks
+  await Promise.allSettled(
+    slipsToCheckStorage.map(async (slip) => {
+      if (!slip.pdf_url) return;
       try {
         const fileName = getStoragePathFromUrl(slip.pdf_url);
         const parts = fileName.split('/');
@@ -151,10 +173,7 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
         });
 
         if (!fileExists || fileExists.length === 0) {
-          const mockPdfBuffer = Buffer.from(
-            '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
-          );
-          await supabaseAdmin.storage.from('salary_slips').upload(fileName, mockPdfBuffer, {
+          await supabaseAdmin.storage.from('salary_slips').upload(fileName, MOCK_PDF_BUFFER, {
             contentType: 'application/pdf',
             upsert: true
           });
@@ -162,8 +181,8 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
       } catch (e) {
         console.error("[ensureSlipsExistForCycle] storage error:", e);
       }
-    }
-  }
+    })
+  );
 }
 
 
@@ -214,14 +233,7 @@ export interface PayrollSnapshot {
 export async function getPayrollCyclesAction() {
   try {
     const supabase: any = await createClient();
-    const { data: cycles, error } = await supabase
-      .from('payroll_cycles')
-      .select(
-        'id, month, year, status, locked_at, locked_by, bank_id, created_at'
-      )
-      .order('year', { ascending: false })
-      .order('month', { ascending: false })
-      .limit(48);
+    const { data: cycles, error } = await supabase.from('payroll_cycles').select('*');
     if (error) throw error;
     return { success: true, data: normalizeData(cycles) };
   } catch (error: any) {
@@ -255,9 +267,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     // Check if cycle is already locked
     const { data: cycles, error: cyclesError } = await supabaseAdmin
       .from('payroll_cycles')
-      .select(
-        'id, month, year, status, locked_at, locked_by, bank_id, created_at'
-      )
+      .select('*')
       .eq('month', month)
       .eq('year', year);
 
@@ -322,33 +332,25 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
     // Fetch all salary increments up to this month
     const { data: incrementsData } = await supabase
       .from('salary_increments')
-      .select('id, employee_id, amount, effective_date, reason, created_at')
+      .select('*')
       .lte('effective_date', endOfMonth)
-      .order('effective_date', { ascending: false })
-      .limit(500);
+      .order('effective_date', { ascending: false });
 
     // Days in Month (fixed working days = 26)
     const workingDaysLimit = 26;
 
     // Fetch all active financial ledger entries
-    const empIds = employees.map((e: any) => e.id);
     const { data: ledgerData, error: ledgerError } = await supabaseAdmin
       .from('employee_financial_ledger')
-      .select('id, employee_id, amount, type, status, description, created_at')
-      .in('employee_id', empIds.length ? empIds : ['00000000-0000-0000-0000-000000000000'])
-      .eq('status', 'pending')
-      .limit(1000);
+      .select('*')
+      .in('employee_id', employees.map((e: any) => e.id))
+      .eq('status', 'pending');
       
     // Fetch draft applications for the current cycle, if any
-    let currentApps: any[] = [];
-    if (existing?.id) {
-      const { data } = await supabaseAdmin
-        .from('payroll_adjustment_applications')
-        .select('id, cycle_id, employee_id, amount, type, status, created_at')
-        .eq('cycle_id', existing.id)
-        .limit(500);
-      currentApps = data || [];
-    }
+    const { data: currentApps } = await supabaseAdmin
+      .from('payroll_adjustment_applications')
+      .select('*')
+      .eq('cycle_id', existing?.id || 'draft-cycle');
 
     const draftSnapshots: PayrollSnapshot[] = employees.map((emp: any) => {
       const empLogs = attendanceLogs.filter((l: any) => l.employee_id === emp.id);
@@ -893,14 +895,24 @@ export async function notifySalarySlipsAction(cycleId: string) {
 
     let successCount = 0;
     let failCount = 0;
-    
-    const successSlipIds: string[] = [];
-    const failedSlipIds: string[] = [];
 
     for (const slip of slips) {
       try {
         // Send in-app notification
         await sendLocalNotifications([slip.employee_id], title, message, 'payroll', null);
+        
+        // Update tracking fields
+        const { error: updateError } = await supabaseAdmin
+          .from('salary_slips')
+          .update({
+            emailed: true,
+            status: 'sent'
+          })
+          .eq('id', slip.id);
+          
+        if (updateError) {
+          throw new Error("Failed to update tracking fields: " + updateError.message);
+        }
         
         // Audit Log for Notification Sent
         await logPayrollEvent(
@@ -910,11 +922,17 @@ export async function notifySalarySlipsAction(cycleId: string) {
           "info"
         );
         
-        successSlipIds.push(slip.id);
         successCount++;
       } catch (err: any) {
         console.error(`[notifySalarySlipsAction] Failed to process notification for slip ${slip.id}:`, err);
-        
+        // Mark as failed
+        await supabaseAdmin
+          .from('salary_slips')
+          .update({
+            status: 'failed'
+          })
+          .eq('id', slip.id);
+          
         // Audit Log for Notification Failed
         await logPayrollEvent(
           "SALARY_SLIP_NOTIFICATION_FAILED", 
@@ -923,28 +941,8 @@ export async function notifySalarySlipsAction(cycleId: string) {
           "warning"
         );
           
-        failedSlipIds.push(slip.id);
         failCount++;
       }
-    }
-
-    if (successSlipIds.length > 0) {
-      await supabaseAdmin
-        .from('salary_slips')
-        .update({
-          emailed: true,
-          status: 'sent'
-        })
-        .in('id', successSlipIds);
-    }
-
-    if (failedSlipIds.length > 0) {
-      await supabaseAdmin
-        .from('salary_slips')
-        .update({
-          status: 'failed'
-        })
-        .in('id', failedSlipIds);
     }
 
     // 4. Admin Audit Logging

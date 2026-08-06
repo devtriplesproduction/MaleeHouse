@@ -122,6 +122,8 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
   const [mounted, setMounted] = useState(false);
   const { user: currentUser, role } = useUser();
 
+  const hasFetchedRef = React.useRef(false);
+
   useEffect(() => {
     setMounted(true);
     if (!currentUser || !role) return;
@@ -134,6 +136,9 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
       setNotifications(initialBirthdays);
       return;
     }
+
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
 
     // Client-only fetch once (removed from layout SSR to cut per-page DB cost)
     let cancelled = false;
@@ -151,7 +156,7 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
     return () => {
       cancelled = true;
     };
-  }, [currentUser, role, initialBirthdays]);
+  }, [currentUser?.id, role, initialBirthdays]);
 
   const handleAcknowledge = () => {
     localStorage.setItem(`hasSeenBirthdays_permanent_${currentUser?.id}`, "true");

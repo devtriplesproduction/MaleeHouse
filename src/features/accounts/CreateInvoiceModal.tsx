@@ -489,6 +489,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                   <div className="space-y-3">
                     <button 
                       onClick={() => {
+                        if (createdInvoice.status === 'draft') handleMarkAsShared();
                         const link = `${window.location.origin}/invoices/${createdInvoice.id}`;
                         navigator.clipboard.writeText(link);
                         toast.success('Invoice link copied to clipboard!');
@@ -498,12 +499,14 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                       <Link2 className="w-4 h-4" /> Copy Link
                     </button>
                     <a
+                      onClick={() => { if (createdInvoice.status === 'draft') handleMarkAsShared(); }}
                       href={`mailto:?subject=Malee House - Invoice ${formData.invoice_number}&body=Dear Client,%0D%0A%0D%0APlease find your invoice ${formData.invoice_number} ready for your review and payment here:%0D%0A${window.location.origin}/invoices/${createdInvoice.id}%0D%0A%0D%0ABest regards,%0D%0AMalee House Finance`}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-700 hover:text-indigo-700 rounded-xl text-xs font-bold transition-all"
                     >
                       <Mail className="w-4 h-4" /> Email Invoice
                     </a>
                     <a
+                      onClick={() => { if (createdInvoice.status === 'draft') handleMarkAsShared(); }}
                       href={`https://wa.me/?text=Hi, please find the invoice ${formData.invoice_number} from Malee House for your payment here: ${window.location.origin}/invoices/${createdInvoice.id}`}
                       target="_blank"
                       rel="noopener noreferrer"

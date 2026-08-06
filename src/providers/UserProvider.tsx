@@ -85,10 +85,16 @@ export function UserProvider({ children, initialProfile }: { children: React.Rea
         } else {
           // [DIAG]
           upLog('GET_PROFILE_OK', { id: profile.id, role: profile.role, is_active: profile.is_active })
-          setUser({
-            id: profile.id,
-            name: `${profile.first_name} ${profile.last_name}`.trim(),
-            email: profile.email,
+          setUser(prev => {
+            const newName = `${profile.first_name} ${profile.last_name}`.trim();
+            if (prev && prev.id === profile.id && prev.name === newName && prev.email === profile.email) {
+              return prev;
+            }
+            return {
+              id: profile.id,
+              name: newName,
+              email: profile.email,
+            };
           });
           setRole(profile.role as Role);
         }
@@ -108,12 +114,7 @@ export function UserProvider({ children, initialProfile }: { children: React.Rea
     return promise;
   }, []);
 
-  // Initial fetch effect
-  useEffect(() => {
-    upLog('INITIAL_MOUNT', { hasInitialProfile: !!initialProfile });
-    if (initialProfile) return;
-    getUserProfile(true);
-  }, [initialProfile, getUserProfile]);
+  // Initial fetch effect (Removed to prevent duplicate fetch race condition with onAuthStateChange)
 
   const isInitialAuthEvent = useRef(true);
 

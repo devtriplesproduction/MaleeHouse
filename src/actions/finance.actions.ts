@@ -1004,7 +1004,7 @@ export async function unfreezeProjectAction(projectId: string, comment?: string)
         freeze_reason: null,
         frozen_at: null,
         frozen_by: null
-      } as any)
+      } as never)
       .eq('id', projectId)
       .select()
       .single();
@@ -2029,7 +2029,7 @@ export async function getPendingInvoicesCountAction() {
   }
 }
 
-export async function getProjectsWithFinancialsAction(): Promise<ActionResponse> {
+export async function getProjectsWithFinancialsAction(filterStatuses?: string[]): Promise<ActionResponse> {
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
@@ -2041,74 +2041,16 @@ export async function getProjectsWithFinancialsAction(): Promise<ActionResponse>
 
     const supabase: any = await createClient();
 
-    let selectString = `
-        id,
-        name,
-        client_name,
-        status,
-        is_frozen,
-        quotations (total_amount, status),
-        payments (amount, status)
-    `;
-
-    if (!isGlobalRole) {
-      selectString += `, project_assignments!inner(user_id)`;
-    }
-
-    let query = supabase
-      .from('projects')
-      .select(selectString)
-      .neq('status', 'archived')
-      .is('deleted_at', null)
-      .eq('payments.status', 'verified')
-      .order('created_at', { ascending: false });
-
-    if (!isGlobalRole) {
-      query = query.eq('project_assignments.user_id', profile.id);
-    }
+    let query = supabase.rpc('get_project_financials_summary', {
+      statuses: filterStatuses || null
+    });
 
     const { data: projects, error } = await query;
     if (error) throw error;
 
-    const enrichedProjects = projects.map((p: any) => {
-      let contract_value = 0;
-      let received_amount = 0;
-
-      if (p.quotations && p.quotations.length > 0) {
-        let maxQuote = 0;
-        let approvedQuote = null;
-        for (const q of p.quotations) {
-          const amt = Number(q.total_amount || 0);
-          if (q.status?.toLowerCase() === 'approved') {
-            approvedQuote = amt;
-          }
-          if (amt > maxQuote) {
-            maxQuote = amt;
-          }
-        }
-        contract_value = approvedQuote !== null ? approvedQuote : maxQuote;
-      }
-
-      if (p.payments && p.payments.length > 0) {
-        for (const pay of p.payments) {
-          received_amount += Number(pay.amount || 0);
-        }
-      }
-
-      return {
-        id: p.id,
-        name: p.name,
-        client_name: p.client_name,
-        status: p.status,
-        is_frozen: p.is_frozen,
-        contract_value,
-        received_amount,
-        pending_amount: Math.max(0, contract_value - received_amount)
-      };
-    });
-
-    return { success: true, data: normalizeData(enrichedProjects) };
+    return { success: true, data: projects };
   } catch (error: any) {
+    console.error("getProjectsWithFinancialsAction error:", error);
     return { success: false, error: error.message };
   }
 }
@@ -2191,15 +2133,7 @@ export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
     };
 
     let projectsQuery = supabase
-      .from('projects')
-      .select(`
-        id, name, client_name, budget, status, deleted_at,
-        invoices (id, total_amount, status),
-        payments (id, amount, status),
-        project_milestones (id, amount),
-        quotations (total_amount, status)
-      `)
-      .is('deleted_at', null)
+      .rpc('get_billing_workspace_summary', { workspace_id: null })
       .order('updated_at', { ascending: false })
       .limit(200);
 
@@ -2252,42 +2186,19 @@ export async function getBillingWorkspaceDataAction(): Promise<ActionResponse> {
     if (paymentsRes.error) console.error('[billing] payments:', paymentsRes.error.message);
     if (milestonesRes.error) console.error('[billing] milestones:', milestonesRes.error.message);
 
-    const billingSummary = (projectsRes.data || []).map((p: any) => {
-      let total_invoiced = 0;
-      let total_paid = 0;
-      let milestone_sum = 0;
-      let quotation_sum = 0;
-
-      (p.invoices || []).forEach((inv: any) => {
-        if (inv.status !== 'cancelled') total_invoiced += Number(inv.total_amount || 0);
-      });
-      (p.payments || []).forEach((pay: any) => {
-        if (pay.status === 'verified') total_paid += Number(pay.amount || 0);
-      });
-      (p.project_milestones || []).forEach((m: any) => {
-        milestone_sum += Number(m.amount || 0);
-      });
-      (p.quotations || []).forEach((q: any) => {
-        if (q.status === 'Approved') quotation_sum += Number(q.total_amount || 0);
-      });
-
-      const budget = Number(p.budget || 0);
-      const dynamic_budget = Math.max(budget, quotation_sum, milestone_sum);
-
-      return {
-        id: p.id,
-        name: p.name,
-        client_name: p.client_name,
-        status: p.status,
-        base_budget: budget,
-        budget: dynamic_budget,
-        total_invoiced,
-        total_paid,
-        pending_balance: Math.max(0, dynamic_budget - total_paid),
-        milestone_sum,
-        quotation_sum,
-      };
-    });
+    const billingSummary = (projectsRes.data || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      client_name: p.client_name,
+      status: p.status,
+      base_budget: Number(p.base_budget || 0),
+      budget: Number(p.budget || 0),
+      total_invoiced: Number(p.total_invoiced || 0),
+      total_paid: Number(p.total_paid || 0),
+      pending_balance: Number(p.pending_balance || 0),
+      milestone_sum: Number(p.milestone_sum || 0),
+      quotation_sum: Number(p.quotation_sum || 0),
+    }));
 
     const invoices = (invoicesRes.data || []).map((inv: any) => ({
       ...inv,

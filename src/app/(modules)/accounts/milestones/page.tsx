@@ -28,18 +28,13 @@ export default async function ProjectMilestonesPage({
 }) {
   let initialProjects: any[] = [];
   
-  const projRes = await getProjectsWithFinancialsAction();
+  // Pass ACTIVE_SURVEY_STATUSES to the action so PostgreSQL handles the filtering.
+  // Note: If projectIdParam is provided for an inactive project, it won't be returned here, 
+  // which is correct as this is the Active Milestones view.
+  const projRes = await getProjectsWithFinancialsAction(ACTIVE_SURVEY_STATUSES);
 
   if (projRes?.success && projRes.data) {
-    const projectIdParam = searchParams.project as string;
-    
-    // Filter to active survey projects (or matching search param)
-    const active = projRes.data.filter((p: any) => {
-      if (projectIdParam && p.id === projectIdParam) return true;
-      return ACTIVE_SURVEY_STATUSES.includes(p.status);
-    });
-
-    initialProjects = active;
+    initialProjects = projRes.data;
   }
 
   return (

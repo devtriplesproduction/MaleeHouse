@@ -39,7 +39,7 @@ export async function requestDispatchOverrideAction(projectId: string): Promise<
     // Update the project to store the requested state
     const { data: updatedProject, error } = await adminSupabase
       .from('projects')
-      .update({ dispatch_override_requested: true })
+      .update({ dispatch_override_requested: true } as never)
       .eq('id', projectId)
       .select()
       .maybeSingle();

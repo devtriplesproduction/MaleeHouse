@@ -167,11 +167,6 @@ export function ReportsGenerator() {
     const companySettings = reportData.company || {};
     let currentProject = reportData.project;
 
-    // Fallback if not populated
-    if (generatedConfig.projectId && !currentProject) {
-      currentProject = projects.find(p => p.id === generatedConfig.projectId) || { client_name: 'Client', client_address: 'Address Not Provided', client_contact: '' };
-    }
-
     generateFinancialReportPDF(reportData, generatedConfig as any, companySettings, currentProject, title);
   };
 
@@ -222,7 +217,7 @@ export function ReportsGenerator() {
       const wsSummary = XLSX.utils.json_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
     } else if (generatedConfig.type === 'all_project_summary') {
-      const data = (reportData.projects || []).map((p: any, idx: number) => ({
+      const data = (reportData?.projects || []).map((p: any, idx: number) => ({
         'SR NO': idx + 1,
         'Project ID': p.projectId,
         'Quotation No': p.quotationNo,
@@ -632,7 +627,7 @@ export function ReportsGenerator() {
                 </tr>
               </thead>
               <tbody>
-                {(reportData.projects || []).map((p: any, idx: number) => (
+                {(reportData?.projects || []).map((p: any, idx: number) => (
                   <tr key={idx} className="border-b border-slate-100 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
                     <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground font-medium">{idx + 1}</td>
                     <td className="py-4 px-4 text-sm text-slate-900 dark:text-foreground">{p.projectId}</td>

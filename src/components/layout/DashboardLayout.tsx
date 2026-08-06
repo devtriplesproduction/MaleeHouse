@@ -15,9 +15,11 @@ import { BirthdayNotifier } from "@/components/modules/BirthdayNotifier";
 
 import DashboardLoading from "@/app/(modules)/loading";
 
+const EMPTY_BIRTHDAYS: any[] = [];
+
 export function DashboardLayout({
   children,
-  initialBirthdays = [],
+  initialBirthdays = EMPTY_BIRTHDAYS,
 }: {
   children: React.ReactNode;
   /** Optional SSR birthdays; usually empty — notifier loads client-side once */

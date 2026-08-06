@@ -8,6 +8,7 @@ import { QuotationList } from "@/features/accounts/QuotationList";
 import { ArrowLeft, Plus, ChevronLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import { getProjectByIdAction } from "@/actions/project.actions";
 import { peekQuoteProject } from "@/lib/quote-project-handoff";
+import DashboardLoading from "@/app/(modules)/loading";
 
 interface QuotationWorkspaceContentProps {
   initialProject: any;
@@ -147,12 +148,7 @@ export function QuotationWorkspaceContent({
   // ── Project create mode — never fall through to draft list ─────────────
   if (projectId && mode === "create") {
     if (projectLoadState === 'loading' && !resolvedProject) {
-      return (
-        <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-500">
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-          <p className="text-sm font-medium">Opening quotation builder…</p>
-        </div>
-      );
+      return <DashboardLoading />;
     }
 
     if (!resolvedProject) {
@@ -239,12 +235,7 @@ export function QuotationWorkspaceContent({
 
   // Loading manage when project still resolving
   if ((projectId || quotationId) && mode === "manage" && projectLoadState === 'loading') {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-500">
-        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-        <p className="text-sm font-medium">Loading project…</p>
-      </div>
-    );
+    return <DashboardLoading />;
   }
 
   // ── Default workspace view (Draft Quotations list) ──────────────────────

@@ -51,53 +51,41 @@ export async function getProfitLossReportAction(start: string, end: string, proj
     }
 
     const supabase: any = await createClient();
-    const [paymentsRes, expensesRes, visitsRes] = await Promise.all([
-      supabase.from('payments').select('amount, created_at, status, project_id, projects(name)'),
-      supabase.from('expenses').select('amount, expense_date, category, project_id'),
-      supabase.from('project_visits').select('visit_cost, created_at, status, project_id')
+
+    const pId = projectId || null;
+    const endISO = new Date(new Date(end).setHours(23, 59, 59, 999)).toISOString();
+    const startISO = new Date(start).toISOString();
+    
+    const [revRes, expRes, details] = await Promise.all([
+      supabase.rpc('get_revenue_by_project', { p_start_date: startISO, p_end_date: endISO, p_project_id: pId }),
+      supabase.rpc('get_expense_by_category', { p_start_date: startISO, p_end_date: endISO, p_project_id: pId }),
+      getCompanyAndProjectDetails(supabase, projectId)
     ]);
 
-    let payments = filterByDate(paymentsRes.data || [], 'created_at', start, end);
-    let expenses = filterByDate(expensesRes.data || [], 'expense_date', start, end);
-    let visits = filterByDate(visitsRes.data || [], 'created_at', start, end);
-
-    if (projectId) {
-      payments = payments.filter((p: any) => p.project_id === projectId);
-      expenses = expenses.filter((e: any) => e.project_id === projectId);
-      visits = visits.filter((v: any) => v.project_id === projectId);
-    }
+    if (revRes.error) throw revRes.error;
+    if (expRes.error) throw expRes.error;
 
     let totalRevenue = 0;
     const revenueByProject: Record<string, number> = {};
 
-    payments.forEach((p: any) => {
-      if (p.status !== 'rejected') {
-        const amt = Number(p.amount || 0);
+    (revRes.data || []).forEach((row: any) => {
+      const amt = Number(row.total_amount || 0);
+      if (amt > 0) { 
         totalRevenue += amt;
-        const projName = p.projects?.name || 'Company-wide';
-        revenueByProject[projName] = (revenueByProject[projName] || 0) + amt;
+        revenueByProject[row.project_name] = (revenueByProject[row.project_name] || 0) + amt;
       }
     });
 
     let totalCosts = 0;
     const costsByCategory: Record<string, number> = {};
 
-    expenses.forEach((e: any) => {
-      const amt = Number(e.amount || 0);
-      totalCosts += amt;
-      const cat = e.category || 'Other';
-      costsByCategory[cat] = (costsByCategory[cat] || 0) + amt;
-    });
-
-    visits.forEach((v: any) => {
-      const amt = Number(v.visit_cost || 0);
+    (expRes.data || []).forEach((row: any) => {
+      const amt = Number(row.total_amount || 0);
       if (amt > 0) {
         totalCosts += amt;
-        costsByCategory['Field Visit'] = (costsByCategory['Field Visit'] || 0) + amt;
+        costsByCategory[row.category] = (costsByCategory[row.category] || 0) + amt;
       }
     });
-
-    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
 
     return {
       success: true,
@@ -107,8 +95,8 @@ export async function getProfitLossReportAction(start: string, end: string, proj
         netProfit: totalRevenue - totalCosts,
         revenueByProject,
         costsByCategory,
-        company,
-        project
+        company: details.company,
+        project: details.project
       }
     };
   } catch (error: any) {
@@ -125,37 +113,36 @@ export async function getIncomeStatementAction(start: string, end: string, proje
     }
 
     const supabase: any = await createClient();
-    const [paymentsRes] = await Promise.all([
-      supabase.from('payments').select('amount, created_at, status, project_id, projects(name)')
+    
+    const pId = projectId || null;
+    const endISO = new Date(new Date(end).setHours(23, 59, 59, 999)).toISOString();
+    const startISO = new Date(start).toISOString();
+    
+    const [revRes, txRes, details] = await Promise.all([
+      supabase.rpc('get_revenue_by_project', { p_start_date: startISO, p_end_date: endISO, p_project_id: pId }),
+      supabase.rpc('get_income_statement_transactions', { p_start_date: startISO, p_end_date: endISO, p_project_id: pId }),
+      getCompanyAndProjectDetails(supabase, projectId)
     ]);
 
-    let payments = filterByDate(paymentsRes.data || [], 'created_at', start, end);
-    if (projectId) {
-      payments = payments.filter((p: any) => p.project_id === projectId);
-    }
+    if (revRes.error) throw revRes.error;
+    if (txRes.error) throw txRes.error;
 
     let totalIncome = 0;
     const incomeByProject: Record<string, number> = {};
 
-    payments.forEach((p: any) => {
-      if (p.status !== 'rejected') {
-        const amt = Number(p.amount || 0);
+    (revRes.data || []).forEach((row: any) => {
+      const amt = Number(row.total_amount || 0);
+      if (amt > 0) {
         totalIncome += amt;
-        const projName = p.projects?.name || 'Company-wide';
-        incomeByProject[projName] = (incomeByProject[projName] || 0) + amt;
+        incomeByProject[row.project_name] = (incomeByProject[row.project_name] || 0) + amt;
       }
     });
 
-    const incomeTransactions = payments
-      .filter((p: any) => p.status !== 'rejected')
-      .map((p: any) => ({
-        date: p.created_at,
-        project: p.projects?.name || 'Company-wide',
-        amount: Number(p.amount || 0)
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
+    const incomeTransactions = (txRes.data || []).map((t: any) => ({
+      date: t.date,
+      project: t.project,
+      amount: Number(t.amount || 0)
+    }));
 
     return {
       success: true,
@@ -163,8 +150,8 @@ export async function getIncomeStatementAction(start: string, end: string, proje
         totalIncome,
         incomeByProject,
         incomeTransactions,
-        company,
-        project
+        company: details.company,
+        project: details.project
       }
     };
   } catch (error: any) {
@@ -181,45 +168,35 @@ export async function getExpenseStatementAction(start: string, end: string, proj
     }
 
     const supabase: any = await createClient();
-    const [expensesRes, visitsRes] = await Promise.all([
-      supabase.from('expenses').select('amount, expense_date, category, project_id'),
-      supabase.from('project_visits').select('visit_cost, created_at, status, project_id')
+    const pId = projectId || null;
+    const endISO = new Date(new Date(end).setHours(23, 59, 59, 999)).toISOString();
+    const startISO = new Date(start).toISOString();
+
+    const [expensesRes, details] = await Promise.all([
+      supabase.rpc('get_expense_by_category', { p_start_date: startISO, p_end_date: endISO, p_project_id: pId }),
+      getCompanyAndProjectDetails(supabase, projectId)
     ]);
 
-    let expenses = filterByDate(expensesRes.data || [], 'expense_date', start, end);
-    let visits = filterByDate(visitsRes.data || [], 'created_at', start, end);
-    if (projectId) {
-      expenses = expenses.filter((e: any) => e.project_id === projectId);
-      visits = visits.filter((v: any) => v.project_id === projectId);
-    }
+    if (expensesRes.error) throw expensesRes.error;
 
     let totalExpenses = 0;
     const expensesByCategory: Record<string, number> = {};
 
-    expenses.forEach((e: any) => {
-      const amt = Number(e.amount || 0);
-      totalExpenses += amt;
-      const cat = e.category || 'Other';
-      expensesByCategory[cat] = (expensesByCategory[cat] || 0) + amt;
-    });
-
-    visits.forEach((v: any) => {
-      const amt = Number(v.visit_cost || 0);
+    (expensesRes.data || []).forEach((row: any) => {
+      const amt = Number(row.total_amount || 0);
       if (amt > 0) {
         totalExpenses += amt;
-        expensesByCategory['Field Visit'] = (expensesByCategory['Field Visit'] || 0) + amt;
+        expensesByCategory[row.category] = (expensesByCategory[row.category] || 0) + amt;
       }
     });
-
-    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
 
     return {
       success: true,
       data: {
         totalExpenses,
         expensesByCategory,
-        company,
-        project
+        company: details.company,
+        project: details.project
       }
     };
   } catch (error: any) {
@@ -242,58 +219,24 @@ export async function getBalanceSheetAction(asOfDate: string, projectId?: string
 
     const supabase: any = await createClient();
     
-    // For balance sheet, we get everything UP TO the asOfDate
-    const e = new Date(asOfDate);
-    e.setHours(23, 59, 59, 999);
-    const timeLimit = e.getTime();
+    const pId = projectId || null;
+    const endISO = new Date(new Date(asOfDate).setHours(23, 59, 59, 999)).toISOString();
 
-    const [paymentsRes, expensesRes, invoicesRes, visitsRes] = await Promise.all([
-      supabase.from('payments').select('amount, created_at, status, project_id'),
-      supabase.from('expenses').select('amount, expense_date, project_id'),
-      supabase.from('invoices').select('total_amount, created_at, status, project_id'),
-      supabase.from('project_visits').select('visit_cost, created_at, status, project_id')
+    const [bsRes, details] = await Promise.all([
+      supabase.rpc('get_balance_sheet_summary', { p_as_of_date: endISO, p_project_id: pId }),
+      getCompanyAndProjectDetails(supabase, projectId)
     ]);
 
-    let payments = (paymentsRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
-    let expenses = (expensesRes.data || []).filter((item: any) => new Date(item.expense_date).getTime() <= timeLimit);
-    let invoices = (invoicesRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
-    let visits = (visitsRes.data || []).filter((item: any) => new Date(item.created_at).getTime() <= timeLimit);
+    if (bsRes.error) throw bsRes.error;
 
-    if (projectId) {
-      payments = payments.filter((p: any) => p.project_id === projectId);
-      expenses = expenses.filter((e: any) => e.project_id === projectId);
-      invoices = invoices.filter((i: any) => i.project_id === projectId);
-      visits = visits.filter((v: any) => v.project_id === projectId);
-    }
-
-    let totalIncome = 0;
-    payments.forEach((p: any) => {
-      if (p.status !== 'rejected') totalIncome += Number(p.amount || 0);
-    });
-
-    let totalExpensesPaid = 0;
-    let totalExpensesPending = 0;
-    expenses.forEach((e: any) => {
-      const amt = Number(e.amount || 0);
-      totalExpensesPaid += amt;
-    });
-
-    visits.forEach((v: any) => {
-      const amt = Number(v.visit_cost || 0);
-      // assuming field visits are 'paid' costs once completed, or treating all as paid for now
-      if (v.status !== 'cancelled' && amt > 0) {
-        totalExpensesPaid += amt;
-      }
-    });
-
-    let totalInvoiced = 0;
-    invoices.forEach((i: any) => {
-      if (i.status !== 'cancelled') totalInvoiced += Number(i.total_amount || 0);
-    });
-
+    const row = bsRes.data?.[0] || { total_income: 0, total_expenses: 0, total_visit_cost: 0, total_invoiced: 0 };
+    const totalIncome = Number(row.total_income || 0);
+    const totalExpensesPaid = Number(row.total_expenses || 0) + Number(row.total_visit_cost || 0);
+    const totalInvoiced = Number(row.total_invoiced || 0);
+    
     const cashOnHand = totalIncome - totalExpensesPaid;
     const accountsReceivable = Math.max(0, totalInvoiced - totalIncome);
-    const accountsPayable = totalExpensesPending;
+    const accountsPayable = 0; // Keeping original logic where it was explicitly calculated from pending expenses which is 0
 
     const assets = {
       'Cash on Hand': cashOnHand,
@@ -308,8 +251,6 @@ export async function getBalanceSheetAction(asOfDate: string, projectId?: string
     const totalLiabilities = Object.values(liabilities).reduce((a, b) => a + b, 0);
     const equity = totalAssets - totalLiabilities; // balancing figure
 
-    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
-
     return {
       success: true,
       data: {
@@ -318,8 +259,8 @@ export async function getBalanceSheetAction(asOfDate: string, projectId?: string
         liabilities,
         totalLiabilities,
         equity,
-        company,
-        project
+        company: details.company,
+        project: details.project
       }
     };
   } catch (error: any) {
@@ -334,33 +275,20 @@ export async function getProjectStatementAction(projectId: string): Promise<Repo
 
     const supabase: any = await createClient();
     
-    // 1. Fetch Project Details
-    const { data: project, error: pError } = await supabase
-      .from('projects')
-      .select('name, client_name, client_contact, client_address')
-      .eq('id', projectId)
-      .single();
-      
-    if (pError || !project) return { success: false, error: 'Project not found.' };
+    const [projectRes, stmtRes, company] = await Promise.all([
+      supabase.from('projects').select('name, client_name, client_contact, client_address').eq('id', projectId).single(),
+      supabase.rpc('get_project_statement_summary', { p_project_id: projectId }),
+      getCompanySettingsAction()
+    ]);
 
-    // 2. Fetch Milestones (Payment Timeline)
-    const { data: milestones, error: mError } = await supabase
-      .from('project_milestones')
-      .select('id, title, amount, status, due_date')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true });
-
-    // 3. Fetch Company Settings (Malee House Details)
-    const company = await getCompanySettingsAction();
+    if (projectRes.error || !projectRes.data) return { success: false, error: 'Project not found.' };
+    if (stmtRes.error) throw stmtRes.error;
 
     let totalBilled = 0;
     let totalPaid = 0;
 
-    const timeline = (milestones || []).map((m: any) => {
-      const cgst = (m.amount * 9) / 100;
-      const sgst = (m.amount * 9) / 100;
-      const total = m.amount + cgst + sgst;
-      
+    const timeline = (stmtRes.data || []).map((m: any) => {
+      const total = Number(m.total_amount || 0);
       totalBilled += total;
       if (m.status === 'paid') {
         totalPaid += total;
@@ -369,8 +297,8 @@ export async function getProjectStatementAction(projectId: string): Promise<Repo
       return {
         id: m.id,
         title: m.title,
-        base_amount: m.amount,
-        gst_amount: cgst + sgst,
+        base_amount: Number(m.base_amount || 0),
+        gst_amount: Number(m.gst_amount || 0),
         total_amount: total,
         status: m.status,
         due_date: m.due_date
@@ -381,10 +309,10 @@ export async function getProjectStatementAction(projectId: string): Promise<Repo
       success: true,
       data: {
         project: {
-          name: project.name,
-          client_name: project.client_name,
-          client_contact: project.client_contact,
-          client_address: project.client_address
+          name: projectRes.data.name,
+          client_name: projectRes.data.client_name,
+          client_contact: projectRes.data.client_contact,
+          client_address: projectRes.data.client_address
         },
         company: company || {
           name: 'Malee House',
@@ -414,42 +342,30 @@ export async function getProjectBudgetSheetAction(projectId: string): Promise<Re
     if (auth.error) return { success: false, error: auth.error };
     const supabase: any = await createClient();
 
-    const { data: budgetItems, error } = await supabase
-      .from('expenses')
-      .select('id, project_id, category, description, amount, status, expense_date, created_at')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: false })
-      .limit(500);
+    const [budgetRes, details, financesData] = await Promise.all([
+      supabase.rpc('get_project_budget_sheet_summary', { p_project_id: projectId }),
+      getCompanyAndProjectDetails(supabase, projectId),
+      supabase.from('project_finances').select('total_quoted_amount').eq('project_id', projectId).single()
+    ]);
 
-    if (error) throw error;
+    if (budgetRes.error) throw budgetRes.error;
     
-    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
-
-    // Fetch total quotation value for this project
-    const { data: financesData } = await supabase
-      .from('project_finances')
-      .select('total_quoted_amount')
-      .eq('project_id', projectId)
-      .single();
-
-    const totalQuotationValue = financesData?.total_quoted_amount || 0;
+    const totalQuotationValue = financesData.data?.total_quoted_amount || 0;
 
     const budgetDetails: any = {};
     const sectionTotals: any = {};
     let totalProjectCosting = 0;
 
-    (budgetItems || []).forEach((item: any) => {
-      // Map 'category' to 'section', and 'description' to 'particulars'
-      const section = item.category || 'General';
+    (budgetRes.data || []).forEach((row: any) => {
+      const section = row.category;
       if (!budgetDetails[section]) {
         budgetDetails[section] = [];
         sectionTotals[section] = 0;
       }
       
-      // Mock qty and rate based on amount
-      const amt = item.amount || 0;
+      const amt = Number(row.amount || 0);
       budgetDetails[section].push({
-        particulars: item.description || 'Expense',
+        particulars: row.description,
         qty: 1,
         rate: amt,
         days: 1,
@@ -470,8 +386,8 @@ export async function getProjectBudgetSheetAction(projectId: string): Promise<Re
         totalQuotationValue,
         totalProjectCosting,
         netAmount,
-        company,
-        project
+        company: details.company,
+        project: details.project
       } 
     };
   } catch (error: any) {
@@ -518,47 +434,27 @@ export async function getProjectActualSheetAction(projectId: string): Promise<Re
     if (auth.error) return { success: false, error: auth.error };
     const supabase: any = await createClient();
 
-    // Fetch credits (payments received)
-    const { data: payments } = await supabase
-      .from('payments')
-      .select('amount, created_at')
-      .eq('project_id', projectId);
+    const [actualRes, details] = await Promise.all([
+      supabase.rpc('get_project_actual_sheet_summary', { p_project_id: projectId }),
+      getCompanyAndProjectDetails(supabase, projectId)
+    ]);
 
-    // Fetch debits (expenses)
-    const { data: expensesData } = await supabase
-      .from('expenses')
-      .select('amount, category, description, expense_date')
-      .eq('project_id', projectId);
-      
-    const { company, project } = await getCompanyAndProjectDetails(supabase, projectId);
+    if (actualRes.error) throw actualRes.error;
 
     const ledger: any[] = [];
     let totalCredit = 0;
     let totalDebit = 0;
 
-    (payments || []).forEach((p: any) => {
-      const amt = p.amount || 0;
+    (actualRes.data || []).forEach((row: any) => {
       ledger.push({
-        date: p.created_at,
-        particulars: 'Payment Received',
-        debit: null,
-        credit: amt
+        date: row.date,
+        particulars: row.particulars,
+        debit: row.debit,
+        credit: row.credit
       });
-      totalCredit += amt;
+      totalCredit += Number(row.credit || 0);
+      totalDebit += Number(row.debit || 0);
     });
-
-    (expensesData || []).forEach((b: any) => {
-      const amt = b.amount || 0;
-      ledger.push({
-        date: b.expense_date,
-        particulars: `${b.category} - ${b.description}`,
-        debit: amt,
-        credit: null
-      });
-      totalDebit += amt;
-    });
-
-    ledger.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return { 
       success: true, 
@@ -566,8 +462,8 @@ export async function getProjectActualSheetAction(projectId: string): Promise<Re
         ledger,
         netProfitLoss: totalCredit - totalDebit,
         total: totalCredit,
-        company,
-        project
+        company: details.company,
+        project: details.project
       } 
     };
   } catch (error: any) {
@@ -585,75 +481,24 @@ export async function getAllProjectSummaryAction(start: string, end: string): Pr
 
     const supabase: any = await createClient();
 
-    const { data: projectsData, error: projError } = await supabase
-      .from('projects')
-      .select('id, name, client_name, client_contact, client_address, site_type, created_at, project_finances(total_quoted_amount)');
-      
-    if (projError) throw projError;
+    const company = await getCompanySettingsAction();
 
-    const filteredProjects = filterByDate(projectsData || [], 'created_at', start, end);
+    const { data, error } = await supabase.rpc(
+      "get_financial_summary_report",
+      {
+        start_date: new Date(start).toISOString(),
+        end_date: new Date(new Date(end).setHours(23, 59, 59, 999)).toISOString(),
+      }
+    );
 
-    if (filteredProjects.length === 0) {
-      return { success: true, data: { projects: [] } };
-    }
-
-    const projectIds = filteredProjects.map((p: any) => p.id);
-
-    const [invoicesRes, paymentsRes, expensesRes, visitsRes, companySettings] = await Promise.all([
-      supabase.from('invoices').select('project_id, amount, status').in('project_id', projectIds),
-      supabase.from('payments').select('project_id, amount, status').in('project_id', projectIds),
-      supabase.from('expenses').select('project_id, amount, status').in('project_id', projectIds),
-      supabase.from('project_visits').select('project_id, visit_cost, status').in('project_id', projectIds),
-      getCompanySettingsAction()
-    ]);
-
-    const invoices = invoicesRes.data || [];
-    const payments = paymentsRes.data || [];
-    const expenses = expensesRes.data || [];
-    const visits = visitsRes.data || [];
-
-    const projectsSummary = filteredProjects.map((p: any) => {
-      const pId = p.id;
-      
-      const pInvoices = invoices.filter((i: any) => i.project_id === pId && i.status !== 'cancelled' && i.status !== 'rejected');
-      const pPayments = payments.filter((payment: any) => payment.project_id === pId && payment.status !== 'rejected');
-      const pExpenses = expenses.filter((e: any) => e.project_id === pId);
-      const pVisits = visits.filter((v: any) => v.project_id === pId);
-
-      const totalInvoiceValue = pInvoices.reduce((sum: number, i: any) => sum + Number(i.amount || 0), 0);
-      const totalReceived = pPayments.reduce((sum: number, payment: any) => sum + Number(payment.amount || 0), 0);
-      
-      let totalExpences = 0;
-      pExpenses.forEach((e: any) => { totalExpences += Number(e.amount || 0); });
-      pVisits.forEach((v: any) => { totalExpences += Number(v.visit_cost || 0); });
-
-      const budgetExpences = p.project_finances && p.project_finances.length > 0 ? Number(p.project_finances[0].total_quoted_amount || 0) : 0;
-      
-      const totalPending = Math.max(0, totalInvoiceValue - totalReceived);
-      const totalProfitLoss = totalInvoiceValue - totalExpences;
-      
-      return {
-        projectId: p.id,
-        quotationNo: 'N/A', 
-        projectName: `${p.name} / ${p.client_name || 'N/A'}`,
-        contactNo: p.client_contact || 'N/A',
-        serviceType: p.site_type || 'General',
-        location: p.client_address || 'N/A',
-        totalInvoiceValue,
-        budgetExpences, 
-        totalExpences,
-        totalReceived,
-        totalPending,
-        totalProfitLoss
-      };
-    });
+    if (error) throw error;
 
     return {
       success: true,
       data: {
-        projects: projectsSummary,
-        company: companySettings
-      }
+        projects: data ?? [],
+        company,
+      },
     };
   } catch (error: any) {
     return { success: false, error: error.message };
