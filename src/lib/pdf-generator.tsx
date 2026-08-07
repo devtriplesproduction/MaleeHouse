@@ -1,3 +1,6 @@
+import React from 'react';
+import { renderToString } from 'react-dom/server';
+import { QuotationDocument } from '@/features/accounts/QuotationDocument';
 import { toast } from '@/hooks/use-toast';
 
 interface ProjectReportData {
@@ -219,504 +222,113 @@ export const generateProjectReport = (data: ProjectReportData) => {
   printWindow.document.close();
 };
 
-export const generateQuotationPDF = (quotation: any, project: any, companySettings: any, bankDetails?: any) => {
-  const printWindow = window.open("", "_blank");
+import { getBankAccountsAction } from '@/actions/bank.actions';
+
+export const generateQuotationPDF = async (quotation: any, project: any, companySettings: any, bankDetails?: any) => {
+  const printWindow = window.open('', '_blank');
   if (!printWindow) {
     toast({
-      title: "Popup Blocked",
-      description: "Please allow popups to preview/print the quotation.",
-      variant: "error"
+      title: 'Popup Blocked',
+      description: 'Please allow popups to preview/print the quotation.',
+      variant: 'error'
     });
     return;
   }
 
-  const items = quotation.items || [];
-  const discountAmount = quotation.discount_amount || 0;
-  const discountPercentage = quotation.discount_pct || quotation.discount_percentage || 0;
-  const clauses = quotation.clauses || [];
+  let bank = bankDetails;
+  if (!bank && quotation.bank_id) {
+    try {
+      const res = await getBankAccountsAction();
+      if (res && res.success && res.data) {
+        bank = res.data.find((b: any) => b.id === quotation.bank_id);
+      }
+    } catch (e) {
+      console.error("Failed to fetch bank details for PDF", e);
+    }
+  }
 
-  const itemsHtml = items.map((item: any, i: number) => `
-    <tr class="item-row">
-      <td style="font-weight: 600; color: #94a3b8; padding: 12px 8px; font-size: 11px;">${i + 1}</td>
-      <td style="padding: 12px 8px;">
-        <div style="font-weight: 700; color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: -0.01em;">${item.service_name}</div>
-        ${item.hsn_code ? `<div style="font-size: 9px; font-weight: 700; color: #4f46e5; text-transform: uppercase; margin-top: 2px;">HSN/SAC: ${item.hsn_code}</div>` : ''}
-        <div style="color: #64748b; font-size: 10px; margin-top: 3px; line-height: 1.4;">${item.description || 'Professional services as per technical scope.'}</div>
-      </td>
-      <td style="text-align: center; font-weight: 600; color: #0f172a; padding: 12px 8px; font-size: 11px;">${item.quantity} ${item.unit || ''}</td>
-      <td style="text-align: right; font-weight: 600; font-family: monospace; color: #334155; padding: 12px 8px; font-size: 11px;">INR ${Number(item.unit_price).toLocaleString('en-IN')}${item.unit ? ' / ' + item.unit : ''}</td>
-      <td style="text-align: right; font-weight: 700; font-family: monospace; color: #0f172a; padding: 12px 8px; font-size: 11px;">INR ${Number(item.total).toLocaleString('en-IN')}</td>
-    </tr>
-  `).join("");
+  const html = renderToString(<QuotationDocument quotation={quotation} project={project} companySettings={companySettings} bank={bank} />);
+  
+  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map(el => el.outerHTML)
+    .join('\n');
 
-  const clausesHtml = clauses.map((clause: any, index: number) => `
-    <div style="margin-bottom: 12px; page-break-inside: avoid;">
-      <div style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: #1e293b; margin-bottom: 2px;">
-        ${index + 1}. ${clause.title || clause.clause_title || 'Condition'}
-      </div>
-      <div style="font-size: 9.5px; color: #64748b; line-height: 1.4; padding-left: 10px; border-left: 2px solid #e2e8f0; white-space: pre-wrap;">
-        ${clause.content || clause.clause_content || ''}
-      </div>
-    </div>
-  `).join("");
-
-  const issueDate = new Date(quotation.created_at);
-  const validityDate = new Date(issueDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const htmlContent = `
+  printWindow.document.open();
+  printWindow.document.write(`
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Quotation - ${quotation.quotation_number}</title>
+        <title>Quotation ${quotation.quotation_number}</title>
+        ${styles}
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
-          
-          @page {
-            size: A4 portrait;
-            margin: 0;
+          @media print {
+            body { 
+              print-color-adjust: exact; 
+              -webkit-print-color-adjust: exact;
+              margin: 0 !important;
+              padding: 0 !important;
+              background-color: white !important;
+            }
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            .pdf-container {
+              width: 210mm;
+              margin: 0 auto;
+            }
+            .pdf-page {
+              width: 210mm;
+              min-height: 297mm !important;
+              height: 297mm !important;
+              margin: 0 !important;
+              padding: 20mm !important;
+              box-shadow: none !important;
+              border: none !important;
+              border-radius: 0 !important;
+              page-break-after: always;
+              page-break-inside: avoid;
+              position: relative;
+              overflow: hidden;
+            }
+            .pdf-page:last-child {
+              page-break-after: auto;
+            }
+            ::-webkit-scrollbar { display: none; }
           }
           
           body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            color: #1e293b;
-            margin: 0;
-            padding: 0;
             background-color: #f1f5f9;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            display: flex;
+            justify-content: center;
+            padding: 2rem 0;
           }
-          
-          .page {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 20mm;
-            margin: 10px auto;
+          .pdf-page {
             box-sizing: border-box;
-            position: relative;
-            background-color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            page-break-after: always;
-            break-after: page;
-          }
-          
-          .page:last-of-type {
-            page-break-after: avoid;
-            break-after: avoid;
-          }
-          
-          .font-outfit {
-            font-family: 'Outfit', sans-serif;
-          }
-          
-          .brand-logo {
-            width: 38px;
-            height: 38px;
-            background-color: #4f46e5;
-            color: white;
-            font-size: 20px;
-            font-weight: 800;
-            font-style: italic;
-            text-align: center;
-            line-height: 38px;
-            border-radius: 8px;
-            display: inline-block;
-          }
-          
-          .info-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px;
-            background-color: #f8fafc;
-            width: 48%;
-            box-sizing: border-box;
-          }
-          
-          .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-          }
-          
-          .items-table th {
-            border-bottom: 2px solid #0f172a;
-            color: #475569;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 9px;
-            letter-spacing: 0.05em;
-            padding: 8px;
-            text-align: left;
-          }
-          
-          .item-row {
-            border-bottom: 1px solid #f1f5f9;
-          }
-          
-          .totals-container {
-            border-top: 2px double #0f172a;
-            padding-top: 15px;
-            margin-top: 20px;
-            display: flex;
-            justify-content: flex-end;
-          }
-          
-          .totals-table {
-            width: 280px;
-            border-collapse: collapse;
-          }
-          
-          .totals-table td {
-            padding: 5px 0;
-            font-size: 11px;
-          }
-          
-          .totals-label {
-            font-weight: 600;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-          }
-          
-          .totals-val {
-            text-align: right;
-            font-weight: 700;
-            font-family: monospace;
-            color: #0f172a;
-          }
-          
-          .grand-total-row td {
-            padding-top: 10px;
-            border-top: 1px solid #e2e8f0;
-          }
-          
-          .grand-total-label {
-            font-weight: 800;
-            color: #4f46e5;
-            font-size: 11px;
-          }
-          
-          .grand-total-val {
-            font-size: 16px;
-            font-weight: 900;
-            color: #0f172a;
-          }
-          
-          .signature-box {
-            width: 130px;
-            text-align: center;
-          }
-          
-          .signature-line {
-            border-bottom: 1px solid #cbd5e1;
-            margin-top: 40px;
-            margin-bottom: 6px;
-          }
-          
-          .qr-badge {
-            border: 1px dashed #10b981;
-            border-radius: 8px;
-            background-color: #f0fdf4;
-            padding: 6px 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-          }
-          
-          .qr-text {
-            font-size: 8px;
-            font-weight: 700;
-            color: #166534;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            text-align: left;
-            line-height: 1.2;
-          }
-          
-          .footer-section {
-            border-top: 1px solid #f1f5f9;
-            padding-top: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 8px;
-            color: #94a3b8;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-          }
-
-          @media print {
-            body {
-              background-color: #ffffff;
-              margin: 0;
-            }
-            .page {
-              margin: 0;
-              box-shadow: none;
-              width: 210mm;
-              min-height: 297mm;
-            }
           }
         </style>
       </head>
       <body>
-        
-        <!-- ==================== PAGE 1 ==================== -->
-        <div class="page">
-          <!-- Page 1 Content -->
-          <div style="flex: 1; display: flex; flex-direction: column;">
-            
-            <!-- Document Header -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 18px;">
-              <div>
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                  <div class="brand-logo font-outfit">M</div>
-                  <div>
-                    <h1 class="font-outfit" style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; letter-spacing: -0.02em;">Malee House</h1>
-                    <p class="font-outfit" style="font-size: 8px; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.15em; margin: 0;">Engineering &amp; Survey Services</p>
-                  </div>
-                </div>
-                
-                <div style="font-size: 10px; color: #64748b; line-height: 1.5; font-weight: 500;">
-                  <strong style="color: #334155;">${companySettings?.name || 'Malee House Head Office'}</strong><br/>
-                  ${companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}<br/>
-                  ${companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}<br/>
-                  <span style="font-weight: 600; color: #4f46e5;">GSTIN: ${companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: ${companySettings?.telephone || '+91 80 4987 6543'}</span>
-                </div>
-              </div>
-              
-              <div style="text-align: right;">
-                <h1 class="font-outfit" style="font-size: 26px; font-weight: 900; color: #e2e8f0; text-transform: uppercase; margin: 0 0 10px 0; letter-spacing: -0.03em;">Quotation</h1>
-                
-                <table style="border-collapse: collapse; margin-left: auto;">
-                  <tr>
-                    <td style="font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; text-align: right; padding-right: 8px; padding-bottom: 2px;">Quote Number</td>
-                    <td style="font-size: 11px; font-weight: 700; color: #0f172a; text-align: right; padding-bottom: 2px; font-family: monospace;">#${quotation.quotation_number}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; text-align: right; padding-right: 8px; padding-bottom: 2px;">Date Issued</td>
-                    <td style="font-size: 10px; font-weight: 600; color: #334155; text-align: right; padding-bottom: 2px;">${issueDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-size: 8px; font-weight: 700; color: #94a3b8; text-transform: uppercase; text-align: right; padding-right: 8px;">Valid Until</td>
-                    <td style="font-size: 10px; font-weight: 600; color: #ef4444; text-align: right;">${validityDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
-                  </tr>
-                </table>
-              </div>
-            </div>
-            
-            <!-- Info Cards Row -->
-            <div style="display: flex; justify-content: space-between; margin-bottom: 18px;">
-              <div class="info-card">
-                <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Client Bill To:</div>
-                <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.2;">${project.client_name}</div>
-                ${project.gst_number ? `<div style="font-size: 9.5px; color: #64748b; margin-top: 3px; font-weight: 600;">GSTIN: ${project.gst_number}</div>` : ''}
-                <div style="font-size: 10px; color: #64748b; margin-top: 3px; font-weight: 500;">Authorized Project Engagement</div>
-              </div>
-              <div class="info-card">
-                <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Project Assignment:</div>
-                <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.2;">${project.name}</div>
-                <div style="font-size: 10px; color: #64748b; margin-top: 3px; font-weight: 500;">Location: Site Technical Survey</div>
-              </div>
-            </div>
-            
-            <!-- Services Table -->
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th style="width: 30px;">#</th>
-                  <th>Service Description</th>
-                  <th style="width: 50px; text-align: center;">Qty</th>
-                  <th style="width: 120px; text-align: right;">Unit Price</th>
-                  <th style="width: 120px; text-align: right;">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsHtml}
-              </tbody>
-            </table>
-            
-          </div>
-          
-          <!-- Page 1 Footer and Totals Panel (Locked at bottom of Page 1) -->
-          <div style="margin-top: 15px;">
-            <div class="totals-container">
-              <table class="totals-table">
-                <tr>
-                  <td class="totals-label">Subtotal</td>
-                  <td class="totals-val">INR ${(quotation.subtotal ?? 0).toLocaleString('en-IN')}</td>
-                </tr>
-                ${discountAmount > 0 ? `
-                  <tr>
-                    <td class="totals-label" style="color: #ef4444;">Discount (${discountPercentage}%)</td>
-                    <td class="totals-val" style="color: #ef4444;">- INR ${discountAmount.toLocaleString('en-IN')}</td>
-                  </tr>
-                ` : ''}
-                ${(!quotation.client_details?.gst_type && (quotation.gst_amount ?? 0) > 0) ? `
-                  <tr>
-                    <td class="totals-label">GST (${quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18}%)</td>
-                    <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
-                  </tr>
-                ` : quotation.client_details?.gst_type === 'NO_GST' || (quotation.gst_amount ?? 0) === 0 ? '' : 
-                  quotation.client_details?.gst_type === 'IGST' ? `
-                  <tr>
-                    <td class="totals-label">IGST (${quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18}%)</td>
-                    <td class="totals-val">INR ${(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</td>
-                  </tr>
-                  ` : `
-                  <tr>
-                    <td class="totals-label">CGST (${(quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18) / 2}%)</td>
-                    <td class="totals-val">INR ${((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</td>
-                  </tr>
-                  <tr>
-                    <td class="totals-label">SGST (${(quotation.gst_rate !== undefined && quotation.gst_rate !== null ? Number(quotation.gst_rate) : 18) / 2}%)</td>
-                    <td class="totals-val">INR ${((quotation.gst_amount ?? 0) / 2).toLocaleString('en-IN')}</td>
-                  </tr>
-                  `
-                }
-                <tr class="grand-total-row">
-                  <td class="totals-label grand-total-label">Grand Total</td>
-                  <td class="totals-val grand-total-val">INR ${(quotation.total_amount ?? 0).toLocaleString('en-IN')}</td>
-                </tr>
-              </table>
-            </div>
-            
-            <div class="footer-section" style="margin-top: 25px;">
-              <span>Malee House Document Reference: #${quotation.quotation_number}</span>
-              <span>Page 1 of 2</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- ==================== PAGE 2 ==================== -->
-        <div class="page">
-          <!-- Page 2 Content -->
-          <div style="flex: 1; display: flex; flex-direction: column;">
-            
-            <!-- Brand Header Reference -->
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 20px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="brand-logo font-outfit" style="width: 28px; height: 28px; font-size: 15px; line-height: 28px;">M</div>
-                <div>
-                  <h2 class="font-outfit" style="font-size: 12px; font-weight: 800; text-transform: uppercase; margin: 0; color: #0f172a;">Malee House</h2>
-                  <p class="font-outfit" style="font-size: 7px; font-weight: 700; color: #64748b; text-transform: uppercase; margin: 0; letter-spacing: 0.1em;">Proposal Appendix</p>
-                </div>
-              </div>
-              <p style="font-size: 10px; color: #94a3b8; font-weight: 600; margin: 0;">Quote Ref: #${quotation.quotation_number}</p>
-            </div>
-            
-
-            
-            <!-- Privacy Statement -->
-            <div style="border-top: 1px solid #f1f5f9; padding-top: 15px; margin-bottom: 20px;">
-              <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;">Privacy &amp; Data Security Policy</h3>
-              <div style="font-size: 9px; color: #64748b; font-weight: 500; line-height: 1.5;">
-                <p style="margin: 4px 0;"><span style="font-weight: 700; color: #334155;">• Data Security:</span> All surveyor drone imagery, CAD drafts, GIS maps, and site technical measurements are encrypted and saved securely within isolated local database nodes.</p>
-                <p style="margin: 4px 0;"><span style="font-weight: 700; color: #334155;">• Strict Confidentiality:</span> Customer site boundaries, project parameters, client contact profiles, and financial transaction records are kept strictly confidential and will never be shared with third parties.</p>
-              </div>
-            </div>
-            
-            <!-- Notes -->
-            <div style="border-top: 1px solid #f1f5f9; padding-top: 15px;">
-              <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Quotation Notes</h3>
-              <div style="font-size: 9.5px; color: #475569; font-weight: 500; line-height: 1.5; padding-left: 8px; border-left: 2.5px solid #4f46e5; background-color: #fafafa; padding-top: 6px; padding-bottom: 6px;">
-                ${(quotation.notes || 'Prices are valid for 30 days. 50% advance required for mobilization.').split('\n').map((p: string) => p.trim() ? `<p style="margin: 0 0 6px 0;">${p}</p>` : '').join('')}
-                ${clauses && clauses.length > 0 ? clauses.map((c: any) => `<p style="margin: 0 0 6px 0;"><strong style="color: #1e293b; text-transform: uppercase;">${c.title || c.clause_title}:</strong> ${c.content || c.clause_content}</p>`).join('') : `
-                  <p style="margin: 0 0 6px 0;"><strong style="color: #1e293b; text-transform: uppercase;">Validity:</strong> This quotation is valid for a period of 30 days from the date of issue.</p>
-                  <p style="margin: 0 0 6px 0;"><strong style="color: #1e293b; text-transform: uppercase;">Payment Schedule:</strong> 50% mobilization advance is required for survey deployment. Balance 50% is due upon deliverable release.</p>
-                `}
-              </div>
-            </div>
-            
-          </div>
-
-          ${bankDetails ? `
-          <div style="border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">
-            <h3 class="font-outfit" style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Payment Details</h3>
-            <table style="width: 100%; font-size: 9px; color: #475569;">
-              <tr>
-                <td style="width: 120px; font-weight: 600;">Bank Name:</td>
-                <td>${bankDetails.bank_name}</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600;">Account Name:</td>
-                <td>${bankDetails.account_name}</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600;">Account Number:</td>
-                <td style="font-family: monospace; font-weight: 600;">${bankDetails.account_number}</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600;">IFSC Code:</td>
-                <td style="font-family: monospace; font-weight: 600;">${bankDetails.ifsc_code}</td>
-              </tr>
-            </table>
-          </div>
-          ` : ''}
-          
-          <!-- Prepared By & Signatures Section (Locked at bottom of Page 2) -->
-          <div style="margin-top: auto; border-top: 1px solid #e2e8f0; padding-top: 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-              
-              <!-- Digitally Verified Shield Badge -->
-              <div class="qr-badge">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  <path d="m9 11 2 2 4-4"/>
-                </svg>
-                <div class="qr-text">
-                  Digitally Verified<br/>
-                  <span style="font-family: monospace; font-size: 7.5px; color: #047857; font-weight: 500;">ID: ${quotation.id?.slice(0, 12)}</span>
-                </div>
-              </div>
-              
-              <!-- Signature Lines -->
-              <div style="display: flex; gap: 30px;">
-                <div class="signature-box">
-                  <div class="signature-line"></div>
-                  <div class="signature-name font-outfit" style="font-size: 9px; font-weight: 600; color: #1e293b;">Accounts Dept</div>
-                  <div class="signature-title" style="font-size: 7.5px; color: #94a3b8;">Malee House Survey</div>
-                </div>
-                <div class="signature-box">
-                  <div class="signature-line"></div>
-                  <div class="signature-name font-outfit" style="font-size: 9px; font-weight: 600; color: #1e293b;">Authorized Representative</div>
-                  <div class="signature-title" style="font-size: 7.5px; color: #94a3b8;">Approved By Client</div>
-                </div>
-              </div>
-              
-            </div>
-            
-            <div class="footer-section" style="margin-top: 25px;">
-              <span>Malee House Surveying OS &middot; Secure proposal record</span>
-              <span>Page 2 of 2</span>
-            </div>
-          </div>
-        </div>
-        
+        ${html}
         <script>
-          // Wait for fonts and resources to fully load before printing
           function doPrint() {
             window.focus();
             window.print();
+            window.close();
           }
           if (document.fonts && document.fonts.ready) {
             document.fonts.ready.then(function() {
-              setTimeout(doPrint, 400);
+              setTimeout(doPrint, 500);
             });
           } else {
             window.onload = function() {
-              setTimeout(doPrint, 600);
+              setTimeout(doPrint, 800);
             };
           }
         </script>
       </body>
     </html>
-  `;
-
-  printWindow.document.open();
-  printWindow.document.write(htmlContent);
+  `);
   printWindow.document.close();
 };
 

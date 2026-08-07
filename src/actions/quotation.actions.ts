@@ -33,7 +33,8 @@ const QUOTATION_LIST_SELECT = `
   id, quotation_number, project_id, total_amount, status, current_version,
   created_at, updated_at, created_by, assigned_to,
   client_details, items, subtotal, gst_rate, gst_amount, client_token,
-  client_approver_phone, client_approved_at,
+  client_approver_phone, client_approved_at, bank_id, discount_amount,
+  discount_pct, clauses, notes,
   project:projects!inner(
     id, name, client_name, status, gst_number, deleted_at,
     project_milestones(id, title)
@@ -135,43 +136,52 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
     const { error: insertError } = await supabase.from('quotations').insert(newQuotation);
     if (insertError) throw insertError;
 
-    const { error: versionError } = await supabase.from('quotation_versions').insert({
-      id: `qtv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      quotation_id: quotationId,
-      version_number: 1,
-      items: newQuotation.items,
-      subtotal: newQuotation.subtotal,
-      gst_rate: newQuotation.gst_rate,
-      gst_amount: newQuotation.gst_amount,
-      total_amount: newQuotation.total_amount,
-      status: 'Draft',
-      notes: newQuotation.notes,
-      terms: newQuotation.terms,
-      clauses: newQuotation.clauses,
-      internal_notes: newQuotation.internal_notes,
-      revision_reason: 'Initial creation',
-      created_by: profile.id,
-      created_at: new Date().toISOString()
-    });
-    if (versionError) throw versionError;
+    const promises: Promise<any>[] = [];
 
-    await supabase.from('activity_logs').insert({
-      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      project_id: payload.project_id || null,
-      user_id: profile.id,
-      action: 'QUOTATION_CREATED',
-      details: { quotation_id: quotationId, quotation_number: quotationNumber, version: 1 },
-      created_at: new Date().toISOString()
-    });
+    promises.push(
+      supabase.from('quotation_versions').insert({
+        id: `qtv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        quotation_id: quotationId,
+        version_number: 1,
+        items: newQuotation.items,
+        subtotal: newQuotation.subtotal,
+        gst_rate: newQuotation.gst_rate,
+        gst_amount: newQuotation.gst_amount,
+        total_amount: newQuotation.total_amount,
+        status: 'Draft',
+        notes: newQuotation.notes,
+        terms: newQuotation.terms,
+        clauses: newQuotation.clauses,
+        internal_notes: newQuotation.internal_notes,
+        revision_reason: 'Initial creation',
+        created_by: profile.id,
+        created_at: new Date().toISOString()
+      }).then(({ error }: { error: any }) => { if (error) throw error; })
+    );
+
+    promises.push(
+      supabase.from('activity_logs').insert({
+        id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        project_id: payload.project_id || null,
+        user_id: profile.id,
+        action: 'QUOTATION_CREATED',
+        details: { quotation_id: quotationId, quotation_number: quotationNumber, version: 1 },
+        created_at: new Date().toISOString()
+      }).then(({ error }: { error: any }) => { if (error) throw error; })
+    );
+
+    if (payload.project_id) {
+      // Sync quotation total_amount to project budget
+      promises.push(
+        supabase.from('projects').update({ budget: newQuotation.total_amount }).eq('id', payload.project_id).then(({ error }: { error: any }) => { if (error) throw error; })
+      );
+    }
+
+    await Promise.all(promises);
 
     try {
       notifyQuotationCreatedAction(payload.project_id || null, quotationNumber).catch(console.error);
     } catch (_) {}
-
-    if (payload.project_id) {
-      // Sync quotation total_amount to project budget
-      await supabase.from('projects').update({ budget: newQuotation.total_amount }).eq('id', payload.project_id);
-    }
 
     if (payload.project_id) {
       await revalidateAccountsPaths(payload.project_id);
@@ -463,7 +473,8 @@ export async function getProjectQuotationsAction(projectId: string, _cacheBuster
     }
 
     const supabase: any = await createClient();
-    const select = `*, ${PROJECT_WITH_MILESTONES}`;
+    // Only select the quotation fields, avoid N+1 project fetch bloat
+    const select = `*`;
 
     if (projectId.startsWith('QUO-')) {
       const { data: standalone, error } = await supabase
@@ -568,6 +579,13 @@ export async function createQuotationRevisionAction(
     const baseNumber = (currentQuotation.quotation_number || quotationId).replace(/-V\d+$/, '');
     const versionedNumber = `${baseNumber}-V${newVersion}`;
 
+    const { error: supersedeError } = await supabase
+      .from('quotation_versions')
+      .update({ status: 'Superseded' })
+      .eq('quotation_id', quotationId)
+      .eq('version_number', currentQuotation.current_version || 1);
+    if (supersedeError) throw supersedeError;
+
     const { error: updateError } = await supabase.from('quotations').update({
       items: validated.data.items,
       subtotal: validated.data.subtotal,
@@ -587,39 +605,48 @@ export async function createQuotationRevisionAction(
     }).eq('id', quotationId);
     if (updateError) throw updateError;
 
-    const { error: versionError } = await supabase.from('quotation_versions').insert({
-      id: `qtv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      quotation_id: quotationId,
-      version_number: newVersion,
-      items: validated.data.items,
-      subtotal: validated.data.subtotal,
-      gst_rate: validated.data.gst_rate,
-      gst_amount: validated.data.gst_amount,
-      total_amount: validated.data.total_amount,
-      status: 'Draft',
-      notes: validated.data.notes,
-      terms: validated.data.terms,
-      clauses: validated.data.clauses || [],
-      internal_notes: validated.data.internal_notes,
-      revision_reason: revisionReason,
-      created_by: profile.id,
-      created_at: new Date().toISOString()
-    });
-    if (versionError) throw versionError;
+    const promises: Promise<any>[] = [];
 
-    await supabase.from('activity_logs').insert({
-      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      project_id: payload.project_id || null,
-      user_id: profile.id,
-      action: 'QUOTATION_REVISED',
-      details: { quotation_id: quotationId, version: newVersion, reason: revisionReason },
-      created_at: new Date().toISOString()
-    });
+    promises.push(
+      supabase.from('quotation_versions').insert({
+        id: `qtv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        quotation_id: quotationId,
+        version_number: newVersion,
+        items: validated.data.items,
+        subtotal: validated.data.subtotal,
+        gst_rate: validated.data.gst_rate,
+        gst_amount: validated.data.gst_amount,
+        total_amount: validated.data.total_amount,
+        status: 'Draft',
+        notes: validated.data.notes,
+        terms: validated.data.terms,
+        clauses: validated.data.clauses || [],
+        internal_notes: validated.data.internal_notes,
+        revision_reason: revisionReason,
+        created_by: profile.id,
+        created_at: new Date().toISOString()
+      }).then(({ error }: { error: any }) => { if (error) throw error; })
+    );
+
+    promises.push(
+      supabase.from('activity_logs').insert({
+        id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        project_id: payload.project_id || null,
+        user_id: profile.id,
+        action: 'QUOTATION_REVISED',
+        details: { quotation_id: quotationId, version: newVersion, reason: revisionReason },
+        created_at: new Date().toISOString()
+      }).then(({ error }: { error: any }) => { if (error) throw error; })
+    );
 
     if (payload.project_id) {
       // Sync revised quotation total_amount to project budget
-      await supabase.from('projects').update({ budget: validated.data.total_amount }).eq('id', payload.project_id);
+      promises.push(
+        supabase.from('projects').update({ budget: validated.data.total_amount }).eq('id', payload.project_id).then(({ error }: { error: any }) => { if (error) throw error; })
+      );
     }
+
+    await Promise.all(promises);
 
     if (payload.project_id) {
       await revalidateAccountsPaths(payload.project_id);

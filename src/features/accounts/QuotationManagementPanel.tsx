@@ -34,6 +34,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; bg: 
   Approved: { label: 'Approved', icon: <CheckCircle2 className="w-3.5 h-3.5" />, bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
   Rejected: { label: 'Rejected', icon: <XCircle className="w-3.5 h-3.5" />, bg: 'bg-rose-500/10 text-rose-500 border-rose-500/20' },
   'Revision Requested': { label: 'Revision Needed', icon: <AlertCircle className="w-3.5 h-3.5" />, bg: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+  Superseded: { label: 'Superseded', icon: <History className="w-3.5 h-3.5" />, bg: 'bg-slate-500/10 text-slate-500 border-slate-500/20' },
 };
 
 type View = 'list' | 'create' | 'revision' | 'preview' | 'history' | 'edit';
@@ -79,7 +80,7 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
     return res.success ? res.data : [];
   };
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchQuotations(true).then((data) => {
       if (searchParams.get('action') === 'edit' && data) {
         const draft = data.find((q: any) => q.status === 'Draft' || q.status === 'Revision Requested');
@@ -88,13 +89,26 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
           setView('edit');
         }
       }
-    }); 
+    });
 
     const { createClient } = require('@/lib/supabase/client');
     const supabase = createClient();
     const channel = supabase.channel(`quotations_project_${project.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations', filter: `project_id=eq.${project.id}` }, () => {
-        fetchQuotations(false);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations', filter: `project_id=eq.${project.id}` }, (payload: any) => {
+        if (payload.eventType === 'INSERT') {
+          setQuotations((prev: any[]) => {
+            if (prev.some(q => q.id === payload.new.id)) return prev;
+            return [payload.new, ...prev];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setQuotations((prev: any[]) => {
+            const existing = prev.find(q => q.id === payload.new.id);
+            if (existing && existing.updated_at === payload.new.updated_at) return prev;
+            return prev.map(q => q.id === payload.new.id ? { ...q, ...payload.new } : q);
+          });
+        } else if (payload.eventType === 'DELETE') {
+          setQuotations((prev: any[]) => prev.filter(q => q.id !== payload.old.id));
+        }
       })
       .subscribe();
 
@@ -235,7 +249,7 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
             const status = STATUS_CONFIG[q.status] || STATUS_CONFIG['Draft'];
             const isDraft = q.status === 'Draft';
             const isSentOrViewed = q.status === 'Sent' || q.status === 'Viewed';
-            const canRevise = isAccountant && ['Revision Requested', 'Rejected'].includes(q.status);
+            const canRevise = isAccountant && ['Revision Requested', 'Rejected', 'Viewed'].includes(q.status);
             // Version number is unique per quotation card (index from fetched array, sorted newest first = highest version)
             const versionNum = q.current_version || (quotations.length - qIdx);
             const isConfirmingDelete = confirmDelete === q.id;

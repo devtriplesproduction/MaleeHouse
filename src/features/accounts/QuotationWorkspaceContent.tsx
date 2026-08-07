@@ -43,7 +43,8 @@ export function QuotationWorkspaceContent({
   }, [initialQuotations]);
 
   useEffect(() => {
-    if (initialProject) {
+    // If the server provided initialProject matching our current URL projectId, use it
+    if (initialProject && initialProject.id === projectId) {
       setResolvedProject(initialProject);
       setProjectLoadState('idle');
       setProjectError(null);
@@ -197,7 +198,37 @@ export function QuotationWorkspaceContent({
   }
 
   // ── Project manage mode ─────────────────────────────────────────────────
-  if ((projectId || quotationId) && mode === "manage" && resolvedProject) {
+  if ((projectId || quotationId) && mode === "manage") {
+    if (projectLoadState === 'loading' && !resolvedProject) {
+      return <DashboardLoading />;
+    }
+
+    if (!resolvedProject) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center px-6 animate-in fade-in duration-300">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-rose-500" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-slate-900 dark:text-white">
+              Could not open this project
+            </p>
+            <p className="text-sm text-slate-500 max-w-md">
+              {projectError || 'Project could not be loaded. It may have been deleted or you lack permissions.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <button
+              onClick={() => router.push('/accounts/quotations')}
+              className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700"
+            >
+              Back to Workspace
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6 pb-20 animate-in fade-in duration-300">
         <div className="border-b border-slate-200/60 dark:border-white/5 pb-4 flex items-center justify-between">
@@ -231,11 +262,6 @@ export function QuotationWorkspaceContent({
         />
       </div>
     );
-  }
-
-  // Loading manage when project still resolving
-  if ((projectId || quotationId) && mode === "manage" && projectLoadState === 'loading') {
-    return <DashboardLoading />;
   }
 
   // ── Default workspace view (Draft Quotations list) ──────────────────────

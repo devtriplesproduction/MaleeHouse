@@ -24,7 +24,9 @@ export function ProjectDeleteButton({ projectId, iconOnly, disabled }: ProjectDe
     startTransition(async () => {
       const result = await deleteProjectAction(projectId);
       if (result?.success) {
+        setIsOpen(false);
         toast({ title: 'Success', description: 'Project deleted successfully.', variant: 'default' });
+        router.refresh();
         router.push('/projects');
       } else {
         toast({ title: 'Error', description: result?.error || 'Failed to delete project.', variant: 'error' });

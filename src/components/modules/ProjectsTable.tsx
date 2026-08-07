@@ -80,6 +80,11 @@ export function ProjectsTable({ initialPage, userRole = 'admin' }: ProjectsTable
   const [exporting, setExporting] = useState(false);
   const skipNextFetch = React.useRef(true);
 
+  // Sync initialPage when it changes due to router.refresh() or navigation
+  useEffect(() => {
+    setPageData(initialPage);
+  }, [initialPage]);
+
   // Debounce search so we don't hit the server on every keystroke; reset page on change
   useEffect(() => {
     const t = setTimeout(() => {
@@ -391,7 +396,7 @@ export function ProjectsTable({ initialPage, userRole = 'admin' }: ProjectsTable
                         <ProjectDeleteButton
                           projectId={project.id}
                           iconOnly
-                          disabled={!['lead_created', 'requirement_gathering'].includes(project.status)}
+                          disabled={!['admin', 'accountant'].includes(userRole)}
                         />
                       </div>
                     </td>

@@ -165,39 +165,20 @@ export async function deleteProjectAction(projectId: string): Promise<ActionResp
     const profile: any = await getUserProfileAction();
     if (!profile) return { success: false, error: 'Unauthorized' };
 
-    if (profile.role !== 'admin' && profile.role !== 'sales') {
-      return { success: false, error: 'Only administrators or sales can delete projects.' };
+    if (profile.role !== 'admin' && profile.role !== 'accountant') {
+      return { success: false, error: 'Only administrators or accountants can delete projects.' };
     }
 
     const supabase: any = await createClient();
-
-    if (profile.role === 'sales') {
-      const { data: project, error: projError } = await supabase
-        .from('projects')
-        .select('created_by, status')
-        .eq('id', projectId)
-        .single();
-        
-      if (projError || !project) return { success: false, error: 'Project not found' };
-      
-      if (project.created_by !== profile.id) {
-        return { success: false, error: 'Sales can only delete their own projects.' };
-      }
-      
-      if (project.status !== 'lead_created' && project.status !== 'requirement_gathering') {
-        return { success: false, error: 'Cannot delete project because it has been pushed forward.' };
-      }
-    }
+    
     const { data: updated, error } = await supabase
       .from('projects')
-      .update({
-        deleted_at: new Date().toISOString()
-      })
+      .delete()
       .eq('id', projectId)
-      .select()
-      .single();
+      .select();
 
-    if (error || !updated) return { success: false, error: error?.message || 'Project not found' };
+    if (error) return { success: false, error: error.message };
+    if (!updated || updated.length === 0) return { success: false, error: 'Project not found' };
 
     await revalidateAccountsPaths(projectId);
 
@@ -565,7 +546,7 @@ export async function getProjectByIdAction(projectId: string): Promise<ActionRes
     const { data: project, error } = await supabase
       .from('projects')
       .select(
-        'id, name, client_name, client_contact, client_address, status, stage, priority, budget, is_frozen, gst_number, target_completion_date, created_by, created_at, updated_at, deleted_at, site_type, services'
+        'id, name, client_name, client_contact, client_address, status, priority, budget, is_frozen, gst_number, target_completion_date, created_by, created_at, updated_at, deleted_at, site_type, services'
       )
       .eq('id', projectId)
       .is('deleted_at', null)

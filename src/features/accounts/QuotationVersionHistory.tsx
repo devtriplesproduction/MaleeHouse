@@ -25,6 +25,7 @@ const statusConfig: Record<string, string> = {
   Approved: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   Rejected: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
   'Revision Requested': 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  Superseded: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
 };
 
 export function QuotationVersionHistory({ quotationId, currentVersion }: QuotationVersionHistoryProps) {
