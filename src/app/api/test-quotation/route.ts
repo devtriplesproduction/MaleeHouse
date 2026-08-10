@@ -1,9 +1,9 @@
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getQuotationByTokenAction } from '@/actions/quotation.actions';
 import { getCompanySettingsAction } from '@/actions/settings.actions';
 
-export async function GET(req) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get('type');
   const token = '29683b75-3dbf-4e68-b555-2d0d47be54f0';
@@ -30,7 +30,7 @@ export async function GET(req) {
       return NextResponse.json({ q, s });
     }
     return NextResponse.json({ error: 'invalid type' });
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
