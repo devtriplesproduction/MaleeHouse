@@ -7,7 +7,7 @@ const nextConfig = {
     serverComponentsExternalPackages: ['@react-pdf/renderer'],
     serverActions: {
       // Large enough for file metadata / modest uploads; not unlimited
-      bodySizeLimit: '5mb',
+      bodySizeLimit: '50mb',
       allowedOrigins: ['192.168.1.100:3000', 'localhost:3000'],
     },
   },

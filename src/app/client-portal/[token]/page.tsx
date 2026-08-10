@@ -91,10 +91,8 @@ export default function ClientPortalPage() {
     async function loadQuotation() {
       try {
         setLoading(true);
-        const [quotationResponse, settingsResponse] = await Promise.all([
-          getQuotationByTokenAction(token),
-          getCompanySettingsAction()
-        ]);
+        const quotationResponse = await getQuotationByTokenAction(token);
+        const settingsResponse = await getCompanySettingsAction();
         if (quotationResponse.success && quotationResponse.data) {
           setQuotation(quotationResponse.data);
           setCompanySettings(settingsResponse);

@@ -61,7 +61,7 @@ export function TodayAttendanceSnapshot({ data, headcount, users = [] }: { data:
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar 
-                    src={`/api/avatar/${eod.user_id}`} 
+                    src={eod.profiles?.profile_photo ? `/api/avatar/${eod.user_id}` : undefined} 
                     fallback={`${eod.profiles?.first_name?.[0] || ""}${eod.profiles?.last_name?.[0] || ""}`}
                     className="h-9 w-9 rounded-full ring-2 ring-slate-50 dark:ring-slate-850 shadow-sm object-cover"
                   />
@@ -90,7 +90,7 @@ export function TodayAttendanceSnapshot({ data, headcount, users = [] }: { data:
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar 
-                    src={`/api/avatar/${eod.user_id}`} 
+                    src={eod.profiles?.profile_photo ? `/api/avatar/${eod.user_id}` : undefined} 
                     fallback={`${eod.profiles?.first_name?.[0] || ""}${eod.profiles?.last_name?.[0] || ""}`}
                     className="h-9 w-9 rounded-full ring-2 ring-slate-50 dark:ring-slate-850 shadow-sm object-cover"
                   />
@@ -120,7 +120,7 @@ export function TodayAttendanceSnapshot({ data, headcount, users = [] }: { data:
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative">
                     <Avatar 
-                      src={`/api/avatar/${user.id}`} 
+                      src={user.profile_photo ? `/api/avatar/${user.id}` : undefined} 
                       fallback={`${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`}
                       className="h-9 w-9 rounded-full ring-2 ring-slate-50 dark:ring-slate-850 shadow-sm object-cover"
                     />

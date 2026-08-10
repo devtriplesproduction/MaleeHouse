@@ -70,8 +70,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Skip static assets, images, fonts — no Auth gateway cost.
+     * Skip static assets, images, fonts, and avatars — no Auth gateway cost.
      */
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|woff2?|ttf|eot)$).*)',
+    '/((?!api/avatar|_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|woff2?|ttf|eot)$).*)',
   ],
 }

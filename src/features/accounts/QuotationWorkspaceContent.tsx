@@ -13,11 +13,17 @@ import DashboardLoading from "@/app/(modules)/loading";
 interface QuotationWorkspaceContentProps {
   initialProject: any;
   initialQuotations: any[];
+  initialStaff: any[];
+  initialTemplates: any[];
+  initialBanks: any[];
 }
 
 export function QuotationWorkspaceContent({
   initialProject,
-  initialQuotations
+  initialQuotations,
+  initialStaff,
+  initialTemplates,
+  initialBanks
 }: QuotationWorkspaceContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -141,6 +147,9 @@ export function QuotationWorkspaceContent({
                });
             }
           }}
+          initialStaff={initialStaff}
+          initialTemplates={initialTemplates}
+          initialBanks={initialBanks}
         />
       </div>
     );
@@ -192,6 +201,9 @@ export function QuotationWorkspaceContent({
           onSuccess={() =>
             router.push(`/accounts/quotations?project=${resolvedProject.id}&mode=manage`)
           }
+          initialStaff={initialStaff}
+          initialTemplates={initialTemplates}
+          initialBanks={initialBanks}
         />
       </div>
     );
@@ -259,6 +271,9 @@ export function QuotationWorkspaceContent({
               });
             }
           }}
+          initialStaff={initialStaff}
+          initialTemplates={initialTemplates}
+          initialBanks={initialBanks}
         />
       </div>
     );

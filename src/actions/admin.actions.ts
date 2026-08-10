@@ -88,7 +88,7 @@ export async function getAllUsersAction() {
     const { data, error } = await supabase
       .from('profiles')
       .select(
-        'id, email, first_name, last_name, role, department, designation, employee_id, is_active, phone_number, joining_date, created_at, status'
+        'id, email, first_name, last_name, role, department, designation, employee_id, is_active, phone_number, joining_date, created_at, status, dob'
       )
       .order('created_at', { ascending: false })
       .limit(300)
@@ -660,6 +660,27 @@ export async function getSalaryIncrementHistoryAction(employeeId: string) {
     }
     
     return { success: true, data: normalizeData(data) }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getEmployeeHeavyDataAction(userId: string) {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (!profile || !['admin', 'hr', 'engineer', 'accountant'].includes(profile.role?.toLowerCase())) {
+      return { success: false, error: 'Unauthorized' }
+    }
+    
+    const supabaseAdmin: any = createAdminClient()
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('profile_photo, documents')
+      .eq('id', userId)
+      .maybeSingle()
+      
+    if (error) throw error
+    return { success: true, data: normalizeData(data || {}) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

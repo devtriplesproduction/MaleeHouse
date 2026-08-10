@@ -60,11 +60,15 @@ interface QuotationBuilderEngineProps {
   onCancel: () => void;
   onSuccess: (data?: any) => void;
   isRevision?: boolean;
+  initialStaff?: any[];
+  initialTemplates?: any[];
+  initialBanks?: any[];
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function QuotationBuilderEngine({
   project, existingQuotation, onCancel, onSuccess, isRevision,
+  initialStaff = [], initialTemplates = [], initialBanks = []
 }: QuotationBuilderEngineProps) {
   const router = useRouter();
   const { user } = useUserContext();
@@ -110,14 +114,14 @@ export function QuotationBuilderEngine({
   // Assignment
   const [assignedTo, setAssignedTo] = useState(existingQuotation?.assigned_to || '');
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [staff, setStaff] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>(() => initialStaff.filter((s: any) => ['accountant', 'admin'].includes(s.role)));
 
   // Banks
-  const [banks, setBanks] = useState<any[]>([]);
+  const [banks, setBanks] = useState<any[]>(initialBanks);
   const [selectedBank, setSelectedBank] = useState<string>(existingQuotation?.bank_id || '');
 
   // Templates / clauses
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>(initialTemplates);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeClauses, setActiveClauses] = useState<any[]>(() => {
@@ -140,36 +144,21 @@ export function QuotationBuilderEngine({
       }
     }
 
-    // 2. Fetch staff list
-    getStaffMembersAction().then(res => {
-      if (res) setStaff(res.filter((s: any) => ['accountant', 'admin'].includes(s.role)));
-    });
-
-    // 3. Fetch templates
-    getQuotationTemplatesAction().then(res => {
-      if (res?.success) {
-        setTemplates(res.data || []);
-        if (!existingQuotation) {
-          const defaultTpl = res.data?.find((t: any) => t.is_default);
-          if (defaultTpl) {
-            setSelectedTemplateId(defaultTpl.id);
-            setActiveClauses(JSON.parse(JSON.stringify(defaultTpl.clauses)));
-          }
-        }
+    // 2. Setup templates from initial props
+    if (initialTemplates.length > 0 && !existingQuotation) {
+      const defaultTpl = initialTemplates.find((t: any) => t.is_default);
+      if (defaultTpl) {
+        setSelectedTemplateId(defaultTpl.id);
+        setActiveClauses(JSON.parse(JSON.stringify(defaultTpl.clauses)));
       }
-    });
+    }
 
-    // 4. Fetch banks
-    getBankAccountsAction().then(res => {
-      if (res && res.success && res.data) {
-        setBanks(res.data);
-        if (!existingQuotation?.bank_id) {
-          const defaultBank = res.data.find((b: any) => b.is_default);
-          if (defaultBank) setSelectedBank(defaultBank.id);
-        }
-      }
-    });
-  }, [existingQuotation]);
+    // 3. Setup bank from initial props
+    if (initialBanks.length > 0 && !existingQuotation?.bank_id) {
+      const defaultBank = initialBanks.find((b: any) => b.is_default);
+      if (defaultBank) setSelectedBank(defaultBank.id);
+    }
+  }, [existingQuotation, user?.id, initialTemplates, initialBanks]);
 
   // ── Templates ───────────────────────────────────────────────────────────────
   const handleTemplateChange = (templateId: string, append = false) => {

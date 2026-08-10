@@ -254,14 +254,16 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
                       <div className="relative">
                         <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-full blur opacity-40 group-hover:opacity-70 transition-opacity" />
                         <div className="relative w-14 h-14 shrink-0 z-10">
-                          <img 
-                            src={`/api/avatar/${myBirthday.user.id}`}
-                            alt={myBirthday.user.first_name}
-                            className="absolute inset-0 w-full h-full rounded-full object-cover border-2 border-white dark:border-slate-800 z-20"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
+                          {myBirthday.user.profile_photo && (
+                            <img 
+                              src={`/api/avatar/${myBirthday.user.id}`}
+                              alt={myBirthday.user.first_name}
+                              className="absolute inset-0 w-full h-full rounded-full object-cover border-2 border-white dark:border-slate-800 z-20"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
                           <div className="absolute inset-0 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg uppercase z-10">
                             {myBirthday.user.first_name?.[0] || ""}{myBirthday.user.last_name?.[0] || ""}
                           </div>
@@ -289,14 +291,16 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
                       <div className="relative">
                         <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-full blur opacity-40 group-hover:opacity-70 transition-opacity" />
                         <div className="relative w-14 h-14 shrink-0 z-10">
-                          <img 
-                            src={`/api/avatar/${n.user.id}`}
-                            alt={n.user.first_name}
-                            className="absolute inset-0 w-full h-full rounded-full object-cover border-2 border-white dark:border-slate-800 z-20"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
+                          {n.user.profile_photo && (
+                            <img 
+                              src={`/api/avatar/${n.user.id}`}
+                              alt={n.user.first_name}
+                              className="absolute inset-0 w-full h-full rounded-full object-cover border-2 border-white dark:border-slate-800 z-20"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
                           <div className="absolute inset-0 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg uppercase z-10">
                             {n.user.first_name?.[0] || ""}{n.user.last_name?.[0] || ""}
                           </div>

@@ -81,9 +81,10 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
   const [selectedDept, setSelectedDept] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPayrollPage, setCurrentPayrollPage] = useState(1);
+  const [currentBirthdayPage, setCurrentBirthdayPage] = useState(1);
+  const [currentSecurityPage, setCurrentSecurityPage] = useState(1);
   const PAGE_SIZE = 10;
 
   // Modals state
@@ -381,6 +382,34 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
     return filteredPayrollData.slice((safeCurrentPayrollPage - 1) * PAGE_SIZE, safeCurrentPayrollPage * PAGE_SIZE);
   }, [filteredPayrollData, safeCurrentPayrollPage]);
 
+  const birthdayUsers = useMemo(() => {
+    return [...(users || [])].filter((u: any) => u.status?.toLowerCase() !== 'terminated').sort((a, b) => {
+      if (!a.dob) return 1;
+      if (!b.dob) return -1;
+      const dateA = new Date(a.dob);
+      const dateB = new Date(b.dob);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let nextA = new Date(today.getFullYear(), dateA.getMonth(), dateA.getDate());
+      if (nextA < today) nextA.setFullYear(today.getFullYear() + 1);
+      let nextB = new Date(today.getFullYear(), dateB.getMonth(), dateB.getDate());
+      if (nextB < today) nextB.setFullYear(today.getFullYear() + 1);
+      return nextA.getTime() - nextB.getTime();
+    });
+  }, [users]);
+  const totalBirthdayPages = Math.max(1, Math.ceil(birthdayUsers.length / PAGE_SIZE));
+  const safeCurrentBirthdayPage = Math.min(currentBirthdayPage, totalBirthdayPages);
+  const paginatedBirthdayUsers = useMemo(() => {
+    return birthdayUsers.slice((safeCurrentBirthdayPage - 1) * PAGE_SIZE, safeCurrentBirthdayPage * PAGE_SIZE);
+  }, [birthdayUsers, safeCurrentBirthdayPage]);
+
+  const securityUsers = users || [];
+  const totalSecurityPages = Math.max(1, Math.ceil(securityUsers.length / PAGE_SIZE));
+  const safeCurrentSecurityPage = Math.min(currentSecurityPage, totalSecurityPages);
+  const paginatedSecurityUsers = useMemo(() => {
+    return securityUsers.slice((safeCurrentSecurityPage - 1) * PAGE_SIZE, safeCurrentSecurityPage * PAGE_SIZE);
+  }, [securityUsers, safeCurrentSecurityPage]);
+
   const zeroAbsenceCount = useMemo(() => {
     return payrollData.filter((item: any) => (item.days_absent || 0) === 0).length;
   }, [payrollData]);
@@ -641,14 +670,16 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                             <div className="relative shrink-0">
                               <div className="relative w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase overflow-hidden">
                                 {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
-                                <img
-                                  src={`/api/avatar/${user.id}`}
-                                  alt={`${user.first_name} avatar`}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
+                                {user.profile_photo && (
+                                  <img
+                                    src={`/api/avatar/${user.id}`}
+                                    alt={`${user.first_name} avatar`}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                )}
                               </div>
                               <span className={cn(
                                 "absolute bottom-0 right-0 z-10 w-2.5 h-2.5 rounded-full border border-white dark:border-[#0c101b]",
@@ -1118,7 +1149,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                  {users.map((user: any) => (
+                  {paginatedSecurityUsers.map((user: any) => (
                     <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-all">
                       {/* Employee Identity */}
                       <td className="px-6 py-4">
@@ -1228,6 +1259,59 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                 </tbody>
               </table>
             </div>
+
+            {/* Security Pagination Footer */}
+            {securityUsers.length > 0 && (
+              <div className="px-6 py-3 border-t border-slate-100 dark:border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-white/[0.01]">
+                <p className="text-xs text-slate-400 font-medium">
+                  Showing{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {(safeCurrentSecurityPage - 1) * PAGE_SIZE + 1}
+                  </span>{' '}
+                  –{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {Math.min(safeCurrentSecurityPage * PAGE_SIZE, securityUsers.length)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {securityUsers.length}
+                  </span>{' '}
+                  records
+                </p>
+                {totalSecurityPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentSecurityPage((p) => Math.max(1, p - 1))}
+                      disabled={safeCurrentSecurityPage === 1}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {Array.from({ length: totalSecurityPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentSecurityPage(page)}
+                        className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${page === safeCurrentSecurityPage
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
+                          : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
+                          }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => setCurrentSecurityPage((p) => Math.min(totalSecurityPages, p + 1))}
+                      disabled={safeCurrentSecurityPage === totalSecurityPages}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1254,19 +1338,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                   </tr>
                 </thead>
                 <tbody>
-                  {[...(users || [])].filter((u: any) => u.status?.toLowerCase() !== 'terminated').sort((a, b) => {
-                    if (!a.dob) return 1;
-                    if (!b.dob) return -1;
-                    const dateA = new Date(a.dob);
-                    const dateB = new Date(b.dob);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    let nextA = new Date(today.getFullYear(), dateA.getMonth(), dateA.getDate());
-                    if (nextA < today) nextA.setFullYear(today.getFullYear() + 1);
-                    let nextB = new Date(today.getFullYear(), dateB.getMonth(), dateB.getDate());
-                    if (nextB < today) nextB.setFullYear(today.getFullYear() + 1);
-                    return nextA.getTime() - nextB.getTime();
-                  }).map((user: any) => {
+                  {paginatedBirthdayUsers.map((user: any) => {
                     let status = null;
                     if (user.dob) {
                       const dob = new Date(user.dob);
@@ -1335,10 +1407,62 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                 </tbody>
               </table>
             </div>
+
+            {/* Birthday Pagination Footer */}
+            {birthdayUsers.length > 0 && (
+              <div className="px-6 py-3 border-t border-slate-100 dark:border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-white/[0.01]">
+                <p className="text-xs text-slate-400 font-medium">
+                  Showing{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {(safeCurrentBirthdayPage - 1) * PAGE_SIZE + 1}
+                  </span>{' '}
+                  –{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {Math.min(safeCurrentBirthdayPage * PAGE_SIZE, birthdayUsers.length)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    {birthdayUsers.length}
+                  </span>{' '}
+                  records
+                </p>
+                {totalBirthdayPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentBirthdayPage((p) => Math.max(1, p - 1))}
+                      disabled={safeCurrentBirthdayPage === 1}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {Array.from({ length: totalBirthdayPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentBirthdayPage(page)}
+                        className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all border ${page === safeCurrentBirthdayPage
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/20"
+                          : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40"
+                          }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => setCurrentBirthdayPage((p) => Math.min(totalBirthdayPages, p + 1))}
+                      disabled={safeCurrentBirthdayPage === totalBirthdayPages}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
-
 
       {/* ONE-TIME PASSWORD DIALOG OVERLAY */}
       {oneTimePassModal && typeof document !== "undefined" && createPortal(

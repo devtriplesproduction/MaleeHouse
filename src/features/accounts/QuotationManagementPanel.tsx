@@ -25,6 +25,9 @@ interface QuotationManagementPanelProps {
   project: any;
   userRole: string;
   onRefresh?: (data?: any) => void;
+  initialStaff?: any[];
+  initialTemplates?: any[];
+  initialBanks?: any[];
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; bg: string }> = {
@@ -55,7 +58,7 @@ function copyClientLink(clientToken: string) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export function QuotationManagementPanel({ project, userRole, onRefresh }: QuotationManagementPanelProps) {
+export function QuotationManagementPanel({ project, userRole, onRefresh, initialStaff, initialTemplates, initialBanks }: QuotationManagementPanelProps) {
   const searchParams = useSearchParams();
   const [quotations, setQuotations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,6 +159,9 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
         project={project}
         onCancel={() => setView('list')}
         onSuccess={handleSuccess}
+        initialStaff={initialStaff}
+        initialTemplates={initialTemplates}
+        initialBanks={initialBanks}
       />
     );
   }
@@ -168,6 +174,9 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
         onCancel={() => { setView('list'); setSelected(null); }}
         onSuccess={handleSuccess}
         isRevision
+        initialStaff={initialStaff}
+        initialTemplates={initialTemplates}
+        initialBanks={initialBanks}
       />
     );
   }
@@ -179,6 +188,9 @@ export function QuotationManagementPanel({ project, userRole, onRefresh }: Quota
         existingQuotation={selected}
         onCancel={() => { setView('list'); setSelected(null); }}
         onSuccess={handleSuccess}
+        initialStaff={initialStaff}
+        initialTemplates={initialTemplates}
+        initialBanks={initialBanks}
       />
     );
   }

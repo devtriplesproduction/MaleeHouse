@@ -49,7 +49,7 @@ export function LeaveApprovalWidget({ leaves }: { leaves: any[] }) {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar 
-                    src={`/api/avatar/${leave.user_id}`} 
+                    src={leave.profiles?.profile_photo ? `/api/avatar/${leave.user_id}` : undefined} 
                     fallback={`${leave.profiles?.first_name?.[0] || ""}${leave.profiles?.last_name?.[0] || ""}`}
                     className="h-10 w-10 rounded-full ring-2 ring-slate-50 dark:ring-slate-850 shadow-sm object-cover"
                   />

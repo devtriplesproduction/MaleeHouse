@@ -10,12 +10,7 @@ const SORTED_PATH_PERMISSIONS = Object.entries(PATH_PERMISSIONS).sort(
 function hasSupabaseAuthCookie(request: NextRequest): boolean {
   return request.cookies
     .getAll()
-    .some(
-      (c) =>
-        c.name.includes('auth-token') ||
-        c.name.startsWith('sb-') ||
-        c.name.includes('supabase')
-    )
+    .some((c) => /^sb-[a-z0-9]+-auth-token(\.\d+)?$/.test(c.name))
 }
 
 function copyCookies(from: NextResponse, to: NextResponse) {

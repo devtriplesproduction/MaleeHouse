@@ -33,19 +33,20 @@ export function Avatar({ src, fallback, className, ...props }: AvatarProps) {
       {...props}
     >
       <div className="h-full w-full overflow-hidden rounded-full bg-white/5 backdrop-blur-md flex items-center justify-center">
-        {src && !imageError ? (
-          <Image
-            src={src}
-            alt={fallback || "Avatar"}
-            width={40}
-            height={40}
-            className="aspect-square h-full w-full object-cover"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <span className="text-xs font-bold uppercase text-muted-foreground">
-            {getInitials(fallback)}
-          </span>
+        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold uppercase text-muted-foreground z-0">
+          {getInitials(fallback)}
+        </span>
+        {src && !imageError && (
+          <div className="absolute inset-0 z-10 bg-transparent">
+            <Image
+              src={src}
+              alt={fallback || "Avatar"}
+              width={40}
+              height={40}
+              className="aspect-square h-full w-full object-cover bg-transparent"
+              onError={() => setImageError(true)}
+            />
+          </div>
         )}
       </div>
     </div>

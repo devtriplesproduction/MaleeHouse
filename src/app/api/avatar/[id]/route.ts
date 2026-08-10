@@ -4,6 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const supabase: any = await createClient();
+    
+    // Fast, local JWT decode check to enforce auth without hitting the Auth API
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const { data } = await supabase
       .from('profiles')
       .select('profile_photo')
@@ -11,7 +18,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       .single();
 
     if (!data?.profile_photo) {
-      return new NextResponse(null, { status: 404 });
+      // 1x1 transparent PNG
+      const transparentPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+      const buffer = Buffer.from(transparentPngBase64, 'base64');
+      return new NextResponse(buffer, { 
+        status: 200,
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'private, max-age=86400',
+        }
+      });
     }
 
     const photoStr = data.profile_photo;
@@ -26,7 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return new NextResponse(buffer, {
         headers: {
           'Content-Type': mimeType,
-          'Cache-Control': 'public, max-age=86400, stale-while-revalidate=86400',
+          'Cache-Control': 'private, max-age=86400, stale-while-revalidate=86400',
         },
       });
     }

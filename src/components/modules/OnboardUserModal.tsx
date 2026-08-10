@@ -196,7 +196,8 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
           label: "",
           size: file.size,
           uploaded_at: new Date().toISOString(),
-          url: reader.result as string
+          url: reader.result as string,
+          file: file
         };
         setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
         setUploadedFiles(prev => [...prev, newFileObj]);
@@ -240,7 +241,11 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
         operational_zone: "Central Business District"
       };
       
-      const result = await onboardEmployeeAction(onboardData as any, uploadedFiles);
+      const safeUploadedFiles = uploadedFiles.map((f: any) => {
+        const { file, ...rest } = f;
+        return rest;
+      });
+      const result = await onboardEmployeeAction(onboardData as any, safeUploadedFiles);
       if (result?.success) {
         toast({ 
           title: "Employee Provisioned Successfully", 
@@ -828,7 +833,7 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                                   {file.url && (
                                     <button
                                       type="button"
-                                      onClick={() => setPreviewDoc(file)}
+                                      onClick={() => setPreviewDoc({ ...file, blobUrl: file.file ? URL.createObjectURL(file.file) : file.url })}
                                       className="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-500 rounded-xl transition-all"
                                       title="Preview document"
                                     >
@@ -1003,7 +1008,9 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
               {previewDoc.url?.startsWith('data:image') ? (
                 <img src={previewDoc.url} alt={previewDoc.label || previewDoc.name} className="w-full h-auto object-contain" />
               ) : previewDoc.url?.startsWith('data:application/pdf') ? (
-                <iframe src={previewDoc.url} className="w-full h-[70vh]" title={previewDoc.label || previewDoc.name} />
+                <object data={previewDoc.blobUrl || previewDoc.url} type="application/pdf" className="w-full h-[70vh]">
+                  <p className="text-center p-4">Unable to display PDF file. <a href={previewDoc.blobUrl || previewDoc.url} target="_blank" rel="noreferrer" className="text-indigo-500 underline">Download instead</a></p>
+                </object>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-slate-400">
                   <FileText className="w-12 h-12 mb-3" />

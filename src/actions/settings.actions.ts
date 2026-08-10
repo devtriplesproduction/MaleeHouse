@@ -54,11 +54,7 @@ async function fetchCompanySettingsFromDb(): Promise<CompanySettings> {
   return DEFAULT_COMPANY_SETTINGS;
 }
 
-const getCrossRequestCompanySettings = unstable_cache(
-  fetchCompanySettingsFromDb,
-  ["company-settings-v2"],
-  { revalidate: 300, tags: ["company-settings"] }
-);
+
 
 const stageTargetsSchema = z.record(z.string(), z.number());
 const orgProfileSchema = z.object({
@@ -178,7 +174,7 @@ export async function getSystemHealthAction() {
 // Per-request + cross-request cache: layout no longer hits DB every navigation.
 const getCachedCompanySettings = cache(async (): Promise<CompanySettings> => {
   try {
-    return await getCrossRequestCompanySettings();
+    return await fetchCompanySettingsFromDb();
   } catch (err) {
     console.error("Error reading company settings:", err);
     return DEFAULT_COMPANY_SETTINGS;

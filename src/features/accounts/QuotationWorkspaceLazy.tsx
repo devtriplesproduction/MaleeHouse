@@ -18,6 +18,9 @@ const QuotationWorkspaceContent = dynamic(
 export function QuotationWorkspaceLazy(props: {
   initialProject: any;
   initialQuotations: any[];
+  initialStaff: any[];
+  initialTemplates: any[];
+  initialBanks: any[];
 }) {
   return <QuotationWorkspaceContent {...props} />;
 }

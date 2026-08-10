@@ -22,7 +22,8 @@ import {
   addSalaryIncrementAction,
   getLastSalaryIncrementAction,
   getSalaryIncrementHistoryAction,
-  resetEmployeePasswordAction
+  resetEmployeePasswordAction,
+  getEmployeeHeavyDataAction
 } from "@/actions/admin.actions";
 import { DEPARTMENTS, getDesignationsForDepartment, getSystemRoleForDesignation } from "@/config/departments";
 
@@ -135,6 +136,18 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
       setSelectedAvatar(employee.profile_photo || "");
       setDocumentsList(employee.documents || []);
 
+      const fetchHeavyData = async () => {
+        if (!employee.id) return;
+        const res = await getEmployeeHeavyDataAction(employee.id);
+        if (res?.success && res.data) {
+          if (res.data.profile_photo) setSelectedAvatar(res.data.profile_photo);
+          if (res.data.documents) setDocumentsList(res.data.documents);
+        }
+      };
+      
+      if (isOpen) {
+        fetchHeavyData();
+      }
     }
   }, [employee?.id, isOpen]);
 
@@ -266,6 +279,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         });
         setInitialFormData({ ...formData });
         if (onSuccess) onSuccess();
+        onClose();
       } else {
         toast({
           title: "Update Prevented",
