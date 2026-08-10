@@ -7,6 +7,15 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function Avatar({ src, fallback, className, ...props }: AvatarProps) {
+  const getInitials = (name?: string) => {
+    if (!name) return "??";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
   return (
     <div
       className={cn(
@@ -26,7 +35,7 @@ export function Avatar({ src, fallback, className, ...props }: AvatarProps) {
           />
         ) : (
           <span className="text-xs font-bold uppercase text-muted-foreground">
-            {fallback?.substring(0, 2) || "??"}
+            {getInitials(fallback)}
           </span>
         )}
       </div>

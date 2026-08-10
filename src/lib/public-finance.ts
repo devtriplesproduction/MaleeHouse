@@ -7,6 +7,9 @@ function publicSupabase() {
   if (!url || !anon) throw new Error('Supabase public env not configured')
   return createClient(url, anon, {
     auth: { autoRefreshToken: false, persistSession: false },
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+    },
   })
 }
 
@@ -18,12 +21,17 @@ export async function fetchPublicInvoice(id: string, token?: string | null) {
   }
   if (!id || id.length > 80) return null
   const supabase = publicSupabase()
-  const { data, error } = await supabase.rpc('get_public_invoice', { p_id: id })
-  if (error) {
-    console.error('get_public_invoice:', error.message)
+  try {
+    const { data, error } = await supabase.rpc('get_public_invoice', { p_id: id })
+    if (error) {
+      console.error('get_public_invoice error:', error.message)
+      return null
+    }
+    return data
+  } catch (err) {
+    console.error('get_public_invoice caught exception:', err)
     return null
   }
-  return data
 }
 
 export async function fetchPublicReceipt(

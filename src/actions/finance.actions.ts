@@ -488,7 +488,7 @@ export async function getInvoiceByIdAction(invoiceId: string): Promise<ActionRes
 }
 
 const INVOICE_LIST_SELECT =
-  'id, invoice_number, project_id, milestone_id, amount, gst_amount, total_amount, status, due_date, created_at, bank_id, projects!inner(name, client_name, budget, deleted_at), payments(amount, status), project_milestones(title, sort_order)';
+  'id, invoice_number, project_id, milestone_id, visit_id, amount, gst_amount, total_amount, status, due_date, created_at, bank_id, projects!inner(name, client_name, budget, deleted_at), payments(amount, status), project_milestones(title, sort_order)';
 
 const PAYMENT_LIST_SELECT =
   'id, project_id, invoice_id, amount, status, payment_method, transaction_id, payment_date, created_at, bank_id, projects!inner(name, client_name, deleted_at), bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))';

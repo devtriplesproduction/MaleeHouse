@@ -443,7 +443,7 @@ export async function getQuotationIntakeQueueAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: intakeProjects, error } = await supabase
       .from('projects')
-      .select('*, creator:profiles!projects_created_by_fkey(*), files(*)')
+      .select('*, creator:profiles!projects_created_by_fkey(id, first_name, last_name, role), files(*)')
       .in('status', ['quotation_requested', 'lead_created'])
       .is('deleted_at', null)
       .order('updated_at', { ascending: false });
@@ -666,7 +666,7 @@ export async function getQuotationVersionsAction(quotationId: string): Promise<A
     const supabase: any = await createClient();
     const { data: quotationVersions } = await supabase
       .from('quotation_versions')
-      .select('*, creator:profiles!created_by(*)')
+      .select('*, creator:profiles!created_by(id, first_name, last_name, role)')
       .eq('quotation_id', quotationId)
       .order('version_number', { ascending: false });
 

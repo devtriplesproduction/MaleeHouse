@@ -545,7 +545,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
         {totalPages > 1 && (
           <div className="flex items-center justify-between pt-2">
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}â€“{Math.min(safeCurrentPage * PAGE_SIZE, filteredProjects.length)} of {filteredProjects.length}
+              Showing {(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, filteredProjects.length)} of {filteredProjects.length}
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -720,7 +720,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Amount (â‚¹)</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Amount (₹)</label>
                                         <div className="relative">
                                           <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                                           <input
@@ -810,7 +810,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Price (â‚¹, Optional)</label>
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Price (₹, Optional)</label>
                               <div className="relative">
                                 <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                                 <input
@@ -853,7 +853,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
                                       <span>Status: {v.status.replace(/_/g, " ")}</span>
                                       {v.price > 0 && (
                                         <>
-                                          <span>â€¢</span>
+                                          <span>•</span>
                                           <span className="text-indigo-600 dark:text-indigo-400 font-bold">Price: {formatCurrency(v.price)}</span>
                                         </>
                                       )}

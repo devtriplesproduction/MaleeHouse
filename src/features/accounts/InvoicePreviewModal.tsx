@@ -280,8 +280,12 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                        <tr className="align-top">
                           <td className="py-4 text-xs font-semibold text-slate-400">1</td>
                           <td className="py-4">
-                             <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">Professional Services</p>
-                             <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">As per project milestone agreement.</p>
+                             <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">
+                               {invoice.visit_id ? 'FIELD VISIT SERVICES' : 'Professional Services'}
+                             </p>
+                             <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-lg">
+                               {invoice.visit_id ? 'Scheduled from Milestones Portal' : 'As per project milestone agreement.'}
+                             </p>
                           </td>
                           <td className="py-4 text-center text-xs font-semibold text-slate-800">1</td>
                           <td className="py-4 text-right text-xs font-medium text-slate-800 nums">INR {Number(invoice.amount).toLocaleString('en-IN')}</td>

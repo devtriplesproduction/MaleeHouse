@@ -639,19 +639,19 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2.5">
                             <div className="relative shrink-0">
-                              {user.profile_photo ? (
+                              <div className="relative w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase overflow-hidden">
+                                {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
                                 <img
-                                  src={user.profile_photo}
+                                  src={`/api/avatar/${user.id}`}
                                   alt={`${user.first_name} avatar`}
-                                  className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
                                 />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase">
-                                  {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
-                                </div>
-                              )}
+                              </div>
                               <span className={cn(
-                                "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-[#0c101b]",
+                                "absolute bottom-0 right-0 z-10 w-2.5 h-2.5 rounded-full border border-white dark:border-[#0c101b]",
                                 user.is_active ? "bg-emerald-500" : "bg-slate-400"
                               )} />
                             </div>
@@ -1124,17 +1124,17 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
-                            {user.profile_photo ? (
-                              <img
-                                src={user.profile_photo}
-                                alt={`${user.first_name} avatar`}
-                                className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase">
-                                {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
-                              </div>
-                            )}
+                            <img
+                              src={`/api/avatar/${user.id}`}
+                              alt={`${user.first_name} avatar`}
+                              className="absolute inset-0 w-full h-full rounded-full object-cover border border-slate-200 dark:border-white/10"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                            <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase">
+                              {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
+                            </div>
                             <span className={cn(
                               "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-[#0c101b]",
                               user.is_active ? "bg-emerald-500" : "bg-slate-400"
@@ -1290,18 +1290,16 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                       <tr key={`bday-${user.id}`} className="group bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.04] transition-all duration-300">
                         <td className="px-6 py-4 rounded-l-2xl">
                           <div className="flex items-center gap-2.5">
-                            <div className="relative shrink-0">
-                              {user.profile_photo ? (
+                            <div className="relative shrink-0 w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase overflow-hidden">
+                              {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
                                 <img
-                                  src={user.profile_photo}
+                                  src={`/api/avatar/${user.id}`}
                                   alt={`${user.first_name} avatar`}
-                                  className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
                                 />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase">
-                                  {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
-                                </div>
-                              )}
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-slate-800 dark:text-white leading-snug">

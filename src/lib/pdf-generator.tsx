@@ -595,8 +595,12 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
                 <tr class="item-row">
                   <td style="font-weight: 600; color: #94a3b8; padding: 12px 8px; font-size: 11px;">1</td>
                   <td style="padding: 12px 8px;">
-                    <div style="font-weight: 700; color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: -0.01em;">Professional Services</div>
-                    <div style="color: #64748b; font-size: 10px; margin-top: 3px; line-height: 1.4;">As per project milestone agreement.</div>
+                    <div style="font-weight: 700; color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: -0.01em;">
+                      ${invoice.visit_id ? 'Field Visit Services' : 'Professional Services'}
+                    </div>
+                    <div style="color: #64748b; font-size: 10px; margin-top: 3px; line-height: 1.4;">
+                      ${invoice.visit_id ? 'Scheduled from Milestones Portal' : 'As per project milestone agreement.'}
+                    </div>
                   </td>
                   <td style="text-align: center; font-weight: 600; color: #0f172a; padding: 12px 8px; font-size: 11px;">1</td>
                   <td style="text-align: right; font-weight: 600; font-family: monospace; color: #334155; padding: 12px 8px; font-size: 11px;">INR ${Number(invoice.amount).toLocaleString('en-IN')}</td>

@@ -110,6 +110,7 @@ export async function getMyLeavesAction(): Promise<ActionResponse> {
       .select('*')
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) return { success: false, error: error.message }
     return { success: true, data: normalizeData(data || []) }
@@ -127,8 +128,9 @@ export async function getAllLeavesAction(): Promise<ActionResponse> {
     const supabase: any = createAdminClient()
     const { data, error } = await supabase
       .from('leaves')
-      .select('*, profiles!leaves_user_id_fkey (first_name, last_name, email, role, profile_photo)')
+      .select('*, profiles!leaves_user_id_fkey (first_name, last_name, email, role)')
       .order('created_at', { ascending: false })
+      .limit(200)
 
     if (error) return { success: false, error: error.message }
     return { success: true, data: normalizeData(data || []) }

@@ -23,6 +23,8 @@ interface Invoice {
   id: string;
   invoice_number: string;
   project_id: string;
+  visit_id?: string | null;
+  milestone_id?: string | null;
   amount: number;
   total_amount: number;
   status: 'draft' | 'sent' | 'paid' | 'cancelled' | 'overdue' | 'accepted' | 'rejected' | 'in_review';
