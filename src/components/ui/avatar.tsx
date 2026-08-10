@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { useState, useEffect } from "react"
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string;
@@ -7,6 +8,13 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function Avatar({ src, fallback, className, ...props }: AvatarProps) {
+  const [imageError, setImageError] = useState(false);
+
+  // Reset error state if src changes
+  useEffect(() => {
+    setImageError(false);
+  }, [src]);
+
   const getInitials = (name?: string) => {
     if (!name) return "??";
     const parts = name.trim().split(/\s+/);
@@ -25,13 +33,14 @@ export function Avatar({ src, fallback, className, ...props }: AvatarProps) {
       {...props}
     >
       <div className="h-full w-full overflow-hidden rounded-full bg-white/5 backdrop-blur-md flex items-center justify-center">
-        {src ? (
+        {src && !imageError ? (
           <Image
             src={src}
             alt={fallback || "Avatar"}
             width={40}
             height={40}
             className="aspect-square h-full w-full object-cover"
+            onError={() => setImageError(true)}
           />
         ) : (
           <span className="text-xs font-bold uppercase text-muted-foreground">

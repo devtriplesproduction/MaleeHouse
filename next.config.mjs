@@ -8,8 +8,8 @@ const nextConfig = {
     serverActions: {
       // Large enough for file metadata / modest uploads; not unlimited
       bodySizeLimit: '5mb',
+      allowedOrigins: ['192.168.1.100:3000', 'localhost:3000'],
     },
-    allowedDevOrigins: ['192.168.1.100:3000'],
   },
   async headers() {
     // CSP: allow Next.js, Supabase, and common invoice/PDF helpers without
