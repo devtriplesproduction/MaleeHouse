@@ -2,13 +2,11 @@
 
 import React from 'react';
 import { 
-  History, 
   User, 
   Clock, 
   MessageSquare, 
   FileText,
-  Activity,
-  ArrowRight
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';

@@ -2,8 +2,8 @@ import React from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { getCADWorkspaceDataAction } from "@/actions/workspace.actions";
 import {
-  PenTool, ChevronRight, AlertTriangle, CheckCircle2,
-  Clock, FileText, Zap, Upload, Eye
+  PenTool, AlertTriangle, CheckCircle2,
+  Clock, FileText, Zap, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -12,6 +12,8 @@ import { EODFormModal } from "@/components/eod/EODFormModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardNotificationCenter from "@/components/modules/DashboardNotificationCenter";
 import { PendingProjectListCard } from "@/components/modules/PaginatedProjectList";
+import { KPICard } from "@/components/modules/KPICard";
+import { PageHeader } from "@/components/modules/PageHeader";
 
 export default async function CADDashboardPage() {
   const profile = await getUserProfileAction();
@@ -23,7 +25,7 @@ export default async function CADDashboardPage() {
   const projects = (workspaceData.assignedProjects || []).filter(
     (p: any) => !["completed", "archived"].includes(p.status)
   );
-  
+
   const sops = workspaceData.sops || [];
   const eodReports = workspaceData.eodReports || [];
 
@@ -34,49 +36,35 @@ export default async function CADDashboardPage() {
   );
 
   const kpis = [
-    { label: "My Queue",      value: projects.length,            color: "text-blue-500",    bg: "bg-blue-500/10",    icon: PenTool },
-    { label: "In Progress",   value: pendingSubmissions.length,  color: "text-amber-500",   bg: "bg-amber-500/10",   icon: Clock },
-    { label: "Field Reviews", value: fieldReviews.length,        color: "text-cyan-500",    bg: "bg-cyan-500/10",    icon: FileText },
-    { label: "Done",          value: (workspaceData.assignedProjects || []).filter((p: any) => p.status === "completed").length, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2 },
+    { label: "My Queue", value: projects.length, color: "text-blue-500", bg: "bg-blue-500/10", icon: PenTool },
+    { label: "In Progress", value: pendingSubmissions.length, color: "text-amber-500", bg: "bg-amber-500/10", icon: Clock },
+    { label: "Field Reviews", value: fieldReviews.length, color: "text-cyan-500", bg: "bg-cyan-500/10", icon: FileText },
   ];
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200/60 dark:border-white/5">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">CAD Terminal</p>
-          <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-            CAD <span className="text-blue-500">Workspace</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">
-            Welcome back, {firstName}.
-          </p>
-        </div>
-        <div className="flex-shrink-0">
-          <EODFormModal reports={eodReports} roleColor="blue" />
-        </div>
-      </div>
+      <PageHeader
+        title="CAD Workspace"
+        subtitle={`Welcome back, ${firstName}.`}
+        icon={PenTool}
+        actions={<EODFormModal reports={eodReports} roleColor="blue" />}
+        className="pb-2 border-b border-slate-200/60 dark:border-white/5"
+      />
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <div key={kpi.label} className="glass-card border-white/10 p-5 flex flex-col gap-4">
-              <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", kpi.bg)}>
-                <Icon className={cn("w-5 h-5", kpi.color)} />
-              </div>
-              <div>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">{kpi.value}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
-                  {kpi.label}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {kpis.map((kpi) => (
+          <KPICard 
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            icon={kpi.icon}
+            color={kpi.color}
+            bg={kpi.bg}
+          />
+        ))}
       </div>
 
       {/* Main Grid */}
@@ -84,7 +72,7 @@ export default async function CADDashboardPage() {
 
         {/* Active CAD Deliverables */}
         <div className="xl:col-span-2 space-y-8">
-          
+
 
 
           {/* My Assigned Queue */}
@@ -93,12 +81,12 @@ export default async function CADDashboardPage() {
               <Zap className="w-4 h-4 text-blue-500" />
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Available & Active Tasks</h2>
             </div>
-            
+
             <Tabs defaultValue="active" className="space-y-4">
               <div className="border-b border-slate-200 dark:border-white/10 w-full overflow-x-auto custom-scrollbar pb-3">
                 <TabsList className="bg-transparent border-none p-0 flex h-auto gap-8 w-full justify-start">
-                  <TabsTrigger 
-                    value="active" 
+                  <TabsTrigger
+                    value="active"
                     className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-blue-500 data-[state=active]:!text-blue-600 dark:data-[state=active]:!text-blue-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                   >
                     Active Projects
@@ -109,8 +97,8 @@ export default async function CADDashboardPage() {
                     )}
                   </TabsTrigger>
 
-                  <TabsTrigger 
-                    value="field_reviews" 
+                  <TabsTrigger
+                    value="field_reviews"
                     className="px-1 py-2.5 rounded-none border-b-[3px] border-transparent text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 data-[state=active]:border-cyan-500 data-[state=active]:!text-cyan-600 dark:data-[state=active]:!text-cyan-400 flex items-center gap-2 data-[state=active]:shadow-none bg-transparent hover:bg-transparent data-[state=active]:bg-transparent"
                   >
                     Field Reviews
@@ -162,33 +150,40 @@ export default async function CADDashboardPage() {
               </div>
             </Tabs>
           </div>
+
+          {/* SOPs */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <FileText className="w-4 h-4 text-blue-500" />
+              <h2 className="text-lg font-bold text-slate-700 dark:text-gray-200">Departmental Protocols</h2>
+            </div>
+            <SOPList sops={sops} isAdmin={false} currentRole="cad" />
+          </section>
         </div>
 
         {/* Right: Action Panel */}
-        <div className="space-y-6">
-          <DashboardNotificationCenter />
-
-          <div className="glass-card border-blue-500/15 p-6 space-y-4">
+        <div className="space-y-6 flex flex-col">
+          <div className="order-1 glass-card border-blue-500/40 bg-blue-50/50 dark:bg-blue-950/20 p-6 space-y-4 shadow-[0_0_20px_rgba(59,130,246,0.15)] relative overflow-hidden">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">Action Required</h3>
+              <AlertTriangle className="w-5 h-5 text-blue-500 animate-pulse" />
+              <h3 className="text-base font-black text-blue-700 dark:text-blue-500 uppercase tracking-widest">Action Required</h3>
             </div>
             {pendingSubmissions.length === 0 && fieldReviews.length === 0 ? (
               <div className="flex items-center gap-2 py-8 justify-center">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500/30" />
-                <p className="text-xs text-slate-500 font-bold">All clear</p>
+                <CheckCircle2 className="w-5 h-5 text-emerald-500/50" />
+                <p className="text-sm text-slate-500 font-bold">All clear</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                 {pendingSubmissions.map((p: any) => (
                   <Link
                     key={p.id}
                     href={`/projects/${p.id}`}
-                    className="block p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 hover:border-amber-500/30 transition-all"
+                    className="block p-4 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 hover:border-amber-400 transition-all shadow-sm group"
                   >
-                    <p className="text-xs font-black text-slate-900 dark:text-white">{p.name}</p>
-                    <p className="text-[10px] text-amber-500 mt-0.5 flex items-center gap-1">
-                      <Upload className="w-2.5 h-2.5" />
+                    <p className="text-sm font-medium text-slate-900 dark:text-white transition-colors">{p.name}</p>
+                    <p className="text-xs font-semibold text-amber-600 dark:text-amber-500 mt-1.5 flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5" />
                       CAD revision pending
                     </p>
                   </Link>
@@ -197,11 +192,11 @@ export default async function CADDashboardPage() {
                   <Link
                     key={p.id}
                     href={`/projects/${p.id}`}
-                    className="block p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 hover:border-cyan-500/30 transition-all"
+                    className="block p-4 rounded-xl bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-900/50 hover:border-cyan-400 transition-all shadow-sm group"
                   >
-                    <p className="text-xs font-black text-slate-900 dark:text-white">{p.name}</p>
-                    <p className="text-[10px] text-cyan-600 mt-0.5 flex items-center gap-1">
-                      <FileText className="w-2.5 h-2.5" />
+                    <p className="text-sm font-medium text-slate-900 dark:text-white transition-colors">{p.name}</p>
+                    <p className="text-xs font-semibold text-cyan-600 mt-1.5 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" />
                       Survey validation pending
                     </p>
                   </Link>
@@ -209,17 +204,13 @@ export default async function CADDashboardPage() {
               </div>
             )}
           </div>
+
+          <div className="order-2">
+            <DashboardNotificationCenter />
+          </div>
         </div>
       </div>
 
-      {/* SOPs */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 px-1">
-          <FileText className="w-4 h-4 text-blue-500" />
-          <h2 className="text-lg font-bold text-slate-700 dark:text-gray-200">Departmental Protocols</h2>
-        </div>
-        <SOPList sops={sops} isAdmin={false} currentRole="cad" />
-      </section>
     </div>
   );
 }

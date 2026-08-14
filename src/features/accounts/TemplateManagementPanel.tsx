@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Edit, CheckCircle2, Copy, AlertCircle, Save, X, Loader2, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { Plus, Trash2, Edit, Copy, AlertCircle, Save, X, Loader2, ArrowUp, ArrowDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { 

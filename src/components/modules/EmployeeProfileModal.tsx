@@ -3,11 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
-  X, User, Mail, ShieldCheck, Loader2, Lock,
-  Phone, Contact, Building2, Briefcase, MapPin,
-  CheckCircle2, Copy, Calendar, Upload, FileText,
-  Trash2, Award, ShieldAlert, BadgeInfo, IndianRupee,
-  Clock, Check, UserCheck, Eye, EyeOff, Download, Shield, Edit2, Save, Camera, AlertCircle, ChevronDown, TrendingUp
+  X, Loader2, Lock, Calendar, Upload, FileText,
+  Trash2, IndianRupee,
+  Clock, UserCheck, Eye, EyeOff, Download, Shield, Save, Camera, AlertCircle, TrendingUp
 } from "lucide-react";
 import { Select, SelectItem } from '@/components/ui/select';
 import { Badge } from "@/components/ui/badge";
@@ -109,6 +107,9 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         personal_email: employee.personal_email || "",
         address: employee.address || "",
         emergency_contact: employee.emergency_contact || "",
+        emergency_name: (employee.emergency_contact || "").split(" - ")[0] || "",
+        emergency_relationship: (employee.emergency_contact || "").split(" - ")[1] || "",
+        emergency_phone: (employee.emergency_contact || "").split(" - ").slice(2).join(" - ") || "",
 
         department: employee.department || "",
         designation: employee.designation || "",
@@ -262,9 +263,15 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
         setPendingHike(null);
       }
 
-      const { ...restFormData } = formData;
+      const emergencyContactParts = [];
+      if (formData.emergency_name) emergencyContactParts.push(formData.emergency_name);
+      if (formData.emergency_relationship) emergencyContactParts.push(formData.emergency_relationship);
+      if (formData.emergency_phone) emergencyContactParts.push(formData.emergency_phone);
+
+      const { emergency_name, emergency_relationship, emergency_phone, ...restFormData } = formData;
       const payload = {
         ...restFormData,
+        emergency_contact: emergencyContactParts.length > 0 ? emergencyContactParts.join(" - ") : "",
         profile_photo: selectedAvatar,
         documents: documentsList
       };
@@ -287,7 +294,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
           variant: "error"
         });
       }
-    } catch (error) {
+    } catch(error) {
       toast({
         title: "Database Synchronization Error",
         description: "An unexpected error occurred saving edits.",
@@ -318,7 +325,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
             variant: "error"
           });
         }
-      } catch (err) {
+      } catch(err) {
         toast({
           title: "Offboarding Error",
           description: "An unexpected error occurred during offboarding.",
@@ -350,7 +357,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
             variant: "error"
           });
         }
-      } catch (err) {
+      } catch(err) {
         toast({
           title: "Deletion Error",
           description: "An unexpected error occurred during deletion.",
@@ -640,14 +647,31 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Emergency Contact Details *</label>
-                <input
-                  value={formData.emergency_contact}
-                  onChange={(e) => setFormData({ ...formData, emergency_contact: e.target.value })}
-                  disabled={!isEditing}
-                  className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
-                />
+              <div className="space-y-2 pb-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Emergency Contact Details</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input
+                    value={formData.emergency_name}
+                    onChange={(e) => setFormData({ ...formData, emergency_name: e.target.value })}
+                    disabled={!isEditing}
+                    placeholder="Name"
+                    className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
+                  />
+                  <input
+                    value={formData.emergency_relationship}
+                    onChange={(e) => setFormData({ ...formData, emergency_relationship: e.target.value })}
+                    disabled={!isEditing}
+                    placeholder="Relationship"
+                    className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
+                  />
+                  <input
+                    value={formData.emergency_phone}
+                    onChange={(e) => setFormData({ ...formData, emergency_phone: e.target.value })}
+                    disabled={!isEditing}
+                    placeholder="Phone"
+                    className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -1140,7 +1164,7 @@ export function EmployeeProfileModal({ isOpen, onClose, employee, existingUsers 
                       <Clock className="w-8 h-8" />
                     </div>
                     <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">No Salary History</h4>
-                    <p className="text-xs font-medium text-slate-500">This employee hasn't received any recorded increments yet.</p>
+                    <p className="text-xs font-medium text-slate-500">This employee hasn&apos;t received any recorded increments yet.</p>
                   </div>
                 )}
               </div>

@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { 
-  Activity, MapPin, PenTool, Shield, Clock, ChevronRight,
-  CheckCircle2, AlertTriangle, Layers, Users, TrendingUp,
-  Package, Zap, Settings, ShieldCheck
+  Activity, MapPin, PenTool, Shield, ChevronRight, Layers, TrendingUp,
+  Package, Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

@@ -3,17 +3,15 @@
 import { normalizeData } from '@/lib/normalize';
 import { headers } from "next/headers";
 
-import { revalidatePath } from "next/cache";
-import { createElement } from 'react';
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { requireAuthenticatedUser, requirePermission } from "@/lib/security/audit";
 import { Permission, Module } from "@/lib/security/permissions";
 import { getAttendanceLogsAction } from "./attendance.actions";
 import { getAllUsersAction, logAdminAuditAction } from "./admin.actions";
 import { sendLocalNotifications } from "./operations.actions";
-import { randomUUID } from "crypto";
 
 async function logPayrollEvent(
   action: string, 
@@ -43,6 +41,49 @@ async function logPayrollEvent(
   });
 }
 
+async function logPayrollEventsBatch(events: Array<{
+  action: string,
+  targetUserId?: string | null,
+  details: any,
+  severity?: 'info' | 'warning' | 'critical' | 'security'
+}>) {
+  let ip = null;
+  let userAgent = null;
+  try {
+    const headersList = await headers();
+    ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || null;
+    userAgent = headersList.get('user-agent') || null;
+  } catch(e) {
+    // ignore if outside request context
+  }
+
+  try {
+    const profile: any = await getUserProfileAction();
+    const actorId = profile?.id || 'system';
+    const actorEmail = profile?.email || 'system@maleehouse.com';
+    const supabaseAdmin: any = createAdminClient();
+    
+    const payloads = events.map(event => ({
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      user_id: actorId === 'system' ? null : actorId,
+      actor_email: actorEmail,
+      action: event.action,
+      details: {
+        ...event.details,
+        ip_address: ip,
+        user_agent: userAgent
+      },
+      severity: event.severity || 'info',
+      target_user_id: event.targetUserId ?? null,
+      created_at: new Date().toISOString(),
+    }));
+
+    await supabaseAdmin.from('activity_logs').insert(payloads);
+  } catch (error: any) {
+    console.error('Audit log batch insertion failed:', error.message);
+  }
+}
+
 
 function getStoragePathFromUrl(pdfUrl: string): string {
   try {
@@ -52,16 +93,14 @@ function getStoragePathFromUrl(pdfUrl: string): string {
     if (bucketIndex !== -1) {
       return decodeURIComponent(urlObj.pathname.substring(bucketIndex + bucketStr.length));
     }
-  } catch (e) {
+  } catch(e) {
     // ignore
   }
   const parts = pdfUrl.split('?')[0].split('/');
   return decodeURIComponent(parts[parts.length - 1]);
 }
 
-const MOCK_PDF_BUFFER = Buffer.from(
-  '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n185\n%%EOF'
-);
+import { generateSalarySlipPdfBuffer } from '@/lib/pdfGenerator';
 
 async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileId?: string) {
   const { data: existing } = await supabaseAdmin.from('salary_slips').select('id, pdf_url').eq('snapshot_id', snapshotId).maybeSingle();
@@ -102,10 +141,15 @@ async function ensureSlipExists(supabaseAdmin: any, snapshotId: string, profileI
       });
 
       if (!fileExists || fileExists.length === 0) {
-        await supabaseAdmin.storage.from('salary_slips').upload(fileName, MOCK_PDF_BUFFER, {
-          contentType: 'application/pdf',
-          upsert: true
-        });
+        // Fetch full snapshot data to generate PDF
+        const { data: fullSnap } = await supabaseAdmin.from('payroll_snapshots').select('*').eq('id', snapshotId).single();
+        if (fullSnap) {
+          const pdfBuffer = await generateSalarySlipPdfBuffer(fullSnap, cycle.month, cycle.year);
+          await supabaseAdmin.storage.from('salary_slips').upload(fileName, pdfBuffer, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+        }
       }
     } catch (e) {
       console.error("[ensureSlipExists] storage error:", e);
@@ -157,32 +201,8 @@ async function ensureSlipsExistForCycle(supabaseAdmin: any, cycleId: string, pro
       slipsToCheckStorage.push(...inserted);
     }
   }
-
-  // Check and upload storage files in parallel to prevent sequential latency bottlenecks
-  await Promise.allSettled(
-    slipsToCheckStorage.map(async (slip) => {
-      if (!slip.pdf_url) return;
-      try {
-        const fileName = getStoragePathFromUrl(slip.pdf_url);
-        const parts = fileName.split('/');
-        const folderPath = parts.slice(0, -1).join('/');
-        const baseName = parts[parts.length - 1];
-
-        const { data: fileExists } = await supabaseAdmin.storage.from('salary_slips').list(folderPath, {
-          search: baseName
-        });
-
-        if (!fileExists || fileExists.length === 0) {
-          await supabaseAdmin.storage.from('salary_slips').upload(fileName, MOCK_PDF_BUFFER, {
-            contentType: 'application/pdf',
-            upsert: true
-          });
-        }
-      } catch (e) {
-        console.error("[ensureSlipsExistForCycle] storage error:", e);
-      }
-    })
-  );
+  // Files are now generated and uploaded during generateSlipRunAction.
+  // We no longer perform N+1 storage checks here.
 }
 
 
@@ -222,8 +242,16 @@ export interface PayrollSnapshot {
   other_deductions?: number;
   total_deductions?: number;
   net_salary?: number;
+  overtime_hours?: number;
+  overtime_pay?: number;
   calculated_at: string;
   notification_status?: string;
+  joining_date?: string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_ifsc?: string | null;
+  pan_number?: string | null;
+  uan_number?: string | null;
 }
 
 /**
@@ -356,7 +384,24 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       currentApps = data || [];
     }
 
+    // Fetch active approved bank details
+    const { data: activeBankDetails } = await supabaseAdmin
+      .from('employee_bank_details')
+      .select('*')
+      .eq('is_active', true)
+      .eq('status', 'approved');
+
+    // Fetch active approved statutory details
+    const { data: activeStatutoryDetails } = await supabaseAdmin
+      .from('employee_statutory_details')
+      .select('*')
+      .eq('is_active', true)
+      .eq('status', 'approved');
+
     const draftSnapshots: PayrollSnapshot[] = employees.map((emp: any) => {
+      const empBank = (activeBankDetails || []).find((b: any) => b.employee_id === emp.id);
+      const empStatutory = (activeStatutoryDetails || []).find((s: any) => s.employee_id === emp.id);
+
       const empLogs = attendanceLogs.filter((l: any) => l.employee_id === emp.id);
       
       const leave_dates = empLogs.filter((l: any) => l.status === "paid_leave" || l.status === "unpaid_leave").map((l: any) => l.date);
@@ -402,6 +447,7 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
       let total_other_deductions = 0;
       let salary_advance_recovery = 0;
       let damage_recovery = 0;
+      let overtime_hours = 0;
 
       // Populate adjustments from active ledgers and any saved draft applications
       for (const ledger of empLedgers) {
@@ -454,12 +500,16 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
            });
            
            if (app.adjustment_type === 'bonus') total_bonus += app.applied_amount;
+           else if (app.adjustment_type === 'overtime_hours') overtime_hours += app.applied_amount;
            else total_other_deductions += app.applied_amount;
         }
       }
 
+      const hourly_rate = base_salary / 208; // 26 days * 8 hours
+      const overtime_pay = Math.round(overtime_hours * 1.5 * hourly_rate);
+
       const bonus = total_bonus;
-      const gross_salary = basic_salary + hra + allowance + bonus;
+      const gross_salary = basic_salary + hra + allowance + bonus + overtime_pay;
       
       const pf = 0;
       const esi = 0;
@@ -497,10 +547,18 @@ export async function calculateMonthlyPayrollAction(month: number, year: number)
         other_deductions,
         total_deductions,
         net_salary,
+        overtime_hours,
+        overtime_pay,
         adjustments,
         salary_advance_recovery,
         damage_recovery,
-        calculated_at: new Date().toISOString()
+        calculated_at: new Date().toISOString(),
+        joining_date: emp.joining_date || null,
+        bank_name: empBank?.bank_name || null,
+        bank_account_number: empBank?.account_number || null,
+        bank_ifsc: empBank?.ifsc_code || null,
+        pan_number: empStatutory?.pan_number || null,
+        uan_number: empStatutory?.uan_number || null
       };
     });
 
@@ -882,92 +940,79 @@ export async function notifySalarySlipsAction(cycleId: string) {
 
     const { month, year } = cycle;
 
-    // 2. Fetch all slips for the cycle
+    // 2. Fetch all unsent slips for the cycle
     const { data: slips, error: slipsError } = await supabaseAdmin
       .from('salary_slips')
       .select('id, employee_id, snapshot_id, pdf_url, profiles!salary_slips_employee_id_fkey(email, first_name, last_name)')
-      .eq('cycle_id', cycleId);
+      .eq('cycle_id', cycleId)
+      .eq('emailed', false);
 
     if (slipsError || !slips || slips.length === 0) {
-      return { success: false, error: "No salary slips found for this cycle." };
+      return { success: false, error: "No unsent salary slips found for this cycle." };
     }
 
-    // 3. Process notifications individually
+    // 3. Process notifications in batch
     const monthName = new Date(year, month - 1, 1).toLocaleString('default', { month: 'long' });
     const title = `Salary Slip Available`;
     const message = `Your salary slip for ${monthName} ${year} is now available to view and download.`;
 
-    let successCount = 0;
-    let failCount = 0;
+    const validSlipIds = slips.map((s: any) => s.id);
+    const validEmployeeIds = slips.map((s: any) => s.employee_id);
+    const auditEvents = slips.map((s: any) => ({
+      action: "SALARY_SLIP_NOTIFICATION_SENT",
+      targetUserId: s.employee_id,
+      details: { cycle_id: cycleId, snapshot_id: s.snapshot_id },
+      severity: "info" as const
+    }));
 
-    for (const slip of slips) {
-      try {
-        // Send in-app notification
-        await sendLocalNotifications([slip.employee_id], title, message, 'payroll', null);
+    try {
+      await sendLocalNotifications(validEmployeeIds, title, message, 'payroll', null);
+      
+      const { error: updateError } = await supabaseAdmin
+        .from('salary_slips')
+        .update({ emailed: true, status: 'sent' })
+        .in('id', validSlipIds);
         
-        // Update tracking fields
-        const { error: updateError } = await supabaseAdmin
-          .from('salary_slips')
-          .update({
-            emailed: true,
-            status: 'sent'
-          })
-          .eq('id', slip.id);
-          
-        if (updateError) {
-          throw new Error("Failed to update tracking fields: " + updateError.message);
-        }
-        
-        // Audit Log for Notification Sent
-        await logPayrollEvent(
-          "SALARY_SLIP_NOTIFICATION_SENT", 
-          slip.employee_id, 
-          { cycle_id: cycleId, snapshot_id: slip.snapshot_id }, 
-          "info"
-        );
-        
-        successCount++;
-      } catch (err: any) {
-        console.error(`[notifySalarySlipsAction] Failed to process notification for slip ${slip.id}:`, err);
-        // Mark as failed
-        await supabaseAdmin
-          .from('salary_slips')
-          .update({
-            status: 'failed'
-          })
-          .eq('id', slip.id);
-          
-        // Audit Log for Notification Failed
-        await logPayrollEvent(
-          "SALARY_SLIP_NOTIFICATION_FAILED", 
-          slip.employee_id, 
-          { cycle_id: cycleId, snapshot_id: slip.snapshot_id, error: err.message }, 
-          "warning"
-        );
-          
-        failCount++;
-      }
+      if (updateError) throw new Error(updateError.message);
+
+      // Audit logs for all sent
+      await logPayrollEventsBatch(auditEvents);
+
+      // 4. Admin Audit Logging
+      await logPayrollEvent(
+        "SALARY_SLIPS_NOTIFIED",
+        null,
+        { month, year, cycle_id: cycleId, count: validSlipIds.length, failed: 0 },
+        "info"
+      );
+
+      return { success: true, notifCount: validSlipIds.length, message: `Successfully notified ${validSlipIds.length} employees.` };
+    } catch (err: any) {
+      console.error(`[notifySalarySlipsAction] Failed to process notifications:`, err);
+      
+      await supabaseAdmin
+        .from('salary_slips')
+        .update({ status: 'failed' })
+        .in('id', validSlipIds);
+
+      await logPayrollEventsBatch(
+        slips.map((s: any) => ({
+          action: "SALARY_SLIP_NOTIFICATION_FAILED",
+          targetUserId: s.employee_id,
+          details: { cycle_id: cycleId, snapshot_id: s.snapshot_id, error: err.message },
+          severity: "warning" as const
+        }))
+      );
+
+      await logPayrollEvent(
+        "SALARY_SLIPS_NOTIFIED",
+        null,
+        { month, year, cycle_id: cycleId, count: 0, failed: validSlipIds.length },
+        "warning"
+      );
+      
+      return { success: false, error: err.message };
     }
-
-    // 4. Admin Audit Logging
-    await logPayrollEvent(
-      "SALARY_SLIPS_NOTIFIED",
-      null,
-      { month, year, cycle_id: cycleId, count: successCount, failed: failCount },
-      "info"
-    );
-
-    if (failCount > 0) {
-      return { 
-        success: true, 
-        message: `Notified ${successCount} employees, but ${failCount} failed. Check logs.` 
-      };
-    }
-
-    return { 
-      success: true, 
-      message: `Successfully notified ${successCount} employees.` 
-    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -989,6 +1034,13 @@ export async function savePayrollDraftAdjustmentsAction(cycleId: string, draftAp
     for (const app of draftApps) {
       // Find matching ledger
       let ledgerId = null;
+
+      if (app.adjustment_type === 'overtime_hours') {
+        const val = Number(app.applied_amount);
+        if (isNaN(val) || val < 0) {
+          throw new Error("Validation Error: Overtime hours cannot be negative.");
+        }
+      }
 
       // 1. Recoverable Adjustments (Salary Advance, Damage)
       if (app.adjustment_category === 'recoverable') {

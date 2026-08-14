@@ -800,16 +800,12 @@ export async function createMilestonesAction(
           .in('id', milestonesToArchive);
 
         if (mDataList && mDataList.length > 0) {
-          await Promise.all(mDataList.map((mData: any) => {
-            const newTitle = mData.title.includes('[Archived]') ? mData.title : `${mData.title} [Archived]`;
-            return supabase
-              .from('project_milestones')
-              .update({ 
-                title: newTitle,
-                sort_order: -1
-              })
-              .eq('id', mData.id);
+          const archivePayloads = mDataList.map((mData: any) => ({
+            id: mData.id,
+            title: mData.title.includes('[Archived]') ? mData.title : `${mData.title} [Archived]`,
+            sort_order: -1
           }));
+          await supabase.rpc('bulk_update_project_milestones', { payloads: archivePayloads });
         }
       }
       
@@ -854,15 +850,17 @@ export async function createMilestonesAction(
     }
     
     if (updates.length > 0) {
-      for (const update of updates) {
-        const { id, ...rest } = update;
-        const { error: updateError } = await supabase.from('project_milestones').update(rest).eq('id', id);
-        if (updateError) return { success: false, error: updateError.message };
-        
-        // Keep linked invoices in sync if due date changes
-        if (rest.due_date !== undefined) {
-          await supabase.from('invoices').update({ due_date: rest.due_date }).eq('milestone_id', id);
-        }
+      const { error: updateError } = await supabase.rpc('bulk_update_project_milestones', { payloads: updates });
+      if (updateError) return { success: false, error: updateError.message };
+      
+      const invoiceUpdates = updates.filter(u => u.due_date !== undefined);
+      if (invoiceUpdates.length > 0) {
+        const milestoneIds = invoiceUpdates.map(u => u.id);
+        const dueDates = invoiceUpdates.map(u => u.due_date);
+        await supabase.rpc('bulk_update_invoices_due_date', { 
+          p_milestone_ids: milestoneIds,
+          p_due_dates: dueDates
+        });
       }
     }
 
@@ -1045,7 +1043,8 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('project_milestones')
-      .select('*, projects(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved, deleted_at), invoices(id, status, created_at, amount, due_date, payments(status))')
+      .select('*, projects!inner(name, client_name, status, is_frozen, dispatch_override_requested, dispatch_override_approved, deleted_at), invoices(id, status, created_at, amount, due_date, payments(status))')
+      .is('projects.deleted_at', null)
       .order('due_date', { ascending: true });
 
     if (error) {
@@ -1053,8 +1052,8 @@ export async function getAllMilestonesAction(): Promise<ActionResponse> {
       return { success: false, error: error.message };
     }
 
-    // Filter out milestones associated with deleted projects
-    const activeData = data.filter((m: any) => m.projects?.deleted_at === null);
+    // Filter out milestones associated with deleted projects (now handled by DB)
+    const activeData = data;
 
     // Compute UI status based on pending payments linked through invoices
     const processedData = activeData.map((m: any) => {
@@ -1616,42 +1615,14 @@ export async function getProjectProfitabilityAction(): Promise<{ success: boolea
 
     const supabase: any = await createClient();
 
-    const [projectsRes, invoicesRes, expensesRes] = await Promise.all([
-      supabase.from('projects').select('id, name').is('deleted_at', null),
-      supabase.from('invoices').select('project_id, total_amount, status'),
-      supabase.from('expenses').select('project_id, amount')
-    ]);
+    const { data, error } = await supabase.rpc('get_project_profitability');
 
-    const projects = projectsRes.data || [];
-    const invoices = invoicesRes.data || [];
-    const expenses = expensesRes.data || [];
+    if (error) {
+      throw error;
+    }
 
-    const profitMap: Record<string, { id: string, name: string, invoiced: number, expenses: number, margin: number }> = {};
-
-    projects.forEach((p: any) => {
-      profitMap[p.id] = { id: p.id, name: p.name, invoiced: 0, expenses: 0, margin: 0 };
-    });
-
-    invoices.forEach((i: any) => {
-      if (i.status !== 'cancelled' && profitMap[i.project_id]) {
-        profitMap[i.project_id].invoiced += Number(i.total_amount || 0);
-      }
-    });
-
-    expenses.forEach((e: any) => {
-      if (e.project_id && profitMap[e.project_id]) {
-        profitMap[e.project_id].expenses += Number(e.amount || 0);
-      }
-    });
-
-    const result = Object.values(profitMap).map(p => ({
-      ...p,
-      margin: p.invoiced - p.expenses
-    }));
-
-    result.sort((a, b) => b.margin - a.margin);
-
-    return { success: true, data: normalizeData(result) };
+    // Results are already sorted by margin DESC in the RPC
+    return { success: true, data: normalizeData(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -1860,60 +1831,13 @@ export async function getOutstandingBalancesAction(): Promise<ActionResponse> {
 
     const supabase: any = await createClient();
 
-    // Fetch projects
-    const { data: projects, error: projectsErr } = await supabase
-      .from("projects")
-      .select("id, name, client_name, status, budget");
-      
-    if (projectsErr) return { success: false, error: projectsErr.message };
-    if (!projects || projects.length === 0) return { success: true, data: [] };
-    
-    const projectIds = projects.map((p: any) => p.id);
+    const { data, error } = await supabase.rpc('get_outstanding_balances');
 
-    const [invoicesRes, expensesRes, quotationsRes, visitsRes] = await Promise.all([
-      supabase.from("invoices").select("project_id, status, total_amount").in("project_id", projectIds),
-      supabase.from("expenses").select("project_id, amount").in("project_id", projectIds),
-      supabase.from("quotations").select("project_id, status, total_amount").in("project_id", projectIds).eq("status", "Approved"),
-      supabase.from("project_visits").select("project_id, is_billable, visit_cost").in("project_id", projectIds).eq("is_billable", true)
-    ]);
+    if (error) {
+      throw error;
+    }
 
-    const invoices = invoicesRes.data || [];
-    const expenses = expensesRes.data || [];
-    const quotations = quotationsRes.data || [];
-    const visits = visitsRes.data || [];
-
-    const projectSummaries = projects.map((p: any) => {
-      const projectQuotations = quotations.filter((q: any) => q.project_id === p.id);
-      const quotationTotal = projectQuotations.reduce((sum: number, q: any) => sum + Number(q.total_amount || 0), 0);
-      
-      const projectVisits = visits.filter((v: any) => v.project_id === p.id);
-      const visitsTotal = projectVisits.reduce((sum: number, v: any) => sum + Number(v.visit_cost || 0), 0);
-      
-      const totalBilled = quotationTotal + visitsTotal;
-
-      const projectInvoices = invoices.filter((i: any) => i.project_id === p.id && i.status === 'paid');
-      const totalPaid = projectInvoices.reduce((sum: number, i: any) => sum + Number(i.total_amount || 0), 0);
-
-      const outstanding = totalBilled - totalPaid;
-
-      const projectExpenses = expenses.filter((e: any) => e.project_id === p.id);
-      const totalExpenses = projectExpenses.reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0);
-
-      const currentProfit = totalBilled - totalExpenses;
-
-      return {
-        ...p,
-        totalBilled,
-        totalPaid,
-        outstanding,
-        totalExpenses,
-        currentProfit
-      };
-    });
-
-    const outstandingProjects = projectSummaries.filter((p: any) => p.outstanding > 0 || p.status !== 'completed');
-
-    return { success: true, data: normalizeData(outstandingProjects) };
+    return { success: true, data: normalizeData(data || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

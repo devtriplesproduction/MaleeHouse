@@ -7,10 +7,8 @@ import {
   Search, 
   User, 
   Clock, 
-  AlertCircle, 
   CheckCircle2,
   Calendar,
-  Building2,
   ChevronRight,
   ChevronLeft,
   RefreshCw,
@@ -18,8 +16,6 @@ import {
   Smile
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { PremiumDatePicker } from "@/components/ui/PremiumDatePicker";
 import { updateEODReportAction } from "@/actions/eod.actions";
 import { toast } from "sonner";

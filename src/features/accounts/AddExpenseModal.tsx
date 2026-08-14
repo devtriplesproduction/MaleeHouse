@@ -86,7 +86,7 @@ export function AddExpenseModal({
       } else {
         toast.error(res?.error || (expenseToEdit ? 'Failed to update expense.' : 'Failed to log expense.'));
       }
-    } catch (error) {
+    } catch(error) {
       toast.error('Unexpected error saving expense.');
     } finally {
       setIsSubmitting(false);

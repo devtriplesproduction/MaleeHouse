@@ -203,18 +203,16 @@ export async function engineerReviewFinalCADAction(
       const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
       (admins || []).forEach((a: any) => recipientIds.add(a.id));
       
-      const { insertNotification } = await import('@/actions/notification.actions');
+      const { insertNotificationsBatch } = await import('@/actions/notification.actions');
 
-      await Promise.all(
-        Array.from(recipientIds).map((userId: any) =>
-          insertNotification({
-            userId,
-            title: 'Project Completed 🎉',
-            message: `Project "${projectName}" has been successfully completed and approved by the Lead Engineer.`,
-            type: 'approval',
-            relatedProjectId: projectId
-          })
-        )
+      await insertNotificationsBatch(
+        Array.from(recipientIds).map((userId: any) => ({
+          userId,
+          title: 'Project Completed 🎉',
+          message: `Project "${projectName}" has been successfully completed and approved by the Lead Engineer.`,
+          type: 'approval',
+          relatedProjectId: projectId,
+        }))
       );
 
       revalidatePath(`/projects/${projectId}`);
@@ -299,19 +297,17 @@ export async function engineerReviewFinalCADAction(
 
       // CAD assignment is fetched above now
 
-      const { insertNotification } = await import('@/actions/notification.actions');
+      const { insertNotificationsBatch } = await import('@/actions/notification.actions');
 
       if (cadAssignments && cadAssignments.length > 0) {
-        await Promise.all(
-          cadAssignments.map((cad: any) =>
-            insertNotification({
-              userId: cad.user_id,
-              title: 'Action Required: Final CAD Package Rejected',
-              message: `Your final CAD package for "${projectName}" was rejected by the Lead Engineer. Reason: ${rejectionReason}`,
-              type: 'rejection',
-              relatedProjectId: projectId
-            })
-          )
+        await insertNotificationsBatch(
+          cadAssignments.map((cad: any) => ({
+            userId: cad.user_id,
+            title: 'Action Required: Final CAD Package Rejected',
+            message: `Your final CAD package for "${projectName}" was rejected by the Lead Engineer. Reason: ${rejectionReason}`,
+            type: 'rejection',
+            relatedProjectId: projectId,
+          }))
         );
       }
 

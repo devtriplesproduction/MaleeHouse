@@ -10,7 +10,7 @@ import { Select, SelectItem } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getAllUsersAction } from "@/actions/admin.actions";
 import { assignUserToProjectAction, removeUserFromProjectAction } from "@/actions/assignment.actions";
-import { UserPlus, UserMinus, Shield, LucideLoader2 } from "lucide-react";
+import { UserPlus, UserMinus, LucideLoader2 } from "lucide-react";
 
 interface TeamMember {
   id: string; // assignment id

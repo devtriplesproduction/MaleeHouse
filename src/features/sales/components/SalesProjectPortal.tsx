@@ -12,31 +12,20 @@ import {
   ShieldCheck, 
   Clock, 
   Check, 
-  CheckSquare, 
-  Square,
+  CheckSquare,
   Plus, 
   Download, 
   Trash2, 
   FileText, 
   Upload, 
-  ArrowRight, 
   Loader2,
   PhoneCall,
-  History,
-  FileSpreadsheet,
-  AlertTriangle,
   FolderOpen,
-  ChevronsUpDown,
   Send,
   Eye,
   X,
   ChevronLeft,
-  ChevronRight,
-  CalendarDays,
-  MessageSquare,
-  CheckCircle2,
-  PhoneOff,
-  Sparkles
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { recordFollowUpAction, finalizeRequirementsAction } from '../actions';
@@ -44,10 +33,8 @@ import { registerFileAction } from '@/actions/file.actions';
 import { uploadProjectFile } from '@/lib/supabase/storage';
 import { deleteFileAction } from '@/actions/vault.actions';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectItem } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
-import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 
 interface SalesProjectPortalProps {
   project: any;
@@ -492,7 +479,7 @@ export function SalesProjectPortal({ project, comments = [], files = [] }: Sales
               <div className="border-t border-slate-100 dark:border-white/5 pt-4 space-y-1.5">
                 <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5 leading-none">Scope & Special Instructions</p>
                 <p className="text-xs text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-black/20 p-3.5 rounded-xl border border-slate-200/50 dark:border-white/5 leading-relaxed font-medium">
-                  "{localProject.survey_requirements || 'No specific limit or instructions provided.'}"
+                  &quot;{localProject.survey_requirements || 'No specific limit or instructions provided.'}&quot;
                 </p>
               </div>
             </div>

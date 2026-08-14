@@ -3,12 +3,9 @@ import Link from 'next/link';
 import { requireRole } from '@/lib/auth-guard';
 import { getAdminWorkspaceDataAction } from '@/actions/workspace.actions';
 import { DispatchOverrideRequestsWidget } from '@/components/modules/DispatchOverrideRequestsWidget';
-import { MaterialApprovalWidget } from '@/components/modules/MaterialApprovalWidget';
 import DashboardNotificationCenter from '@/components/modules/DashboardNotificationCenter';
-import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Users,
   FolderKanban,
@@ -16,7 +13,6 @@ import {
   Coins,
   ShieldAlert,
   ChevronRight,
-  Hammer,
   ArrowRight,
   Megaphone,
   Layers,

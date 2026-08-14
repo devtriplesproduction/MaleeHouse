@@ -4,20 +4,15 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Search, 
-  Filter, 
   ChevronRight, 
-  Calendar, 
   User, 
   Activity,
   CheckCircle2,
-  AlertCircle,
   Clock,
-  FileText,
   Hammer,
   PenTool,
   MapPin,
-  ClipboardCheck,
-  MoreHorizontal
+  ClipboardCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

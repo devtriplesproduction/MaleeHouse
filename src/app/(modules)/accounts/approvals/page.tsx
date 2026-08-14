@@ -9,8 +9,7 @@ import { useUserContext } from "@/providers/UserProvider";
 import {
   Clock, Send, CheckCircle2, XCircle, AlertCircle, FileText, Eye,
   Download, ArrowRight, Hammer, TrendingUp, DollarSign, RefreshCw,
-  Search, Building, BarChart2, X, Info, Sparkles, ShieldCheck, Phone,
-  Lock
+  Search, BarChart2, X, ShieldCheck, Phone, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 import { format } from "date-fns";
@@ -20,6 +19,7 @@ import DashboardLoading from "@/app/(modules)/loading";
 import { generateQuotationPDF } from "@/lib/pdf-generator";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCompanySettings } from "@/providers/CompanySettingsProvider";
+import { PageHeader } from "@/components/modules/PageHeader";
 import {
   isAwaitingClientStatus,
   isClientApprovalStatus,
@@ -80,6 +80,9 @@ export default function ClientApprovalsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [overrideRequests, setOverrideRequests] = useState<Record<string, boolean>>({});
   const { settings: companySettings } = useCompanySettings();
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchData = useCallback(async (showSpinner = false) => {
     if (showSpinner) setLoading(true);
@@ -165,6 +168,10 @@ export default function ClientApprovalsPage() {
     generateQuotationPDF(q, proj, companySettings);
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
+
   if (loading) return <DashboardLoading />;
 
   // Filter logic
@@ -205,6 +212,9 @@ export default function ClientApprovalsPage() {
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   // Calculate Metrics
   const pendingQuotes = quotations.filter((q) => isAwaitingClientStatus(q.status));
   const approvedQuotes = quotations.filter((q) => q.status === "Approved");
@@ -215,18 +225,11 @@ export default function ClientApprovalsPage() {
   return (
     <div className="space-y-8 pb-20 animate-in fade-in duration-500">
       {/* Dynamic Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-6">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            Client <span className="text-indigo-600 dark:text-indigo-400">Approvals</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-            {pendingQuotes.length} awaiting response · {approvedQuotes.length} approved quotations
-          </p>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Client Approvals"
+        subtitle={`${pendingQuotes.length} awaiting response · ${approvedQuotes.length} approved quotations`}
+        icon={CheckCircle2}
+        actions={
           <button
             onClick={() => fetchData(true)}
             className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400 transition-all hover:text-slate-900 dark:hover:text-white active:scale-95"
@@ -234,8 +237,8 @@ export default function ClientApprovalsPage() {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
@@ -395,7 +398,7 @@ export default function ClientApprovalsPage() {
         ) : (
           <div className="space-y-4">
             <AnimatePresence mode="popLayout">
-              {filtered.map((q) => {
+              {paginatedData.map((q) => {
                 const config = STATUS_CONFIG[q.status] ?? {
                   icon: FileText,
                   color: "text-slate-500",
@@ -423,8 +426,10 @@ export default function ClientApprovalsPage() {
                     )}
                   >
                     {/* ── Single standardised row ───────────────────────── */}
-                    <div className="flex items-center gap-4">
-
+                    <div className="flex flex-col xl:flex-row xl:items-center gap-4">
+                      
+                      {/* Left Side: Icon and Info */}
+                      <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                       {/* Status icon — fixed 40×40 */}
                       <div className={cn(
                         "shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center transition-transform duration-300 group-hover:scale-105",
@@ -465,29 +470,32 @@ export default function ClientApprovalsPage() {
                           <span className="text-[10px] font-mono text-slate-400 tracking-wide">{q.quotation_number}</span>
                         </div>
                       </div>
+                      </div>
 
-                      {/* CONTRACT VALUE — fixed 110px */}
-                      <div className="shrink-0 w-[110px]">
+                      {/* Right Side: Metrics and Actions */}
+                      <div className="flex flex-wrap xl:flex-nowrap items-center gap-4 xl:gap-4 shrink-0">
+                        {/* CONTRACT VALUE — fixed 110px */}
+                        <div className="shrink-0 w-auto sm:w-[110px] min-w-[100px]">
                         <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
                           Contract Value
                         </p>
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-100 tabular-nums leading-tight">
                           ₹{q.total_amount?.toLocaleString("en-IN")}
                         </p>
-                      </div>
+                        </div>
 
-                      {/* RELEASE DATE — fixed 100px */}
-                      <div className="shrink-0 w-[100px]">
+                        {/* RELEASE DATE — fixed 100px */}
+                        <div className="shrink-0 w-auto sm:w-[100px] min-w-[100px]">
                         <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
                           Release Date
                         </p>
                         <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-tight">
                           {format(new Date(q.created_at), "MMM d, yyyy")}
                         </p>
-                      </div>
+                        </div>
 
-                      {/* Actions — fixed width to ensure columns align perfectly */}
-                      <div className="shrink-0 w-[240px] flex items-center justify-end gap-1.5">
+                        {/* Actions — fixed width on desktop to ensure columns align perfectly */}
+                        <div className="shrink-0 w-full xl:w-[240px] flex items-center justify-start xl:justify-end gap-2 pt-3 xl:pt-0 border-t xl:border-t-0 border-slate-100 dark:border-white/5 mt-1 xl:mt-0">
                         {/* Preview */}
                         <button
                           onClick={() => setSelectedQuote(q)}
@@ -602,6 +610,7 @@ export default function ClientApprovalsPage() {
                         })()}
                       </div>
                     </div>
+                    </div>
 
                     {/* Consent strip (approved only, when phone/date present) */}
                     {isApproved && (q.client_approver_phone || q.client_approved_at) && (
@@ -625,6 +634,46 @@ export default function ClientApprovalsPage() {
 
               })}
             </AnimatePresence>
+            
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/5 pt-4 mt-6">
+                <p className="text-xs text-slate-500 font-medium">
+                  Showing <span className="font-semibold text-slate-700 dark:text-slate-300">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-semibold text-slate-700 dark:text-slate-300">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> of <span className="font-semibold text-slate-700 dark:text-slate-300">{filtered.length}</span> entries
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i + 1)}
+                        className={cn(
+                          "w-7 h-7 flex items-center justify-center rounded-lg text-xs font-medium transition-colors",
+                          currentPage === i + 1 
+                            ? "bg-indigo-600 text-white" 
+                            : "text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
+                        )}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

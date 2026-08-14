@@ -4,7 +4,7 @@ import { normalizeData } from '@/lib/normalize';
 
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { createClient } from "@/lib/supabase/server";
-import { insertNotification } from "./notification.actions";
+import { insertNotification, insertNotificationsBatch } from "./notification.actions";
 import { verifyProjectAccess } from "@/lib/permissions/permissions";
 
 export async function getMyVisitsAction() {
@@ -205,9 +205,10 @@ export async function getMyPendingFieldReportsAction() {
 
   const { data: assignments, error: asgError } = await supabase
     .from("project_assignments")
-    .select("project_id, projects!inner ( id, name, status )")
+    .select("project_id, projects!inner ( id, name, status, deleted_at )")
     .eq("user_id", profile.id)
-    .in("projects.status", ["field_assigned", "field_work", "data_sync"]);
+    .in("projects.status", ["field_assigned", "field_work", "data_sync"])
+    .is("projects.deleted_at", null);
 
   if (asgError) {
     console.error("Error fetching assignments:", asgError);
@@ -320,15 +321,14 @@ export async function createMaterialRequestAction(projectId: string, itemName: s
 
   const { data: admins } = await supabase.from('profiles').select('id').in('role', ['admin', 'engineer']);
   if (admins && admins.length > 0) {
-    for (const admin of admins) {
-      await insertNotification({
-        userId: admin.id,
-        title: "📦 New Material Request",
-        message: `${profile.first_name || 'A user'} requested ${quantity}x ${itemName} for "${projectName}".`,
-        type: "assignment",
-        relatedProjectId: projectId
-      });
-    }
+    const payloads = admins.map((admin: any) => ({
+      userId: admin.id,
+      title: "📦 New Material Request",
+      message: `${profile.first_name || 'A user'} requested ${quantity}x ${itemName} for "${projectName}".`,
+      type: "assignment" as const,
+      relatedProjectId: projectId
+    }));
+    await insertNotificationsBatch(payloads);
   }
 
   return { success: true, message: "Material requested successfully" };

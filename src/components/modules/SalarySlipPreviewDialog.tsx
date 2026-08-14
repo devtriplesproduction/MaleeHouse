@@ -40,7 +40,7 @@ export function SalarySlipPreviewDialog({ open, onOpenChange, employeeName, pdfU
             expired = true;
           }
         }
-      } catch (e) {}
+      } catch(e) {}
 
       if (expired && onRefreshUrl) {
         setLoading(true);
@@ -54,7 +54,7 @@ export function SalarySlipPreviewDialog({ open, onOpenChange, employeeName, pdfU
               setError("Failed to regenerate salary slip URL.");
             }
           }
-        } catch (err) {
+        } catch(err) {
           if (isMounted) setError("Failed to regenerate salary slip URL.");
         } finally {
           if (isMounted) setLoading(false);
@@ -135,7 +135,7 @@ export function SalarySlipPreviewDialog({ open, onOpenChange, employeeName, pdfU
               className="bg-white shadow-2xl rounded-sm mx-auto overflow-hidden"
             >
               <iframe 
-                src={`${currentUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
+                src={`/api/pdf-proxy?url=${encodeURIComponent(currentUrl)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
                 className="w-full h-full border-0" 
                 title="Salary Slip Preview"
               />

@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { updateCompanySettingsAction, type CompanySettings } from "@/actions/settings.actions";
 import { Building2, MapPin, Phone, Hash, Save, ShieldCheck, Mail, Smartphone, Star, Globe } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface Props {
   initialSettings: CompanySettings;
@@ -19,7 +18,10 @@ export function CompanySettingsForm({ initialSettings, canEdit = true, activeTab
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: name === "gstin" ? value.toUpperCase() : value 
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {

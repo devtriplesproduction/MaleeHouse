@@ -3,13 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   getGlobalStatsAction, 
-  getSalesStatsAction, 
-  getEngineerStatsAction,
+  getSalesStatsAction,
   getAccountantStatsAction,
   getOperationsStatsAction,
   type StatItem 
 } from '@/actions/stats.actions';
-import { TrendingUp, Activity, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { TrendingUp, Activity, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface RealtimeStatsGridProps {
   type: 'admin' | 'sales' | 'engineer' | 'accountant' | 'field' | 'cad' | 'operations' | 'hr';

@@ -365,8 +365,8 @@ export const generateFinancialReportPDF = (
       <tr>
         <td>${new Date(item.date).toLocaleDateString('en-GB').replace(/\//g, '-')}</td>
         <td>${item.particulars}</td>
-        <td>${item.debit || ''}</td>
-        <td>${item.credit || ''}</td>
+        <td class="text-right">${item.debit || ''}</td>
+        <td class="text-right">${item.credit || ''}</td>
       </tr>
     `).join('');
 

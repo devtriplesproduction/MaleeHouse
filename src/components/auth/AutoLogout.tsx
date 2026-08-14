@@ -19,7 +19,7 @@ export function AutoLogout({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     try {
       await signOutAction();
-    } catch (err) {
+    } catch(err) {
       // Ignored
     } finally {
       router.push("/login");

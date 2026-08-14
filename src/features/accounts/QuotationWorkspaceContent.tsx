@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { QuotationBuilderEngine } from "@/features/accounts/QuotationBuilderEngine";
 import { QuotationManagementPanel } from "@/features/accounts/QuotationManagementPanel";
 import { QuotationList } from "@/features/accounts/QuotationList";
-import { ArrowLeft, Plus, ChevronLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { getProjectByIdAction } from "@/actions/project.actions";
 import { peekQuoteProject } from "@/lib/quote-project-handoff";
 import DashboardLoading from "@/app/(modules)/loading";

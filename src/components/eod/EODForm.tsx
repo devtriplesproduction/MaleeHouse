@@ -52,7 +52,7 @@ function calculateStreak(reports: any[]) {
 
   const now = new Date();
   const todayStr = getLocalStr(now);
-  
+
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = getLocalStr(yesterday);
@@ -214,7 +214,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
       } else {
         toast.error(response.error || 'Failed to submit report');
       }
-    } catch (err) {
+    } catch(err) {
       toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -422,7 +422,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                         <option value="field">Field</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                       </div>
                     </div>
                   </div>
@@ -439,7 +439,7 @@ export function EODForm({ reports = [], allReports = [], onSuccess, staff, curre
                       type="number"
                       step="0.01"
                       max="12"
-                      placeholder="8.5"
+                      placeholder="8"
                       value={formData.hours_spent}
                       onChange={(e) => setFormData({ ...formData, hours_spent: e.target.value })}
                       disabled={hasSubmitted}

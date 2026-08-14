@@ -6,12 +6,10 @@ import {
   Image as ImageIcon, 
   FileText, 
   Layers, 
-  MoreVertical, 
   Download, 
   Trash2, 
   Edit3, 
   FolderOpen,
-  ChevronRight,
   Search,
   Loader2
 } from "lucide-react";

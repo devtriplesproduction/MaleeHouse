@@ -3,42 +3,30 @@
 import React, { useState } from 'react';
 import {
   Shield,
-  Users,
-  Upload,
-  ArrowRight,
   AlertTriangle,
-  CheckCircle2,
   PenTool,
   MapPin,
   ClipboardCheck,
-  Activity,
   Send,
   Loader2,
-  Trash2,
-  UserPlus,
-  ChevronDown,
   XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-  assignTeamMemberAction,
   claimProjectAction,
-  removeTeamMemberAction,
   reviewFieldSurveyAction
 } from '@/actions/operations.actions';
-import { transitionWorkflowAction, updateProjectStageAction, reopenProjectAction } from '@/actions/workflow.actions';
+import { transitionWorkflowAction, reopenProjectAction } from '@/actions/workflow.actions';
 import { FileUploader } from './FileUploader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
 import { registerFileAction } from '@/actions/file.actions';
 import { uploadProjectFile } from '@/lib/supabase/storage';
 import { deleteFileAction, renameFileAction } from '@/actions/vault.actions';
 import { assignUserToProjectAction, removeUserFromProjectAction } from '@/actions/assignment.actions';
 import { getOpsTeamMembersAction } from '@/actions/operations.actions';
-import { uploadFileToServerAction } from '@/actions/storage.actions';
 
 interface OperationsControlCenterProps {
   projectId: string;

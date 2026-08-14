@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition, useCallback, useEffect } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   FileText, 
@@ -10,18 +10,15 @@ import {
   Upload, 
   X, 
   File as FileIcon, 
-  CheckCircle2, 
-  AlertCircle,
+  CheckCircle2,
   Download,
   Trash2,
   Edit3,
   Search,
   Loader2,
-  Plus,
   Image as ImageIcon,
   FolderOpen
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn, downloadFile } from '@/lib/utils';
 import { deleteFileAction, renameFileAction } from '@/actions/vault.actions';
 import { registerFileAction } from '@/actions/file.actions';

@@ -2,11 +2,10 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserCheck, Clock, FileText, ChevronRight } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 
-export function TodayAttendanceSnapshot({ data, headcount, users = [] }: { data: any, headcount: number, users?: any[] }) {
+export function TodayAttendanceSnapshot({ data, headcount: headcount, users = [] }: { data: any, headcount: number, users?: any[] }) {
   const { present = 0, recentEods = [] } = data || {};
   
   // Submitted EODs: pending review first, then approved.

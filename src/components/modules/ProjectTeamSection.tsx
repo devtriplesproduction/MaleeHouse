@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, UserPlus, Shield, X, Trash2 } from "lucide-react";
+import { Users, UserPlus, X, Trash2 } from "lucide-react";
 import { assignUserToProjectAction, removeUserFromProjectAction } from "@/actions/assignment.actions";
 import { Select, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";

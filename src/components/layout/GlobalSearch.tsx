@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Search, FileText, User, CheckSquare, Command, ArrowRight, History, Zap, Plus, UserPlus, Activity, ShieldAlert } from "lucide-react";
+import { Search, FileText, User, CheckSquare, Command, ArrowRight, History, Zap, Plus, UserPlus, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { globalSearchAction } from "@/actions/search.actions";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,7 @@ export function GlobalSearch() {
     if (saved) {
       try {
         setRecentItems(JSON.parse(saved));
-      } catch (e) {
+      } catch(e) {
         console.error("Failed to parse recently viewed items");
       }
     }
@@ -100,11 +100,11 @@ export function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-all w-full max-w-[240px] group shadow-sm"
+        className="flex items-center justify-center md:justify-start gap-2 p-2 md:px-3 md:py-1.5 text-sm text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-all w-9 h-9 md:w-full md:h-auto md:max-w-[240px] group shadow-sm"
       >
-        <Search className="h-4 w-4 group-hover:text-indigo-500 transition-colors" />
-        <span>Search anything...</span>
-        <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-white px-1.5 font-mono text-[10px] font-medium text-slate-400 opacity-100">
+        <Search className="h-4 w-4 shrink-0 group-hover:text-indigo-500 transition-colors" />
+        <span className="hidden md:inline">Search anything...</span>
+        <kbd className="hidden md:inline-flex ml-auto pointer-events-none h-5 select-none items-center gap-1 rounded border bg-white px-1.5 font-mono text-[10px] font-medium text-slate-400 opacity-100">
           <Command className="h-3 w-3" />K
         </kbd>
       </button>
@@ -197,7 +197,7 @@ export function GlobalSearch() {
 
             {query && !isLoading && !hasResults && (
               <div className="py-12 text-center text-slate-400 text-sm">
-                No results found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             )}
 

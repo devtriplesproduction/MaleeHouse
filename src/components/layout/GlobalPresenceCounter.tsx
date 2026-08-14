@@ -3,7 +3,6 @@
 import React from "react";
 import { usePresence } from "@/hooks/usePresence";
 import { Users } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export function GlobalPresenceCounter() {
   const { count } = usePresence();

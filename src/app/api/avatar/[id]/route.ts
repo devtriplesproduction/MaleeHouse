@@ -49,7 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     // If it's just a regular URL
     return NextResponse.redirect(photoStr);
-  } catch (error) {
+  } catch(error) {
     return new NextResponse(null, { status: 500 });
   }
 }

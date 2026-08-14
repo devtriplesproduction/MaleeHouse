@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  FileText, Plus, Trash2, Copy, Star, CheckCircle, Search, 
-  ArrowUp, ArrowDown, LayoutGrid, Edit3, X, Save, HelpCircle, AlertCircle, Eye
+  FileText, Plus, Trash2, Copy, Star, Search, 
+  ArrowUp, ArrowDown, LayoutGrid, Edit3, X, Save, HelpCircle, Eye
 } from 'lucide-react';
 import { 
   getQuotationTemplatesAction, 

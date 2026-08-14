@@ -2,8 +2,8 @@
 
 import React, { useState, useTransition } from "react";
 import {
-  UserPlus, X, Search, ChevronDown, Loader2, Check,
-  Shield, PenTool, MapPin, Eye, User, AlertTriangle
+  UserPlus, X, Search, Loader2,
+  Shield, PenTool, MapPin, User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 // Removed local-db import

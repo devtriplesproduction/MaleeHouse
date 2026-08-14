@@ -2,18 +2,17 @@ import React from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { getFieldWorkspaceDataAction } from "@/actions/workspace.actions";
 import {
-  MapPin, ChevronRight, AlertTriangle, CheckCircle2,
-  FileText, Zap, Navigation, Send, Upload, ListPlus, Activity, PenTool, CheckCircle
+  MapPin, AlertTriangle, CheckCircle2, Navigation, Upload, Activity, CheckCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { SOPList } from "@/components/sop/SOPList";
+import { PageHeader } from "@/components/modules/PageHeader";
+import { KPICard } from "@/components/modules/KPICard";
 import DashboardNotificationCenter from "@/components/modules/DashboardNotificationCenter";
 import { PendingProjectListCard } from "@/components/modules/PaginatedProjectList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  AttendanceWidget,
   DailyVisitsWidget,
   MaterialRequirementsWidget,
   SiteProgressButton
@@ -44,47 +43,25 @@ export default async function FieldDashboardPage() {
   const kpis = [
     { label: "My Queue", value: projects.length, color: "text-emerald-500", bg: "bg-emerald-500/10", icon: MapPin },
     { label: "Active Surveys", value: activeFieldWork.length, color: "text-sky-500", bg: "bg-sky-500/10", icon: Navigation },
-    { label: "Revisions", value: metricsData.activeRevisions.length, color: "text-amber-500", bg: "bg-amber-500/10", icon: AlertTriangle },
-    { label: "Completed", value: (workspaceData.assignedProjects || []).filter((p: any) => p.status === "completed").length, color: "text-slate-400", bg: "bg-slate-500/10", icon: CheckCircle2 },
+    { label: "Revisions", value: metricsData.activeRevisions.length, color: "text-amber-500", bg: "bg-amber-500/10", icon: AlertTriangle }
   ];
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
 
       {/* Header & Attendance */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-200/60 dark:border-white/5">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Field Terminal</p>
-          <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-            Field <span className="text-emerald-500">Operations</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">
-            Welcome back, {firstName}.
-          </p>
-        </div>
-        <div className="flex-shrink-0 min-w-[300px]">
-          <AttendanceWidget />
-        </div>
-      </div>
+      <PageHeader
+        title="Field Operations"
+        subtitle={`Welcome back, ${firstName}.`}
+        icon={Navigation}
+        className="pb-6 border-b border-slate-200/60 dark:border-white/5"
+      />
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <div key={kpi.label} className="glass-card border-white/10 p-5 flex flex-col gap-4">
-              <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", kpi.bg)}>
-                <Icon className={cn("w-5 h-5", kpi.color)} />
-              </div>
-              <div>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">{kpi.value}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
-                  {kpi.label}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {kpis.map((kpi) => (
+          <KPICard key={kpi.label} {...kpi} />
+        ))}
       </div>
 
       {/* Main Grid */}
@@ -184,8 +161,6 @@ export default async function FieldDashboardPage() {
         {/* Right Column: Action Panel */}
         <div className="xl:col-span-3 space-y-6">
 
-          <DashboardNotificationCenter />
-
           {/* Action Required (Pending Reports) */}
           <div className="glass-card border-emerald-500/15 p-6 space-y-4">
             <div className="flex items-center gap-2">
@@ -198,14 +173,14 @@ export default async function FieldDashboardPage() {
                 <p className="text-xs text-slate-500 font-bold">All clear</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
                 {pendingReports.map((p: any) => (
                   <Link
                     key={p.id}
                     href={`/projects/${p.id}`}
                     className="block p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 hover:border-amber-500/30 transition-all"
                   >
-                    <p className="text-xs font-black text-slate-900 dark:text-white">{p.name}</p>
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white">{p.name}</p>
                     <p className="text-[10px] text-amber-500 mt-0.5 flex items-center gap-1">
                       <Upload className="w-2.5 h-2.5" />
                       {p.reason}
@@ -215,6 +190,8 @@ export default async function FieldDashboardPage() {
               </div>
             )}
           </div>
+
+          <DashboardNotificationCenter />
 
           {/* Pending EOD Reports */}
           <div className="glass-card border-white/10 p-6 space-y-4">

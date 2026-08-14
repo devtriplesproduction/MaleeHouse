@@ -87,6 +87,8 @@ async function sendLocalNotification(
   });
 }
 
+import { insertNotificationsBatch } from "./notification.actions";
+
 export async function sendLocalNotifications(
   userIds: string[],
   title: string,
@@ -97,19 +99,18 @@ export async function sendLocalNotifications(
   if (!userIds || userIds.length === 0) return;
   const validIds = userIds.filter(id => id && id.trim() !== '');
   if (validIds.length === 0) return;
-  const { createAdminClient } = await import("@/lib/supabase/admin");
-  const supabaseAdmin: any = createAdminClient();
-  for (const userId of validIds) {
-    const { error } = await supabaseAdmin.rpc('generate_system_notification', {
-      p_target_user_id: userId,
-      p_title: title,
-      p_message: message,
-      p_type: type,
-      p_related_project_id: projectId || null
-    });
-    if (error) {
-      console.error("[sendLocalNotifications] RPC error:", error);
-    }
+
+  const payloads = validIds.map(userId => ({
+    userId,
+    title,
+    message,
+    type: type as any,
+    relatedProjectId: projectId || undefined
+  }));
+
+  const result = await insertNotificationsBatch(payloads);
+  if (!result.success) {
+    console.error("[sendLocalNotifications] batch insert error");
   }
 }
 
@@ -582,8 +583,13 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
     if (!auth.authorized) return { success: false, error: auth.error || null, data: [] };
 
     const supabase: any = await createClient();
-    const { data: revisions } = await supabase.from('cad_revisions').select('id, project_id, submitted_by, file_name, file_url, revision_number, revision_notes, status, review_notes, reviewed_by, reviewed_at, created_at').eq('project_id', projectId);
+    const { data: revisions, error: queryError } = await supabase.from('cad_revisions').select('id, project_id, submitted_by, files, revision_number, description, status, review_notes, reviewed_by, reviewed_at, submitted_at, updated_at').eq('project_id', projectId);
     
+    if (queryError) {
+      console.error("getCADRevisionsAction query error:", queryError);
+      return { success: false, error: queryError.message, data: [] };
+    }
+
     const userIds = Array.from(new Set((revisions || []).flatMap((r: any) => [r.submitted_by, r.reviewed_by]))).filter(Boolean);
     let profiles: any[] = [];
     if (userIds.length > 0) {
@@ -592,11 +598,19 @@ export async function getCADRevisionsAction(projectId: string): Promise<OpRespon
     }
     const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
-    const data = (revisions || []).map((r: any) => ({
-      ...r,
-      submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
-      reviewed_by_profile: r.reviewed_by ? (profileMap.get(r.reviewed_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" }) : null,
-    }));
+    const data = (revisions || []).map((r: any) => {
+      // Map back to the expected type format for backwards compatibility
+      const file = Array.isArray(r.files) && r.files.length > 0 ? r.files[0] : {};
+      return {
+        ...r,
+        file_name: file.name || '',
+        file_url: file.url || '',
+        revision_notes: r.description || '',
+        created_at: r.submitted_at || r.updated_at || new Date().toISOString(),
+        submitted_by_profile: profileMap.get(r.submitted_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" },
+        reviewed_by_profile: r.reviewed_by ? (profileMap.get(r.reviewed_by) || { first_name: "Unknown", last_name: "User", email: "", role: "hr" }) : null,
+      };
+    });
     data.sort((a: any, b: any) => b.revision_number - a.revision_number);
     return { success: true, error: null, data };
   } catch (err: any) {

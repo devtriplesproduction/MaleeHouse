@@ -16,7 +16,6 @@ import {
   BookOpen, 
   Sparkles, 
   ShieldCheck, 
-  Type, 
   Bold, 
   List, 
   Heading3,

@@ -16,8 +16,6 @@ import {
   ScrollText,
   CalendarCheck,
   PlaneTakeoff,
-  BookOpen,
-  Clock,
   AlertCircle,
   Scale,
   Coins,

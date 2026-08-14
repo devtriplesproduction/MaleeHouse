@@ -4,9 +4,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   FileText, 
-  Printer, 
-  Target,
-  Calendar,
+  Printer,
   CheckCircle,
   Eye,
   Building,
@@ -14,12 +12,12 @@ import {
   Link2,
   Mail,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { type CompanySettings } from '@/actions/settings.actions';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { toast } from 'sonner';
 
@@ -68,6 +66,7 @@ interface ReceiptItem {
   title: string;
   amount: number;
   dateCleared: string;
+  linkId: string;
   original: any;
 }
 
@@ -94,15 +93,19 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
   const receipts: ReceiptItem[] = payments
     .filter((p: any) => p.status === 'verified')
     .map((p: any) => {
-      const cleanId = p.id.replace(/\D/g, '').substring(0, 8) || p.id.substring(0, 5).toUpperCase();
+      const cleanId = String(p.id).replace(/\D/g, '').substring(0, 8) || String(p.id).substring(0, 5).toUpperCase();
       let title = `Payment Payout: ${cleanId}`;
       let type: 'payment' | 'invoice' | 'milestone' = 'payment';
+      let linkId = p.invoice_id || p.id;
+
       if (p.invoices?.invoice_number) {
         title = `Invoice Payout: ${p.invoices.invoice_number}`;
         type = 'invoice';
+        linkId = p.invoice_id || p.invoices.id || p.id;
       } else if (p.invoices?.project_milestones?.title) {
         title = `Milestone Payout: ${p.invoices.project_milestones.title}`;
         type = 'milestone';
+        linkId = p.invoices.milestone_id || p.invoices.id || p.id;
       }
 
       return {
@@ -113,6 +116,7 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
         title,
         amount: p.amount,
         dateCleared: p.verified_at || p.created_at,
+        linkId,
         original: p
       };
     });
@@ -146,8 +150,8 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
     window.print();
   };
 
-  const receiptLink = typeof window !== 'undefined' && selectedReceipt 
-    ? `${window.location.origin}/receipts/${selectedReceipt.original.id}?type=${selectedReceipt.type}` 
+  const receiptLink = selectedReceipt 
+    ? `${window.location.origin}/receipts/${selectedReceipt.linkId}?type=${selectedReceipt.type}` 
     : '';
 
   const copyReceiptLink = () => {
@@ -326,24 +330,31 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
                 className="relative w-full max-w-[850px] flex flex-col gap-6 z-10 my-4 print:my-0 print:gap-0"
               >
               {/* Top Control Bar */}
-              <div className="flex items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-3 rounded-xl border border-white/10 shadow-xl text-white print:hidden">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-4 rounded-xl border border-white/10 shadow-xl text-white print:hidden gap-4 md:gap-0">
                 <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+                   <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0">
                       <FileText className="w-4 h-4" />
                    </div>
                    <div>
                       <h3 className="text-sm font-semibold tracking-tight">Receipt Preview</h3>
-                      <p className="text-[10px] text-slate-400 font-medium">Reviewing {selectedReceipt.id}</p>
+                      <p className="text-[10px] text-slate-400 font-medium break-all">Reviewing {selectedReceipt.id}</p>
                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                   <button 
                     onClick={handlePrint}
                     className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all flex items-center"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     Print
+                  </button>
+                  <button 
+                    onClick={handlePrint}
+                    className="text-slate-300 hover:text-white hover:bg-white/10 px-3 py-1.5 h-8 text-xs font-semibold gap-1.5 rounded-lg transition-all flex items-center"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download
                   </button>
                   <button 
                     onClick={copyReceiptLink}
@@ -439,8 +450,8 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
                     </div>
 
                     {/* Items Table */}
-                    <div className="space-y-4">
-                       <table className="w-full border-collapse">
+                    <div className="space-y-4 overflow-x-auto">
+                        <table className="w-full border-collapse min-w-[500px]">
                           <thead>
                              <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                                 <th className="py-2.5 text-left w-12">#</th>
@@ -477,7 +488,7 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
                  </div>
 
                  {/* Signatures / Verification */}
-                 <div className="border-t border-slate-200 pt-8 mt-10 flex justify-between items-end text-slate-700">
+                 <div className="border-t border-slate-200 pt-8 mt-10 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-8 text-slate-700">
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-50 border border-slate-200/60 w-fit text-slate-500">
                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
                        <div className="text-left leading-none">
@@ -486,14 +497,16 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
                        </div>
                     </div>
 
-                    <div className="flex gap-12 text-center text-[10px] text-slate-500 uppercase tracking-wider">
+                    <div className="flex flex-wrap sm:flex-nowrap gap-6 sm:gap-12 text-center text-[10px] text-slate-500 uppercase tracking-wider">
                        <div className="w-36">
-                          <div className="h-10 border-b border-slate-300"></div>
+                          <div className="h-16 border-b border-slate-300 flex items-end justify-center pb-1">
+                             <img src="/signature.png" alt="Signature" className="h-14 scale-110 object-contain opacity-80" />
+                          </div>
                           <p className="font-semibold text-slate-800 mt-2">Prepared By</p>
                           <p className="text-[8px] text-slate-400 mt-0.5">Finance Department</p>
                        </div>
                        <div className="w-36">
-                          <div className="h-10 border-b border-slate-300"></div>
+                          <div className="h-16 border-b border-slate-300"></div>
                           <p className="font-semibold text-slate-800 mt-2">Verified By Client</p>
                           <p className="text-[8px] text-slate-400 mt-0.5">Receipt Acknowledged</p>
                        </div>

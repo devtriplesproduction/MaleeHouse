@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, CheckCircle2, XCircle, TrendingUp, ShieldAlert, Award, CalendarDays } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -53,7 +53,7 @@ export function LeaveHistory({ leaves, profile }: LeaveHistoryProps) {
     try {
       if (!dateStr) return 'Not set';
       return format(new Date(dateStr), 'MMM d, yyyy');
-    } catch (e) {
+    } catch(e) {
       return dateStr || 'Not set';
     }
   };
@@ -75,7 +75,7 @@ export function LeaveHistory({ leaves, profile }: LeaveHistoryProps) {
             <Calendar className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4 opacity-30 animate-pulse" />
             <h3 className="text-base font-bold text-slate-700 dark:text-slate-300 mb-1">No Applications</h3>
             <p className="text-slate-400 dark:text-slate-500 text-xs font-semibold italic">
-              You haven't submitted any leave requests yet.
+              You haven&apos;t submitted any leave requests yet.
             </p>
           </div>
         ) : (
@@ -127,7 +127,7 @@ export function LeaveHistory({ leaves, profile }: LeaveHistoryProps) {
                         Reason & Notes
                       </p>
                       <p className="text-xs text-slate-600 dark:text-slate-400 font-medium italic leading-relaxed">
-                        "{leave.reason}"
+                        &quot;{leave.reason}&quot;
                       </p>
                     </div>
                   </div>

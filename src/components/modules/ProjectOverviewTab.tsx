@@ -6,37 +6,16 @@ import {
   User, 
   MapPin, 
   Calendar, 
-  FileText, 
   Edit3, 
-  Check, 
-  X, 
-  Users, 
-  Shield, 
-  PenTool, 
   Briefcase,
-  AlertTriangle,
   Loader2,
-  Trash2,
   Phone,
-  Mail,
-  FolderOpen,
-  Send,
-  ChevronRight,
-  Plus,
-  Download,
-  Upload,
-  Eye,
-  Activity,
-  UserPlus,
-  Share2,
-  MoreHorizontal,
-  Pencil,
-  Banknote
+  Mail
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { updateProjectAction } from '@/actions/project.actions';
 import { assignUserToProjectAction, removeUserFromProjectAction } from '@/actions/assignment.actions';
 import { useToast } from '@/hooks/use-toast';
+import { maskEmail, maskPhone } from '@/lib/utils';
 import { OperationsFileUploadPanel } from './OperationsFileUploadPanel';
 import { CADRevisionPanel } from './CADRevisionPanel';
 import { ProjectTeamSection } from './ProjectTeamSection';
@@ -289,7 +268,7 @@ export default function ProjectOverviewTab({
                 </div>
                 <div>
                   <p className="text-xs font-medium text-slate-400 mb-0.5">Email</p>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{emailVal}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{maskEmail(emailVal)}</p>
                 </div>
               </div>
             )}
@@ -301,7 +280,7 @@ export default function ProjectOverviewTab({
                 </div>
                 <div>
                   <p className="text-xs font-medium text-slate-400 mb-0.5">Phone</p>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{phoneVal}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{maskPhone(phoneVal)}</p>
                 </div>
               </div>
             )}

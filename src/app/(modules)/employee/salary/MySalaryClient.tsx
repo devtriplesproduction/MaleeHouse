@@ -103,7 +103,7 @@ export function MySalaryClient({ slips, employeeName }: MySalaryClientProps) {
                                } else {
                                  alert("Failed to download salary slip.");
                                }
-                             } catch (e) {
+                             } catch(e) {
                                alert("An error occurred while downloading.");
                              }
                            }}>
@@ -122,7 +122,7 @@ export function MySalaryClient({ slips, employeeName }: MySalaryClientProps) {
                                      printWin.focus();
                                      setTimeout(() => printWin.print(), 500);
                                    }
-                                 } catch (fetchErr) {
+                                 } catch(fetchErr) {
                                    // Fallback if fetch fails (e.g., CORS)
                                    const fallbackWin = window.open(res.url, '_blank');
                                    if (fallbackWin) fallbackWin.focus();
@@ -130,7 +130,7 @@ export function MySalaryClient({ slips, employeeName }: MySalaryClientProps) {
                                } else {
                                  alert("Failed to load salary slip for printing.");
                                }
-                             } catch (e) {
+                             } catch(e) {
                                alert("An error occurred while printing.");
                              }
                            }}>

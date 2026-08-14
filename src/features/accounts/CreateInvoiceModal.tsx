@@ -155,7 +155,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
           setIsDuplicateError(true);
         }
       }
-    } catch (error) {
+    } catch(error) {
       toast.error('An unexpected error occurred');
     } finally {
       setLoading(false);
@@ -489,7 +489,6 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                   <div className="space-y-3">
                     <button 
                       onClick={() => {
-                        if (createdInvoice.status === 'draft') handleMarkAsShared();
                         const link = `${window.location.origin}/invoices/${createdInvoice.id}`;
                         navigator.clipboard.writeText(link);
                         toast.success('Invoice link copied to clipboard!');

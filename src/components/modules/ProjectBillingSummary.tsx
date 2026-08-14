@@ -2,16 +2,12 @@
 
 import React, { useState } from 'react';
 import { 
-  CreditCard, 
   Receipt, 
   CheckCircle2, 
-  Loader2, 
   Package,
   DollarSign,
   ArrowRight
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import { CreateInvoiceModal } from '@/features/accounts/CreateInvoiceModal';
 
 interface ProjectBillingSummaryProps {

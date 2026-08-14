@@ -202,7 +202,7 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
                         } else {
                           toast.error(res.error || 'Failed to delete invoice.', { id: loadingId });
                         }
-                      } catch (err) {
+                      } catch(err) {
                         toast.error('An unexpected error occurred.', { id: loadingId });
                       }
                     }

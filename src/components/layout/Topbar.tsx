@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Menu, Search, LogOut, ChevronDown, User } from "lucide-react";
+import { Menu, LogOut, ChevronDown, User } from "lucide-react";
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { useUser } from "@/hooks/useUser";
 import { NotificationBell } from "./NotificationBell";

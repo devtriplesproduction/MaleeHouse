@@ -5,7 +5,6 @@ import { Database, Trash2, ShieldCheck, Info, Loader2, Terminal, ShieldAlert } f
 import { seedTestingAccountsAction } from "@/actions/seed.actions";
 import { adminWipeSystemAction } from "@/actions/admin.actions";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
 export function SystemControls() {
   const [isSeeding, setIsSeeding] = useState(false);
@@ -25,7 +24,7 @@ export function SystemControls() {
           variant: "success",
         });
       }
-    } catch (err) {
+    } catch(err) {
       toast({ title: "Seeding Failed", variant: "error" });
     } finally {
       setIsSeeding(false);
@@ -43,7 +42,7 @@ export function SystemControls() {
       } else {
         toast({ title: "Wipe Failed", description: res?.error, variant: "error" });
       }
-    } catch (err) {
+    } catch(err) {
       toast({ title: "Operation Failed", variant: "error" });
     } finally {
       setIsWiping(false);

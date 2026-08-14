@@ -3,16 +3,10 @@
 import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  CheckCircle2, 
   Check,
-  CheckCheck,
-  Circle, 
+  CheckCheck, 
   Clock, 
-  Lock, 
-  ArrowRight, 
-  Loader2, 
-  User, 
-  FileText,
+  Lock,
   AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';

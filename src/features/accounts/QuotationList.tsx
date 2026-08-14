@@ -106,10 +106,10 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
             key={q.id}
             className="glass-card px-5 py-4 hover:border-slate-300 dark:hover:border-white/20 transition-all"
           >
-            <div className="grid grid-cols-[1fr_140px_110px_200px] items-center gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-[1fr_140px_110px_200px] items-start md:items-center gap-4 md:gap-6">
 
               {/* Status icon + Title + client + ref */}
-              <div className="flex items-center gap-4 min-w-0">
+              <div className="col-span-2 md:col-span-1 flex items-start md:items-center gap-3 md:gap-4 min-w-0">
                 {/* Status icon */}
                 <div className={cn('shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border', st.cls)}>
                   {st.icon}
@@ -137,9 +137,9 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    {client && <span className="text-[10px] text-slate-400 truncate">{client}</span>}
-                    {client && <span className="text-slate-300 dark:text-white/20">·</span>}
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    {client && <span className="text-[10px] text-slate-400 truncate max-w-full">{client}</span>}
+                    {client && <span className="text-slate-300 dark:text-white/20 hidden sm:inline">·</span>}
                     <span className="text-[10px] font-mono text-slate-400">{q.quotation_number}</span>
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export function QuotationList({ quotations, project, userRole, onUpdate }: Quota
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-end gap-1.5">
+              <div className="col-span-2 md:col-span-1 flex items-center justify-start md:justify-end gap-1.5 mt-1 md:mt-0 pt-3 md:pt-0 border-t md:border-0 border-slate-100 dark:border-white/5 flex-wrap">
                 <IconBtn onClick={() => setPreviewQ(q)} title="Preview"><Eye className="w-3.5 h-3.5" /></IconBtn>
                 <IconBtn onClick={() => downloadPDF(q, proj)} title="Download PDF"><Download className="w-3.5 h-3.5" /></IconBtn>
 

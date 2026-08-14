@@ -53,7 +53,7 @@ export default function HireTechnologyPage({ params }: { params: { technology: s
         <div className="container mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Ready to Build with {config.name}?</h2>
-            <p className="text-xl text-slate-400">Fill out the form below and we'll connect you with the perfect developer.</p>
+            <p className="text-xl text-slate-400">Fill out the form below and we&apos;ll connect you with the perfect developer.</p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-7xl mx-auto">

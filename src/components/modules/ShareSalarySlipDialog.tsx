@@ -49,7 +49,7 @@ export function ShareSalarySlipDialog({ open, onOpenChange, snapshotId, employee
         toast.success("WhatsApp opened");
       }
       onOpenChange(false);
-    } catch (err) {
+    } catch(err) {
       toast.error("An unexpected error occurred during sharing.");
     } finally {
       setLoadingType(null);

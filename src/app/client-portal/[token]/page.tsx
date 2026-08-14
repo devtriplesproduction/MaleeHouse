@@ -16,9 +16,7 @@ import {
   MessageSquare,
   ArrowRight,
   ShieldCheck,
-  Printer,
-  Calendar,
-  DollarSign
+  Printer
 } from "lucide-react";
 import { generateQuotationPDF } from "@/lib/pdf-generator";
 import { cn } from "@/lib/utils";
@@ -306,10 +304,10 @@ export default function ClientPortalPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             
             {/* ── Beautiful A4 Quotation Visuals (Left 2 cols) ── */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-6 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 min-w-0">
               
               {/* PAGE 1: Services Table and Totals */}
-              <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative">
+              <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative min-w-[500px] w-full">
                  <div className="absolute top-4 left-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Malee House Office Document</div>
                  <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of 2</div>
 
@@ -429,7 +427,7 @@ export default function ClientPortalPage() {
               </div>
 
               {/* PAGE 2: Terms & Conditions, Privacy Policy & Notes */}
-              <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative">
+              <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative min-w-[500px] w-full">
                  <div className="absolute top-4 left-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Malee House Office Document</div>
                  <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 2 of 2</div>
 

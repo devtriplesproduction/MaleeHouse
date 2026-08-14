@@ -868,17 +868,15 @@ export async function reopenProjectAction(
     const recipientIds = new Set<string>((assignments || []).map((a: any) => a.user_id));
     (admins || []).forEach((a: any) => recipientIds.add(a.id));
 
-    const { insertNotification } = await import("@/actions/notification.actions");
-    await Promise.all(
-      Array.from(recipientIds).map((userId: any) =>
-        insertNotification({
-          userId,
-          title: "Project Reopened ⚠️",
-          message: `Project "${project.name}" has been reopened by ${profile.role}. Reason: ${reason}`,
-          type: "stage_update",
-          relatedProjectId: projectId
-        })
-      )
+    const { insertNotificationsBatch } = await import("@/actions/notification.actions");
+    await insertNotificationsBatch(
+      Array.from(recipientIds).map((userId: any) => ({
+        userId,
+        title: "Project Reopened ⚠️",
+        message: `Project "${project.name}" has been reopened by ${profile.role}. Reason: ${reason}`,
+        type: "stage_update",
+        relatedProjectId: projectId
+      }))
     );
 
     revalidatePath(`/projects/${projectId}`);

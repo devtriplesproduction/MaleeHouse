@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Monitor, Smartphone, LogOut, CheckCircle2, ShieldAlert, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Monitor, Smartphone, CheckCircle2, ShieldAlert, X } from 'lucide-react';
 
 interface Session {
   id: string;

@@ -94,7 +94,7 @@ export const GetQuoteForm: React.FC = () => {
       } else {
         toast.error(result.error || "Something went wrong.");
       }
-    } catch (error) {
+    } catch(error) {
       toast.error("Failed to submit quote request.");
     } finally {
       setIsSubmitting(false);

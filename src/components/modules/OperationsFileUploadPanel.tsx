@@ -20,7 +20,7 @@ import {
   ChevronUp,
   ChevronDown
 } from 'lucide-react';
-import { cn, downloadFile } from '@/lib/utils';
+import { downloadFile } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { uploadProjectFile } from '@/lib/supabase/storage';
 import { updateProjectStageAction } from '@/actions/workflow.actions';
@@ -93,6 +93,7 @@ export function OperationsFileUploadPanel({
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -188,7 +189,7 @@ export function OperationsFileUploadPanel({
     try {
       const { claimProjectAction } = await import("@/actions/operations.actions");
       await claimProjectAction(projectId);
-    } catch (e) {
+    } catch(e) {
       // Ignore if already assigned
     }
   };
@@ -294,6 +295,7 @@ export function OperationsFileUploadPanel({
   };
 
   const handleSendToCAD = () => {
+    setLoadingAction('send_to_cad');
     startTransition(async () => {
       // Auto-claim the project for the engineer if not already assigned
       const { claimProjectAction } = await import("@/actions/operations.actions");
@@ -317,10 +319,12 @@ export function OperationsFileUploadPanel({
           variant: 'error'
         });
       }
+      setLoadingAction(null);
     });
   };
 
   const handleSendUpdate = () => {
+    setLoadingAction('send_update');
     startTransition(async () => {
       const res = await notifySupplementalUploadAction(projectId);
       if (res.success) {
@@ -336,10 +340,12 @@ export function OperationsFileUploadPanel({
           variant: 'error'
         });
       }
+      setLoadingAction(null);
     });
   };
 
   const handleSubmitPrototype = () => {
+    setLoadingAction('submit_prototype');
     startTransition(async () => {
       const latestProto = prototypeDocs[0];
       if (!latestProto) {
@@ -386,6 +392,7 @@ export function OperationsFileUploadPanel({
           variant: 'error'
         });
       }
+      setLoadingAction(null);
     });
   };
 
@@ -490,6 +497,7 @@ export function OperationsFileUploadPanel({
   };
 
   const handleSubmitFinalReport = () => {
+    setLoadingAction('submit_final_report');
     startTransition(async () => {
       if (finalDocs.length === 0) {
         toast({
@@ -537,11 +545,13 @@ export function OperationsFileUploadPanel({
           variant: 'error'
         });
       }
+      setLoadingAction(null);
     });
   };
 
   const handleReviewSurveyInline = (isApproved: boolean) => {
     if (isApproved) {
+      setLoadingAction('approve_survey');
       startTransition(async () => {
         const res = await reviewFieldSurveyAction(projectId, true, "");
         if (res.success) {
@@ -557,6 +567,7 @@ export function OperationsFileUploadPanel({
             variant: 'error'
           });
         }
+        setLoadingAction(null);
       });
     } else {
       setRejectionReason('');
@@ -567,6 +578,7 @@ export function OperationsFileUploadPanel({
   const handleReviewFinalDeliverableInline = (isApproved: boolean) => {
     if (isApproved) {
       if (!confirm("Are you sure you want to approve this final CAD package and complete the project?")) return;
+      setLoadingAction('approve_final');
       startTransition(async () => {
         const { engineerReviewFinalCADAction } = await import("@/actions/review.actions");
         const res = await engineerReviewFinalCADAction(projectId, true);
@@ -583,6 +595,7 @@ export function OperationsFileUploadPanel({
             variant: 'error'
           });
         }
+        setLoadingAction(null);
       });
     } else {
       setRejectionReason('');
@@ -594,6 +607,7 @@ export function OperationsFileUploadPanel({
 
   const handleReviewPrototypeInline = (isApproved: boolean) => {
     if (isApproved) {
+      setLoadingAction('approve_prototype');
       startTransition(async () => {
         const res = await reviewLatestCADRevisionAction(projectId, true, "");
         if (res.success) {
@@ -609,6 +623,7 @@ export function OperationsFileUploadPanel({
             variant: 'error'
           });
         }
+        setLoadingAction(null);
       });
     } else {
       setRejectionReason('');
@@ -622,6 +637,7 @@ export function OperationsFileUploadPanel({
       return;
     }
 
+    setLoadingAction('submit_rejection');
     startTransition(async () => {
       if (rejectionModal.type === 'prototype') {
         const res = await reviewLatestCADRevisionAction(projectId, false, rejectionReason);
@@ -647,10 +663,12 @@ export function OperationsFileUploadPanel({
         }
       }
       setRejectionModal({ isOpen: false, type: null });
+      setLoadingAction(null);
     });
   };
 
   const handleSubmitSurveyData = () => {
+    setLoadingAction('submit_survey_data');
     startTransition(async () => {
       if (surveyDocs.length === 0) {
         toast({
@@ -683,12 +701,14 @@ export function OperationsFileUploadPanel({
           variant: 'error'
         });
       }
+      setLoadingAction(null);
     });
   };
 
   const handleDeleteFile = (fileId: string, fileName: string) => {
     if (!confirm(`Are you sure you want to delete ${fileName}?`)) return;
 
+    setLoadingAction(`delete_file_${fileId}`);
     startTransition(async () => {
       const res = await deleteFileAction(fileId, projectId);
       if (res.success) {
@@ -705,6 +725,7 @@ export function OperationsFileUploadPanel({
           variant: 'error'
         });
       }
+      setLoadingAction(null);
     });
   };
 
@@ -713,66 +734,77 @@ export function OperationsFileUploadPanel({
   return (
     <div className="flex flex-col gap-5">
       <Dialog open={rejectionModal.isOpen} onOpenChange={(open) => !open && setRejectionModal({ isOpen: false, type: null })}>
-        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <XCircle className="w-6 h-6 text-rose-500" />
-              Provide Rejection Reason
-            </DialogTitle>
-            <DialogDescription className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Please explain why this document is being rejected so the team can rework it.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 mt-4">
-            <div className="space-y-1.5 text-left">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Rejection Reason *</label>
+        <DialogContent className="sm:max-w-[480px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/10 rounded-3xl p-0 shadow-2xl overflow-hidden">
+          {/* Header section with a subtle red gradient background */}
+          <div className="bg-gradient-to-b from-rose-50/80 to-white dark:from-rose-950/20 dark:to-slate-900 px-6 pt-6 pb-4 border-b border-rose-100 dark:border-rose-900/30">
+            <DialogHeader>
+              <div className="flex items-center gap-4 mb-1">
+                <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center shrink-0 border border-rose-200 dark:border-rose-500/30">
+                  <XCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold text-slate-800 dark:text-white">
+                    Provide Rejection Reason
+                  </DialogTitle>
+                  <DialogDescription className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+                    Please explain why this document is being rejected so the team can rework it.
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+          
+          <div className="px-6 py-5 flex flex-col gap-5">
+            <div className="space-y-2 text-left">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Rejection Reason <span className="text-rose-500">*</span></label>
               <textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Required explanation..."
-                className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all text-slate-800 dark:text-white min-h-[100px] resize-none"
+                placeholder="Describe the issue in detail..."
+                className="w-full bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-400 transition-all text-slate-800 dark:text-white min-h-[120px] resize-none shadow-inner"
               />
             </div>
             {rejectionModal.type === 'final' && (
               <>
-                <div className="space-y-1.5 text-left">
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Comments (Optional)</label>
+                <div className="space-y-2 text-left">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Comments (Optional)</label>
                   <textarea
                     value={rejectionComments}
                     onChange={(e) => setRejectionComments(e.target.value)}
                     placeholder="Any additional comments..."
-                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all text-slate-800 dark:text-white min-h-[60px] resize-none"
+                    className="w-full bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-400 transition-all text-slate-800 dark:text-white min-h-[80px] resize-none shadow-inner"
                   />
                 </div>
-                <div className="space-y-1.5 text-left">
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Revision Instructions (Optional)</label>
+                <div className="space-y-2 text-left">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Revision Instructions (Optional)</label>
                   <textarea
                     value={rejectionInstructions}
                     onChange={(e) => setRejectionInstructions(e.target.value)}
                     placeholder="Specific instructions for revision..."
-                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all text-slate-800 dark:text-white min-h-[60px] resize-none"
+                    className="w-full bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-400 transition-all text-slate-800 dark:text-white min-h-[80px] resize-none shadow-inner"
                   />
                 </div>
               </>
             )}
           </div>
-          <DialogFooter className="mt-6 flex gap-3 sm:gap-0">
+          
+          <div className="px-6 py-4 bg-slate-50 dark:bg-white/5 border-t border-slate-100 dark:border-white/5 flex gap-3 sm:justify-end">
             <button
               disabled={isPending}
               onClick={() => setRejectionModal({ isOpen: false, type: null })}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-colors"
+              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 text-slate-600 dark:text-slate-300 transition-all shadow-sm hover:shadow-md"
             >
               Cancel
             </button>
             <button
               disabled={isPending || !rejectionReason.trim()}
               onClick={submitRejection}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20 hover:shadow-rose-500/30 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:shadow-none"
             >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+              {isPending && loadingAction === 'submit_rejection' ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
               Reject Document
             </button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -856,7 +888,7 @@ export function OperationsFileUploadPanel({
                 disabled={isPending || clientDocs.length === 0}
                 className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3 border-2 border-indigo-600/20 hover:border-indigo-600 bg-indigo-50/50 hover:bg-indigo-50 dark:border-indigo-400/20 dark:hover:border-indigo-400 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold rounded-xl text-sm disabled:opacity-50 transition-all shadow-sm group"
               >
-                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4 group-hover:animate-bounce" />}
+                {isPending && loadingAction === 'send_update' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4 group-hover:animate-bounce" />}
                 Notify Team of Supplemental Documents
               </button>
             ) : (
@@ -866,7 +898,7 @@ export function OperationsFileUploadPanel({
                 title={!hasCADMember ? "Please assign a CAD Specialist before sending" : undefined}
                 className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 transition-all shadow-sm"
               >
-                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {isPending && loadingAction === 'send_to_cad' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {hasCADMember ? 'Send to CAD' : 'Assign CAD Specialist First'}
               </button>
             )
@@ -944,7 +976,7 @@ export function OperationsFileUploadPanel({
               title={latestCADRevision && !hasNewPrototypeUpload ? "Please upload a new document to submit a new prototype." : ""}
               className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 transition-all shadow-sm"
             >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {isPending && loadingAction === 'submit_prototype' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {latestCADRevision && !hasNewPrototypeUpload ? "No New Prototype Uploaded" : "Submit Prototype"}
             </button>
           )}
@@ -955,17 +987,17 @@ export function OperationsFileUploadPanel({
               <button
                 onClick={() => handleReviewPrototypeInline(true)}
                 disabled={isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-indigo-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-emerald-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
               >
-                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                {isPending && loadingAction === 'approve_prototype' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 Approve
               </button>
               <button
                 onClick={() => handleReviewPrototypeInline(false)}
                 disabled={isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-rose-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
               >
-                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                {isPending && loadingAction === 'reject_prototype' ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                 Reject
               </button>
             </div>
@@ -1086,19 +1118,20 @@ export function OperationsFileUploadPanel({
           {(isCad || isAdmin) && projectStatus === "data_sync" && surveyDocs.length > 0 && (
             <div className="flex gap-3 mt-4">
               <button
-                onClick={() => handleReviewSurveyInline(false)}
-                disabled={isPending}
-                className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-500 text-white disabled:opacity-50 text-sm font-black rounded-xl transition flex justify-center items-center gap-2 shadow-sm"
-              >
-                Rework
-              </button>
-              <button
                 onClick={() => handleReviewSurveyInline(true)}
                 disabled={isPending}
-                className="flex-[2] py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 text-sm font-black rounded-xl transition flex justify-center items-center gap-2 shadow-lg shadow-emerald-600/20"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-emerald-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
               >
-                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {isPending && loadingAction === 'approve_survey' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 Accept
+              </button>
+              <button
+                onClick={() => handleReviewSurveyInline(false)}
+                disabled={isPending}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-rose-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
+              >
+                {isPending && loadingAction === 'reject_survey' ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                Rework
               </button>
             </div>
           )}
@@ -1110,7 +1143,7 @@ export function OperationsFileUploadPanel({
               disabled={isPending || surveyDocs.length === 0 || controlPointDocs.length === 0}
               className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (projectStatus === "data_sync" ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />)}
+              {isPending && loadingAction === 'submit_survey_data' ? <Loader2 className="w-4 h-4 animate-spin" /> : (projectStatus === "data_sync" ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />)}
               {projectStatus === "data_sync" ? "Resubmit / Update CAD Survey Data" : "Send to CAD"}
             </button>
           )}
@@ -1185,17 +1218,17 @@ export function OperationsFileUploadPanel({
               <button
                 onClick={() => handleReviewFinalDeliverableInline(true)}
                 disabled={isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-indigo-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-emerald-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
               >
-                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                {isPending && loadingAction === 'approve_final' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 Approve
               </button>
               <button
                 onClick={() => handleReviewFinalDeliverableInline(false)}
                 disabled={isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-rose-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
               >
-                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                {isPending && loadingAction === 'reject_final' ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                 Reject
               </button>
             </div>
@@ -1208,7 +1241,7 @@ export function OperationsFileUploadPanel({
               disabled={isPending || finalDocs.length === 0}
               className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 transition-all shadow-sm"
             >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {isPending && loadingAction === 'submit_final_report' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Submit Final Report & Send for Validation
             </button>
           )}

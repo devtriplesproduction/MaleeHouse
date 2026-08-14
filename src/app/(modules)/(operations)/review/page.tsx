@@ -2,14 +2,14 @@ import React from "react";
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { getReviewWorkspaceDataAction } from "@/actions/workspace.actions";
 import {
-  Shield, CheckCircle2, XCircle, Clock, ChevronRight,
+  Shield, CheckCircle2, ChevronRight,
   AlertTriangle, FileText, Zap, TrendingUp, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { SOPList } from "@/components/sop/SOPList";
-import { formatDistanceToNow } from "date-fns";
 import DashboardNotificationCenter from "@/components/modules/DashboardNotificationCenter";
+import { PageHeader } from "@/components/modules/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -42,19 +42,12 @@ export default async function QCReviewPage() {
     <div className="space-y-10 animate-in fade-in duration-700">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b border-slate-200/60 dark:border-white/5">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-            Quality <span className="text-indigo-500">Control</span>
-          </h1>
-          <p className="text-lg text-slate-500 dark:text-slate-400 font-medium">
-            Welcome back, {firstName}. Review and approve deliverables.
-          </p>
-        </div>
-        <div className="flex-shrink-0">
-          {/* EOD button removed */}
-        </div>
-      </div>
+      <PageHeader
+        title="Quality Control"
+        subtitle={`Welcome back, ${firstName}. Review and approve deliverables.`}
+        icon={Shield}
+        className="pb-4 border-b border-slate-200/60 dark:border-white/5"
+      />
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

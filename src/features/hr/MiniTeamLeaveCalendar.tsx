@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plane } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 export function MiniTeamLeaveCalendar({ leaves }: { leaves: any[] }) {
   // Filter for approved leaves happening around now (mock simple logic)
@@ -34,7 +33,7 @@ export function MiniTeamLeaveCalendar({ leaves }: { leaves: any[] }) {
           </div>
           <div>
             <CardTitle className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Team Leave Calendar</CardTitle>
-            <CardDescription className="text-xs font-medium mt-0.5">Who's off this week</CardDescription>
+            <CardDescription className="text-xs font-medium mt-0.5">Who&apos;s off this week</CardDescription>
           </div>
         </div>
       </CardHeader>

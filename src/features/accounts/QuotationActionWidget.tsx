@@ -7,8 +7,7 @@ import {
   Clock,
   Sparkles,
   Zap,
-  Building2,
-  CalendarDays
+  Building2
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';

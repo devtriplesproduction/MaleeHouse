@@ -4,23 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   CalendarDays, 
-  MessageSquare, 
   PhoneCall, 
   History, 
-  Plus, 
-  CheckCircle2,
+  Plus,
   Clock,
-  ArrowRight,
   Loader2,
-  CalendarRange,
-  ShieldCheck,
   X,
   ChevronLeft,
   ChevronRight,
-  Calendar,
-  PhoneOff,
-  FileText,
-  Sparkles
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { recordFollowUpAction } from '../../actions';
@@ -480,7 +472,7 @@ export function FollowUpManager({
                   } else {
                     displayNextCheckIn = nextCheckIn;
                   }
-                } catch (e) {
+                } catch(e) {
                   displayNextCheckIn = nextCheckIn;
                 }
               }

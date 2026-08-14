@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { Download, MapPin, Phone, Mail, Globe, Users, FileText, User as UserIcon } from "lucide-react";
+import { MapPin, Phone, Mail, Globe, Users, FileText, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DEFAULT_COMPANY_SETTINGS } from "@/constants/company";
 
@@ -49,20 +49,20 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
 
    // Robust emergency contact parser
    const parseEmergencyContact = (contactStr?: string) => {
-      const defaultContact = { name: "Kiran Kirdat", relation: "Family", mobile: "+91 98221 12345" };
+      const defaultContact = { name: "N/A", relation: "N/A", mobile: "N/A" };
       if (!contactStr) return defaultContact;
       const parts = contactStr.split('-').map(p => p.trim());
       if (parts.length >= 3) {
-         return { name: parts[0], relation: parts[1], mobile: parts[2] };
+         return { name: parts[0] || "N/A", relation: parts[1] || "N/A", mobile: parts[2] || "N/A" };
       } else if (parts.length === 2) {
          const isMobileFirst = /^\+?[\d\s]+$/.test(parts[0]);
          if (isMobileFirst) {
-            return { name: "Kiran Kirdat", relation: parts[1], mobile: parts[0] };
+            return { name: "N/A", relation: parts[1] || "N/A", mobile: parts[0] };
          } else {
-            return { name: parts[0], relation: "Family", mobile: parts[1] };
+            return { name: parts[0], relation: "N/A", mobile: parts[1] };
          }
       }
-      return { name: "Kiran Kirdat", relation: "Family", mobile: contactStr };
+      return { name: "N/A", relation: "N/A", mobile: contactStr };
    };
 
    const emergency = parseEmergencyContact(profile.emergency_contact);
@@ -250,8 +250,8 @@ export default function IDCardClient({ profile: initialProfile, companySettings 
 
          {/* Stamp & Authorized Signature overlay */}
          <div className="absolute bottom-[28px] left-[25px] flex flex-col items-start pl-2">
-            <div className="h-10 border-b border-slate-300 w-28 mb-1 flex items-center justify-center">
-               <img src="/signature.png" alt="Signature" className="w-full h-full object-contain mix-blend-multiply" />
+            <div className="h-14 border-b border-slate-300 w-36 mb-1 flex items-center justify-center">
+               <img src="/signature.png" alt="Signature" className="w-full h-full object-contain mix-blend-multiply" style={{ mixBlendMode: 'multiply', filter: 'contrast(1.2)' }} />
             </div>
             <span className="text-[7.5px] text-gray-400 font-bold uppercase tracking-wider">Authorized Signature</span>
          </div>

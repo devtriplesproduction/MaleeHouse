@@ -171,6 +171,13 @@ export async function getAttendanceLogsAction(employeeId?: string, month?: numbe
     const supabaseAdmin: any = await import('@/lib/supabase/admin').then(m => m.createAdminClient());
     let query = supabaseAdmin.from('attendance_logs').select('*');
 
+    if (month && year) {
+      const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      query = query.gte('date', startOfMonth).lte('date', endOfMonth);
+    }
+
     const isPrivileged = profile.role === 'admin' || profile.role === 'hr' || profile.role === 'accountant';
 
     if (!isPrivileged) {
@@ -184,16 +191,7 @@ export async function getAttendanceLogsAction(employeeId?: string, month?: numbe
     const { data: attendance, error } = await query;
     if (error) throw new Error(error.message);
 
-    let filtered = attendance || [];
-
-    if (month && year) {
-      filtered = filtered.filter((a: any) => {
-        const d = new Date(a.date);
-        return (d.getMonth() + 1) === month && d.getFullYear() === year;
-      });
-    }
-
-    return { success: true, data: normalizeData(filtered) };
+    return { success: true, data: normalizeData(attendance || []) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

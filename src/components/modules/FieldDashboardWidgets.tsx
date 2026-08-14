@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Clock, MapPin, Package, Upload, CheckCircle2, ChevronRight, AlertCircle, FileText } from "lucide-react";
+import { Clock, MapPin, Package, Upload, CheckCircle2, AlertCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { markVisitCompletedAction, createMaterialRequestAction } from "@/actions/field.actions";

@@ -4,12 +4,10 @@ import React, { useEffect, useState, useMemo } from "react";
 import { 
   Users, 
   Activity, 
-  ShieldCheck, 
   Zap, 
   Monitor, 
   Eye, 
-  LayoutDashboard,
-  Circle
+  LayoutDashboard
 } from "lucide-react";
 import { usePresence, type PresenceUser } from "@/hooks/usePresence";
 import { getTeamPresenceSummaryAction, type TeamMemberSummary } from "@/actions/presence.actions";

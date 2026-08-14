@@ -27,7 +27,6 @@ import {
   editProjectCommentAction, 
   deleteProjectCommentAction 
 } from "@/actions/comment.actions";
-import type { Database } from "@/types/database.types";
 
 type CommentType = "general" | "review" | "rejection" | "internal";
 type Role = "admin" | "accountant" | "engineer" | "field" | "cad" | "employee";
@@ -879,7 +878,7 @@ export function ProjectActivityFeed({
 
                         {h.comment && (
                           <blockquote className="mt-2 text-xs italic text-slate-500 border-l border-indigo-500/20 pl-3">
-                            "{h.comment}"
+                            &quot;{h.comment}&quot;
                           </blockquote>
                         )}
                       </div>

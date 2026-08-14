@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
-import { Clock, ChevronRight, FileText, CheckCircle2, Send, Loader2, Calendar, X } from 'lucide-react';
+import { Clock, ChevronRight, CheckCircle2, Send, Loader2, Calendar, X } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { finalizeRequirementsAction, updateLeadStatusAction, recordFollowUpAction } from '../actions';
+import { finalizeRequirementsAction, recordFollowUpAction } from '../actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -119,7 +119,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
         minute: '2-digit',
         hour12: true
       });
-    } catch (e) {
+    } catch(e) {
       return dateStr;
     }
   };

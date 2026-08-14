@@ -1,30 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   DollarSign,
   UserPlus,
-  Send,
-  AlertTriangle,
-  AlertCircle,
-  Unlock,
   Lock,
   Plus,
-  Calendar,
-  CheckCircle2,
-  Clock,
   FileText,
-  MessageSquare,
-  ArrowRight,
   TrendingUp,
   TrendingDown,
   Award,
   Loader2,
-  Target,
   Edit2,
   Trash2,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 import { CreateInvoiceModal } from "@/features/accounts/CreateInvoiceModal";
 import { LogPaymentModal } from "@/features/accounts/LogPaymentModal";
 import { ExpenseEntryModal } from "@/features/accounts/ExpenseEntryModal";
@@ -35,9 +24,8 @@ import {
   unfreezeProjectAction,
   updateProjectBudgetAction,
 } from "@/actions/finance.actions";
-import { getExpensesAction, deleteExpenseAction } from "@/actions/expense.actions";
+import { deleteExpenseAction } from "@/actions/expense.actions";
 import { createInvoiceAction } from "@/actions/finance.actions";
-import { updateProjectStageAction } from "@/actions/workflow.actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -45,9 +33,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface Milestone {

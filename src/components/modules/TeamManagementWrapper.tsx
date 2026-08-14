@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Users, UserPlus } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { UserPlus } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ProjectTeamManager } from './ProjectTeamManager';
 
 interface TeamManagementWrapperProps {

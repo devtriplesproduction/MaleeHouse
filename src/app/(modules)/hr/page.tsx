@@ -34,12 +34,12 @@ export default async function HRDashboard() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">HR Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Overview of your team's pulse and tasks.</p>
+          <p className="text-sm text-slate-500 mt-1">Overview of your team&apos;s pulse and tasks.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <EODFormModal reports={eodReports} roleColor="indigo" />
           <CreateEmployeeButton existingUsers={users} />
         </div>

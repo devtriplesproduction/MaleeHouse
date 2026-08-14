@@ -10,6 +10,9 @@ export const onboardSchema = z.object({
   personal_email: z.string().email("Invalid personal email").min(1, "Personal email is required"),
   address: z.string().optional(),
   emergency_contact: z.string().optional(),
+  emergency_name: z.string().optional(),
+  emergency_relationship: z.string().optional(),
+  emergency_phone: z.string().optional(),
   profile_photo: z.string().optional(),
 
   // Professional Info (Step 2)

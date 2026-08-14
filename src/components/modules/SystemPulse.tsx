@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Activity, ShieldCheck, AlertTriangle, Zap } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { getSystemHealthAction } from '@/actions/settings.actions';
 import { cn } from '@/lib/utils';
 

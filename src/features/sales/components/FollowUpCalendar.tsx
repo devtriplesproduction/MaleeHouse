@@ -6,18 +6,14 @@ import {
   ChevronRight,
   Calendar as CalendarIcon,
   Clock,
-  User,
   Phone,
-  ExternalLink,
   CalendarCheck,
   TrendingUp,
   AlertCircle,
   CalendarRange,
-  Users,
-  MessageSquare
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { Select, SelectItem } from '@/components/ui/select';
 
 interface Lead {
@@ -174,7 +170,7 @@ export function FollowUpCalendar({ leads }: FollowUpCalendarProps) {
             {/* Stat item: Today's Follow ups */}
             <div className="p-3.5 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 flex items-center justify-between group hover:border-blue-200 transition-all duration-300">
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">Today's Schedule</p>
+                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">Today&apos;s Schedule</p>
                 <h5 className="text-3xl font-bold text-slate-900 dark:text-white leading-none">{todayFollowUps.length}</h5>
               </div>
               <div className="w-10 h-10 rounded-xl bg-blue-100/50 dark:bg-blue-800/30 flex items-center justify-center text-blue-600 dark:text-blue-400">

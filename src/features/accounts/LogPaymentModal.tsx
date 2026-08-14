@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Calendar, FileText, Loader2, X } from 'lucide-react';
+import { CreditCard, FileText, Loader2, X } from 'lucide-react';
 import { logPaymentAction } from '@/actions/finance.actions';
 import { BankAccountSelector } from '@/components/ui/BankAccountSelector';
 import { toast } from 'sonner';
@@ -69,7 +69,7 @@ export function LogPaymentModal({
       } else {
         toast.error(res?.error || 'Failed to log payment.');
       }
-    } catch (error) {
+    } catch(error) {
       toast.error('Unexpected error logging payment.');
     } finally {
       setIsSubmitting(false);

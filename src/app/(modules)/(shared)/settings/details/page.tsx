@@ -29,7 +29,7 @@ export default async function CompanyDetailsSettingsPage() {
             Company Settings
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-            Manage your company's registered details and contact information.
+            Manage your company&apos;s registered details and contact information.
           </p>
         </div>
       </div>

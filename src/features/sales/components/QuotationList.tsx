@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, Calendar, User, ExternalLink, IndianRupee } from 'lucide-react';
+import { FileText, ExternalLink, IndianRupee } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 

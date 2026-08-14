@@ -2,7 +2,6 @@
 
 import React from "react";
 import { usePresence } from "@/hooks/usePresence";
-import { cn } from "@/lib/utils";
 
 interface ProjectPresenceProps {
   projectId: string;

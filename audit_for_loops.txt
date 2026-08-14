@@ -1,0 +1,32 @@
+﻿
+src\actions\admin.actions.ts:250:    for (const field of DATE_FIELDS) {
+src\actions\bank.actions.ts:164:    for (const bank of (banks || [])) {
+src\actions\comment.actions.ts:95:        for (const p of matchedProfiles || []) {
+src\actions\field.actions.ts:235:  for (const project of activeProjects) {
+src\actions\field.actions.ts:323:    for (const admin of admins) {
+src\actions\finance.actions.ts:732:    for (const m of milestones) {
+src\actions\finance.actions.ts:828:    for (const m of milestones) {
+src\actions\finance.actions.ts:857:      for (const update of updates) {
+src\actions\finance.actions.ts:1063:        for (const inv of m.invoices) {
+src\actions\finance.actions.ts:1293:    for (const m of milestonesToInvoice) {
+src\actions\finance.actions.ts:1407:      for (const pId of Object.keys(quotesByProject)) {
+src\actions\finance.actions.ts:1537:    for (let i = 0; i < 12; i++) monthlyCashFlowMap[i] = { income: 0, expense: 0 };
+src\actions\hr.actions.ts:40:      for (const log of todayLogs) {
+src\actions\leave.actions.ts:197:        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+src\actions\notification.actions.ts:449:  for (const { recipients, title, message } of notificationsForStage) {
+src\actions\notification.actions.ts:450:    for (const userId of Array.from(new Set(recipients.filter(Boolean)))) {
+src\actions\notification.actions.ts:623:    for (const holiday of holidays) {
+src\actions\operations.actions.ts:102:  for (const userId of validIds) {
+src\actions\payroll.actions.ts:133:  for (const snap of snaps) {
+src\actions\payroll.actions.ts:410:      for (const ledger of empLedgers) {
+src\actions\payroll.actions.ts:450:      for (const app of empApps) {
+src\actions\payroll.actions.ts:912:    for (const slip of slips) {
+src\actions\payroll.actions.ts:998:    for (const app of draftApps) {
+src\actions\payroll_workflow.actions.ts:152:  for(let snap of frozenSnapshots) {
+src\actions\project.actions.ts:580:      for (const file of files) {
+src\actions\project.actions.ts:633:    for (const table of tables) {
+src\actions\project.actions.ts:678:      for (const project of projects) {
+src\actions\workflow.actions.ts:94:    for (const n of finalData) {
+src\actions\workflow.actions.ts:107:      for (const p of overrideProjects) {
+
+

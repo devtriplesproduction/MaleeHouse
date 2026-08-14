@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Package, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+import { Package, CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { updateMaterialRequestStatusAction } from "@/actions/field.actions";
 
@@ -51,7 +51,7 @@ export function MaterialApprovalWidget({ requests }: { requests: any[] }) {
                   <span className="font-medium text-slate-700 dark:text-slate-300">{mat.project_name}</span> &bull;
                   Req by: {mat.requested_by_name}
                 </p>
-                {mat.notes && <p className="text-[10px] text-slate-400 mt-1 italic">"{mat.notes}"</p>}
+                {mat.notes && <p className="text-[10px] text-slate-400 mt-1 italic">&quot;{mat.notes}&quot;</p>}
               </div>
 
               <div className="flex flex-col items-end justify-center ml-4">

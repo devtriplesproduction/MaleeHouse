@@ -1,86 +1,162 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
   page: {
-    padding: 30,
+    padding: 35,
     fontSize: 10,
     fontFamily: 'Helvetica',
-    color: '#111827',
+    color: '#1e293b',
+    backgroundColor: '#ffffff',
   },
-  header: {
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#d1d5db',
-    paddingBottom: 10,
-    flexDirection: 'column',
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 25,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#e2e8f0',
+    paddingBottom: 15,
+  },
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  companyName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1e3a8a',
-    marginBottom: 4,
+  logoContainer: {
+    position: 'relative',
+    width: 55,
+    height: 55,
+    marginRight: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  companyAddress: {
+  logoSvg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontFamily: 'Helvetica-BoldOblique',
+    marginTop: 2,
+  },
+  companyInfo: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  companyNameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 2,
+  },
+  companyNameBlue: {
+    fontSize: 28,
+    color: '#0070d2',
+    fontFamily: 'Helvetica-Bold',
+  },
+  companyNamePink: {
+    fontSize: 28,
+    color: '#e11d48',
+    fontFamily: 'Helvetica-Bold',
+  },
+  tagline: {
     fontSize: 10,
     color: '#4b5563',
-    marginBottom: 8,
+    fontFamily: 'Helvetica-Oblique',
+    marginBottom: 4,
+  },
+  flourishContainer: {
+    alignSelf: 'center',
+    marginBottom: 2,
+    width: 140,
+  },
+  companyAddress: {
+    fontSize: 8.5,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  documentTitleContainer: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   documentTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontFamily: 'Helvetica-Bold',
+    color: '#0c2e5c',
     textTransform: 'uppercase',
-    color: '#374151',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+  },
+  documentSubtitle: {
+    fontSize: 10,
+    color: '#64748b',
+    marginTop: 4,
+    textTransform: 'uppercase',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    color: '#0c2e5c',
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    paddingBottom: 4,
   },
   employeeSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 10,
+    marginBottom: 25,
+    backgroundColor: '#f8fafc',
+    borderRadius: 6,
+    padding: 15,
   },
   employeeCol: {
     flex: 1,
   },
   employeeRow: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   empLabel: {
-    width: 90,
-    color: '#6b7280',
+    width: 100,
+    color: '#64748b',
+    fontSize: 9,
   },
   empValue: {
     flex: 1,
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    color: '#0f172a',
+    fontSize: 9,
   },
   salarySection: {
+    marginBottom: 25,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 20,
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
   },
   salaryHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f1f5f9',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#e2e8f0',
   },
   salaryHeaderCell: {
     flex: 1,
-    padding: 6,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    padding: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: '#0c2e5c',
     borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
+    borderRightColor: '#e2e8f0',
+    fontSize: 10,
   },
   salaryHeaderCellLast: {
     flex: 1,
-    padding: 6,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    padding: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: '#0c2e5c',
+    fontSize: 10,
   },
   salaryBody: {
     flexDirection: 'row',
@@ -88,7 +164,7 @@ const styles = StyleSheet.create({
   salaryCol: {
     flex: 1,
     borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
+    borderRightColor: '#e2e8f0',
   },
   salaryColLast: {
     flex: 1,
@@ -96,68 +172,80 @@ const styles = StyleSheet.create({
   salaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 6,
+    padding: 8,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#f1f5f9',
   },
   itemLabel: {
-    color: '#374151',
+    color: '#475569',
+    fontSize: 9,
   },
   itemValue: {
-    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    color: '#0f172a',
+    fontSize: 9,
   },
   salaryFooter: {
     flexDirection: 'row',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f8fafc',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
   },
   salaryTotalCell: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 6,
+    padding: 10,
     borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
-    fontWeight: 'bold',
+    borderRightColor: '#e2e8f0',
+    fontFamily: 'Helvetica-Bold',
+    color: '#0c2e5c',
   },
   salaryTotalCellLast: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 6,
-    fontWeight: 'bold',
+    padding: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: '#0c2e5c',
   },
   netPayableSection: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
     marginBottom: 30,
   },
+  bankDetails: {
+    flex: 1,
+    paddingRight: 20,
+  },
   netPayableBox: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    padding: 10,
+    backgroundColor: '#0c2e5c',
+    borderRadius: 6,
+    padding: 15,
     width: 250,
   },
   netPayableRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 4,
   },
   netPayableLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#1e3a8a',
+    fontSize: 11,
+    fontFamily: 'Helvetica-Bold',
+    color: '#e2e8f0',
   },
   netPayableValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1e3a8a',
+    fontSize: 16,
+    fontFamily: 'Helvetica-Bold',
+    color: '#ffffff',
   },
   netPayableWords: {
-    marginTop: 4,
     fontSize: 9,
-    color: '#3b82f6',
-    fontStyle: 'italic',
+    color: '#94a3b8',
+    fontFamily: 'Helvetica-Oblique',
     textAlign: 'right',
   },
   footer: {
@@ -165,13 +253,13 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 30,
     right: 30,
-  },
-  footerLine: {
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 10,
+    borderTopColor: '#e2e8f0',
+    paddingTop: 15,
+  },
+  footerText: {
     textAlign: 'center',
-    color: '#9ca3af',
+    color: '#94a3b8',
     fontSize: 8,
   },
 });
@@ -193,7 +281,22 @@ interface SalarySlipProps {
   grossSalary: number;
   totalDeductions: number;
   netPayable: number;
-  adjustments?: any[];
+  department?: string;
+  joiningDate?: string | null;
+  daysPresent?: number;
+  daysField?: number;
+  daysPaidLeave?: number;
+  daysUnpaidLeave?: number;
+  daysAbsent?: number;
+  baseSalary?: number;
+  bonus?: number;
+  overtimeHours?: number;
+  overtimePay?: number;
+  panNumber?: string | null;
+  uanNumber?: string | null;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
+  bankIfsc?: string | null;
 }
 
 const getMonthName = (month: number) => {
@@ -202,11 +305,11 @@ const getMonthName = (month: number) => {
 };
 
 const formatCurrency = (amount: number) => {
-  return amount?.toLocaleString('en-IN', {
+  const str = amount?.toLocaleString('en-IN', {
     maximumFractionDigits: 2,
-    style: 'currency',
-    currency: 'INR'
-  }) || '₹0.00';
+    minimumFractionDigits: 2
+  }) || '0.00';
+  return `₹ ${str}`;
 };
 
 // Simple number to words converter for INR
@@ -215,7 +318,7 @@ const numberToWords = (num: number): string => {
   const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
   const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
   
-  const numStr = num.toString();
+  const numStr = Math.floor(num).toString();
   if (numStr.length > 9) return 'Amount too large';
   
   const n = ('000000000' + numStr).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
@@ -231,8 +334,29 @@ const numberToWords = (num: number): string => {
   return str.trim() + ' Rupees Only';
 };
 
+import path from 'path';
+import fs from 'fs';
+
+const Logo = () => {
+  let logoSrc: any = null;
+  try {
+    const logoPath = path.join(process.cwd(), 'public', 'maleehouse Logo.png');
+    const logoBuffer = fs.readFileSync(logoPath);
+    logoSrc = { data: logoBuffer, format: 'png' };
+  } catch (e) {
+    console.error("Failed to load logo image", e);
+  }
+  
+  return (
+    <View style={{ justifyContent: 'center', alignItems: 'flex-start', marginVertical: -15, marginLeft: -10 }}>
+      {logoSrc && <Image src={logoSrc} style={{ height: 60 }} />}
+    </View>
+  );
+};
+
 export const SalarySlipPDF = ({
   employeeName,
+  employeeId,
   designation,
   month,
   year,
@@ -247,40 +371,60 @@ export const SalarySlipPDF = ({
   grossSalary = 0,
   totalDeductions = 0,
   netPayable = 0,
-  adjustments = [],
+  department,
+  joiningDate,
+  daysPresent = 0,
+  daysField = 0,
+  daysPaidLeave = 0,
+  daysUnpaidLeave = 0,
+  daysAbsent = 0,
+  baseSalary = 0,
+  bonus = 0,
+  overtimeHours = 0,
+  overtimePay = 0,
+  panNumber,
+  uanNumber,
+  bankName,
+  bankAccountNumber,
+  bankIfsc
 }: SalarySlipProps) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.companyName}>Malee House</Text>
-          <Text style={styles.companyAddress}>123 Business Park, City, State - 123456</Text>
-          <Text style={styles.documentTitle}>Payslip for the month of {getMonthName(month)} {year}</Text>
+        {/* Header Section */}
+        <View style={styles.headerContainer}>
+          <View style={styles.headerLeft}>
+            <Logo />
+          </View>
+          <View style={styles.documentTitleContainer}>
+            <Text style={styles.documentTitle}>Payslip</Text>
+            <Text style={styles.documentSubtitle}>{getMonthName(month)} {year}</Text>
+          </View>
         </View>
 
+        {/* Employee Summary Section */}
         <View style={styles.employeeSection}>
           <View style={styles.employeeCol}>
-            <View style={styles.employeeRow}>
-              <Text style={styles.empLabel}>Employee Name:</Text>
-              <Text style={styles.empValue}>{employeeName}</Text>
-            </View>
-            <View style={styles.employeeRow}>
-              <Text style={styles.empLabel}>Designation:</Text>
-              <Text style={styles.empValue}>{designation}</Text>
-            </View>
+            <View style={styles.employeeRow}><Text style={styles.empLabel}>Employee Name:</Text><Text style={styles.empValue}>{employeeName}</Text></View>
+            <View style={styles.employeeRow}><Text style={styles.empLabel}>Employee ID:</Text><Text style={styles.empValue}>{employeeId || 'N/A'}</Text></View>
+            <View style={styles.employeeRow}><Text style={styles.empLabel}>Department:</Text><Text style={styles.empValue}>{department || 'N/A'}</Text></View>
+            <View style={styles.employeeRow}><Text style={styles.empLabel}>Designation:</Text><Text style={styles.empValue}>{designation}</Text></View>
+            <View style={styles.employeeRow}><Text style={styles.empLabel}>Date of Joining:</Text><Text style={styles.empValue}>{joiningDate ? new Date(joiningDate).toLocaleDateString('en-IN') : 'N/A'}</Text></View>
           </View>
           <View style={styles.employeeCol}>
-            <View style={styles.employeeRow}>
-              <Text style={styles.empLabel}>Pay Period:</Text>
-              <Text style={styles.empValue}>{getMonthName(month)} {year}</Text>
-            </View>
-            <View style={styles.employeeRow}>
-              <Text style={styles.empLabel}>Generated On:</Text>
-              <Text style={styles.empValue}>{new Date().toLocaleDateString('en-IN')}</Text>
+            <View style={styles.employeeRow}><Text style={styles.empLabel}>Pay Period:</Text><Text style={styles.empValue}>{getMonthName(month)} {year}</Text></View>
+            <View style={styles.employeeRow}><Text style={styles.empLabel}>Generated On:</Text><Text style={styles.empValue}>{new Date().toLocaleDateString('en-IN')}</Text></View>
+            
+            <View style={{ marginTop: 8 }}>
+              <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 9, color: '#0c2e5c', marginBottom: 4 }}>Attendance Summary</Text>
+              <View style={styles.employeeRow}><Text style={styles.empLabel}>Present / Field:</Text><Text style={styles.empValue}>{daysPresent} / {daysField}</Text></View>
+              <View style={styles.employeeRow}><Text style={styles.empLabel}>Leaves (Paid/Unpaid):</Text><Text style={styles.empValue}>{daysPaidLeave} / {daysUnpaidLeave}</Text></View>
+              <View style={styles.employeeRow}><Text style={styles.empLabel}>Absent:</Text><Text style={styles.empValue}>{daysAbsent}</Text></View>
             </View>
           </View>
         </View>
 
+        {/* Salary Details Section */}
         <View style={styles.salarySection}>
           <View style={styles.salaryHeader}>
             <Text style={styles.salaryHeaderCell}>EARNINGS</Text>
@@ -289,49 +433,19 @@ export const SalarySlipPDF = ({
           
           <View style={styles.salaryBody}>
             <View style={styles.salaryCol}>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}>Basic Salary</Text>
-                <Text style={styles.itemValue}>{formatCurrency(basicSalary)}</Text>
-              </View>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}>House Rent Allowance</Text>
-                <Text style={styles.itemValue}>{formatCurrency(hra)}</Text>
-              </View>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}>Special Allowance</Text>
-                <Text style={styles.itemValue}>{formatCurrency(allowance)}</Text>
-              </View>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}></Text>
-                <Text style={styles.itemValue}></Text>
-              </View>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}></Text>
-                <Text style={styles.itemValue}></Text>
-              </View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>Basic Salary</Text><Text style={styles.itemValue}>{formatCurrency(basicSalary)}</Text></View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>House Rent Allowance</Text><Text style={styles.itemValue}>{formatCurrency(hra)}</Text></View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>Special Allowance</Text><Text style={styles.itemValue}>{formatCurrency(allowance)}</Text></View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>Bonus</Text><Text style={styles.itemValue}>{formatCurrency(bonus)}</Text></View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>Overtime Pay ({overtimeHours} hrs)</Text><Text style={styles.itemValue}>{formatCurrency(overtimePay)}</Text></View>
             </View>
             
             <View style={styles.salaryColLast}>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}>Provident Fund (PF)</Text>
-                <Text style={styles.itemValue}>{formatCurrency(pf)}</Text>
-              </View>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}>ESI</Text>
-                <Text style={styles.itemValue}>{formatCurrency(esi)}</Text>
-              </View>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}>Professional Tax</Text>
-                <Text style={styles.itemValue}>{formatCurrency(professionalTax)}</Text>
-              </View>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}>Income Tax (TDS)</Text>
-                <Text style={styles.itemValue}>{formatCurrency(incomeTax)}</Text>
-              </View>
-              <View style={styles.salaryRow}>
-                <Text style={styles.itemLabel}>Other Deductions</Text>
-                <Text style={styles.itemValue}>{formatCurrency(otherDeductions)}</Text>
-              </View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>Provident Fund (PF)</Text><Text style={styles.itemValue}>{formatCurrency(pf)}</Text></View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>ESI</Text><Text style={styles.itemValue}>{formatCurrency(esi)}</Text></View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>Professional Tax</Text><Text style={styles.itemValue}>{formatCurrency(professionalTax)}</Text></View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>Income Tax (TDS)</Text><Text style={styles.itemValue}>{formatCurrency(incomeTax)}</Text></View>
+              <View style={styles.salaryRow}><Text style={styles.itemLabel}>Other Deductions</Text><Text style={styles.itemValue}>{formatCurrency(otherDeductions)}</Text></View>
             </View>
           </View>
           
@@ -347,10 +461,19 @@ export const SalarySlipPDF = ({
           </View>
         </View>
 
+        {/* Footer Details */}
         <View style={styles.netPayableSection}>
+          <View style={styles.bankDetails}>
+            {panNumber && <View style={styles.employeeRow}><Text style={styles.empLabel}>PAN Number:</Text><Text style={styles.empValue}>{panNumber}</Text></View>}
+            {uanNumber && <View style={styles.employeeRow}><Text style={styles.empLabel}>UAN Number:</Text><Text style={styles.empValue}>{uanNumber}</Text></View>}
+            {bankName && <View style={styles.employeeRow}><Text style={styles.empLabel}>Bank Name:</Text><Text style={styles.empValue}>{bankName}</Text></View>}
+            {bankAccountNumber && <View style={styles.employeeRow}><Text style={styles.empLabel}>Account No:</Text><Text style={styles.empValue}>{bankAccountNumber.replace(/.(?=.{4})/g, 'X')}</Text></View>}
+            {bankIfsc && <View style={styles.employeeRow}><Text style={styles.empLabel}>IFSC Code:</Text><Text style={styles.empValue}>{bankIfsc}</Text></View>}
+          </View>
+          
           <View style={styles.netPayableBox}>
             <View style={styles.netPayableRow}>
-              <Text style={styles.netPayableLabel}>Net Payable Amount:</Text>
+              <Text style={styles.netPayableLabel}>Net Payable</Text>
               <Text style={styles.netPayableValue}>{formatCurrency(netPayable)}</Text>
             </View>
             <Text style={styles.netPayableWords}>{numberToWords(netPayable)}</Text>
@@ -358,8 +481,8 @@ export const SalarySlipPDF = ({
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerLine}>
-            This is a computer-generated document and does not require a signature.
+          <Text style={styles.footerText}>
+            This is a computer-generated document and does not require a physical signature.
           </Text>
         </View>
       </Page>

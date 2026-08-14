@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, ShieldAlert, RotateCcw, Lock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { AlertTriangle, ShieldAlert, Lock } from "lucide-react";
 
 interface Milestone {
   id: string;
@@ -107,7 +106,7 @@ export function StageDependentLockBanner({
         <div className="space-y-1">
           <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100 uppercase tracking-wider">PAYMENT HOLD: STAGE BLOCKED</h3>
           <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
-            Operations for the current stage <b>[{currentStage.replace("_", " ")}]</b> have been suspended because the invoice for milestone <b>"{activeMilestone.title}"</b> (₹{activeMilestone.amount.toLocaleString()}) remains unpaid.
+            Operations for the current stage <b>[{currentStage.replace("_", " ")}]</b> have been suspended because the invoice for milestone <b>&quot;{activeMilestone.title}&quot;</b> (₹{activeMilestone.amount.toLocaleString()}) remains unpaid.
           </p>
           <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
             Please verify payment with Accounts to release this stage block and proceed with field/draft hand-offs.

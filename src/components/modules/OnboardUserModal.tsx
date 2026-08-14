@@ -5,11 +5,8 @@ import { createPortal } from "react-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
-  X, UserPlus, Mail, User, ShieldCheck, Loader2, Lock, 
-  Phone, Contact, Building2, Briefcase, MapPin, 
-  CheckCircle2, Copy, ChevronRight, ChevronLeft, ChevronDown, Calendar,
-  Upload, FileText, Trash2, Award, ShieldAlert, BadgeInfo,
-  IndianRupee, Clock, Check, UserCheck, Camera, Eye, EyeOff
+  X, User, Loader2, Lock, Building2, Copy, ChevronRight, FileText, Trash2,
+  IndianRupee, UserCheck, Camera, Eye, EyeOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { onboardEmployeeAction } from "@/actions/admin.actions";
@@ -19,7 +16,6 @@ import { DEPARTMENTS, getDesignationsForDepartment, getSystemRoleForDesignation 
 import { Button } from "@/components/ui/button";
 import { Select, SelectItem } from "@/components/ui/select";
 import { FormSelect } from "@/components/ui/FormSelect";
-import { useSidebarStore } from "@/store/useSidebarStore";
 import { PremiumDatePicker } from "@/components/ui/PremiumDatePicker";
 
 interface OnboardUserModalProps {
@@ -88,6 +84,9 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
       personal_email: "",
       address: "",
       emergency_contact: "",
+      emergency_name: "",
+      emergency_relationship: "",
+      emergency_phone: "",
       department: "",
       designation: "",
       gender: "male",
@@ -230,8 +229,14 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
   const onSubmit = async (data: OnboardFormData) => {
     setIsSubmitting(true);
     try {
+      const emergencyContactParts = [];
+      if (data.emergency_name) emergencyContactParts.push(data.emergency_name);
+      if (data.emergency_relationship) emergencyContactParts.push(data.emergency_relationship);
+      if (data.emergency_phone) emergencyContactParts.push(data.emergency_phone);
+
       const onboardData = {
         ...data,
+        emergency_contact: emergencyContactParts.length > 0 ? emergencyContactParts.join(" - ") : "",
         profile_photo: selectedAvatar,
         reporting_manager_id: data.reporting_manager || null,
         department_head_id: data.department_head ? data.reporting_manager || null : null,
@@ -602,12 +607,24 @@ export function OnboardUserModal({ isOpen, onClose, existingUsers = [], onSucces
                   </div>
 
                   <div className="space-y-2 pb-2">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Emergency Contact Line</label>
-                    <input 
-                      {...register("emergency_contact")} 
-                      placeholder="Name - Relationship - Phone" 
-                      className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
-                    />
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Emergency Contact Details</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <input 
+                        {...register("emergency_name")} 
+                        placeholder="Name" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
+                      />
+                      <input 
+                        {...register("emergency_relationship")} 
+                        placeholder="Relationship" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
+                      />
+                      <input 
+                        {...register("emergency_phone")} 
+                        placeholder="Phone" 
+                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all" 
+                      />
+                    </div>
                   </div>
                 </div>
               )}

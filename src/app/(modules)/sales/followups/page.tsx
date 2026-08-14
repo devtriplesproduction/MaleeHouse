@@ -2,7 +2,7 @@ import React from "react";
 import { FollowUpCalendar } from "@/features/sales/components/FollowUpCalendar";
 import { getSalesPipelineAction } from "@/actions/project.actions";
 import { requireRole } from "@/lib/auth-guard";
-import { Calendar, ArrowLeft, PhoneCall } from "lucide-react";
+import { ArrowLeft, PhoneCall } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {

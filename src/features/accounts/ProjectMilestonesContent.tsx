@@ -1,22 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getProjectsListAction } from "@/actions/project.actions";
-import { getMilestonesAction, createMilestonesAction, getPaymentsAction, freezeProjectAction, unfreezeProjectAction, getProjectsFinancialSummaryAction } from "@/actions/finance.actions";
+import { getMilestonesAction, createMilestonesAction, freezeProjectAction, unfreezeProjectAction } from "@/actions/finance.actions";
 import { transitionWorkflowAction } from "@/actions/workflow.actions";
 import { getFieldVisitsAction, logFieldVisitAction } from "@/actions/operations.actions";
 import {
   Target,
   Search,
-  Clock,
   Building,
   Plus,
   X,
   Save,
   Trash2,
-  Calendar,
   IndianRupee,
   Activity,
   ArrowRight,
@@ -162,7 +159,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
       if (visitsRes?.success && visitsRes.data) {
         setFieldVisits(visitsRes.data);
       }
-    } catch (err) {
+    } catch(err) {
       toast.error("Unexpected error loading data.");
     } finally {
       setLoadingMilestones(false);
@@ -325,7 +322,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
         toast.error(errorMsg);
         alert(errorMsg); // Fallback to ensure the message is seen
       }
-    } catch (err) {
+    } catch(err) {
       toast.error("An unexpected error occurred.");
       alert("An unexpected error occurred.");
     } finally {
@@ -704,7 +701,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
                                       />
                                     </div>
 
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                       <div>
                                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Percentage (%)</label>
                                         <input
@@ -799,7 +796,7 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
 
                         <div className="bg-white dark:bg-[#151923] border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm mb-6">
                           <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-3">Schedule New Visit</h4>
-                          <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                             <div>
                               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Visit Date</label>
                               <PremiumDatePicker

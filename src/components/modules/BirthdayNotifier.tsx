@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { getTodayBirthdaysAction } from "@/actions/auth.actions";
 
 const FloatingElement = ({ children, delay = 0, yOffset = 20, xOffset = 20, duration = 4 }: any) => (
   <motion.div
@@ -122,13 +123,13 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
   const [mounted, setMounted] = useState(false);
   const { user: currentUser, role } = useUser();
 
-  const hasFetchedRef = React.useRef(false);
 
   useEffect(() => {
     setMounted(true);
     if (!currentUser || !role) return;
 
-    const key = `hasSeenBirthdays_permanent_${currentUser.id}`;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const key = `hasSeenBirthdays_${todayStr}_${currentUser.id}`;
     const hasSeenBirthdays = localStorage.getItem(key);
     if (hasSeenBirthdays) return;
 
@@ -137,20 +138,16 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
       return;
     }
 
-    if (hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
-
     // Client-only fetch once (removed from layout SSR to cut per-page DB cost)
     let cancelled = false;
     (async () => {
       try {
-        const { getTodayBirthdaysAction } = await import("@/actions/auth.actions");
         const res = await getTodayBirthdaysAction();
         if (!cancelled && res.success && res.data?.length) {
           setNotifications(res.data);
         }
-      } catch {
-        /* non-critical */
+      } catch (err) {
+        console.error("Failed to fetch birthdays:", err);
       }
     })();
     return () => {
@@ -159,21 +156,27 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
   }, [currentUser?.id, role, initialBirthdays]);
 
   const handleAcknowledge = () => {
-    localStorage.setItem(`hasSeenBirthdays_permanent_${currentUser?.id}`, "true");
+    const todayStr = new Date().toISOString().split('T')[0];
+    localStorage.setItem(`hasSeenBirthdays_${todayStr}_${currentUser?.id}`, "true");
     setNotifications([]);
   };
 
   if (!mounted || notifications.length === 0 || !currentUser) return null;
 
-  const myBirthday = notifications.find(n => n.type === 'today' && n.user.id === currentUser.id);
+  const myBirthdayToday = notifications.find(n => n.type === 'today' && n.user.id === currentUser.id);
+  const myBirthdayTomorrow = notifications.find(n => n.type === 'tomorrow' && n.user.id === currentUser.id);
+  const myBirthday = myBirthdayToday || myBirthdayTomorrow;
   const otherBirthdays = notifications.filter(n => n.user.id !== currentUser.id);
   
   let title = "";
   let subtitle = "";
   
-  if (myBirthday) {
+  if (myBirthdayToday) {
     title = "Happy Birthday! 🎂";
     subtitle = "Happy Birthday from the Malee House Team! It's your special day!";
+  } else if (myBirthdayTomorrow) {
+    title = "Birthday Eve! 🎉";
+    subtitle = "Get ready to celebrate your birthday tomorrow!";
   } else if (otherBirthdays.length > 1) {
     title = "Celebrations! 🎉";
     subtitle = "We have multiple birthdays to celebrate!";
@@ -274,7 +277,7 @@ export function BirthdayNotifier({ initialBirthdays = [] }: { initialBirthdays?:
                           You!
                         </p>
                         <p className="text-sm font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mt-0.5">
-                          Today
+                          {myBirthdayToday ? "Today" : "Tomorrow"}
                         </p>
                       </div>
                     </motion.div>

@@ -3,12 +3,13 @@
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
-  Search, Calendar, Filter, ArrowUpRight, ArrowDownLeft, 
+  Search, Calendar, Filter, 
   ChevronLeft, ChevronRight, Landmark, ExternalLink, RefreshCw,
-  Clock, AlertCircle, CheckCircle2, History, Scale
+  Clock, AlertCircle, History, Scale
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/modules/PageHeader";
 
 interface LedgerItem {
   id: string;
@@ -161,22 +162,15 @@ export default function BankDetailsClient({ initialData, history }: Props) {
       <div className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-white/10 bg-gradient-to-tr from-slate-50 via-white to-indigo-50/20 dark:from-[#0c0f24] dark:via-[#13183a] dark:to-[#0c0f24] p-8 shadow-md">
         <div className="absolute -top-16 -right-16 w-36 h-36 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-2xl pointer-events-none opacity-80" />
         
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500">
-              <Landmark className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                {bank.bank_name}
-              </h1>
-              <p className="text-xs font-bold uppercase tracking-wider text-indigo-500 mt-1">
-                {bank.account_usage || "Operations"} Account &bull; ••••{bank.account_number.slice(-4)}
-              </p>
-            </div>
-          </div>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <PageHeader
+            title={bank.bank_name}
+            subtitle={`${bank.account_usage || "Operations"} Account • ••••${bank.account_number.slice(-4)}`}
+            icon={Landmark}
+            className="w-full lg:w-auto"
+          />
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 lg:gap-12 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-200 dark:border-white/5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 lg:gap-12 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-200 dark:border-white/5 flex-shrink-0">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-400 dark:text-slate-500">Current Balance</span>
               <span className="text-xl font-black text-slate-900 dark:text-white block mt-0.5">

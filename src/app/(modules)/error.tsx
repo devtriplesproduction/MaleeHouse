@@ -19,7 +19,7 @@ export default function DashboardError({
       
       <h2 className="text-3xl font-black tracking-tighter text-slate-900 mb-2">Systems Interrupted</h2>
       <p className="text-slate-500 max-w-md mx-auto mb-10 font-medium">
-        An unexpected synchronization error occurred. Our engineers have been notified and we're working to restore the data stream.
+        An unexpected synchronization error occurred. Our engineers have been notified and we&apos;re working to restore the data stream.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4">

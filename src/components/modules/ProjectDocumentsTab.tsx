@@ -12,7 +12,6 @@ import {
   Trash2, 
   Edit3, 
   FileText, 
-  FileCode2, 
   File as FileIcon, 
   Image as ImageIcon,
   Loader2,

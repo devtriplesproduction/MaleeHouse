@@ -5,10 +5,8 @@ import { useRouter } from 'next/navigation';
 import { autoGenerateMilestoneInvoicesAction, getInvoiceByIdAction } from '@/actions/finance.actions';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import {
-  Calendar,
   Building2,
   Clock,
-  AlertCircle,
   Pause,
   ArrowRight,
   Target,
@@ -17,7 +15,6 @@ import {
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { CreateInvoiceModal } from './CreateInvoiceModal';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 

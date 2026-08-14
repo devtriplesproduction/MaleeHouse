@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 import { requireRole } from "@/lib/auth-guard";
 import { getClientsAction } from "@/features/sales/actions";
 import { ClientDirectory } from "@/features/sales/components/ClientDirectory";
-import { Building, Users } from "lucide-react";
+import { Building } from "lucide-react";
 
 export default async function ClientsPage() {
   // Allow admin and sales roles

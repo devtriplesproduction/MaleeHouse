@@ -7,7 +7,6 @@ import { LeaveMetrics } from '@/components/leaves/LeaveMetrics';
 import { AdminLeaveDashboard } from '@/components/leaves/AdminLeaveDashboard';
 import { ApplyLeaveButton } from "@/components/modules/ApplyLeaveButton";
 import { redirect } from 'next/navigation';
-import { Calendar } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export const metadata = {

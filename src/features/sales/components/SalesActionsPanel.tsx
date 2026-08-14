@@ -2,12 +2,10 @@
 
 import React, { useState, useTransition } from 'react';
 import { 
-  FileText, 
   Upload, 
   ArrowRight, 
   CheckCircle2, 
   DollarSign,
-  FileBadge,
   Loader2,
   Calculator,
   Clock,
@@ -157,7 +155,7 @@ export function SalesActionsPanel({ projectId, currentStatus, project, files = [
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Survey Requirements</p>
                 <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 italic mt-0.5 leading-relaxed">
-                  "{project?.survey_requirements || 'No custom requirements specified.'}"
+                  &quot;{project?.survey_requirements || 'No custom requirements specified.'}&quot;
                 </p>
               </div>
             </div>

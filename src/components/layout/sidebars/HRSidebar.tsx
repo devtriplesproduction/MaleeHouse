@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Calendar, Clock, DollarSign, LayoutDashboard, Megaphone, CalendarCheck, PlaneTakeoff, Palmtree } from "lucide-react";
+import { Users, Clock, DollarSign, LayoutDashboard, Megaphone, CalendarCheck, PlaneTakeoff, Palmtree } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 import { SidebarLink } from "./BaseSidebar";
 

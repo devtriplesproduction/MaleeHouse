@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useTransition } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Bell, Check, CheckCheck, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -161,7 +161,7 @@ export function NotificationBell() {
                   <Bell className="w-5 h-5 text-gray-400" />
                 </div>
                 <p className="text-sm font-medium text-gray-500">
-                  You're all caught up!
+                  You&apos;re all caught up!
                 </p>
                 <p className="text-xs text-gray-400">
                   New notifications will appear here.

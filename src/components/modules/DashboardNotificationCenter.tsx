@@ -9,7 +9,6 @@ import {
   Loader2, 
   ChevronRight, 
   AlertTriangle,
-  HelpCircle,
   FileText,
   Clock,
   ShieldCheck

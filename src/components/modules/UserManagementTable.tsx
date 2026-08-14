@@ -3,17 +3,13 @@
 import React, { useState, useTransition, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
-  Users, UserPlus, Mail, Power, Search, Filter, SlidersHorizontal,
-  LayoutGrid, Table, Calendar, MapPin, Key, Eye, Edit3,
-  Building2, BadgeInfo, CheckCircle2, AlertCircle, RefreshCw, ChevronDown,
-  CreditCard, Shield, ShieldCheck, Lock, Unlock, Wallet, Check, Loader2, FileText, Activity,
-  EyeOff, ChevronLeft, ChevronRight, UserX, Trash2, MoreVertical, ArrowUpRight, Gift
+  Users, UserPlus, Mail, Search, Calendar, Key, Eye, AlertCircle, RefreshCw, Shield, ShieldCheck, Lock, Unlock, Wallet, Loader2, FileText,
+  EyeOff, ChevronLeft, ChevronRight, ArrowUpRight, Gift
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import {
   toggleUserActiveAction,
-  updateEmployeeProfileAction,
   offboardEmployeeAction,
   deleteEmployeeAction,
   getAdminAuditLogsAction,
@@ -27,7 +23,7 @@ import {
 import { OnboardUserModal } from "@/components/modules/OnboardUserModal";
 import { EmployeeProfileModal } from "@/components/modules/EmployeeProfileModal";
 import { useToast } from "@/hooks/use-toast";
-import { DEPARTMENTS, getDesignationsForDepartment } from "@/config/departments";
+import { DEPARTMENTS } from "@/config/departments";
 import { Button } from "@/components/ui/button";
 import { Select, SelectItem } from "@/components/ui/select";
 
@@ -131,7 +127,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
       } else {
         toast({ title: "Failed to compute payroll", description: res?.error, variant: "error" });
       }
-    } catch (err) {
+    } catch(err) {
       toast({ title: "Failed to compute payroll", variant: "error" });
     } finally {
       setIsPayrollLoading(false);
@@ -201,7 +197,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
       } else {
         toast({ title: "Lock Failed", description: res?.error, variant: "error" });
       }
-    } catch (err) {
+    } catch(err) {
       toast({ title: "Lock failed", variant: "error" });
     } finally {
       setIsLockingPayroll(false);
@@ -219,7 +215,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
       } else {
         toast({ title: "Unlock Failed", description: res?.error, variant: "error" });
       }
-    } catch (err) {
+    } catch(err) {
       toast({ title: "Unlock failed", variant: "error" });
     } finally {
       setIsUnlockingPayroll(false);
@@ -229,13 +225,13 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
   // Status: semantic colors only
   const getStatusBadgeStyles = (status?: string) => {
     switch (status) {
-      case "active":          return "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/25";
+      case "active": return "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/25";
       case "onboarding_pending": return "bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/25";
-      case "invited":         return "bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-500/25";
-      case "suspended":       return "bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/25";
-      case "resigned":        return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
-      case "archived":        return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
-      default:               return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
+      case "invited": return "bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-500/25";
+      case "suspended": return "bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/25";
+      case "resigned": return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
+      case "archived": return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
+      default: return "bg-slate-100 dark:bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-500/25";
     }
   };
 
@@ -259,11 +255,11 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
 
       const matchesSearch = fullName.includes(search) || email.includes(search) || employeeId.includes(search);
       const matchesDept = selectedDept === "all" || u.department === selectedDept;
-      
+
       // If "all" is selected, hide terminated and resigned users by default so they appear "deleted"
       const isDeletedStatus = u.status === 'terminated' || u.status === 'resigned' || u.status === 'archived';
       const matchesStatus = selectedStatus === "all" ? !isDeletedStatus : u.status === selectedStatus;
-      
+
       // Exclude system admin from personnel directory
       return matchesSearch && matchesDept && matchesStatus && u.role !== 'admin';
     });
@@ -462,115 +458,153 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
         </div>
 
         <div className="flex items-center gap-3">
-            <Button
-              onClick={() => setIsNewUserModalOpen(true)}
-              variant="hr"
-              className="flex items-center gap-2 text-xs font-bold tracking-wider h-10 px-4"
-            >
-              <UserPlus className="w-4 h-4" />
-              Onboard Employee
-            </Button>
-          </div>
+          <Button
+            onClick={() => {
+              const exportData = users.map(user => ({
+                'Employee ID': user.employee_id || 'N/A',
+                'First Name': user.first_name,
+                'Last Name': user.last_name,
+                'Email': user.email,
+                'Personal Email': user.personal_email || 'N/A',
+                'Phone Number': user.phone_number || 'N/A',
+                'Role': user.role,
+                'Department': user.department || 'N/A',
+                'Designation': user.designation || 'N/A',
+                'Status': user.status || (user.is_active ? "active" : "suspended"),
+                'Joining Date': user.joining_date || 'N/A',
+                'DOB': user.dob || 'N/A',
+                'Gender': user.gender || 'N/A',
+                'Address': user.address || 'N/A',
+                'Emergency Contact': user.emergency_contact || 'N/A',
+                'Employment Type': user.employment_type || 'N/A',
+                'Salary': user.salary || 'N/A',
+                'Experience': user.experience || 'N/A',
+                'Location': user.location || 'N/A',
+                'Branch': user.branch || 'N/A',
+                'Office Location': user.office_location || 'N/A',
+                'Operational Zone': user.operational_zone || 'N/A',
+
+              }));
+              const worksheet = XLSX.utils.json_to_sheet(exportData);
+              const workbook = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+              XLSX.writeFile(workbook, "Employee_Directory.xlsx");
+            }}
+            variant="outline"
+            className="flex items-center gap-3 text-xs font-bold tracking-wider h-10 px-4 border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500/30 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
+          >
+            <FileText className="w-4 h-4" />
+            Export Excel
+          </Button>
+          <Button
+            onClick={() => setIsNewUserModalOpen(true)}
+            variant="hr"
+            className="flex items-center gap-2 text-xs font-bold tracking-wider h-10 px-4"
+          >
+            <UserPlus className="w-4 h-4" />
+            Onboard Employee
+          </Button>
+        </div>
       </div>
 
       {/* Minified Quick Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Card 1: Total Staff */}
-          <div className="glass-card px-4 py-3 flex items-center justify-between border-indigo-500/10 hover:border-indigo-500/20 transition-all duration-300">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-500 border border-indigo-500/20 shadow-inner">
-                <Users className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Total Staff</span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">{users.length}</span>
-              </div>
+        {/* Card 1: Total Staff */}
+        <div className="glass-card px-4 py-3 flex items-center justify-between border-indigo-500/10 hover:border-indigo-500/20 transition-all duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-500 border border-indigo-500/20 shadow-inner">
+              <Users className="w-4.5 h-4.5" />
             </div>
-          </div>
-
-          {/* Card 2: Active Accounts */}
-          <div className="glass-card px-4 py-3 flex items-center justify-between border-emerald-500/10 hover:border-emerald-500/20 transition-all duration-300">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-inner">
-                <ShieldCheck className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Active Accounts</span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">
-                  {users.filter((u: any) => u.is_active).length}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Admins */}
-          <div className="glass-card px-4 py-3 flex items-center justify-between border-amber-500/10 hover:border-amber-500/20 transition-all duration-300">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-amber-500/10 dark:bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-inner">
-                <Shield className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Admins</span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">
-                  {users.filter((u: any) => u.role === 'admin').length}
-                </span>
-              </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Total Staff</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">{users.length}</span>
             </div>
           </div>
         </div>
+
+        {/* Card 2: Active Accounts */}
+        <div className="glass-card px-4 py-3 flex items-center justify-between border-emerald-500/10 hover:border-emerald-500/20 transition-all duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-inner">
+              <ShieldCheck className="w-4.5 h-4.5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Active Accounts</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">
+                {users.filter((u: any) => u.is_active).length}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Admins */}
+        <div className="glass-card px-4 py-3 flex items-center justify-between border-amber-500/10 hover:border-amber-500/20 transition-all duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-amber-500/10 dark:bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-inner">
+              <Shield className="w-4.5 h-4.5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Admins</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white mt-1.5 leading-none">
+                {users.filter((u: any) => u.role === 'admin').length}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Global Tab Navigation */}
       <div className="flex border-b border-slate-200 dark:border-white/5 mb-6 overflow-x-auto gap-8 scrollbar-none">
-          <button
-            onClick={() => setActiveTab("directory")}
-            className={cn(
-              "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
-              activeTab === "directory"
-                ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
-                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            )}
-          >
-            <Users className="w-4 h-4" />
-            Personnel Directory
-            {activeTab === "directory" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-            )}
-          </button>
+        <button
+          onClick={() => setActiveTab("directory")}
+          className={cn(
+            "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
+            activeTab === "directory"
+              ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
+              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          )}
+        >
+          <Users className="w-4 h-4" />
+          Personnel Directory
+          {activeTab === "directory" && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+          )}
+        </button>
 
 
 
-          <button
-            onClick={() => setActiveTab("security")}
-            className={cn(
-              "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
-              activeTab === "security"
-                ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
-                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            )}
-          >
-            <Shield className="w-4 h-4" />
-            Account Security
-            {activeTab === "security" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-            )}
-          </button>
+        <button
+          onClick={() => setActiveTab("security")}
+          className={cn(
+            "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
+            activeTab === "security"
+              ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
+              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          )}
+        >
+          <Shield className="w-4 h-4" />
+          Account Security
+          {activeTab === "security" && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+          )}
+        </button>
 
-          <button
-            onClick={() => setActiveTab("birthdays")}
-            className={cn(
-              "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
-              activeTab === "birthdays"
-                ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
-                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            )}
-          >
-            <Gift className="w-4 h-4" />
-            Birthday Details
-            {activeTab === "birthdays" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-            )}
-          </button>
-        </div>
+        <button
+          onClick={() => setActiveTab("birthdays")}
+          className={cn(
+            "flex items-center gap-2 px-2 py-4 text-sm font-bold transition-all relative shrink-0",
+            activeTab === "birthdays"
+              ? "text-indigo-600 dark:text-indigo-400 font-extrabold"
+              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          )}
+        >
+          <Gift className="w-4 h-4" />
+          Birthday Details
+          {activeTab === "birthdays" && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+          )}
+        </button>
+      </div>
 
       {/* 1. TAB: PERSONNEL DIRECTORY                                               */}
       {activeTab === "directory" && (
@@ -1254,7 +1288,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                           )}
                         </Button>
                       </td>
-                      </tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -1364,14 +1398,14 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
                           <div className="flex items-center gap-2.5">
                             <div className="relative shrink-0 w-10 h-10 rounded-full border border-slate-200 dark:border-white/10 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm uppercase overflow-hidden">
                               {user.first_name?.[0] || ""}{user.last_name?.[0] || ""}
-                                <img
-                                  src={`/api/avatar/${user.id}`}
-                                  alt={`${user.first_name} avatar`}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
+                              <img
+                                src={`/api/avatar/${user.id}`}
+                                alt={`${user.first_name} avatar`}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-slate-800 dark:text-white leading-snug">
@@ -1482,7 +1516,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
               <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-lg tracking-wider">
                 {oneTimePassModal}
               </span>
-              <Button 
+              <Button
                 onClick={() => copyToClipboard(oneTimePassModal)}
                 variant="outline"
                 className="h-9 w-9 p-0 rounded-xl"
@@ -1499,7 +1533,7 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
               </p>
             </div>
 
-            <Button 
+            <Button
               onClick={() => setOneTimePassModal(null)}
               className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider"
             >

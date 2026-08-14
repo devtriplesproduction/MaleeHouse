@@ -5,7 +5,6 @@ import { ShieldAlert, CheckCircle, XCircle } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { approveDispatchOverrideAction, rejectDispatchOverrideAction } from '@/actions/workflow.actions';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 type OverrideRequest = {

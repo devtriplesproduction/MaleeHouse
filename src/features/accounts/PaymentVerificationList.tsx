@@ -10,10 +10,8 @@ import {
   AlertCircle,
   DollarSign,
   ShieldCheck,
-  ArrowRight,
   Loader2
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { verifyPaymentAction } from '@/actions/finance.actions';
 import { toast } from 'sonner';
@@ -57,7 +55,7 @@ export function PaymentVerificationList({ payments }: PaymentVerificationListPro
       } else {
         toast.error('System Rejection', { description: result?.error || 'Failed to verify payment' });
       }
-    } catch (error) {
+    } catch(error) {
       toast.error('Workflow Exception', { description: 'Failed to synchronize payment verification.' });
     } finally {
       setLoadingId(null);

@@ -3,12 +3,10 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Download, Search, ChevronLeft, ChevronRight, ChevronDown,
-  CheckCircle2, Clock, Landmark, Calendar, RefreshCw, Filter, User, BarChart3
+  CheckCircle2, Clock, Landmark, Calendar, RefreshCw, Filter, BarChart3
 } from 'lucide-react';
-import { format, isValid } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 import { EmptyState } from '@/components/ui/empty-state';
-import { SearchableSelect } from '@/components/ui/searchable-select';
 import * as XLSX from 'xlsx';
 
 export type LedgerType = 'income' | 'expense';

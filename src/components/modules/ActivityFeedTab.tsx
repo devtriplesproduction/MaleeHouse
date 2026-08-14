@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { formatDistanceToNow, isToday, subDays } from 'date-fns';
 import {
   Clock, PenTool, FileText, AlertTriangle, MapPin, CheckCircle2,
-  SlidersHorizontal, UserCheck, RefreshCw, Banknote, Eye
+  SlidersHorizontal, UserCheck, Banknote
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

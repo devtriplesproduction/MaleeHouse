@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { FileText, FileSpreadsheet, Calendar, ChevronDown, CheckCircle2, Loader2, Download, User, Briefcase, TrendingUp, TrendingDown, Wallet, FileBarChart2, Search, Check } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, subDays, subMonths, subWeeks } from 'date-fns';
+import { FileText, FileSpreadsheet, ChevronDown, Loader2, Download, User, Briefcase, TrendingUp, TrendingDown, Wallet, FileBarChart2, Search, Check } from 'lucide-react';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { 
   getProfitLossReportAction, 
   getIncomeStatementAction, 

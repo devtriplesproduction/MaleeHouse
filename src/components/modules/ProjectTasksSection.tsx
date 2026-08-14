@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 import { updateTaskStatusAction } from "@/actions/task.actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -39,7 +39,7 @@ export function ProjectTasksSection({ projectId, tasks }: ProjectTasksSectionPro
       } else {
         toast.error(result?.error || "Failed to update task");
       }
-    } catch (error) {
+    } catch(error) {
       toast.error("An error occurred");
     } finally {
       setLoadingId(null);

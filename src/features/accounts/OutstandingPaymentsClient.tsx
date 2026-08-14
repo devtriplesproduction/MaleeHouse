@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { 
-  AlertCircle, ChevronDown, ChevronRight, ChevronLeft, FileText, 
-  Target, UserPlus, Award, CheckCircle2 
+  AlertCircle, ChevronDown, ChevronRight, ChevronLeft, 
+  Target, CheckCircle2 
 } from "lucide-react";
 import { ExpenseEntryModal } from "@/features/accounts/ExpenseEntryModal";
 import Link from "next/link";

@@ -4,7 +4,7 @@ import { normalizeData } from '@/lib/normalize';
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAnonClient } from "@supabase/supabase-js";
-import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { getUserProfileAction } from "./auth.actions";
 import { DEFAULT_COMPANY_SETTINGS } from "@/constants/company";
@@ -160,7 +160,7 @@ export async function getSystemHealthAction() {
         lastChecked: new Date().toISOString()
       }
     };
-  } catch (err) {
+  } catch(err) {
     return {
       success: false,
       data: {

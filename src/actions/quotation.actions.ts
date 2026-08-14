@@ -4,7 +4,6 @@ import { normalizeData } from '@/lib/normalize';
 
 import { checkActionRateLimit } from '@/lib/rate-limit';
 
-import { revalidatePath } from 'next/cache';
 import {
   createQuotationSchema,
   updateQuotationStatusSchema,
@@ -181,7 +180,7 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
 
     try {
       notifyQuotationCreatedAction(payload.project_id || null, quotationNumber).catch(console.error);
-    } catch (_) {}
+    } catch(_) {}
 
     if (payload.project_id) {
       await revalidateAccountsPaths(payload.project_id);
@@ -283,7 +282,7 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
     if (quotation.project_id) {
       try {
         notifyStageUpdateAction(quotation.project_id, quotation.status, payload.status).catch(console.error);
-      } catch (_) { }
+      } catch(_) { }
     }
 
     await revalidateAccountsPaths(quotation.project_id || undefined);

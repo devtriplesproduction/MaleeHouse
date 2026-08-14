@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   FileText, Clock, Send, CheckCircle2, XCircle, AlertCircle, Eye,
-  RefreshCw, History, Plus, Loader2, GitBranch, Download, Trash2,
-  Link2, Check, UserCheck, Copy, Mail,
+  RefreshCw, History, Plus, Loader2, Download, Trash2,
+  Link2, Check, Mail,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';

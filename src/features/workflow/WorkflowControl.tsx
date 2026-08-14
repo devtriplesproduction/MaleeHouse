@@ -22,7 +22,7 @@ export function WorkflowControl({ projectId, currentStage }: WorkflowControlProp
       } else {
         toast.error(result.error || "Failed to advance stage");
       }
-    } catch (error) {
+    } catch(error) {
       toast.error("An unexpected error occurred during workflow transition.");
     } finally {
       setIsAdvancing(false);

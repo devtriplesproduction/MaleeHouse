@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
 
 interface TabsProps {
@@ -11,15 +11,15 @@ interface TabsProps {
   className?: string;
 }
 
-const TabsContext = React.createContext<{
+const TabsContext = createContext<{
   value: string;
   onValueChange: (value: string) => void;
 } | null>(null);
 
 export function Tabs({ defaultValue, value, onValueChange, children, className }: TabsProps) {
-  const [currentValue, setCurrentValue] = React.useState(value || defaultValue);
+  const [currentValue, setCurrentValue] = useState(value || defaultValue);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (value) setCurrentValue(value);
   }, [value]);
 
@@ -55,7 +55,7 @@ export function TabsTrigger({
   children: React.ReactNode; 
   className?: string 
 }) {
-  const context = React.useContext(TabsContext);
+  const context = useContext(TabsContext);
   const isActive = context?.value === value;
 
   return (
@@ -84,7 +84,7 @@ export function TabsContent({
   children: React.ReactNode; 
   className?: string 
 }) {
-  const context = React.useContext(TabsContext);
+  const context = useContext(TabsContext);
   if (context?.value !== value) return null;
 
   return (

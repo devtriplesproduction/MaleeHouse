@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Download, FileText, Printer, Mail, Link2, CreditCard } from 'lucide-react';
+import { Download, FileText, Printer, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
@@ -30,7 +30,7 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
       } else {
         toast.error(res.error || 'Failed to update invoice');
       }
-    } catch (error) {
+    } catch(error) {
       toast.error('An unexpected error occurred');
     } finally {
       setIsUpdating(false);
@@ -114,15 +114,15 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             
           {/* ── Beautiful A4 Visuals (Left 2 cols) ── */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 min-w-0">
             
             {/* PAGE 1: Services Table and Totals */}
-            <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative">
+            <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl flex flex-col p-6 sm:p-10 relative w-full md:min-w-[700px] overflow-x-auto">
                <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of {projectBudget > 0 && invoice.milestone_id ? '2' : '1'}</div>
 
                <div className="space-y-6 flex-1 mt-4">
                   {/* Document Header with Full Malee House Details */}
-                  <div className="flex justify-between items-start border-b border-slate-100 pb-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-6">
                      <div className="space-y-4">
                         <div className="flex items-center gap-3">
                            <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
@@ -136,25 +136,25 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                            <p className="font-semibold text-slate-800">{companySettings?.name || 'Malee House Head Office'}</p>
                            <p>{companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
                            <p>{companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
-                           <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
+                           <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin?.toUpperCase() || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
                         </div>
                      </div>
 
-                     <div className="text-right space-y-4">
+                     <div className="text-left sm:text-right space-y-4">
                         <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">
                           {amountPaid > 0 ? 'Tax Invoice' : 'Proforma Invoice'}
                         </h1>
                         
                         <div className="space-y-2 text-xs">
-                           <div className="flex flex-col items-end">
+                           <div className="flex flex-col items-start sm:items-end">
                               <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Invoice Number</p>
                               <p className="font-semibold text-slate-800 nums">#{invoice.invoice_number}</p>
                            </div>
-                           <div className="flex flex-col items-end">
+                           <div className="flex flex-col items-start sm:items-end">
                               <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Date Issued</p>
                               <p className="font-semibold text-slate-800">{format(new Date(invoice.created_at), 'MMMM dd, yyyy')}</p>
                            </div>
-                           <div className="flex flex-col items-end">
+                           <div className="flex flex-col items-start sm:items-end">
                               <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Due Date</p>
                               <p className="font-semibold text-slate-800">
                                   {invoice.due_date ? format(new Date(invoice.due_date), 'MMMM dd, yyyy') : 'Upon Receipt'}
@@ -165,7 +165,7 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                   </div>
 
                   {/* Client Bill To & Project info */}
-                  <div className="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
                      <div>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
                         <h2 className="text-sm font-semibold text-slate-800 leading-tight">{invoice.projects?.client_name || 'Client Name'}</h2>
@@ -182,8 +182,8 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                   </div>
 
                   {/* Services Table */}
-                  <div className="space-y-4">
-                     <table className="w-full border-collapse">
+                  <div className="space-y-4 overflow-x-auto">
+                     <table className="w-full border-collapse min-w-[500px]">
                         <thead>
                            <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                               <th className="py-2.5 text-left w-12">#</th>
@@ -252,8 +252,8 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
             </div>
 
             {/* PAGE 2: Project Financial Summary */}
-            {projectBudget > 0 && invoice.milestone_id && amountPaid === 0 && (
-               <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative mt-6 min-h-[500px]">
+            {projectBudget > 0 && invoice.milestone_id && (
+               <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl flex flex-col p-6 sm:p-10 relative mt-6 min-h-[500px] w-full md:min-w-[700px] overflow-x-auto">
                   <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 2 of 2</div>
                   <div className="space-y-6 flex-1 mt-4">
                      <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6">Project Financial Summary</h2>

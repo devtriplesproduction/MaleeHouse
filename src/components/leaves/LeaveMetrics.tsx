@@ -1,6 +1,6 @@
 'use client';
 
-import { Award, TrendingUp, CheckCircle2, CalendarDays, ShieldAlert } from 'lucide-react';
+import { TrendingUp, CheckCircle2, CalendarDays, ShieldAlert } from 'lucide-react';
 
 interface LeaveMetricsProps {
   leaves: any[];

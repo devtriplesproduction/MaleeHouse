@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, Save, X, Loader2, Landmark, CreditCard, Building2, Hash, Tag } from "lucide-react";
+import { Plus, Trash2, Edit, CheckCircle2, Save, X, Loader2, Landmark, CreditCard, Building2, Hash, Tag } from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   getBankAccountsAction, 
   saveBankAccountAction, 

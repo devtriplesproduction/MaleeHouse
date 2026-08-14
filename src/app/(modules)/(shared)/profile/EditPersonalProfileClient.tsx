@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Edit2, Save, X, Loader2, Camera, ChevronDown } from "lucide-react";
+import { Edit2, Save, X, Loader2, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updateMyProfileAction } from "@/actions/auth.actions";
 import { PremiumDatePicker as DatePicker } from "@/components/ui/PremiumDatePicker";
-import { cn } from "@/lib/utils";
 
 export default function EditPersonalProfileClient({ profile }: { profile: any }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -67,7 +66,7 @@ export default function EditPersonalProfileClient({ profile }: { profile: any })
           variant: "error"
         });
       }
-    } catch (error) {
+    } catch(error) {
       toast({
         title: "Error",
         description: "An unexpected error occurred.",

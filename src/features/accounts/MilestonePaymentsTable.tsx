@@ -684,7 +684,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
               >
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Reschedule Milestone Payment</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-                  Updating due date for: <span className="font-semibold text-slate-800 dark:text-slate-200">"{rescheduleMilestone.title}"</span>
+                  Updating due date for: <span className="font-semibold text-slate-800 dark:text-slate-200">&quot;{rescheduleMilestone.title}&quot;</span>
                 </p>
 
                 <div className="space-y-4 mb-6">
@@ -758,7 +758,7 @@ export function MilestonePaymentsTable({ milestones, onRefresh, searchQuery }: M
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
                   Are you sure you want to {holdProjectTarget.isFrozen ? 'resume' : 'hold'} operations for the project:{' '}
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">"{holdProjectTarget.name}"</span>?
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">&quot;{holdProjectTarget.name}&quot;</span>?
                 </p>
 
                 <div className="mb-6">

@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { applyLeaveAction, getLeaveBalanceAction, getMyLeavesAction } from '@/actions/leave.actions';
-import { getHolidaysAction } from '@/actions/holiday.actions';
+import { applyLeaveAction } from '@/actions/leave.actions';
 import { Calendar, FileText, Send, AlertCircle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from "react";
@@ -48,12 +47,12 @@ export function LeaveForm({ initialHolidays = [], initialBalance = null, initial
     const targetYear = targetDate.getFullYear();
     const targetMonth = (targetDate.getMonth() + 1).toString().padStart(2, '0');
     const targetMonthPrefix = `${targetYear}-${targetMonth}`;
-    
+
     const hasAppliedForTargetMonth = myLeaves.some((l: any) => {
       if (l.status === 'rejected') return false;
       return l.start_date?.startsWith(targetMonthPrefix);
     });
-    
+
     if (hasAppliedForTargetMonth) {
       effectiveBalance = 0;
     }
@@ -97,7 +96,7 @@ export function LeaveForm({ initialHolidays = [], initialBalance = null, initial
     // Verify dates order
     const startDate = new Date(formData.start_date);
     const endDate = new Date(formData.end_date);
-    
+
     if (startDate > endDate) {
       toast({
         title: 'Check Your Dates',
@@ -112,7 +111,7 @@ export function LeaveForm({ initialHolidays = [], initialBalance = null, initial
     today.setHours(0, 0, 0, 0);
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(0, 0, 0, 0);
-    
+
     if (startDate < today) {
       toast({
         title: 'Invalid Date',
@@ -133,8 +132,8 @@ export function LeaveForm({ initialHolidays = [], initialBalance = null, initial
     }
 
     // 3. Block Holiday as start or end date
-    const isStartHoliday = holidays.find(h => new Date(h.date).setHours(0,0,0,0) === startDate.getTime());
-    const isEndHoliday = holidays.find(h => new Date(h.date).setHours(0,0,0,0) === endDate.getTime());
+    const isStartHoliday = holidays.find(h => new Date(h.date).setHours(0, 0, 0, 0) === startDate.getTime());
+    const isEndHoliday = holidays.find(h => new Date(h.date).setHours(0, 0, 0, 0) === endDate.getTime());
     if (isStartHoliday || isEndHoliday) {
       toast({
         title: 'Invalid Date',
@@ -168,7 +167,7 @@ export function LeaveForm({ initialHolidays = [], initialBalance = null, initial
           variant: 'error'
         });
       }
-    } catch (err) {
+    } catch(err) {
       toast({
         title: 'Something Went Wrong',
         description: 'We encountered an unexpected error. Please try submitting again.',
@@ -196,10 +195,10 @@ export function LeaveForm({ initialHolidays = [], initialBalance = null, initial
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
               Apply For <span className="text-indigo-500">Leave</span>
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Submit a new leave request for verification.</p>
+            <p className="text-xs mt-1 font-bold text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wider">Available Paid Leaves for {formData.start_date ? new Date(formData.start_date).toLocaleString('default', { month: 'long' }) : 'this month'}: {leaveBalance}
+            </p>
             {leaveBalance !== null && (
-              <p className="text-xs mt-1 font-bold text-indigo-600 dark:text-indigo-400">
-                Available Paid Leaves for {formData.start_date ? new Date(formData.start_date).toLocaleString('default', { month: 'long' }) : 'this month'}: {leaveBalance}
+              <p className="text-xs text-slate-500 text-indigo-600 dark:text-indigo-400">Submit a new leave request for verification.
               </p>
             )}
           </div>

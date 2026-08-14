@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { ExpenseEntryModal } from './ExpenseEntryModal';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 export function ExpenseEntryTrigger({ projects, onSuccess }: { projects: any[], onSuccess?: (data?: any) => void }) {

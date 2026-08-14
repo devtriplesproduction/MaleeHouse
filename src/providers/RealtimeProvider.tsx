@@ -11,7 +11,6 @@ import React, {
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/useUser";
-import type { Database } from "@/types/database.types";
 
 type NotificationType =
   | "assignment"

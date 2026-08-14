@@ -35,7 +35,6 @@ import {
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogAction,
   AlertDialogCancel
@@ -828,14 +827,14 @@ export function ClientDirectory({ clients, userRole }: ClientDirectoryProps) {
             <div className="text-sm text-slate-500 dark:text-slate-400 mt-1 space-y-2">
               {deleteTarget?.type === 'client' ? (
                 <>
-                  <p>You are about to permanently delete <span className="font-bold text-slate-700 dark:text-slate-200">"{deleteTarget.name}"</span> and all their projects.</p>
+                  <p>You are about to permanently delete <span className="font-bold text-slate-700 dark:text-slate-200">&quot;{deleteTarget.name}&quot;</span> and all their projects.</p>
                   <p className="text-xs bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg px-3 py-2 text-red-600 dark:text-red-400 font-medium">
                     All projects, documents, invoices &amp; records will be permanently purged. This cannot be undone.
                   </p>
                 </>
               ) : (
                 <>
-                  <p>You are about to permanently delete <span className="font-bold text-slate-700 dark:text-slate-200">"{deleteTarget?.name}"</span>.</p>
+                  <p>You are about to permanently delete <span className="font-bold text-slate-700 dark:text-slate-200">&quot;{deleteTarget?.name}&quot;</span>.</p>
                   <p className="text-xs bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg px-3 py-2 text-red-600 dark:text-red-400 font-medium">
                     All documents, comments, invoices &amp; records will be permanently purged. This cannot be undone.
                   </p>

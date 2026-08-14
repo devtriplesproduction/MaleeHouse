@@ -85,7 +85,7 @@ export function BulkPayrollOperationsDialog({
           const safeName = snap.employee_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
           zip.file(`Salary_Slip_${safeName}_${month}_${year}.pdf`, res.base64, { base64: true });
           s++;
-        } catch (e) {
+        } catch(e) {
           f++;
         }
         
@@ -104,7 +104,7 @@ export function BulkPayrollOperationsDialog({
       document.body.removeChild(link);
       
       toast.success("ZIP downloaded successfully");
-    } catch (error) {
+    } catch(error) {
       toast.error("Failed to generate ZIP");
     }
 

@@ -5,7 +5,6 @@ import { normalizeData } from '@/lib/normalize';
 import { getUserProfileAction } from './auth.actions'
 import { createClient } from '@/lib/supabase/server'
 import { getAllLeavesAction } from './leave.actions'
-import { getAttendanceLogsAction } from './attendance.actions'
 import { getHolidaysAction } from './holiday.actions'
 import { getAnnouncementsAction } from './announcement.actions'
 
@@ -25,18 +24,23 @@ export async function getHRDashboardStatsAction() {
       .eq('is_active', true)
 
     // 2. Pending leaves
-    const leavesRes = await getAllLeavesAction()
-    const pendingLeavesCount = leavesRes.success ? (leavesRes.data || []).filter((l: any) => l.status === 'pending').length : 0
+    const { count: pendingLeavesCount } = await supabase
+      .from('leaves')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending')
 
     // 3. Today's attendance summary
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-    const attendanceRes = await getAttendanceLogsAction()
+    const { data: todayLogs } = await supabase
+      .from('attendance_logs')
+      .select('status')
+      .eq('date', today)
+
     let presentCount = 0
     let absentCount = 0
     let onLeaveCount = 0
     
-    if (attendanceRes.success) {
-      const todayLogs = (attendanceRes.data || []).filter((a: any) => a.date === today)
+    if (todayLogs) {
       for (const log of todayLogs) {
         if (log.status === 'present') presentCount++
         else if (log.status === 'absent') absentCount++

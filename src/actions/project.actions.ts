@@ -4,7 +4,6 @@ import { normalizeData } from '@/lib/normalize';
 
 import { checkActionRateLimit } from '@/lib/rate-limit';
 
-import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { createProjectSchema, type CreateProjectInput } from '@/validations/project.schema';
 import { getUserProfileAction } from './auth.actions';
@@ -639,7 +638,7 @@ export async function adminHardDeleteProjectAction(projectId: string): Promise<A
 
     try {
       await supabaseAdmin.from('audit_logs').delete().eq('project_id', projectId);
-    } catch (_) {}
+    } catch(_) {}
 
     // 3. Finally, delete the project
     const { error: projErr } = await supabaseAdmin

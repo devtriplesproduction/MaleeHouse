@@ -41,7 +41,7 @@ export const HireDeveloperForm: React.FC<HireDeveloperFormProps> = ({ config }) 
       } else {
         toast.error(result.error || "Something went wrong.");
       }
-    } catch (error) {
+    } catch(error) {
       toast.error("Failed to submit request.");
     } finally {
       setIsSubmitting(false);

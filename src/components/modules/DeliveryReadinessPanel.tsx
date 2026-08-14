@@ -2,8 +2,8 @@
 
 import React from "react";
 import {
-  CheckCircle2, Circle, Lock, Unlock, Package, AlertTriangle,
-  PenTool, MapPin, Shield, FileCheck, Truck, HelpCircle
+  CheckCircle2, Lock, Unlock, Package, AlertTriangle,
+  PenTool, MapPin, Shield, FileCheck, Truck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

@@ -214,7 +214,7 @@ export function ProjectCreationWizard() {
           description: result.error || 'The system was unable to save the new project.',
         });
       }
-    } catch (err) {
+    } catch(err) {
       toast.error('System Failure', {
         description: 'Failed to communicate with the server database.',
       });

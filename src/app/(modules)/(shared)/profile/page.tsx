@@ -1,7 +1,6 @@
 import React from "react";
 import { requireAuth } from "@/lib/auth-guard";
-import { Shield, Mail, Phone, Calendar, Briefcase, User as UserIcon, MapPin, Globe, Users, FileText, Home } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Shield } from "lucide-react";
 import UpdatePasswordClient from "./UpdatePasswordClient";
 import ActiveSessionsClient from "./ActiveSessionsClient";
 import IDCardClient from "./IDCardClient";
@@ -28,23 +27,27 @@ export default async function ProfilePage() {
             </div>
          </div>
 
-         {/* ── Identity Cards Section ── */}
-         <IDCardClient profile={profile} companySettings={companySettings} />
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center pt-4">
+            {/* ── Identity Cards Section ── */}
+            <div className="flex justify-center">
+               <IDCardClient profile={profile} companySettings={companySettings} />
+            </div>
 
-         {/* ── Security Protocol Section ── */}
-         <div className="max-w-3xl mx-auto pt-8">
-            <div className="glass-card p-8 border-white/10 bg-indigo-500/[0.02] space-y-8">
-               <div className="space-y-4">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
-                     <Shield className="w-5 h-5" />
+            {/* ── Security Protocol Section ── */}
+            <div className="w-full max-w-lg mx-auto lg:mx-0">
+               <div className="glass-card p-8 border-white/10 bg-indigo-500/[0.02] space-y-8">
+                  <div className="space-y-4">
+                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                        <Shield className="w-5 h-5" />
+                     </div>
+                     <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Security Protocol</h2>
+                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">Safeguard your operational access. We recommend rotating your credentials periodically.</p>
                   </div>
-                  <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Security Protocol</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">Safeguard your operational access. We recommend rotating your credentials periodically.</p>
-               </div>
 
-               <div className="space-y-4">
-                  <UpdatePasswordClient userId={profile.id} />
-                  <ActiveSessionsClient />
+                  <div className="space-y-4">
+                     <UpdatePasswordClient userId={profile.id} />
+                     <ActiveSessionsClient />
+                  </div>
                </div>
             </div>
          </div>

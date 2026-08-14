@@ -2,10 +2,8 @@
 
 import React from 'react';
 import { 
-  Building2, 
-  Wallet,
-  Briefcase,
-  AlertCircle
+  Building2,
+  Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';

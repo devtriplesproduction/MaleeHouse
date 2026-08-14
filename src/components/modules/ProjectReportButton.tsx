@@ -19,24 +19,16 @@ export function ProjectReportButton({ projectId }: ProjectReportButtonProps) {
     try {
       const supabase: any = createClient();
       
-      // Fetch full project data
-      const { data: project } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
-
-      // Fetch team
-      const { data: team } = await supabase
-        .from('project_assignments')
-        .select('*, profiles:user_id(*)')
-        .eq('project_id', projectId);
-
-      // Fetch tasks
-      const { data: tasks } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('project_id', projectId);
+      // Fetch project, team, and tasks concurrently
+      const [
+        { data: project },
+        { data: team },
+        { data: tasks }
+      ] = await Promise.all([
+        supabase.from('projects').select('*').eq('id', projectId).single(),
+        supabase.from('project_assignments').select('*, profiles:user_id(*)').eq('project_id', projectId),
+        supabase.from('tasks').select('*').eq('project_id', projectId)
+      ]);
 
       if (project && team && tasks) {
         generateProjectReport({ project, team, tasks });

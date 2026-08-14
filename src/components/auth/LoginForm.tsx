@@ -4,7 +4,6 @@ import { loginAction } from "@/actions/auth.actions";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
-import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 
 export function LoginForm() {

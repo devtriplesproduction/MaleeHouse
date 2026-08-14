@@ -5,8 +5,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutGrid, 
-  FolderOpen, 
-  Briefcase,
+  FolderOpen,
   DollarSign,
   GitBranch,
   MessageSquare,

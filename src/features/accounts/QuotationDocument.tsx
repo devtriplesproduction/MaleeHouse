@@ -30,12 +30,12 @@ export function QuotationDocument({ quotation, project, companySettings, bank }:
   return (
     <div className="pdf-container">
       {/* PAGE 1: Services Table and Totals right below it */}
-      <div className="pdf-page bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-10 md:p-12 relative min-h-[900px] mb-8">
+      <div className="pdf-page bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl flex flex-col p-6 sm:p-10 md:p-12 relative min-h-[900px] w-full overflow-x-auto mb-8">
          <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of 2</div>
 
          <div className="space-y-8 flex-1">
             {/* Document Header with Full Malee House Details */}
-            <div className="flex justify-between items-start border-b border-slate-100 pb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-6">
                <div className="space-y-4">
                   <div className="flex items-center gap-3">
                      <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
@@ -53,15 +53,15 @@ export function QuotationDocument({ quotation, project, companySettings, bank }:
                   </div>
                </div>
 
-               <div className="text-right space-y-4">
+               <div className="text-left sm:text-right space-y-4">
                   <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">Quotation</h1>
                   
                   <div className="space-y-2 text-xs">
-                     <div className="flex flex-col items-end">
+                     <div className="flex flex-col items-start sm:items-end">
                         <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Quote Number</p>
                         <p className="font-semibold text-slate-800 nums">#{quotation.quotation_number}</p>
                      </div>
-                     <div className="flex flex-col items-end">
+                     <div className="flex flex-col items-start sm:items-end">
                         <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Date Issued</p>
                         <p className="font-semibold text-slate-800">{format(new Date(quotation.created_at || new Date()), 'MMMM dd, yyyy')}</p>
                      </div>
@@ -70,7 +70,7 @@ export function QuotationDocument({ quotation, project, companySettings, bank }:
             </div>
 
             {/* Client Bill To & Project info */}
-            <div className="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
                <div>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
                   <h2 className="text-sm font-semibold text-slate-800 leading-tight">{project?.client_name}</h2>
@@ -87,8 +87,8 @@ export function QuotationDocument({ quotation, project, companySettings, bank }:
             </div>
 
             {/* Services Table */}
-            <div className="space-y-4">
-               <table className="w-full border-collapse">
+            <div className="space-y-4 overflow-x-auto">
+               <table className="w-full border-collapse min-w-[500px]">
                   <thead>
                      <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                         <th className="py-2.5 text-left w-12">#</th>
@@ -247,7 +247,7 @@ export function QuotationDocument({ quotation, project, companySettings, bank }:
          </div>
 
          {/* Professional Prepared By & Signatures Section at the very bottom of Page 2 */}
-         <div className="border-t border-slate-200 pt-8 mt-10 flex justify-between items-end text-slate-700">
+         <div className="border-t border-slate-200 pt-8 mt-10 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-8 text-slate-700">
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-50 border border-slate-200/60 w-fit text-slate-500">
                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                <div className="text-left leading-none">
@@ -256,14 +256,16 @@ export function QuotationDocument({ quotation, project, companySettings, bank }:
                </div>
             </div>
 
-            <div className="flex gap-12 text-center text-[10px] text-slate-500 uppercase tracking-wider">
+            <div className="flex flex-wrap sm:flex-nowrap gap-6 sm:gap-12 text-center text-[10px] text-slate-500 uppercase tracking-wider">
                <div className="w-36">
-                  <div className="h-10 border-b border-slate-300"></div>
+                  <div className="h-16 border-b border-slate-300 flex items-end justify-center pb-1">
+                     <img src="/signature.png" alt="Signature" className="h-14 scale-110 object-contain opacity-80" />
+                  </div>
                   <p className="font-semibold text-slate-800 mt-2">Prepared By</p>
                   <p className="text-[8px] text-slate-400 mt-0.5">Finance Department</p>
                </div>
                <div className="w-36">
-                  <div className="h-10 border-b border-slate-300"></div>
+                  <div className="h-16 border-b border-slate-300"></div>
                   <p className="font-semibold text-slate-800 mt-2">Approved By Client</p>
                   <p className="text-[8px] text-slate-400 mt-0.5">Authorized Signatory</p>
                </div>

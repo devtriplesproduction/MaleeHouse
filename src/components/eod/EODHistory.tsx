@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
-import { Clock, Calendar, AlertCircle, CheckCircle2, ChevronDown, Smile } from 'lucide-react';
+import { Clock, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EODHistoryProps {
@@ -11,7 +11,13 @@ interface EODHistoryProps {
 }
 
 export function EODHistory({ reports }: EODHistoryProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const sortedReports = [...reports].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  const totalPages = Math.ceil(sortedReports.length / itemsPerPage);
+  const paginatedReports = sortedReports.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-3">
@@ -21,9 +27,67 @@ export function EODHistory({ reports }: EODHistoryProps) {
             <p className="text-sm font-bold text-slate-400">No reports submitted yet.</p>
         </div>
       ) : (
-        sortedReports.map((report, index) => (
-          <HistoryRow key={report.id} report={report} index={index} />
-        ))
+        <>
+          {paginatedReports.map((report, index) => (
+            <HistoryRow key={report.id} report={report} index={index} />
+          ))}
+          
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 dark:border-white/10 pt-6 mt-8 gap-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Showing <span className="font-bold text-indigo-600 dark:text-indigo-400">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-indigo-600 dark:text-indigo-400">{Math.min(currentPage * itemsPerPage, sortedReports.length)}</span> of <span className="font-bold text-slate-900 dark:text-white">{sortedReports.length}</span> results
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Prev
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let pageToShow = i + 1;
+                    if (totalPages > 5) {
+                      if (currentPage > 3 && currentPage < totalPages - 1) {
+                        pageToShow = currentPage - 2 + i;
+                      } else if (currentPage >= totalPages - 1) {
+                        pageToShow = totalPages - 4 + i;
+                      }
+                    }
+                    
+                    return (
+                      <button
+                        key={pageToShow}
+                        onClick={() => setCurrentPage(pageToShow)}
+                        className={cn(
+                          "w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg transition-all",
+                          currentPage === pageToShow 
+                            ? "bg-indigo-600 dark:bg-indigo-500 text-white shadow-md shadow-indigo-500/20" 
+                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        )}
+                      >
+                        {pageToShow}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

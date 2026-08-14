@@ -9,58 +9,34 @@ export const fetchCache = 'force-no-store';
 import { 
   ArrowLeft, 
   Calendar, 
-  User, 
-  MapPin, 
   Hash, 
   ChevronRight,
-  ShieldCheck,
-  LayoutGrid,
-  Clock,
-  FileText,
-  PenTool,
-  Truck,
-  AlertTriangle,
-  Zap,
   Phone,
   Lock
 } from "lucide-react";
 import Link from "next/link";
-import { cn, filterActivityLogsByRole } from "@/lib/utils";
-import { WorkflowStepper } from "@/features/workflow/WorkflowStepper";
-import { ProjectFileSection } from "@/components/modules/ProjectFileSection";
-import { WorkflowCheckpoints } from "@/components/modules/WorkflowCheckpoints";
-import { ProjectActivityFeed } from "@/components/modules/ProjectActivityFeed";
-import { ProjectBillingSummary } from "@/components/modules/ProjectBillingSummary";
+import { cn, filterActivityLogsByRole, maskPhone } from "@/lib/utils";
 
 
-import { SalesActionsPanel } from "@/features/sales/components/SalesActionsPanel";
-import { LeadCRMView } from "@/features/sales/components/LeadCRMView";
-import { QuotationList } from "@/features/accounts/QuotationList";
-import { CADRevisionPanel } from "@/components/modules/CADRevisionPanel";
-import { FieldReportPanel } from "@/components/modules/FieldReportPanel";
-import { DeliveryReadinessPanel } from "@/components/modules/DeliveryReadinessPanel";
 import { StageDependentLockBanner } from "@/components/modules/StageDependentLockBanner";
 import {
   getCADRevisionsAction,
   getFieldReportsAction,
 } from "@/actions/operations.actions";
 import { getMilestonesAction } from "@/actions/finance.actions";
-import { calculateProjectHealth, getSLAViolationsCount } from "@/lib/project-health";
 
 import { getUserProfileAction } from "@/actions/auth.actions";
 import { ProjectDetailTabs } from "@/components/modules/ProjectDetailTabs";
-import { ProjectFinanceTabContent } from "@/components/modules/ProjectFinanceTabContent";
-import { SalesProjectPortal } from "@/features/sales/components/SalesProjectPortal";
 import { verifyProjectAccess } from "@/lib/permissions/permissions";
 import { ProjectDeleteButton } from "@/components/modules/ProjectDeleteButton";
 
 const ROLE_THEME: Record<string, { primary: string; hover: string; text: string; bg: string; border: string; glow: string }> = {
   admin:      { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
-  sales:      { primary: "indigo-600",  hover: "hover:text-indigo-600 dark:hover:text-indigo-400",  text: "text-indigo-500",  bg: "bg-indigo-500/10",  border: "border-indigo-500/20",  glow: "bg-indigo-600/10" },
-  accountant: { primary: "violet-600",  hover: "hover:text-violet-600 dark:hover:text-violet-400",  text: "text-violet-500",  bg: "bg-violet-500/10",  border: "border-violet-500/20",  glow: "bg-violet-600/10" },
-  engineer:   { primary: "amber-600",   hover: "hover:text-amber-600 dark:hover:text-amber-400",   text: "text-amber-500",   bg: "bg-amber-500/10",   border: "border-amber-500/20",   glow: "bg-indigo-600/10" },
-  cad:        { primary: "blue-600",    hover: "hover:text-blue-600 dark:hover:text-blue-400",    text: "text-blue-500",    bg: "bg-blue-500/10",    border: "border-blue-500/20",    glow: "bg-indigo-600/10" },
-  field:      { primary: "emerald-600", hover: "hover:text-emerald-600 dark:hover:text-emerald-400", text: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", glow: "bg-emerald-600/10" },
+  sales:      { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
+  accountant: { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
+  engineer:   { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
+  cad:        { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
+  field:      { primary: "indigo-600", hover: "hover:text-indigo-600 dark:hover:text-indigo-400", text: "text-indigo-500", bg: "bg-indigo-500/10", border: "border-indigo-500/20", glow: "bg-indigo-600/10" },
 };
 
 const ROLE_REDIRECTS: Record<string, string> = {
@@ -450,7 +426,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             
             {/* Left Side: Title */}
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
                 {project.name}
               </h1>
             </div>
@@ -473,7 +449,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                         <span className="text-slate-300 dark:text-slate-700">·</span>
                         <span className="flex items-center gap-1.5 font-medium" title="Client Phone">
                           <Phone className="w-3.5 h-3.5 text-slate-400" />
-                          {phoneVal}
+                          {maskPhone(phoneVal)}
                         </span>
                       </>
                     );

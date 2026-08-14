@@ -1,4 +1,3 @@
-import { SupabaseClient } from '@supabase/supabase-js';
 
 export async function logWorkflowAudit(
   supabase: any,

@@ -22,13 +22,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  TrendingUp,
-  ShieldAlert,
-  Award,
   CalendarDays,
   Search,
-  MessageSquare,
-  ChevronDown,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -107,7 +102,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
           description: response.error || 'Failed to update leave request status.'
         });
       }
-    } catch (err) {
+    } catch(err) {
       toast.error('System Error', {
         description: 'An exception occurred while writing status update.'
       });
@@ -132,7 +127,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
     try {
       if (!dateStr) return 'Not set';
       return format(new Date(dateStr), 'MMM d, yyyy');
-    } catch (e) {
+    } catch(e) {
       return dateStr || 'Not set';
     }
   };
@@ -511,7 +506,7 @@ export function AdminLeaveDashboard({ initialLeaves, currentUserRole = 'admin', 
                         
                         {/* Minimal elegant reason text block */}
                         <p className="text-sm font-normal text-slate-600 dark:text-slate-400 italic leading-relaxed" title={leave.reason}>
-                          "{leave.reason}"
+                          &quot;{leave.reason}&quot;
                         </p>
                       </div>
                     </div>

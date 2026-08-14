@@ -42,3 +42,20 @@ export function filterActivityLogsByRole(logs: any[], role: string) {
   
   return logs.filter(log => !financeActions.includes(log.action));
 }
+
+export const maskEmail = (email: string) => {
+  if (!email) return '';
+  const parts = email.split('@');
+  if (parts.length !== 2) return email;
+  const [local, domain] = parts;
+  if (local.length <= 2) return '*'.repeat(local.length) + '@' + domain;
+  const maskedLocal = '*'.repeat(local.length - 2) + local.slice(-2);
+  return maskedLocal + '@' + domain;
+};
+
+export const maskPhone = (phone: string) => {
+  if (!phone) return '';
+  if (phone.length <= 4) return '*'.repeat(phone.length);
+  return phone.slice(0, -4) + '****';
+};
+

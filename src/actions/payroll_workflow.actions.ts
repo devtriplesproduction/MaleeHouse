@@ -1,12 +1,10 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { getUserProfileAction } from "@/actions/auth.actions";
 import { randomUUID } from "crypto";
 import { calculateMonthlyPayrollAction } from "./payroll.actions";
 import { requireAuthenticatedUser, requirePermission } from "@/lib/security/audit";
 import { Permission, Module } from "@/lib/security/permissions";
-import { notFound } from "next/navigation";
+import { generateSalarySlipPdfBuffer } from '@/lib/pdfGenerator';
 
 export async function submitPayrollToAccountsAction(month: number, year: number) {
   const context = { module: Module.PAYROLL, route: "/actions/submitPayrollToAccountsAction", httpMethod: "POST" };
@@ -149,14 +147,21 @@ export async function approveAndLockPayrollAction(month: number, year: number, c
   const net = frozenSnapshots.reduce((acc: number, cur: any) => acc + (cur.net_payable || 0), 0);
   
   // Save snapshots
-  for(let snap of frozenSnapshots) {
-      const { adjustments, ...dbSnap } = snap;
-      dbSnap.cycle_id = existing.id;
-      dbSnap.id = randomUUID();
-      const { error: insErr } = await supabaseAdmin.from('payroll_snapshots').insert(dbSnap);
-      if (insErr) {
-        return { success: false, error: `Failed to insert snapshot for ${dbSnap.employee_name}: ${insErr.message}` };
-      }
+  const snapshotsToInsert = frozenSnapshots.map((snap: any) => {
+    const { adjustments, ...dbSnap } = snap;
+    dbSnap.cycle_id = existing.id;
+    dbSnap.id = randomUUID();
+    return dbSnap;
+  });
+
+  if (snapshotsToInsert.length > 0) {
+    // Delete existing snapshots for this cycle to prevent duplicates when relocking
+    await supabaseAdmin.from('payroll_snapshots').delete().eq('cycle_id', existing.id);
+
+    const { error: insErr } = await supabaseAdmin.from('payroll_snapshots').insert(snapshotsToInsert);
+    if (insErr) {
+      return { success: false, error: `Failed to insert snapshots: ${insErr.message}` };
+    }
   }
 
   const { error } = await supabaseAdmin
@@ -208,40 +213,76 @@ export async function generateSlipRunAction(cycleId: string) {
   const { data: cycle } = await supabaseAdmin.from('payroll_cycles').select('*').eq('id', cycleId).single();
   if (!cycle || cycle.status !== 'locked') return { success: false, error: "Payroll must be locked to generate slips." };
 
-  const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('id, employee_id').eq('cycle_id', cycleId);
+  const { data: snaps } = await supabaseAdmin.from('payroll_snapshots').select('*').eq('cycle_id', cycleId);
   if (!snaps || snaps.length === 0) return { success: false, error: "No employees in this payroll cycle." };
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
+  let successCount = 0;
+  let failCount = 0;
+  
   // Clean up any existing slips for this cycle to avoid unique constraint violations
   await supabaseAdmin.from('salary_slips').delete().eq('cycle_id', cycleId);
+  
+  const slipsToInsert: any[] = [];
+  
+  // Process generation and upload in controlled batches
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < snaps.length; i += BATCH_SIZE) {
+    const batch = snaps.slice(i, i + BATCH_SIZE);
+    
+    await Promise.allSettled(
+      batch.map(async (snap: any) => {
+        try {
+          const pdfBuffer = await generateSalarySlipPdfBuffer(snap, cycle.month, cycle.year);
+          const fileName = `${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
+          
+          await supabaseAdmin.storage.from('salary_slips').upload(fileName, pdfBuffer, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+
+          const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${fileName}`;
+          
+          slipsToInsert.push({
+            employee_id: snap.employee_id,
+            cycle_id: cycleId,
+            snapshot_id: snap.id,
+            pdf_url: pdfUrl,
+            generated_by: profile.id,
+            status: 'generated',
+            emailed: false,
+            shared: false
+          });
+          
+          successCount++;
+        } catch (err) {
+          console.error(`[generateSlipRunAction] Failed for snapshot ${snap.id}:`, err);
+          failCount++;
+        }
+      })
+    );
+  }
+
+  if (slipsToInsert.length > 0) {
+    // deduplicate by employee_id to avoid postgres error: ON CONFLICT DO UPDATE cannot affect row a second time
+    const uniqueSlips = Array.from(new Map(slipsToInsert.map(item => [item.employee_id, item])).values());
+    const { error: slipsError } = await supabaseAdmin.from('salary_slips').upsert(uniqueSlips, { onConflict: 'employee_id,cycle_id' });
+    if (slipsError) {
+      console.error("[generateSlipRunAction] Insert error:", slipsError);
+      return { success: false, error: slipsError.message };
+    }
+  }
 
   const { error } = await supabaseAdmin.from('payroll_slip_runs').insert({
     payroll_cycle_id: cycleId,
     status: 'generated',
     employee_count: snaps.length,
-    generated_count: snaps.length, // Simulating perfect generation for phase 1
-    failed_count: 0,
+    generated_count: successCount,
+    failed_count: failCount,
     generated_by: profile.id
   });
   
   if (error) return { success: false, error: error.message };
-
-  const slipsToInsert = snaps.map((snap: any) => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-supabase-project.supabase.co";
-    const pdfUrl = `${supabaseUrl}/storage/v1/object/public/salary_slips/${cycle.year}/${cycle.month}/${snap.employee_id}/salary-slip.pdf`;
-    return {
-      employee_id: snap.employee_id,
-      cycle_id: cycleId,
-      snapshot_id: snap.id,
-      pdf_url: pdfUrl,
-      generated_by: profile.id,
-      status: 'generated',
-      emailed: false,
-      shared: false
-    };
-  });
-
-  const { error: slipsError } = await supabaseAdmin.from('salary_slips').insert(slipsToInsert);
-  if (slipsError) return { success: false, error: slipsError.message };
 
   await supabaseAdmin.from('payroll_cycles').update({ slip_status: 'generated' }).eq('id', cycleId);
   

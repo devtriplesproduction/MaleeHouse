@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
 import { HireDeveloperFormValues, GetQuoteFormValues } from "@/validations/lead-schema";
 
 export async function submitHireDeveloperForm(data: HireDeveloperFormValues) {

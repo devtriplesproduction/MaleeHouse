@@ -88,7 +88,7 @@ export async function getAllUsersAction() {
     const { data, error } = await supabase
       .from('profiles')
       .select(
-        'id, email, first_name, last_name, role, department, designation, employee_id, is_active, phone_number, joining_date, created_at, status, dob'
+        'id, email, first_name, last_name, role, department, designation, employee_id, is_active, phone_number, joining_date, created_at, status, dob, gender, personal_email, address, emergency_contact, employment_type, salary, experience, location, reporting_manager_id, office_location, operational_zone, approval_authority, escalation_chain'
       )
       .order('created_at', { ascending: false })
       .limit(300)

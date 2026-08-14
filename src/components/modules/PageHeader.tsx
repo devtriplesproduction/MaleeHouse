@@ -19,6 +19,22 @@ export function PageHeader({
   actions,
   className
 }: PageHeaderProps) {
+  const renderTitle = () => {
+    if (typeof title === 'string') {
+      const words = title.trim().split(' ');
+      if (words.length > 1) {
+        const lastWord = words.pop();
+        return (
+          <>
+            {words.join(' ')}{' '}
+            <span className="text-indigo-600 dark:text-indigo-400">{lastWord}</span>
+          </>
+        );
+      }
+    }
+    return title;
+  };
+
   return (
     <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-4", className)}>
       <div className="flex items-center gap-3.5">
@@ -29,7 +45,7 @@ export function PageHeader({
         )}
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-            {title}
+            {renderTitle()}
           </h1>
           {subtitle && (
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
@@ -39,7 +55,7 @@ export function PageHeader({
         </div>
       </div>
       {actions && (
-        <div className="flex items-center gap-3 w-full sm:w-auto flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto flex-shrink-0">
           {actions}
         </div>
       )}

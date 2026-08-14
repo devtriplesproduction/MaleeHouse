@@ -3,7 +3,6 @@
 import React from 'react';
 import { 
   Zap, 
-  Settings, 
   UserPlus, 
   DollarSign, 
   Lock, 
@@ -12,8 +11,7 @@ import {
   CheckCircle,
   Activity,
   ShieldCheck,
-  Calendar,
-  AlertTriangle
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';

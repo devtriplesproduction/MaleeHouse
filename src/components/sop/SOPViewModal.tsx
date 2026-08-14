@@ -31,7 +31,7 @@ export function SOPViewModal({ isOpen, onClose, sop }: SOPViewModalProps) {
         }
         return part;
       });
-    } catch (e) {
+    } catch(e) {
       return text;
     }
   };
@@ -42,7 +42,7 @@ export function SOPViewModal({ isOpen, onClose, sop }: SOPViewModalProps) {
       const parsedDate = new Date(sop.created_at);
       if (isNaN(parsedDate.getTime())) return 'Unknown Date';
       return format(parsedDate, 'MMM dd, yyyy');
-    } catch (e) {
+    } catch(e) {
       return 'Unknown Date';
     }
   };
@@ -104,7 +104,7 @@ export function SOPViewModal({ isOpen, onClose, sop }: SOPViewModalProps) {
 
                 // Regular paragraph with inline formatting
                 return <p key={i} className="text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{renderInline(line)}</p>;
-              } catch (err) {
+              } catch(err) {
                 // Safe fallback for any parsing errors
                 return <p key={i} className="text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{line}</p>;
               }

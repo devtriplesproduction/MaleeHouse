@@ -6,7 +6,6 @@ import {
   Circle, 
   User, 
   Clipboard, 
-  Clock, 
   MapPin, 
   PenTool, 
   Layers, 

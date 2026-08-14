@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Download, FileText, Image, FileCode, Archive, File } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface FileMetadata {
   id: string;

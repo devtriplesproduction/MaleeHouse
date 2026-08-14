@@ -8,7 +8,6 @@ import {
   Mail, 
   FileText,
   Link2,
-  MessageSquare,
   Send,
   Loader2,
   CheckCircle2,
@@ -110,13 +109,13 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
       
       <div className="relative w-full max-w-5xl flex flex-col gap-6 z-10 my-4">
         {/* Top Control Bar (Dark Sticky Header) */}
-        <div className="flex items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-3 rounded-xl border border-white/10 shadow-xl text-white">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-4 rounded-xl border border-white/10 shadow-xl text-white gap-4 md:gap-0">
           <div className="flex items-center gap-3">
-             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0">
                 <FileText className="w-4 h-4" />
              </div>
               <div>
-                 <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                 <h3 className="text-sm font-semibold tracking-tight flex items-center gap-2 flex-wrap">
                    Invoice Portal
                    <span className={cn(
                      "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border shadow-sm ml-2",
@@ -135,7 +134,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
               </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <Button 
               onClick={() => {
                 window.print();
@@ -201,14 +200,14 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0 w-full min-w-0">
             {/* Invoice Body Container */}
-            <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-10 md:p-12 relative min-h-[900px] justify-between">
+            <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl flex flex-col p-6 sm:p-10 md:p-12 relative min-h-[900px] w-full md:min-w-[700px] overflow-x-auto justify-between">
            <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of 1</div>
 
            <div className="space-y-8 flex-1">
               {/* Document Header with Full Malee House Details */}
-              <div className="flex justify-between items-start border-b border-slate-100 pb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-6">
                  <div className="space-y-4">
                     <div className="flex items-center gap-3">
                        <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
@@ -222,25 +221,25 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                        <p className="font-semibold text-slate-800">{companySettings?.name || 'Malee House Head Office'}</p>
                        <p>{companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
                        <p>{companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
-                       <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
+                       <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin?.toUpperCase() || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
                     </div>
                  </div>
 
-                 <div className="text-right space-y-4">
+                 <div className="text-left sm:text-right space-y-4">
                     <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">
                       {amountPaid > 0 ? 'Tax Invoice' : 'Proforma Invoice'}
                     </h1>
                     
                     <div className="space-y-2 text-xs">
-                       <div className="flex flex-col items-end">
+                       <div className="flex flex-col items-start sm:items-end">
                           <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Invoice Number</p>
                           <p className="font-semibold text-slate-800 nums">#{invoice.invoice_number}</p>
                        </div>
-                       <div className="flex flex-col items-end">
+                       <div className="flex flex-col items-start sm:items-end">
                           <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Date Issued</p>
                           <p className="font-semibold text-slate-800">{format(new Date(invoice.created_at), 'MMMM dd, yyyy')}</p>
                        </div>
-                       <div className="flex flex-col items-end">
+                       <div className="flex flex-col items-start sm:items-end">
                           <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Due Date</p>
                           <p className="font-semibold text-slate-800">
                               {invoice.due_date ? format(new Date(invoice.due_date), 'MMMM dd, yyyy') : 'Upon Receipt'}
@@ -251,7 +250,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
               </div>
 
               {/* Client Bill To & Project info */}
-              <div className="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-200/50 text-slate-700">
                  <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
                     <h2 className="text-sm font-semibold text-slate-800 leading-tight">{invoice.projects?.client_name || 'Client Name'}</h2>
@@ -265,8 +264,8 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
               </div>
 
               {/* Services Table */}
-              <div className="space-y-4">
-                 <table className="w-full border-collapse">
+              <div className="space-y-4 overflow-x-auto">
+                 <table className="w-full border-collapse min-w-[500px]">
                     <thead>
                        <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                           <th className="py-2.5 text-left w-12">#</th>
@@ -297,7 +296,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
            </div>
 
            {/* Totals and Bank Details panel located right below services */}
-           <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex justify-between items-start gap-8">
+           <div className="border-t-2 border-double border-slate-900 pt-6 mt-8 flex flex-col md:flex-row justify-between items-start gap-8">
               {/* Bank Details on the left */}
               <div className="flex-1 max-w-sm">
                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Payment Information</h3>
@@ -421,10 +420,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Share Invoice</h3>
               <div className="space-y-3">
                 <button 
-                  onClick={() => {
-                    if (invoice.status === 'draft') handleSend();
-                    copyClientLink();
-                  }}
+                  onClick={copyClientLink}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
                 >
                   <Link2 className="w-4 h-4" /> Copy Link

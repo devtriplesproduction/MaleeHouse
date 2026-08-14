@@ -1,11 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { getInvoicesAction, getPaymentsAction, getProjectFinancesAction } from '@/actions/finance.actions';
-import { getExpensesAction } from '@/actions/expense.actions';
+import React from 'react';
 import { LedgerTable, LedgerItem } from '@/features/accounts/LedgerTable';
-import { Activity, TrendingUp, TrendingDown, DollarSign, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 export function ProjectFinanceDashboardTab({ 
   projectId, 

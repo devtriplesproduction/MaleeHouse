@@ -6,17 +6,13 @@ import {
   Download, 
   Printer, 
   Mail, 
-  ShieldCheck, 
   FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
 import { createPortal } from 'react-dom';
 import { generateQuotationPDF } from '@/lib/pdf-generator';
-import { type CompanySettings } from '@/actions/settings.actions';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { getBankAccountsAction } from '@/actions/bank.actions';
-import { QuotationItem } from '@/validations/quotation.schema';
 import { QuotationDocument } from './QuotationDocument';
 
 interface QuotationPreviewProps {
@@ -68,18 +64,18 @@ export function QuotationPreview({ quotation, project, onClose }: QuotationPrevi
       
       <div className="relative w-full max-w-[850px] flex flex-col gap-6 z-10 my-4">
         {/* Top Control Bar */}
-        <div className="flex items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-3 rounded-xl border border-white/10 shadow-xl text-white">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-slate-900/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-4 rounded-xl border border-white/10 shadow-xl text-white gap-4 md:gap-0">
           <div className="flex items-center gap-3">
-             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0">
                 <FileText className="w-4 h-4" />
              </div>
              <div>
                 <h3 className="text-sm font-semibold tracking-tight">Quotation Preview</h3>
-                <p className="text-[10px] text-slate-400 font-medium">Reviewing {quotation.quotation_number}</p>
+                <p className="text-[10px] text-slate-400 font-medium break-all">Reviewing {quotation.quotation_number}</p>
              </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <Button 
               onClick={() => generateQuotationPDF(quotation, project, companySettings, bank)}
               variant="ghost" 

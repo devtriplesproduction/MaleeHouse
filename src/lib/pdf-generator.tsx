@@ -539,7 +539,7 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
                   <strong style="color: #334155;">${companySettings?.name || 'Malee House Head Office'}</strong><br/>
                   ${companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}<br/>
                   ${companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}<br/>
-                  <span style="font-weight: 600; color: #4f46e5;">GSTIN: ${companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: ${companySettings?.telephone || '+91 80 4987 6543'}</span>
+                  <span style="font-weight: 600; color: #4f46e5;">GSTIN: ${companySettings?.gstin?.toUpperCase() || '36AAAAA1111A1Z1'} | Tel: ${companySettings?.telephone || '+91 80 4987 6543'}</span>
                 </div>
               </div>
               

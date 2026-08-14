@@ -3,21 +3,17 @@
 import React, { useEffect, useState } from "react";
 import { 
   ShieldAlert, 
-  CheckCircle, 
   UserPlus, 
   Trash2, 
   DollarSign, 
-  Landmark, 
-  ArrowRight,
+  Landmark,
   Clock, 
-  RefreshCw,
-  ChevronRight
+  RefreshCw
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { getActivityLogsAction } from "@/actions/stats.actions";
 import { useRealtimeContext } from "@/providers/RealtimeProvider";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 const EVENT_CONFIG: Record<string, { icon: React.ElementType, color: string, bg: string, label: string }> = {
   ROLE: { icon: UserPlus, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/20", label: "Access Control" },
@@ -146,7 +142,7 @@ export function GlobalActivityStream() {
                       {actorName} performed <span className="font-semibold text-slate-700 dark:text-slate-350">{log.action?.replace(/_/g, ' ')?.toLowerCase()}</span>
                     </p>
                     {log.details?.reason && (
-                      <p className="text-[10px] text-slate-450 italic mt-0.5">"{log.details.reason}"</p>
+                      <p className="text-[10px] text-slate-450 italic mt-0.5">&quot;{log.details.reason}&quot;</p>
                     )}
                   </div>
                 </div>

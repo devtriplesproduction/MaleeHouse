@@ -9,9 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { 
   User, 
-  Building2, 
   Phone, 
-  Mail, 
   MapPin, 
   Tag, 
   Calendar,

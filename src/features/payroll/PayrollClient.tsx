@@ -5,8 +5,6 @@ import {
   calculateMonthlyPayrollAction, 
   savePayrollDraftAdjustmentsAction,
   getSalarySlipUrlAction,
-  emailSalarySlipAction,
-  notifySalarySlipsAction,
   PayrollSnapshot
 } from "@/actions/payroll.actions";
 import {
@@ -32,7 +30,6 @@ import {
   Download, 
   Loader2, 
   FileText, 
-  Mail, 
   Share2, 
   Layers, 
   AlertTriangle, 
@@ -52,6 +49,7 @@ import { BulkPayrollOperationsDialog } from "@/components/modules/BulkPayrollOpe
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectItem } from "@/components/ui/select";
 import { createLedgerEntryAction } from "@/actions/ledger.actions";
+import { PageHeader } from "@/components/modules/PageHeader";
 
 interface PayrollClientProps {
   initialMonth: number;
@@ -131,6 +129,13 @@ export function PayrollClient({
   const [reviewedEmployees, setReviewedEmployees] = useState<Set<string>>(new Set());
   const [fetchingUrl, setFetchingUrl] = useState<string | null>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
+  const totalPages = Math.ceil((data?.length || 0) / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
   // Load reviewed employees from localStorage
   useEffect(() => {
     if (isLocked && data.length > 0) {
@@ -150,6 +155,7 @@ export function PayrollClient({
     return data.map((r: any) => {
       let diffBonus = 0;
       let diffDed = 0;
+      let diffOvertimePay = 0;
 
       const empDrafts = draftApps.filter(d => d.employee_id === r.employee_id);
       empDrafts.forEach(d => {
@@ -162,6 +168,11 @@ export function PayrollClient({
         } else if (d.adjustment_type === 'other_deduction') {
            const origOther = r.other_deductions || 0;
            diffDed += (Number(d.applied_amount) - origOther);
+        } else if (d.adjustment_type === 'overtime_hours') {
+           const hourly_rate = r.base_salary / 208;
+           const newOvertimePay = Math.round(Number(d.applied_amount) * 1.5 * hourly_rate);
+           const origOvertimePay = r.overtime_pay || 0;
+           diffOvertimePay += (newOvertimePay - origOvertimePay);
         }
       });
 
@@ -169,14 +180,17 @@ export function PayrollClient({
          ...r,
          live_bonus: (r.bonus || 0) + diffBonus,
          live_deductions: (r.total_deductions || 0) + diffDed,
-         live_gross: (r.gross_salary || 0) + diffBonus,
-         live_net: (r.net_salary || 0) + diffBonus - diffDed
+         live_overtime_hours: empDrafts.find(d => d.adjustment_type === 'overtime_hours')?.applied_amount ?? (r.overtime_hours || 0),
+         live_overtime_pay: (r.overtime_pay || 0) + diffOvertimePay,
+         live_gross: (r.gross_salary || 0) + diffBonus + diffOvertimePay,
+         live_net: (r.net_salary || 0) + diffBonus + diffOvertimePay - diffDed
       };
     });
   }, [data, draftApps]);
 
   useEffect(() => {
     fetchData(month, year);
+    setCurrentPage(1);
   }, [month, year]);
 
   const fetchData = async (m: number, y: number) => {
@@ -527,6 +541,8 @@ export function PayrollClient({
       "Net Payable",
       "Gross Salary",
       "Bonus",
+      "Overtime Hrs",
+      "Overtime Pay",
       "Advance Salary Recovery",
       "Other Deductions",
       "Net Salary"
@@ -548,6 +564,8 @@ export function PayrollClient({
           row.net_payable,
           row.gross_salary || 0,
           bonus,
+          row.overtime_hours || 0,
+          row.overtime_pay || 0,
           row.salary_advance_recovery || 0,
           row.other_deductions || 0,
           row.net_salary || 0
@@ -568,104 +586,102 @@ export function PayrollClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border shadow-sm">
-        <div className="space-y-1 shrink-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap">Salary Records</h1>
+      <PageHeader
+        title="Salary Records"
+        subtitle="Decoupled state management & compliance-locked lifecycle"
+        icon={FileSpreadsheet}
+        actions={
+          <div className="flex items-center justify-start xl:justify-end gap-3 w-full xl:w-auto flex-wrap">
             {batchNumber && (
               <Badge variant="outline" className="text-xs font-semibold px-2.5 py-1 border-indigo-200 text-indigo-700 bg-indigo-50 dark:bg-indigo-950/30 dark:text-indigo-400 whitespace-nowrap">
                 {batchNumber}
               </Badge>
             )}
-          </div>
-          <p className="text-sm text-slate-500">Decoupled state management &amp; compliance-locked lifecycle</p>
-        </div>
-        
-        <div className="flex items-center justify-start xl:justify-end gap-3 w-full xl:w-auto flex-wrap">
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={handlePrevMonth} disabled={loading || actionLoading}>
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-            <div className="px-3 font-semibold min-w-[120px] text-center text-sm text-slate-700 dark:text-slate-200">
-              {monthName} {year}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border">
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={handlePrevMonth} disabled={loading || actionLoading}>
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <div className="px-3 font-semibold min-w-[120px] text-center text-sm text-slate-700 dark:text-slate-200">
+                {monthName} {year}
+              </div>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={handleNextMonth} disabled={loading || actionLoading}>
+                <ChevronRight className="w-5 h-5" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={handleNextMonth} disabled={loading || actionLoading}>
-              <ChevronRight className="w-5 h-5" />
+
+            <Button variant="hr-outline" size="icon" className="h-11 w-11 rounded-xl" onClick={handleViewAuditTimeline} title="View Audit Logs">
+              <Clock className="w-5 h-5" />
             </Button>
-          </div>
 
-          <Button variant="hr-outline" size="icon" className="h-11 w-11 rounded-xl" onClick={handleViewAuditTimeline} title="View Audit Logs">
-            <Clock className="w-5 h-5" />
-          </Button>
-
-          {/* HR VIEW ACTIONS */}
-          {(currentUserRole === 'hr' || currentUserRole === 'admin') && (
-            <>
-              {payrollStatus === 'draft' && (
-                <>
-                  <Button variant="hr-outline" className="h-11 rounded-xl whitespace-nowrap" onClick={handleSaveDrafts} disabled={actionLoading || draftApps.length === 0}>
-                    Save Draft adjustments
-                  </Button>
-                  <Button className="h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium whitespace-nowrap" onClick={handleSubmitToAccounts} disabled={actionLoading}>
-                    {actionLoading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
-                    Submit to Accounts
-                  </Button>
-                </>
-              )}
-              {payrollStatus === 'submitted' && (
-                <Button variant="outline" className="h-11 rounded-xl text-amber-600 border-amber-200 hover:bg-amber-50 whitespace-nowrap" onClick={handleReturnToDraft} disabled={actionLoading}>
-                  <RotateCcw className="w-5 h-5 mr-2" />
-                  Return to Draft
-                </Button>
-              )}
-            </>
-          )}
-
-          {/* ACCOUNTANT / ADMIN VIEW ACTIONS */}
-          {(currentUserRole === 'accountant' || currentUserRole === 'admin') && (
-            <>
-              {payrollStatus === 'submitted' && (
-                <>
+            {/* HR VIEW ACTIONS */}
+            {(currentUserRole === 'hr' || currentUserRole === 'admin') && (
+              <>
+                {payrollStatus === 'draft' && (
+                  <>
+                    <Button variant="hr-outline" className="h-11 rounded-xl whitespace-nowrap" onClick={handleSaveDrafts} disabled={actionLoading || draftApps.length === 0}>
+                      Save Draft adjustments
+                    </Button>
+                    <Button className="h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium whitespace-nowrap" onClick={handleSubmitToAccounts} disabled={actionLoading}>
+                      {actionLoading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
+                      Submit to Accounts
+                    </Button>
+                  </>
+                )}
+                {payrollStatus === 'submitted' && (
                   <Button variant="outline" className="h-11 rounded-xl text-amber-600 border-amber-200 hover:bg-amber-50 whitespace-nowrap" onClick={handleReturnToDraft} disabled={actionLoading}>
                     <RotateCcw className="w-5 h-5 mr-2" />
                     Return to Draft
                   </Button>
-                  <Button className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium whitespace-nowrap" onClick={handleLock} disabled={actionLoading}>
-                    <Lock className="w-5 h-5 mr-2" />
-                    Review &amp; Lock
-                  </Button>
-                </>
-              )}
-              {payrollStatus === 'locked' && (
-                <>
-                  {slipStatus === 'none' && (
-                    <Button className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium whitespace-nowrap" onClick={handleGenerateSlips} disabled={actionLoading}>
-                      Generate Salary Slips
+                )}
+              </>
+            )}
+
+            {/* ACCOUNTANT / ADMIN VIEW ACTIONS */}
+            {(currentUserRole === 'accountant' || currentUserRole === 'admin') && (
+              <>
+                {payrollStatus === 'submitted' && (
+                  <>
+                    <Button variant="outline" className="h-11 rounded-xl text-amber-600 border-amber-200 hover:bg-amber-50 whitespace-nowrap" onClick={handleReturnToDraft} disabled={actionLoading}>
+                      <RotateCcw className="w-5 h-5 mr-2" />
+                      Return to Draft
                     </Button>
-                  )}
-                  {slipStatus === 'generated' && (
-                    <Button className="h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium whitespace-nowrap" onClick={handleReleaseSlips} disabled={actionLoading}>
-                      Release Salary Slips
+                    <Button className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium whitespace-nowrap" onClick={handleLock} disabled={actionLoading}>
+                      <Lock className="w-5 h-5 mr-2" />
+                      Review &amp; Lock
                     </Button>
-                  )}
-                  {paymentStatus === 'unpaid' && (
-                    <Button className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium whitespace-nowrap" onClick={handleOpenPaymentModal} disabled={actionLoading}>
-                      <DollarSign className="w-5 h-5 mr-2" />
-                      Mark Paid
-                    </Button>
-                  )}
-                  {paymentStatus !== 'paid' && (
-                    <Button variant="outline" className="h-11 rounded-xl text-red-600 border-red-200 hover:bg-red-50 whitespace-nowrap" onClick={handleUnlock} disabled={actionLoading}>
-                      <Unlock className="w-5 h-5 mr-2" />
-                      Unlock Cycle
-                    </Button>
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+                  </>
+                )}
+                {payrollStatus === 'locked' && (
+                  <>
+                    {slipStatus === 'none' && (
+                      <Button className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium whitespace-nowrap" onClick={handleGenerateSlips} disabled={actionLoading}>
+                        Generate Salary Slips
+                      </Button>
+                    )}
+                    {slipStatus === 'generated' && (
+                      <Button className="h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium whitespace-nowrap" onClick={handleReleaseSlips} disabled={actionLoading}>
+                        Release Salary Slips
+                      </Button>
+                    )}
+                    {paymentStatus === 'unpaid' && (
+                      <Button className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium whitespace-nowrap" onClick={handleOpenPaymentModal} disabled={actionLoading}>
+                        <DollarSign className="w-5 h-5 mr-2" />
+                        Mark Paid
+                      </Button>
+                    )}
+                    {paymentStatus !== 'paid' && (
+                      <Button variant="outline" className="h-11 rounded-xl text-red-600 border-red-200 hover:bg-red-50 whitespace-nowrap" onClick={handleUnlock} disabled={actionLoading}>
+                        <Unlock className="w-5 h-5 mr-2" />
+                        Unlock Cycle
+                      </Button>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        }
+      />
 
       {/* METADATA BADGES CARD */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -829,7 +845,8 @@ export function PayrollClient({
                   <p className="text-slate-500">Calculating payroll data...</p>
                 </div>
               ) : (
-                <div className="rounded-md border overflow-x-auto">
+                <>
+                  <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -844,7 +861,7 @@ export function PayrollClient({
                     </TableHeader>
                     <TableBody>
                       {data && data.length > 0 ? (
-                        liveData.map((row) => (
+                        liveData.slice(startIndex, endIndex).map((row) => (
                           <TableRow key={row.id}>
                             <TableCell className="font-medium">
                               <div>{row.employee_name}</div>
@@ -889,6 +906,35 @@ export function PayrollClient({
                     </TableBody>
                   </Table>
                 </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-slate-500">
+                      Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of {data.length} employees
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <div className="text-sm font-medium">
+                        Page {currentPage} of {totalPages}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -907,8 +953,9 @@ export function PayrollClient({
                   <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
                 </div>
               ) : (
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
+                <>
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Employee</TableHead>
@@ -917,6 +964,7 @@ export function PayrollClient({
                         <TableHead className="text-right">Pending Balance</TableHead>
                         <TableHead className="text-center w-32">Recovery</TableHead>
                         <TableHead className="text-center w-32">Bonus</TableHead>
+                        <TableHead className="text-center w-32">Overtime Hrs</TableHead>
                         <TableHead className="text-center w-32">Other Ded.</TableHead>
                         <TableHead className="text-center">Reviewed</TableHead>
                         <TableHead className="text-right font-bold">Net Salary</TableHead>
@@ -924,7 +972,7 @@ export function PayrollClient({
                     </TableHeader>
                     <TableBody>
                       {data && data.length > 0 ? (
-                        data.map((row: any) => (
+                        data.slice(startIndex, endIndex).map((row: any) => (
                           <TableRow key={row.id}>
                             <TableCell className="font-medium">{row.employee_name}</TableCell>
                             <TableCell className="text-right">₹{row.gross_salary?.toLocaleString()}</TableCell>
@@ -937,6 +985,15 @@ export function PayrollClient({
                             </TableCell>
                             <TableCell>
                               <Input type="number" defaultValue={row.adjustments?.find((a:any) => a.adjustment_type === 'bonus')?.applied_amount || 0} disabled={isLocked} className="h-8 w-24 mx-auto text-right" onChange={(e) => handleUpdateDraft(row.employee_id, 'bonus', Number(e.target.value))} />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Input type="number" min="0" step="0.5" defaultValue={row.live_overtime_hours} disabled={isLocked} className="h-8 w-20 mx-auto text-right" onChange={(e) => {
+                                const val = Number(e.target.value);
+                                if (val >= 0) handleUpdateDraft(row.employee_id, 'overtime_hours', val);
+                              }} />
+                              <div className="text-[10px] text-slate-500 mt-1">
+                                {row.live_overtime_pay ? `Pay: ₹${row.live_overtime_pay.toLocaleString()}` : ""}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Input type="number" defaultValue={row.other_deductions} disabled={isLocked} className="h-8 w-24 mx-auto text-right" onChange={(e) => handleUpdateDraft(row.employee_id, 'other_deduction', Number(e.target.value))} />
@@ -954,11 +1011,40 @@ export function PayrollClient({
                           </TableRow>
                         ))
                       ) : (
-                        <TableRow><TableCell colSpan={9} className="text-center h-24">No employees found.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={10} className="text-center h-24">No employees found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
                 </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-slate-500">
+                      Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of {data.length} employees
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <div className="text-sm font-medium">
+                        Page {currentPage} of {totalPages}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                </>
               )}
             </CardContent>
           </Card>

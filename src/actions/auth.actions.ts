@@ -7,7 +7,6 @@ import { revalidatePath } from 'next/cache'
 import { createClient, getCachedAuthUser } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_REDIRECTS, Role } from '@/lib/permissions/roles'
-import { redirect } from 'next/navigation'
 
 /** Push role + is_active into JWT app_metadata so middleware skips profiles DB. */
 async function syncAuthClaims(userId: string, role: string, isActive: boolean) {
@@ -270,8 +269,10 @@ export async function getTodayBirthdaysAction() {
         if (user.id === profile.id || isHrOrAdmin) {
           bdays.push({ user, type: 'today' })
         }
-      } else if (isTomorrow && isHrOrAdmin) {
-        bdays.push({ user, type: 'tomorrow' })
+      } else if (isTomorrow) {
+        if (user.id === profile.id || isHrOrAdmin) {
+          bdays.push({ user, type: 'tomorrow' })
+        }
       }
     })
 

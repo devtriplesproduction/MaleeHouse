@@ -2,15 +2,14 @@
 
 import React, { useState, useTransition, useEffect } from "react";
 import {
-  PenTool, Upload, CheckCircle2, XCircle, Clock, ChevronDown,
-  ChevronUp, AlertTriangle, Loader2, Send, FileText, RotateCcw, Hash
+  PenTool, CheckCircle2, XCircle, Clock, ChevronDown,
+  ChevronUp, AlertTriangle, Loader2, FileText, RotateCcw, Hash
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
   approveCADRevisionAction,
   rejectCADRevisionAction,
-  submitCADRevisionAction,
   bypassCADEscalationAction,
   type CADRevision,
 } from "@/actions/operations.actions";

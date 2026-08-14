@@ -47,6 +47,37 @@ export async function insertNotification({
   }
 }
 
+export async function insertNotificationsBatch(payloads: Array<{
+  userId: string
+  title: string
+  message: string
+  type: NotificationItem['type']
+  relatedProjectId?: string
+}>) {
+  if (!payloads || payloads.length === 0) return { success: true }
+  
+  try {
+    const supabase: any = await createClient()
+    const dbPayloads = payloads.map(p => ({
+      user_id: p.userId,
+      title: p.title,
+      message: p.message,
+      type: p.type,
+      related_project_id: p.relatedProjectId ?? null
+    }))
+    
+    const { error } = await supabase.rpc('generate_system_notifications_batch', {
+      payloads: dbPayloads
+    })
+    
+    if (error) throw error
+    return { success: true }
+  } catch (error: any) {
+    console.error('[notification] batch insert error:', error.message)
+    return { success: false }
+  }
+}
+
 export async function notifyAssignmentAction(userId: string, projectId: string, role?: string) {
   const supabase: any = await createClient()
   const { data: project } = await supabase.from('projects').select('name').eq('id', projectId).single()
@@ -87,16 +118,14 @@ export async function notifyApprovalAction(projectId: string) {
 
   if (!accountants || accountants.length === 0) return { success: true }
 
-  await Promise.all(
-    accountants.map((acc: any) =>
-      insertNotification({
-        userId: acc.id,
-        title: 'New Payment Pending',
-        message: `Project "${project?.name || projectId}" approved by QC and ready for billing.`,
-        type: 'approval',
-        relatedProjectId: projectId,
-      })
-    )
+  await insertNotificationsBatch(
+    accountants.map((acc: any) => ({
+      userId: acc.id,
+      title: 'New Payment Pending',
+      message: `Project "${project?.name || projectId}" approved by QC and ready for billing.`,
+      type: 'approval',
+      relatedProjectId: projectId,
+    }))
   )
   return { success: true }
 }
@@ -108,16 +137,14 @@ export async function notifyAdminDispatchOverrideRequestAction(projectId: string
 
   if (!admins || admins.length === 0) return { success: true }
 
-  await Promise.all(
-    admins.map((admin: any) =>
-      insertNotification({
-        userId: admin.id,
-        title: 'Dispatch Override Requested',
-        message: `Accountant requested dispatch override for Project "${project?.name || projectId}" (Payment is pending).`,
-        type: 'approval',
-        relatedProjectId: projectId,
-      })
-    )
+  await insertNotificationsBatch(
+    admins.map((admin: any) => ({
+      userId: admin.id,
+      title: 'Dispatch Override Requested',
+      message: `Accountant requested dispatch override for Project "${project?.name || projectId}" (Payment is pending).`,
+      type: 'approval',
+      relatedProjectId: projectId,
+    }))
   )
   return { success: true }
 }
@@ -133,16 +160,14 @@ export async function notifyPaymentAction(projectId: string) {
     ...(project.created_by ? [project.created_by] : []),
   ])
 
-  await Promise.all(
-    Array.from(recipientIds).map((userId: any) =>
-      insertNotification({
-        userId,
-        title: 'Payment Received',
-        message: `Final payment for "${project.name}" (${project.client_name}) has been recorded.`,
-        type: 'system',
-        relatedProjectId: projectId,
-      })
-    )
+  await insertNotificationsBatch(
+    Array.from(recipientIds).map((userId: any) => ({
+      userId,
+      title: 'Payment Received',
+      message: `Final payment for "${project.name}" (${project.client_name}) has been recorded.`,
+      type: 'system',
+      relatedProjectId: projectId,
+    }))
   )
   return { success: true }
 }
@@ -155,16 +180,14 @@ export async function notifyNewProjectAction(projectId: string, projectName: str
   
   if (!admins || admins.length === 0) return { success: true }
 
-  await Promise.all(
-    admins.map((admin: any) =>
-      insertNotification({
-        userId: admin.id,
-        title: 'New Project Created',
-        message: `A new project "${projectName}" has been created.`,
-        type: 'system',
-        relatedProjectId: projectId,
-      })
-    )
+  await insertNotificationsBatch(
+    admins.map((admin: any) => ({
+      userId: admin.id,
+      title: 'New Project Created',
+      message: `A new project "${projectName}" has been created.`,
+      type: 'system',
+      relatedProjectId: projectId,
+    }))
   )
   return { success: true }
 }
@@ -183,16 +206,14 @@ export async function notifyQuotationCreatedAction(projectId: string | null, quo
     if (project) projectName = `"${project.name}"`;
   }
 
-  await Promise.all(
-    users.map((u: any) =>
-      insertNotification({
-        userId: u.id,
-        title: 'Quotation Created',
-        message: `A new quotation (${quotationNumber}) has been created for ${projectName}.`,
-        type: 'system',
-        relatedProjectId: projectId || undefined,
-      })
-    )
+  await insertNotificationsBatch(
+    users.map((u: any) => ({
+      userId: u.id,
+      title: 'Quotation Created',
+      message: `A new quotation (${quotationNumber}) has been created for ${projectName}.`,
+      type: 'system',
+      relatedProjectId: projectId || undefined,
+    }))
   )
   return { success: true }
 }
@@ -474,16 +495,14 @@ export async function notifyRequirementWarningAction(projectId: string, warningM
 
   if (!project) return { success: true }
 
-  await Promise.all(
-    (assignments || []).map((asg: any) =>
-      insertNotification({
-        userId: asg.user_id,
-        title: 'Requirement Verification Alert',
-        message: `Issue in "${project.name}": ${warningMessage}`,
-        type: 'system',
-        relatedProjectId: projectId,
-      })
-    )
+  await insertNotificationsBatch(
+    (assignments || []).map((asg: any) => ({
+      userId: asg.user_id,
+      title: 'Requirement Verification Alert',
+      message: `Issue in "${project.name}": ${warningMessage}`,
+      type: 'system',
+      relatedProjectId: projectId,
+    }))
   )
   return { success: true }
 }
@@ -545,16 +564,14 @@ export async function notifySupplementalUploadAction(projectId: string) {
     // Remove the uploader themselves
     recipients = recipients.filter((id) => id !== profile.id)
 
-    await Promise.all(
-      Array.from(new Set(recipients)).map((userId: any) =>
-        insertNotification({
-          userId,
-          title,
-          message,
-          type: 'system',
-          relatedProjectId: projectId,
-        })
-      )
+    await insertNotificationsBatch(
+      Array.from(new Set(recipients)).map((userId: any) => ({
+        userId,
+        title,
+        message,
+        type: 'system',
+        relatedProjectId: projectId,
+      }))
     )
     return { success: true }
   } catch (err: any) {
@@ -572,15 +589,13 @@ export async function notifyNewHolidayAction(holidayName: string, date: string, 
     const formattedDate = new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
     const typeLabel = isOptional ? 'Optional Holiday' : 'Public Holiday'
     
-    await Promise.all(
-      users.map((u: any) =>
-        insertNotification({
-          userId: u.id,
-          title: 'New Holiday Added',
-          message: `${holidayName} (${typeLabel}) is scheduled for ${formattedDate}.`,
-          type: 'system',
-        })
-      )
+    await insertNotificationsBatch(
+      users.map((u: any) => ({
+        userId: u.id,
+        title: 'New Holiday Added',
+        message: `${holidayName} (${typeLabel}) is scheduled for ${formattedDate}.`,
+        type: 'system',
+      }))
     )
     return { success: true }
   } catch (error: any) {
@@ -623,15 +638,13 @@ export async function notifyUpcomingHolidaysAction(cronSecret?: string) {
     for (const holiday of holidays) {
       const typeLabel = 'Public Holiday';
       
-      await Promise.all(
-        users.map((u: any) =>
-          insertNotification({
-            userId: u.id,
-            title: 'Reminder: Upcoming Holiday',
-            message: `Reminder: Tomorrow is ${holiday.name} (${typeLabel}).`,
-            type: 'system',
-          })
-        )
+      await insertNotificationsBatch(
+        users.map((u: any) => ({
+          userId: u.id,
+          title: 'Reminder: Upcoming Holiday',
+          message: `Reminder: Tomorrow is ${holiday.name} (${typeLabel}).`,
+          type: 'system',
+        }))
       )
       notificationsSent += users.length
     }

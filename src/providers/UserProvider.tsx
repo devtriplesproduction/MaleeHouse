@@ -117,6 +117,12 @@ export function UserProvider({ children, initialProfile }: { children: React.Rea
   // Initial fetch effect (Removed to prevent duplicate fetch race condition with onAuthStateChange)
 
   const isInitialAuthEvent = useRef(true);
+  const initialProfileRef = useRef(initialProfile);
+
+  // Update ref without triggering the effect below
+  useEffect(() => {
+    initialProfileRef.current = initialProfile;
+  }, [initialProfile]);
 
   // Auth subscription effect
   useEffect(() => {
@@ -146,7 +152,7 @@ export function UserProvider({ children, initialProfile }: { children: React.Rea
         router.push('/login');
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         // Skip fetching if this is the initial mount event and the server already provided the profile for this user
-        if (wasInitial && initialProfile && initialProfile.id === session?.user?.id) {
+        if (wasInitial && initialProfileRef.current && initialProfileRef.current.id === session?.user?.id) {
           upLog('SKIP_GET_PROFILE', { reason: 'Initial event and profile matches' });
           return;
         }
@@ -157,7 +163,7 @@ export function UserProvider({ children, initialProfile }: { children: React.Rea
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, router, getUserProfile, initialProfile]);
+  }, [supabase, router, getUserProfile]);
 
   const signOut = useCallback(async () => {
     setIsLoading(true);

@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, FileText, Building, BookOpen, Clock, CalendarCheck, PlaneTakeoff, PhoneCall, Megaphone } from "lucide-react";
+import { Users, FileText, Building, Clock, CalendarCheck, PlaneTakeoff, PhoneCall, Megaphone } from "lucide-react";
 import { BaseSidebar } from "./BaseSidebar";
 
 const salesLinks = [

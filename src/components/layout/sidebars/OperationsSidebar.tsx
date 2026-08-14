@@ -7,9 +7,7 @@ import { useUser } from "@/hooks/useUser";
 export function OperationsSidebar() {
   const { role } = useUser();
 
-  const operationsLinks: any[] = [
-    { title: "Technical Operations", href: "/operations", icon: Activity },
-  ];
+  const operationsLinks: any[] = [];
 
   if (role === "engineer") operationsLinks.push({ title: "Engineering", href: "/engineer", icon: LayoutDashboard });
   if (role === "cad") operationsLinks.push({ title: "CAD & Drafting", href: "/cad", icon: PenTool });

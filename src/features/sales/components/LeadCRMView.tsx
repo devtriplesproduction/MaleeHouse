@@ -4,12 +4,8 @@ import React from 'react';
 import { FollowUpManager } from './crm/FollowUpManager';
 import { RequirementSystem } from './crm/RequirementSystem';
 import { LeadTimeline } from './crm/LeadTimeline';
-import { 
-  ShieldCheck, 
-  Target, 
-  MessageSquare, 
-  ClipboardList 
-} from 'lucide-react';
+
+
 
 interface LeadCRMViewProps {
   projectId: string;
