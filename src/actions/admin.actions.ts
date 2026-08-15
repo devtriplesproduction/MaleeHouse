@@ -685,3 +685,269 @@ export async function getEmployeeHeavyDataAction(userId: string) {
     return { success: false, error: error.message }
   }
 }
+
+export async function getMilestonePaymentStatusAggregateAction() {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (!profile || !['admin', 'accountant'].includes(profile.role?.toLowerCase())) {
+      return { success: false, error: 'Unauthorized' }
+    }
+    
+    const supabaseAdmin: any = createAdminClient()
+    
+    // Fetch all active projects
+    const { data: projects, error: projectsError } = await supabaseAdmin
+      .from('projects')
+      .select('id, status')
+      .not('status', 'in', '("completed","archived")')
+      
+    if (projectsError) throw projectsError
+    
+    const activeProjectIds = projects?.map((p: any) => p.id) || []
+    
+    if (activeProjectIds.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    // Fetch all milestones for these active projects
+    const { data: milestones, error: milestonesError } = await supabaseAdmin
+      .from('project_milestones')
+      .select('id, project_id, status, created_at')
+      .in('project_id', activeProjectIds)
+      .order('created_at', { ascending: true })
+      
+    if (milestonesError) throw milestonesError
+
+    // Group and limit to 10 per project, then aggregate the pending statuses
+    const milestoneCounts: Record<number, number> = {}
+    const milestoneProjectIds: Record<number, string[]> = {}
+    for (let i = 0; i < 10; i++) {
+      milestoneCounts[i] = 0
+      milestoneProjectIds[i] = []
+    }
+    
+    const projectMilestoneMap: Record<string, any[]> = {}
+    milestones?.forEach((m: any) => {
+      if (!projectMilestoneMap[m.project_id]) {
+        projectMilestoneMap[m.project_id] = []
+      }
+      projectMilestoneMap[m.project_id].push(m)
+    })
+    
+    Object.values(projectMilestoneMap).forEach((projectMilestones) => {
+      // Up to 10 milestones
+      for (let i = 0; i < Math.min(10, projectMilestones.length); i++) {
+        const milestone = projectMilestones[i]
+        if (milestone.status === 'pending' || milestone.status === 'hold') {
+          milestoneCounts[i]++
+          milestoneProjectIds[i].push(milestone.project_id)
+        }
+      }
+    })
+
+    const result = []
+    for (let i = 0; i < 10; i++) {
+      const idx = i + 1
+      const name = `${idx}${idx === 1 ? 'st' : idx === 2 ? 'nd' : idx === 3 ? 'rd' : 'th'} Milestone`
+      result.push({
+        name,
+        value: milestoneCounts[i],
+        projectIds: milestoneProjectIds[i]
+      })
+    }
+
+    return { success: true, data: result }
+  } catch (error: any) {
+    console.error('Milestone Aggregate Error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getMonthlyProjectCreationTrendAction(selectedYear?: number) {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (!profile || !['admin', 'accountant', 'hr', 'engineer'].includes(profile.role?.toLowerCase())) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const currentYear = selectedYear || new Date().getFullYear()
+    const previousYear = currentYear - 1
+
+    const startDate = new Date(Date.UTC(previousYear, 0, 1)).toISOString()
+    const endDate = new Date(Date.UTC(currentYear + 1, 0, 1)).toISOString()
+
+    const supabaseAdmin: any = createAdminClient()
+
+    const { data: projects, error } = await supabaseAdmin
+      .from('projects')
+      .select('id, created_at')
+      .gte('created_at', startDate)
+      .lt('created_at', endDate)
+
+    if (error) throw error
+
+    const months = [
+      { name: 'Jan', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Feb', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Mar', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Apr', current: 0, previous: 0, changePercent: 0 },
+      { name: 'May', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Jun', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Jul', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Aug', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Sep', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Oct', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Nov', current: 0, previous: 0, changePercent: 0 },
+      { name: 'Dec', current: 0, previous: 0, changePercent: 0 }
+    ]
+
+    let currentTotal = 0
+
+    projects?.forEach((p: any) => {
+      const date = new Date(p.created_at)
+      const year = date.getFullYear()
+      const month = date.getMonth()
+
+      if (year === currentYear) {
+        months[month].current += 1
+        currentTotal += 1
+      } else if (year === previousYear) {
+        months[month].previous += 1
+      }
+    })
+
+    let bestMonth = { name: 'Jan', count: -1 }
+    let lowestMonth = { name: 'Jan', count: Infinity }
+
+    months.forEach((m) => {
+      if (m.previous === 0) {
+        m.changePercent = m.current > 0 ? 100 : 0
+      } else {
+        m.changePercent = Math.round(((m.current - m.previous) / m.previous) * 100)
+      }
+
+      if (m.current > bestMonth.count) {
+        bestMonth = { name: m.name, count: m.current }
+      }
+      if (m.current < lowestMonth.count) {
+        lowestMonth = { name: m.name, count: m.current }
+      }
+    })
+
+    if (lowestMonth.count === Infinity) lowestMonth.count = 0
+    if (bestMonth.count === -1) bestMonth.count = 0
+
+    const average = currentTotal > 0 ? Number((currentTotal / 12).toFixed(1)) : 0
+
+    return {
+      success: true,
+      data: {
+        currentYear,
+        previousYear,
+        months,
+        summary: {
+          total: currentTotal,
+          bestMonth,
+          average,
+          lowestMonth
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('Trend Aggregate Error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getMonthlyIncomeExpenseTrendAction(selectedYear?: number) {
+  try {
+    const profile: any = await getUserProfileAction()
+    if (!profile || !['admin', 'accountant'].includes(profile.role?.toLowerCase())) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const currentYear = selectedYear || new Date().getFullYear()
+
+    const startDate = new Date(Date.UTC(currentYear, 0, 1)).toISOString()
+    const endDate = new Date(Date.UTC(currentYear + 1, 0, 1)).toISOString()
+
+    const supabaseAdmin: any = createAdminClient()
+
+    const [paymentsRes, expensesRes, visitsRes] = await Promise.all([
+      supabaseAdmin.from('payments').select('amount, payment_date, created_at').eq('status', 'verified').gte('created_at', startDate).lt('created_at', endDate),
+      supabaseAdmin.from('expenses').select('amount, expense_date, created_at').not('status', 'eq', 'rejected').gte('created_at', startDate).lt('created_at', endDate),
+      supabaseAdmin.from('project_visits').select('visit_cost, scheduled_date, created_at').gte('created_at', startDate).lt('created_at', endDate)
+    ])
+
+    if (paymentsRes.error) throw paymentsRes.error
+    if (expensesRes.error) throw expensesRes.error
+    if (visitsRes.error) throw visitsRes.error
+
+    const months = [
+      { name: 'Jan', income: 0, expense: 0 },
+      { name: 'Feb', income: 0, expense: 0 },
+      { name: 'Mar', income: 0, expense: 0 },
+      { name: 'Apr', income: 0, expense: 0 },
+      { name: 'May', income: 0, expense: 0 },
+      { name: 'Jun', income: 0, expense: 0 },
+      { name: 'Jul', income: 0, expense: 0 },
+      { name: 'Aug', income: 0, expense: 0 },
+      { name: 'Sep', income: 0, expense: 0 },
+      { name: 'Oct', income: 0, expense: 0 },
+      { name: 'Nov', income: 0, expense: 0 },
+      { name: 'Dec', income: 0, expense: 0 }
+    ]
+
+    let totalIncome = 0
+    let totalExpense = 0
+
+    paymentsRes.data?.forEach((p: any) => {
+      const date = new Date(p.payment_date || p.created_at)
+      if (date.getFullYear() === currentYear) {
+        const amt = Number(p.amount || 0)
+        months[date.getMonth()].income += amt
+        totalIncome += amt
+      }
+    })
+
+    expensesRes.data?.forEach((e: any) => {
+      const date = new Date(e.expense_date || e.created_at)
+      if (date.getFullYear() === currentYear) {
+        const amt = Number(e.amount || 0)
+        months[date.getMonth()].expense += amt
+        totalExpense += amt
+      }
+    })
+
+    visitsRes.data?.forEach((v: any) => {
+      const amt = Number(v.visit_cost || 0)
+      if (amt > 0) {
+        const date = new Date(v.scheduled_date || v.created_at)
+        if (date.getFullYear() === currentYear) {
+          months[date.getMonth()].expense += amt
+          totalExpense += amt
+        }
+      }
+    })
+
+    const netProfit = totalIncome - totalExpense
+    const profitMargin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0
+
+    return {
+      success: true,
+      data: {
+        currentYear,
+        months,
+        summary: {
+          totalIncome,
+          totalExpense,
+          netProfit,
+          profitMargin
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('Income Expense Trend Error:', error)
+    return { success: false, error: error.message }
+  }
+}

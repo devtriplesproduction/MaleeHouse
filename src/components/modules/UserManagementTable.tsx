@@ -22,6 +22,7 @@ import {
 } from "@/actions/payroll.actions";
 import { OnboardUserModal } from "@/components/modules/OnboardUserModal";
 import { EmployeeProfileModal } from "@/components/modules/EmployeeProfileModal";
+import { PageHeader } from "@/components/modules/PageHeader";
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS } from "@/config/departments";
 import { Button } from "@/components/ui/button";
@@ -446,66 +447,61 @@ export function UserManagementTable({ initialUsers, initialAuditLogs = [], defau
   return (
     <div className="space-y-6 font-sans">
 
-      {/* Global Title & Stats Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            <>Team <span className="text-indigo-500 dark:text-indigo-400">Management</span></>
-          </h1>
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
-            Manage permissions, invite surveyors, and maintain system security.
-          </p>
-        </div>
+      {/* Global Title & Stats Header Row using PageHeader */}
+      <PageHeader
+        title="Team Management"
+        subtitle="Manage permissions, invite surveyors, and maintain system security."
+        actions={
+          <>
+            <Button
+              onClick={() => {
+                const exportData = users.map(user => ({
+                  'Employee ID': user.employee_id || 'N/A',
+                  'First Name': user.first_name,
+                  'Last Name': user.last_name,
+                  'Email': user.email,
+                  'Personal Email': user.personal_email || 'N/A',
+                  'Phone Number': user.phone_number || 'N/A',
+                  'Role': user.role,
+                  'Department': user.department || 'N/A',
+                  'Designation': user.designation || 'N/A',
+                  'Status': user.status || (user.is_active ? "active" : "suspended"),
+                  'Joining Date': user.joining_date || 'N/A',
+                  'DOB': user.dob || 'N/A',
+                  'Gender': user.gender || 'N/A',
+                  'Address': user.address || 'N/A',
+                  'Emergency Contact': user.emergency_contact || 'N/A',
+                  'Employment Type': user.employment_type || 'N/A',
+                  'Salary': user.salary || 'N/A',
+                  'Experience': user.experience || 'N/A',
+                  'Location': user.location || 'N/A',
+                  'Branch': user.branch || 'N/A',
+                  'Office Location': user.office_location || 'N/A',
+                  'Operational Zone': user.operational_zone || 'N/A',
 
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={() => {
-              const exportData = users.map(user => ({
-                'Employee ID': user.employee_id || 'N/A',
-                'First Name': user.first_name,
-                'Last Name': user.last_name,
-                'Email': user.email,
-                'Personal Email': user.personal_email || 'N/A',
-                'Phone Number': user.phone_number || 'N/A',
-                'Role': user.role,
-                'Department': user.department || 'N/A',
-                'Designation': user.designation || 'N/A',
-                'Status': user.status || (user.is_active ? "active" : "suspended"),
-                'Joining Date': user.joining_date || 'N/A',
-                'DOB': user.dob || 'N/A',
-                'Gender': user.gender || 'N/A',
-                'Address': user.address || 'N/A',
-                'Emergency Contact': user.emergency_contact || 'N/A',
-                'Employment Type': user.employment_type || 'N/A',
-                'Salary': user.salary || 'N/A',
-                'Experience': user.experience || 'N/A',
-                'Location': user.location || 'N/A',
-                'Branch': user.branch || 'N/A',
-                'Office Location': user.office_location || 'N/A',
-                'Operational Zone': user.operational_zone || 'N/A',
-
-              }));
-              const worksheet = XLSX.utils.json_to_sheet(exportData);
-              const workbook = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
-              XLSX.writeFile(workbook, "Employee_Directory.xlsx");
-            }}
-            variant="outline"
-            className="flex items-center gap-3 text-xs font-bold tracking-wider h-10 px-4 border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500/30 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
-          >
-            <FileText className="w-4 h-4" />
-            Export Excel
-          </Button>
-          <Button
-            onClick={() => setIsNewUserModalOpen(true)}
-            variant="hr"
-            className="flex items-center gap-2 text-xs font-bold tracking-wider h-10 px-4"
-          >
-            <UserPlus className="w-4 h-4" />
-            Onboard Employee
-          </Button>
-        </div>
-      </div>
+                }));
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+                XLSX.writeFile(workbook, "Employee_Directory.xlsx");
+              }}
+              variant="outline"
+              className="flex items-center gap-3 text-xs font-bold tracking-wider h-10 px-4 border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500/30 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
+            >
+              <FileText className="w-4 h-4" />
+              Export Excel
+            </Button>
+            <Button
+              onClick={() => setIsNewUserModalOpen(true)}
+              variant="hr"
+              className="flex items-center gap-2 text-xs font-bold tracking-wider h-10 px-4"
+            >
+              <UserPlus className="w-4 h-4" />
+              Onboard Employee
+            </Button>
+          </>
+        }
+      />
 
       {/* Minified Quick Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

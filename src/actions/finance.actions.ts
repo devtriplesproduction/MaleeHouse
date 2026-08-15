@@ -1698,7 +1698,7 @@ export async function markInvoiceAsSentAction(invoiceId: string) {
   }
 }
 
-export async function getProjectBillingSummaryAction(): Promise<ActionResponse> {
+export async function getProjectBillingSummaryAction(filterProjectIds?: string[]): Promise<ActionResponse> {
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
@@ -1714,8 +1714,17 @@ export async function getProjectBillingSummaryAction(): Promise<ActionResponse> 
       const assignedIds = await getAssignedProjectIds(auth.userId, auth.role);
       if (assignedIds !== null) {
         if (assignedIds.length === 0) return { success: true, data: [] };
-        query = query.in('id', assignedIds);
+        // If we also have a requested filter, intersect them
+        if (filterProjectIds && filterProjectIds.length > 0) {
+          const intersectedIds = assignedIds.filter(id => filterProjectIds.includes(id));
+          if (intersectedIds.length === 0) return { success: true, data: [] };
+          query = query.in('id', intersectedIds);
+        } else {
+          query = query.in('id', assignedIds);
+        }
       }
+    } else if (filterProjectIds && filterProjectIds.length > 0) {
+      query = query.in('id', filterProjectIds);
     }
 
     const { data: projectsData, error: projError } = await query;

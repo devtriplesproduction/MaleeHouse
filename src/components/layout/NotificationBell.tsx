@@ -30,6 +30,10 @@ const getNotificationPriority = (title: string, message: string, type: string) =
   const t = title.toLowerCase();
   const m = message.toLowerCase();
 
+  // 0. Upcoming/Material Requests
+  if (t.includes('material request') || m.includes('material request') || t.includes('upcoming') || m.includes('upcoming')) {
+    return 0;
+  }
   // 1. CAD Prototype Submitted
   if (t.includes('cad prototype submitted') || m.includes('cad prototype submitted') || t.includes('cad prototype uploaded') || m.includes('cad prototype uploaded')) {
     return 1;
@@ -81,13 +85,6 @@ export function NotificationBell() {
   }, []);
 
   const sortedNotifications = [...notifications].sort((a: any, b: any) => {
-    const aPriority = getNotificationPriority(a.title, a.message, a.type || '');
-    const bPriority = getNotificationPriority(b.title, b.message, b.type || '');
-    
-    if (aPriority !== bPriority) {
-      return aPriority - bPriority;
-    }
-    
     if (a.is_read !== b.is_read) {
       return a.is_read ? 1 : -1;
     }
@@ -118,7 +115,7 @@ export function NotificationBell() {
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full right-[-20px] sm:right-0 mt-2 w-[320px] sm:w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-top-2 duration-200">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-slate-950/20">
             <div className="flex items-center gap-2">

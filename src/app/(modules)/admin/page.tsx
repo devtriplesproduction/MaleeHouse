@@ -2,8 +2,13 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth-guard';
 import { getAdminWorkspaceDataAction } from '@/actions/workspace.actions';
+import { getMilestonePaymentStatusAggregateAction } from '@/actions/admin.actions';
 import { DispatchOverrideRequestsWidget } from '@/components/modules/DispatchOverrideRequestsWidget';
 import DashboardNotificationCenter from '@/components/modules/DashboardNotificationCenter';
+import { AdminMilestonePieChart } from '@/components/modules/AdminMilestonePieChart';
+import { AdminProjectTrendChart } from '@/components/modules/AdminProjectTrendChart';
+import { AdminIncomeExpenseChart } from '@/components/modules/AdminIncomeExpenseChart';
+import { PageHeader } from '@/components/modules/PageHeader';
 import { cn } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import {
@@ -201,8 +206,12 @@ const formatCurrency = (n: number) => {
 
 async function CommandCenterContent() {
 
-  const { success, data } = await getAdminWorkspaceDataAction();
+  const [{ success, data }, { success: milestoneSuccess, data: milestoneData }] = await Promise.all([
+    getAdminWorkspaceDataAction(),
+    getMilestonePaymentStatusAggregateAction()
+  ]);
   const workspaceData = success && data ? data : {};
+  const milestoneAggregate = milestoneSuccess && milestoneData ? milestoneData : [];
 
   // Safely extract action responses to protect against `{ success: false, error }` results
   const activeProjects = workspaceData.activeProjects || 0;
@@ -275,23 +284,20 @@ async function CommandCenterContent() {
 
   return (
     <div className="space-y-6">
-      {/* ── Signature Terminal Header with Gradient Headline & Container Box ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4 border-b border-slate-200/60 dark:border-white/5">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-            Admin <span className="text-indigo-500">Dashboard</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-450 text-sm font-medium">
-            Company overview and administrative control.
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 p-1.5 bg-gradient-to-r from-slate-50/90 to-slate-100/90 dark:from-slate-900/90 dark:to-slate-950/90 border border-slate-200/85 dark:border-white/10 rounded-2xl shadow-sm backdrop-blur-md flex-shrink-0 flex-wrap">
-          <QuickAction label="Add Employee" href="/admin/users" icon={Users} variant="indigo" />
-          <QuickAction label="Create Project" href="/projects" icon={FolderKanban} variant="amber" />
-          <QuickAction label="Open Banking" href="/accounts/banks" icon={Landmark} variant="emerald" />
-          <QuickAction label="Announcements" href="/announcements" icon={Megaphone} variant="purple" />
-        </div>
-      </div>
+      {/* ── Signature Terminal Header using PageHeader ── */}
+      <PageHeader
+        title="Admin Dashboard"
+        subtitle="Company overview and administrative control."
+        actions={
+          <div className="flex items-center gap-1.5 p-1.5 bg-gradient-to-r from-slate-50/90 to-slate-100/90 dark:from-slate-900/90 dark:to-slate-950/90 border border-slate-200/85 dark:border-white/10 rounded-2xl shadow-sm backdrop-blur-md flex-shrink-0 flex-wrap">
+            <QuickAction label="Add Employee" href="/admin/users" icon={Users} variant="indigo" />
+            <QuickAction label="Create Project" href="/projects" icon={FolderKanban} variant="amber" />
+            <QuickAction label="Open Banking" href="/accounts/banks" icon={Landmark} variant="emerald" />
+            <QuickAction label="Announcements" href="/announcements" icon={Megaphone} variant="purple" />
+          </div>
+        }
+        className="pb-4 border-b border-slate-200/60 dark:border-white/5"
+      />
 
       {/* ── KPI Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -393,6 +399,13 @@ async function CommandCenterContent() {
             </CardContent>
           </div>
         </Card>
+      </div>
+
+      {/* ── Mid Layout section: Analytics & Trends ── */}
+      <div className="grid grid-cols-1 gap-6">
+        <AdminMilestonePieChart data={milestoneAggregate} />
+        <AdminProjectTrendChart />
+        <AdminIncomeExpenseChart />
       </div>
 
       {/* ── Bottom Section: Department widgets & alert center ── */}
