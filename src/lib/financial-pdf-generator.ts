@@ -555,11 +555,7 @@ export const generateFinancialReportPDF = (
             <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 18px;">
               <div>
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                  <div class="brand-logo font-outfit">M</div>
-                  <div>
-                    <h1 class="font-outfit" style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; letter-spacing: -0.02em;">Malee House</h1>
-                    <p class="font-outfit" style="font-size: 8px; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.15em; margin: 0;">Engineering &amp; Survey Services</p>
-                  </div>
+                  <img src="${companySettings?.logoUrl || '/maleehouse Logo.png'}" alt="Malee House Logo" style="height: 48px; width: auto; object-fit: contain;" />
                 </div>
                 
                 <div style="font-size: 10px; color: #64748b; line-height: 1.5; font-weight: 500;">

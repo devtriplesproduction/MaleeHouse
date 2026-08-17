@@ -15,7 +15,7 @@ export async function getLeadsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: leads, error } = await supabase
       .from('projects')
-      .select('id, name, client_name, client_contact, client_address, status, stage, priority, created_at, updated_at, created_by')
+      .select('id, name, client_name, client_contact, client_address, status, priority, created_at, updated_at, created_by')
       .eq('status', 'lead_created')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
@@ -96,7 +96,7 @@ export async function getClientsAction(): Promise<ActionResponse> {
     const supabase: any = await createClient();
     const { data: activeProjects, error } = await supabase
       .from('projects')
-      .select('id, client_name, client_contact, client_address, name, status, stage, created_at')
+      .select('id, client_name, client_contact, client_address, name, status, created_at')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(500);
@@ -125,7 +125,6 @@ export async function getClientsAction(): Promise<ActionResponse> {
         id: item.id,
         name: item.name,
         status: item.status,
-        stage: item.stage,
         created_at: item.created_at
       });
     }

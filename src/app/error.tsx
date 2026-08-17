@@ -11,6 +11,15 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("Global Error Component Caught:", error);
+    import('@/actions/diagnostics.actions').then(({ logClientErrorAction }) => {
+      logClientErrorAction({
+        message: error.message || 'Global Error',
+        stackTrace: error.stack,
+        module: 'Client/React',
+        severity: 'HIGH',
+        path: window.location.pathname
+      }).catch(console.error);
+    }).catch(console.error);
   }, [error]);
 
   return (

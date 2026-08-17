@@ -350,14 +350,32 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
   const totalAmount = Number(invoice.total_amount);
   const remainingAmount = Math.max(0, totalAmount - amountPaid);
 
-  const projectBudget = Number(project?.budget) || 0;
+  let projectBudget = Number(project?.budget) || 0;
+  if (projectBudget === 0 && project?.quotations && project.quotations.length > 0) {
+    const approvedQuotation = project.quotations.find((q: any) => q.status?.toLowerCase() === 'approved');
+    if (approvedQuotation) {
+      projectBudget = Number(approvedQuotation.total_amount);
+    } else {
+      projectBudget = Math.max(...project.quotations.map((q: any) => Number(q.total_amount)));
+    }
+  }
   
   // Extract GST type from the active quotation (assuming the first one or the one with client_details)
   const gstType = project?.quotations?.[0]?.client_details?.gst_type || 'CGST_SGST';
   const projectPayments = project?.payments || [];
   const projectVerifiedPayments = projectPayments.filter((p: any) => p.status === 'verified' || p.status === 'paid');
-  const projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  let projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  if (projectAmountPaid === 0 && amountPaid > 0) {
+    projectAmountPaid = amountPaid;
+  }
   const projectAmountRemaining = Math.max(0, projectBudget - projectAmountPaid);
+  const gstRate = Number(
+    invoice.gst_rate ?? (
+      Number(invoice.amount) > 0
+        ? Math.round((Number(invoice.gst_amount) / Number(invoice.amount)) * 100)
+        : 0
+    )
+  ) || 0;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -528,11 +546,7 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
             <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 18px;">
               <div>
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                  <div class="brand-logo font-outfit">M</div>
-                  <div>
-                    <h1 class="font-outfit" style="font-size: 16px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; letter-spacing: -0.02em;">Malee House</h1>
-                    <p class="font-outfit" style="font-size: 8px; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.15em; margin: 0;">Engineering &amp; Survey Services</p>
-                  </div>
+                  <img src="${companySettings?.logoUrl || '/maleehouse Logo.png'}" alt="Malee House Logo" style="height: 48px; width: auto; object-fit: contain;" />
                 </div>
                 
                 <div style="font-size: 10px; color: #64748b; line-height: 1.5; font-weight: 500;">
@@ -655,16 +669,16 @@ export const generateInvoicePDF = (invoice: any, project: any, companySettings: 
                   </tr>
                   ${(!gstType || gstType === 'CGST_SGST') && Number(invoice.gst_amount) > 0 ? `
                     <tr>
-                      <td class="totals-label">CGST (${Number(invoice.gst_rate) / 2}%)</td>
+                      <td class="totals-label">CGST (${gstRate / 2}%)</td>
                       <td class="totals-val">INR ${(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</td>
                     </tr>
                     <tr>
-                      <td class="totals-label">SGST (${Number(invoice.gst_rate) / 2}%)</td>
+                      <td class="totals-label">SGST (${gstRate / 2}%)</td>
                       <td class="totals-val">INR ${(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</td>
                     </tr>
                   ` : gstType === 'IGST' && Number(invoice.gst_amount) > 0 ? `
                     <tr>
-                      <td class="totals-label">IGST (${Number(invoice.gst_rate)}%)</td>
+                      <td class="totals-label">IGST (${gstRate}%)</td>
                       <td class="totals-val">INR ${Number(invoice.gst_amount).toLocaleString('en-IN')}</td>
                     </tr>
                   ` : ''}

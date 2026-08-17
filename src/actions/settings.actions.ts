@@ -8,6 +8,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { getUserProfileAction } from "./auth.actions";
 import { DEFAULT_COMPANY_SETTINGS } from "@/constants/company";
+import { createAuditLog } from "@/lib/audit/createAuditLog";
 
 export interface CompanySettings {
   id: string;
@@ -119,6 +120,13 @@ export async function updateSystemSettingsAction(key: string, value: any) {
 
     if (error) throw error;
 
+    await createAuditLog({
+      action: 'SETTINGS_UPDATED',
+      module: 'System',
+      description: `Updated system settings: ${key}`,
+      newValue: { key, value },
+    });
+
     revalidatePath("/admin");
     return { success: true };
   } catch (err: any) {
@@ -203,11 +211,21 @@ export async function updateCompanySettingsAction(settings: Partial<CompanySetti
 
     if (error) throw error;
 
+    await createAuditLog({
+      action: 'SETTINGS_UPDATED',
+      module: 'System',
+      description: `Updated company settings`,
+      oldValue: currentSettings,
+      newValue: updatedSettings,
+    });
+
     revalidateTag("company-settings");
-    revalidatePath("/accounts");
-    revalidatePath("/projects");
-    revalidatePath("/settings/details");
-    return { success: true, data: normalizeData(updatedSettings) };
+    revalidatePath("/admin");
+    revalidatePath("/settings");
+    revalidatePath("/invoices");
+    revalidatePath("/receipts");
+    
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update settings" };
   }

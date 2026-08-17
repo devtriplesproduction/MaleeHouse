@@ -7,7 +7,7 @@ import { ROLE_REDIRECTS, Role } from "./permissions/roles";
  * A server-side guard for pages. 
  * Prevents unauthorized users from even seeing the page shell.
  */
-export async function requireRole(allowedRole: string) {
+export async function requireRole(allowedRole: string, strict: boolean = false) {
   const profile = await getUserProfileAction();
 
   if (!profile) {
@@ -15,8 +15,10 @@ export async function requireRole(allowedRole: string) {
   }
 
   // Determine if user is authorized for this specific route
-  // Admin bypasses all checks, otherwise role must match allowedRole
-  const isAuthorized = profile.role === 'admin' || profile.role === allowedRole;
+  // If strict is true, admin does NOT bypass the check.
+  const isAuthorized = strict 
+    ? profile.role === allowedRole
+    : (profile.role === 'admin' || profile.role === allowedRole);
 
   if (!profile.is_active || !isAuthorized) {
     // If not authorized, send them back to their own dashboard or login

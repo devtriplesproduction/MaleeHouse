@@ -1,4 +1,4 @@
-export type Role = "admin" | "sales" | "accountant" | "engineer" | "cad" | "field" | "hr";
+export type Role = "admin" | "sales" | "accountant" | "engineer" | "cad" | "field" | "hr" | "developer";
 
 export const ROLES = {
   ADMIN: "admin" as Role,
@@ -8,6 +8,7 @@ export const ROLES = {
   CAD: "cad" as Role,
   FIELD: "field" as Role,
   HR: "hr" as Role,
+  DEVELOPER: "developer" as Role,
 };
 
 // Determines base redirection rules (legacy and new module-based)
@@ -19,6 +20,7 @@ export const ROLE_REDIRECTS: Record<Role, string> = {
   cad: "/cad",
   field: "/field",
   hr: "/hr",
+  developer: "/developer/dashboard",
 };
 
 // Strict route protection map (Prefix -> Allowed Roles)
@@ -39,5 +41,6 @@ export const PATH_PERMISSIONS: Record<string, Role[]> = {
   "/leaves": ["admin", "sales", "accountant", "engineer", "cad", "field", "hr"],
   "/projects": ["admin", "sales", "accountant", "engineer", "cad", "field", "hr"],
   "/hr": ["admin", "hr"],
+  "/developer": ["developer"],
 };
 

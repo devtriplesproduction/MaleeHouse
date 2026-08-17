@@ -16,6 +16,7 @@ interface LogPaymentModalProps {
   milestoneTitle: string;
   amount: number;
   invoiceId?: string;
+  initialBankId?: string;
   onSuccess: () => void;
 }
 
@@ -27,16 +28,21 @@ export function LogPaymentModal({
   milestoneTitle,
   amount,
   invoiceId,
+  initialBankId,
   onSuccess
 }: LogPaymentModalProps) {
   const [method, setMethod] = useState('Bank Transfer');
   const [txnId, setTxnId] = useState('');
-  const [bankId, setBankId] = useState('');
+  const [bankId, setBankId] = useState(initialBankId || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // bankId auto-set by BankAccountSelector on mount
-  }, [isOpen]);
+    if (isOpen) {
+      setBankId(initialBankId || '');
+      setTxnId('');
+      setMethod('Bank Transfer');
+    }
+  }, [isOpen, initialBankId]);
 
   if (!isOpen) return null;
 

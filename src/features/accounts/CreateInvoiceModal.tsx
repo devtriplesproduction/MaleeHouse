@@ -7,7 +7,11 @@ import {
   Loader2,
   FilePlus,
   Printer,
-  Download
+  Download,
+  Mail,
+  Link2,
+  CheckCircle2,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -17,10 +21,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { getBankAccountsAction } from '@/actions/bank.actions';
 import { toast } from 'sonner';
-import { Mail, Link2, CheckCircle2 } from 'lucide-react';
+import { DocumentHeader } from '../../components/shared/DocumentHeader';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
 import { cn } from '@/lib/utils';
-import { CreditCard } from 'lucide-react';
 
 interface CreateInvoiceModalProps {
   projectId: string;
@@ -290,22 +293,7 @@ export function CreateInvoiceModal({ projectId, projectName, clientName, milesto
                <div className="space-y-8 flex-1">
                   {/* Document Header */}
                   <div className="flex justify-between items-start border-b border-slate-100 pb-6">
-                     <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
-                           <div className="space-y-0.5">
-                              <h1 className="text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h1>
-                              <p className="text-[9px] text-indigo-600 font-semibold uppercase tracking-wider">Engineering & Survey Services</p>
-                           </div>
-                        </div>
-                        
-                        <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                           <p className="font-semibold text-slate-800">{companySettings?.name || 'Malee House Head Office'}</p>
-                           <p>{companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
-                           <p>{companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
-                           <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
-                        </div>
-                     </div>
+                     <DocumentHeader companySettings={companySettings} />
 
                      <div className="text-right space-y-4">
                         <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">Invoice</h1>

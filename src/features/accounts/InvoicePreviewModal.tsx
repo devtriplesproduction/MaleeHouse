@@ -1,24 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  X, 
-  Download, 
-  Printer, 
-  Mail, 
-  FileText,
-  Link2,
-  Send,
-  Loader2,
-  CheckCircle2,
-  CreditCard
-} from 'lucide-react';
+import { Printer, Download, CreditCard, Send, CheckCircle2, ChevronRight, Share2, FileText, X, Mail, Link2, Loader2 } from 'lucide-react';
+import { DocumentHeader } from '../../components/shared/DocumentHeader';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { createPortal } from 'react-dom';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
 import { getBankAccountsAction } from '@/actions/bank.actions';
-import { markInvoiceAsSentAction } from '@/actions/finance.actions';
+import { markInvoiceAsSentAction, getInvoiceByIdAction } from '@/actions/finance.actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -35,9 +25,21 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
   const [bank, setBank] = useState<any>(null);
   const [banks, setBanks] = useState<any[]>([]);
   const [isUpdatingBank, setIsUpdatingBank] = useState(false);
+  const [detailedInvoice, setDetailedInvoice] = useState<any>(invoice);
 
   React.useEffect(() => {
     setMounted(true);
+    setDetailedInvoice(invoice);
+    
+    // Fetch complete invoice data with project payments/quotations if not already present
+    if (invoice?.id && (!invoice.projects?.payments || invoice.projects?.payments.length === 0)) {
+      getInvoiceByIdAction(invoice.id).then(res => {
+        if (res && res.success && res.data) {
+          setDetailedInvoice((prev: any) => ({ ...prev, ...res.data }));
+        }
+      }).catch(console.error);
+    }
+
     getBankAccountsAction().then(res => {
       if (res && res.success && res.data) {
         setBanks(res.data);
@@ -46,7 +48,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
         }
       }
     }).catch(console.error);
-  }, [invoice.bank_id]);
+  }, [invoice.id, invoice.bank_id]);
 
   const handleBankChange = async (bankId: string) => {
     setIsUpdatingBank(true);
@@ -64,18 +66,30 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
 
   const invoiceLink = typeof window !== 'undefined' ? `${window.location.origin}/invoices/${invoice.id}` : '';
 
-  const verifiedPayments = (invoice.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid');
+  const activeInvoice = detailedInvoice || invoice;
+  const verifiedPayments = (activeInvoice.payments || []).filter((p: any) => p.status === 'verified' || p.status === 'paid');
   const amountPaid = verifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-  const totalAmount = Number(invoice.total_amount);
+  const totalAmount = Number(activeInvoice.total_amount);
   const remainingAmount = Math.max(0, totalAmount - amountPaid);
 
-  const projectBudget = Number(invoice.projects?.budget) || 0;
+  let projectBudget = Number(activeInvoice.projects?.budget) || 0;
+  if (projectBudget === 0 && activeInvoice.projects?.quotations && activeInvoice.projects.quotations.length > 0) {
+    const approvedQuotation = activeInvoice.projects.quotations.find((q: any) => q.status?.toLowerCase() === 'approved');
+    if (approvedQuotation) {
+      projectBudget = Number(approvedQuotation.total_amount);
+    } else {
+      projectBudget = Math.max(...activeInvoice.projects.quotations.map((q: any) => Number(q.total_amount)));
+    }
+  }
   
   // Extract GST type from the active quotation (assuming the first one or the one with client_details)
-  const gstType = invoice.projects?.quotations?.[0]?.client_details?.gst_type || 'CGST_SGST';
-  const projectPayments = invoice.projects?.payments || [];
+  const gstType = activeInvoice.projects?.quotations?.[0]?.client_details?.gst_type || 'CGST_SGST';
+  const projectPayments = activeInvoice.projects?.payments || [];
   const projectVerifiedPayments = projectPayments.filter((p: any) => p.status === 'verified' || p.status === 'paid');
-  const projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  let projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  if (projectAmountPaid === 0 && amountPaid > 0) {
+    projectAmountPaid = amountPaid;
+  }
   const projectAmountRemaining = Math.max(0, projectBudget - projectAmountPaid);
 
   const copyClientLink = () => {
@@ -208,22 +222,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
            <div className="space-y-8 flex-1">
               {/* Document Header with Full Malee House Details */}
               <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-6">
-                 <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                       <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
-                       <div className="space-y-0.5">
-                          <h1 className="text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h1>
-                          <p className="text-[9px] text-indigo-600 font-semibold uppercase tracking-wider">Engineering & Survey Services</p>
-                       </div>
-                    </div>
-                    
-                    <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                       <p className="font-semibold text-slate-800">{companySettings?.name || 'Malee House Head Office'}</p>
-                       <p>{companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
-                       <p>{companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
-                       <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin?.toUpperCase() || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
-                    </div>
-                 </div>
+                 <DocumentHeader companySettings={companySettings} />
 
                  <div className="text-left sm:text-right space-y-4">
                     <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">
@@ -370,7 +369,7 @@ export function InvoicePreviewModal({ invoice, companySettings, onClose, onRefre
                  </div>
 
                  {/* Project Totals */}
-                 {projectBudget > 0 && amountPaid === 0 && (
+                 {projectBudget > 0 && (
                    <div className="pt-4 mt-2 border-t border-slate-200">
                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-2">Project Financial Summary</p>
                      <div className="space-y-1.5">

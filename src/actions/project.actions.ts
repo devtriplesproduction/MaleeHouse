@@ -13,6 +13,7 @@ import { generateSequentialCode } from '@/lib/id-generator';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { randomUUID } from 'crypto';
+import { createAuditLog } from '@/lib/audit/createAuditLog';
 
 export type ActionResponse<T = any> = {
   success: boolean;
@@ -102,6 +103,15 @@ export async function createProjectAction(payload: CreateProjectInput): Promise<
       created_at: new Date().toISOString()
     });
 
+    await createAuditLog({
+      action: 'PROJECT_CREATED',
+      module: 'Projects',
+      entityType: 'Project',
+      entityId: projectId,
+      description: `Created project: ${validatedFields.data.name}`,
+      newValue: newProject,
+    });
+
     await revalidateAccountsPaths(projectId);
     revalidatePath('/projects');
     revalidatePath('/operations');
@@ -139,6 +149,14 @@ export async function updateProjectAction(
     }
 
     const supabase: any = await createClient();
+    
+    // Get old value for audit log
+    const { data: oldProject } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+
     const { data: updated, error } = await supabase
       .from('projects')
       .update({
@@ -150,6 +168,16 @@ export async function updateProjectAction(
       .single();
 
     if (error || !updated) return { success: false, error: error?.message || 'Project not found' };
+
+    await createAuditLog({
+      action: 'PROJECT_UPDATED',
+      module: 'Projects',
+      entityType: 'Project',
+      entityId: projectId,
+      description: `Updated project: ${updated.name}`,
+      oldValue: oldProject,
+      newValue: updated,
+    });
 
     await revalidateAccountsPaths(projectId);
 
@@ -170,6 +198,13 @@ export async function deleteProjectAction(projectId: string): Promise<ActionResp
 
     const supabase: any = await createClient();
     
+    // Get old value for audit log
+    const { data: oldProject } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+      
     const { data: updated, error } = await supabase
       .from('projects')
       .delete()
@@ -178,6 +213,15 @@ export async function deleteProjectAction(projectId: string): Promise<ActionResp
 
     if (error) return { success: false, error: error.message };
     if (!updated || updated.length === 0) return { success: false, error: 'Project not found' };
+
+    await createAuditLog({
+      action: 'PROJECT_DELETED',
+      module: 'Projects',
+      entityType: 'Project',
+      entityId: projectId,
+      description: `Deleted project: ${oldProject?.name || projectId}`,
+      oldValue: oldProject,
+    });
 
     await revalidateAccountsPaths(projectId);
 
@@ -422,10 +466,17 @@ function sanitizeSearch(raw: string): string {
 
 /**
  * Project directory list.
- * - With `page`: server-paginated page payload (Projects table).
+ * - Without `page`: flat array capped at 500 (dropdowns / reports / milestones) for backward compat.
+ */
+import { trackPerformance } from '@/lib/diagnostics/performanceTracker';
+
+/**
+ * Enhanced single project list query.
+ * - With `page`: returns { items, count, totalPages, page, pageSize }
  * - Without `page`: flat array capped at 500 (dropdowns / reports / milestones) for backward compat.
  */
 export async function getProjectsListAction(params?: ProjectsListQuery): Promise<ActionResponse> {
+  return trackPerformance('getProjectsListAction', async () => {
   try {
     const { unstable_noStore: noStore } = await import('next/cache');
     noStore();
@@ -532,8 +583,21 @@ export async function getProjectsListAction(params?: ProjectsListQuery): Promise
     // Legacy: flat array for reports / milestones dropdowns
     return { success: true, data: items };
   } catch (error: any) {
+    if (error?.message?.includes('Dynamic server usage') || error?.digest === 'DYNAMIC_SERVER_USAGE') {
+      throw error;
+    }
+    import('@/lib/diagnostics/errorLogger').then(({ captureError }) => {
+      captureError({
+        message: error.message || 'Unknown error in getProjectsListAction',
+        stackTrace: error.stack,
+        module: 'Projects',
+        severity: 'HIGH',
+        path: 'getProjectsListAction'
+      });
+    }).catch(console.error);
     return { success: false, error: error.message };
   }
+  });
 }
 
 export async function getProjectByIdAction(projectId: string): Promise<ActionResponse> {

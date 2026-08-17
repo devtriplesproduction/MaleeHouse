@@ -27,6 +27,7 @@ const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   cad: ["cad:upload"],
   field: ["field:report"],
   hr: [],
+  developer: [],
 };
 
 /**

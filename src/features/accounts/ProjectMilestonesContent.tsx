@@ -104,11 +104,15 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
     setCurrentPage(1);
   }, [searchQuery]);
 
+  const hasAutoOpenedRef = React.useRef<string | null>(null);
+
   // Auto-open panel based on query parameter
   useEffect(() => {
     if (projectIdParam && projects.length > 0) {
+      if (hasAutoOpenedRef.current === projectIdParam) return;
       const project = projects.find((p: any) => p.id === projectIdParam);
       if (project) {
+        hasAutoOpenedRef.current = projectIdParam;
         handleOpenPanel(project);
       }
     }
@@ -172,6 +176,10 @@ export function ProjectMilestonesContent({ initialProjects }: { initialProjects:
     setFieldVisits([]);
     setNewVisitDate(undefined);
     setNewVisitPrice("");
+    if (projectIdParam) {
+      router.replace("/accounts/milestones");
+    }
+    hasAutoOpenedRef.current = null;
   };
 
   const addMilestoneRow = () => {

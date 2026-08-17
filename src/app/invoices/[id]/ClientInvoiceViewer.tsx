@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { publicUpdateInvoiceStatusAction } from '@/actions/finance.actions';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { DocumentHeader } from '../../../components/shared/DocumentHeader';
 
 interface ClientInvoiceViewerProps {
   invoice: any;
@@ -59,8 +60,19 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
   }
   const projectPayments = invoice.projects?.payments || [];
   const projectVerifiedPayments = projectPayments.filter((p: any) => p.status === 'verified' || p.status === 'paid');
-  const projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  let projectAmountPaid = projectVerifiedPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  if (projectAmountPaid === 0 && amountPaid > 0) {
+    projectAmountPaid = amountPaid;
+  }
   const projectAmountRemaining = Math.max(0, projectBudget - projectAmountPaid);
+  const gstType = invoice.projects?.quotations?.[0]?.client_details?.gst_type || 'CGST_SGST';
+  const gstRate = Number(
+    invoice.gst_rate ?? (
+      Number(invoice.amount) > 0
+        ? Math.round((Number(invoice.gst_amount) / Number(invoice.amount)) * 100)
+        : 0
+    )
+  ) || 0;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
@@ -123,22 +135,7 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                <div className="space-y-6 flex-1 mt-4">
                   {/* Document Header with Full Malee House Details */}
                   <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-6">
-                     <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
-                           <div className="space-y-0.5">
-                              <h1 className="text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h1>
-                              <p className="text-[9px] text-indigo-600 font-semibold uppercase tracking-wider">Engineering & Survey Services</p>
-                           </div>
-                        </div>
-                        
-                        <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                           <p className="font-semibold text-slate-800">{companySettings?.name || 'Malee House Head Office'}</p>
-                           <p>{companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
-                           <p>{companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
-                           <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin?.toUpperCase() || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
-                        </div>
-                     </div>
+                     <DocumentHeader companySettings={companySettings} />
 
                      <div className="text-left sm:text-right space-y-4">
                         <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none">
@@ -221,15 +218,23 @@ export function ClientInvoiceViewer({ invoice, companySettings }: ClientInvoiceV
                         <span>INR {Number(invoice.amount).toLocaleString('en-IN')}</span>
                      </div>
 
-                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                        <span>CGST ({Number(invoice.gst_rate) / 2}%)</span>
-                        <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
-                     </div>
-
-                     <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                        <span>SGST ({Number(invoice.gst_rate) / 2}%)</span>
-                        <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
-                     </div>
+                     {(!gstType || gstType === 'CGST_SGST') && Number(invoice.gst_amount) > 0 ? (
+                        <>
+                           <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                              <span>CGST ({gstRate / 2}%)</span>
+                              <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
+                           </div>
+                           <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                              <span>SGST ({gstRate / 2}%)</span>
+                              <span>INR {(Number(invoice.gst_amount) / 2).toLocaleString('en-IN')}</span>
+                           </div>
+                        </>
+                     ) : gstType === 'IGST' && Number(invoice.gst_amount) > 0 ? (
+                        <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
+                           <span>IGST ({gstRate}%)</span>
+                           <span>INR {Number(invoice.gst_amount).toLocaleString('en-IN')}</span>
+                        </div>
+                     ) : null}
 
                      <div className="pt-3 border-t border-slate-200 flex justify-between items-end">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>

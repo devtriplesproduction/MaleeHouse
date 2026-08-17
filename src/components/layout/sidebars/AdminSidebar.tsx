@@ -75,7 +75,6 @@ const adminLinks = [
     icon: Settings,
     subLinks: [
       { title: "Company Settings", href: "/settings/details", icon: Building2 },
-      { title: "Audit Logs", href: "/accounts/audit", icon: ScrollText },
     ],
   },
 ];

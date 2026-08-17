@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getUserProfileAction } from '@/actions/auth.actions';
 import { verifyProjectAccess } from '@/lib/permissions/permissions';
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
+import { createAuditLog } from '@/lib/audit/createAuditLog';
 import { ActionResponse } from './project.actions';
 import {
   createExpenseSchema,
@@ -61,6 +62,15 @@ export async function createExpenseAction(payload: CreateExpenseInput): Promise<
       action: 'EXPENSE_CREATED',
       details: { expense_id: data.id, amount: data.amount, description: data.description },
       created_at: new Date().toISOString()
+    });
+
+    await createAuditLog({
+      action: 'EXPENSE_CREATED',
+      module: 'Expenses',
+      entityType: 'Expense',
+      entityId: data.id,
+      description: `Added an expense of ₹${data.amount} under ${data.category}`,
+      newValue: data,
     });
 
     await revalidateAccountsPaths(payload.project_id || undefined);
@@ -189,6 +199,27 @@ export async function updateExpenseAction(payload: UpdateExpenseInput): Promise<
       created_at: new Date().toISOString()
     });
 
+    const oldFields: any = {};
+    const newFields: any = {};
+    for (const key of Object.keys(updateData)) {
+      if (existing[key] !== (updateData as any)[key] && existing[key]?.toString() !== (updateData as any)[key]?.toString()) {
+        oldFields[key] = existing[key];
+        newFields[key] = (updateData as any)[key];
+      }
+    }
+
+    if (Object.keys(newFields).length > 0) {
+      await createAuditLog({
+        action: 'EXPENSE_UPDATED',
+        module: 'Expenses',
+        entityType: 'Expense',
+        entityId: id,
+        description: `Updated expense details for ₹${updatedExpense.amount}`,
+        oldValue: oldFields,
+        newValue: newFields,
+      });
+    }
+
     if (existing.project_id) await revalidateAccountsPaths(existing.project_id);
     if (updatedExpense.project_id && updatedExpense.project_id !== existing.project_id) {
       await revalidateAccountsPaths(updatedExpense.project_id);
@@ -258,6 +289,15 @@ export async function deleteExpenseAction(id: string): Promise<ActionResponse> {
       action: 'EXPENSE_DELETED',
       details: { expense_id: id, amount: existing.amount, description: existing.description },
       created_at: new Date().toISOString()
+    });
+
+    await createAuditLog({
+      action: 'EXPENSE_DELETED',
+      module: 'Expenses',
+      entityType: 'Expense',
+      entityId: id,
+      description: `Deleted expense of ₹${existing.amount}`,
+      oldValue: existing,
     });
 
     await revalidateAccountsPaths(existing.project_id || undefined);

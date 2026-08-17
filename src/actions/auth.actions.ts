@@ -212,13 +212,16 @@ export async function changePasswordAction(userId: string, newPassword: string) 
 
     if (profileError) return { success: false, error: profileError.message }
 
-    const { logAdminAuditAction } = await import('./admin.actions')
+    const { createAuditLog } = await import('@/lib/audit/createAuditLog')
     const { data: profile } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).single()
-    await logAdminAuditAction({
-      action: 'USER_PASSWORD_CHANGE',
-      details: { email: profile?.email, by: caller.id },
-      severity: 'security',
-      targetUserId: userId,
+    
+    await createAuditLog({
+      action: 'PASSWORD_CHANGED',
+      module: 'Users',
+      entityType: 'User',
+      entityId: userId,
+      description: `Password changed for user ${profile?.email}`,
+      newValue: { changed_by: caller.id },
     })
 
     return { success: true }

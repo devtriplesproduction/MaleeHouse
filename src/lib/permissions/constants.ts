@@ -24,6 +24,7 @@ export const PERMISSIONS = {
     cad: ["prototype", "cad_revision", "cad_submitted", "data_sync", "review", "field_assigned", "field_work", "completed", "final_review"],
     field: ["field_work", "field_assigned", "field_in_progress", "field_completed", "data_sync"],
     hr: [],
+    developer: [],
   } as Record<Role, string[]>,
 
   // File Upload Categories
@@ -35,5 +36,6 @@ export const PERMISSIONS = {
     cad: ["prototype", "cad_drawing", "final_file"],
     field: ["survey_data", "site_photo", "field_report"],
     hr: [],
+    developer: [],
   } as Record<Role, string[]>
 };

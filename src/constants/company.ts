@@ -13,5 +13,6 @@ export const DEFAULT_COMPANY_SETTINGS = {
   accountNumber: "",
   ifscCode: "",
   branchName: "",
-  upiId: ""
+  upiId: "",
+  logoUrl: "/maleehouse Logo.png"
 };

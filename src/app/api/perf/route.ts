@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getProjectQuotationsAction, createQuotationAction } from '@/actions/quotation.actions';
 import { performance } from 'perf_hooks';
 
+export const dynamic = 'force-dynamic';
+
 // This is a temporary route to measure backend performance of the optimized actions
 export async function GET() {
   const metrics: any = {};

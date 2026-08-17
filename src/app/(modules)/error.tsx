@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AlertCircle, RotateCcw, Home } from "lucide-react";
 import Link from "next/link";
 
@@ -11,6 +11,20 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Log the error to an error reporting service
+    console.error("Modules Error Caught:", error);
+    import('@/actions/diagnostics.actions').then(({ logClientErrorAction }) => {
+      logClientErrorAction({
+        message: error.message || 'Modules Error',
+        stackTrace: error.stack,
+        module: 'Client/React',
+        severity: 'HIGH',
+        path: window.location.pathname
+      }).catch(console.error);
+    }).catch(console.error);
+  }, [error]);
+
   return (
     <div className="h-full w-full flex flex-col items-center justify-center min-h-[60vh] p-6 text-center animate-in fade-in zoom-in duration-500">
       <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6">

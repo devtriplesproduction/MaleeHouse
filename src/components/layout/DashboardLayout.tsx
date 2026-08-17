@@ -11,6 +11,7 @@ import { AccountsSidebar } from "@/components/layout/sidebars/AccountsSidebar";
 import { OperationsSidebar } from "@/components/layout/sidebars/OperationsSidebar";
 import { EngineerSidebar } from "@/components/layout/sidebars/EngineerSidebar";
 import { HRSidebar } from "@/components/layout/sidebars/HRSidebar";
+import { DeveloperSidebar } from "@/components/layout/sidebars/DeveloperSidebar";
 import { BirthdayNotifier } from "@/components/modules/BirthdayNotifier";
 
 import DashboardLoading from "@/app/(modules)/loading";
@@ -41,6 +42,7 @@ export function DashboardLayout({
     if (role === "accountant") return <AccountsSidebar />;
     if (role === "engineer") return <EngineerSidebar />;
     if (role === "hr") return <HRSidebar />;
+    if (role === "developer") return <DeveloperSidebar />;
     // Default to operations sidebar for all technical operational roles
     return <OperationsSidebar />;
   };

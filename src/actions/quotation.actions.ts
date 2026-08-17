@@ -16,6 +16,7 @@ import { notifyStageUpdateAction, notifyQuotationCreatedAction } from './notific
 import { revalidateAccountsPaths } from '@/actions/revalidate-utils';
 import { generateSequentialCode } from '@/lib/id-generator';
 import { createClient } from '@/lib/supabase/server';
+import { createAuditLog } from '@/lib/audit/createAuditLog';
 
 export type ActionResponse<T = any> = {
   success: boolean;
@@ -169,6 +170,17 @@ export async function createQuotationAction(payload: CreateQuotationInput): Prom
       }).then(({ error }: { error: any }) => { if (error) throw error; })
     );
 
+    promises.push(
+      createAuditLog({
+        action: 'QUOTATION_CREATED',
+        module: 'Quotations',
+        entityType: 'Quotation',
+        entityId: quotationId,
+        description: `Created quotation ${quotationNumber} for ₹${newQuotation.total_amount}`,
+        newValue: newQuotation,
+      })
+    );
+
     if (payload.project_id) {
       // Sync quotation total_amount to project budget
       promises.push(
@@ -260,6 +272,14 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
 
         // Automatically update the project budget to the accepted quotation total amount
         await supabase.from('projects').update({ budget: quotation.total_amount }).eq('id', quotation.project_id);
+
+        // Mark other approved quotations for this project as Superseded
+        await supabase
+          .from('quotations')
+          .update({ status: 'Superseded' })
+          .eq('project_id', quotation.project_id)
+          .eq('status', 'Approved')
+          .neq('id', quotation.id);
       } else if (payload.status === 'Rejected' || payload.status === 'Revision Requested') {
         const stageResponse = await updateProjectStageAction(
           quotation.project_id,
@@ -277,6 +297,16 @@ export async function updateQuotationStatusAction(payload: UpdateQuotationStatus
       action: 'QUOTATION_STATUS_UPDATED',
       details: { status: payload.status, comment: payload.comment, rejection_category: payload.rejection_category },
       created_at: new Date().toISOString()
+    });
+
+    await createAuditLog({
+      action: 'QUOTATION_UPDATED',
+      module: 'Quotations',
+      entityType: 'Quotation',
+      entityId: quotation.id,
+      description: `Updated quotation ${quotation.quotation_number} status to ${payload.status}`,
+      oldValue: { status: quotation.status },
+      newValue: { status: payload.status, comment: payload.comment, rejection_category: payload.rejection_category },
     });
 
     if (quotation.project_id) {
@@ -346,8 +376,17 @@ export async function clientUpdateQuotationStatusAction(
       
       await supabase.from("projects").update({
         status: "payment_pending",
+        budget: quotation.total_amount,
         updated_at: new Date().toISOString()
       }).eq("id", quotation.project_id);
+
+      // Mark other approved quotations for this project as Superseded
+      await supabase
+        .from('quotations')
+        .update({ status: 'Superseded' })
+        .eq('project_id', quotation.project_id)
+        .eq('status', 'Approved')
+        .neq('id', quotation.id);
 
       const sysUserId = quotation.created_by; // Assign audit trail to the user who created the quotation
 
@@ -832,6 +871,15 @@ export async function deleteQuotationAction(quotationId: string): Promise<Action
       action: 'QUOTATION_DELETED',
       details: { quotation_id: quotationId, quotation_number: quotation.quotation_number },
       created_at: new Date().toISOString()
+    });
+
+    await createAuditLog({
+      action: 'QUOTATION_DELETED',
+      module: 'Quotations',
+      entityType: 'Quotation',
+      entityId: quotationId,
+      description: `Deleted quotation ${quotation.quotation_number} for ₹${quotation.total_amount}`,
+      oldValue: quotation,
     });
 
     await revalidateAccountsPaths(quotation.project_id);

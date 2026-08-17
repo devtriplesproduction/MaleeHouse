@@ -29,7 +29,17 @@ BEGIN
       'client_contact', p.client_contact,
       'gst_number', p.gst_number,
       'budget', p.budget,
-      'site_details', jsonb_build_object('address', p.client_address)
+      'site_details', jsonb_build_object('address', p.client_address),
+      'payments', coalesce((
+        SELECT jsonb_agg(jsonb_build_object('amount', pay.amount, 'status', pay.status))
+        FROM public.payments pay
+        WHERE pay.project_id = p.id AND (pay.status = 'verified' OR pay.status = 'paid')
+      ), '[]'::jsonb),
+      'quotations', coalesce((
+        SELECT jsonb_agg(jsonb_build_object('total_amount', q.total_amount, 'status', q.status, 'gst_rate', q.gst_rate, 'client_details', q.client_details))
+        FROM public.quotations q
+        WHERE q.project_id = p.id
+      ), '[]'::jsonb)
     ),
     'bank', CASE WHEN b.id IS NOT NULL THEN jsonb_build_object(
       'bank_name', b.bank_name,

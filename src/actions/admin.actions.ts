@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OnboardFormData } from '@/lib/validations/onboard'
 import { checkActionRateLimit } from '@/lib/rate-limit'
+import { createAuditLog } from '@/lib/audit/createAuditLog'
 
 export async function logAdminAuditAction({
   action,
@@ -209,6 +210,15 @@ export async function onboardEmployeeAction(
       targetUserId: userId,
     })
 
+    await createAuditLog({
+      action: 'USER_CREATED',
+      module: 'Users',
+      entityType: 'User',
+      entityId: userId,
+      description: `Provisioned employee: ${data.first_name} ${data.last_name}`,
+      newValue: { email: data.email, role: data.role, department: data.department },
+    })
+
     await insertSystemNotification(
       userId,
       'Welcome to Malee House Software',
@@ -238,6 +248,7 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
   try {
     const adminProfile: any = await getUserProfileAction()
     if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
+    if (updates.role === 'developer') return { success: false, error: 'Cannot promote user to developer' }
 
     const supabaseAdmin: any = createAdminClient()
     let statusActive = updates.is_active
@@ -252,6 +263,9 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
         updates[field] = null
       }
     }
+
+    // Get old value for audit
+    const { data: oldProfile } = await supabaseAdmin.from('profiles').select('*').eq('id', userId).maybeSingle();
 
     const { data, error } = await (supabaseAdmin as any)
       .from('profiles')
@@ -289,6 +303,23 @@ export async function updateEmployeeProfileAction(userId: string, updates: Parti
       targetUserId: userId,
     })
 
+    let actionName: any = 'USER_UPDATED';
+    if (updates.is_active === false || updates.status === 'deactivated') {
+      actionName = 'USER_DEACTIVATED';
+    } else if (updates.role && oldProfile && updates.role !== oldProfile.role) {
+      actionName = 'ROLE_CHANGED';
+    }
+
+    await createAuditLog({
+      action: actionName,
+      module: 'Users',
+      entityType: 'User',
+      entityId: userId,
+      description: `Updated profile for user ${userId}`,
+      oldValue: oldProfile,
+      newValue: data,
+    });
+
     await insertSystemNotification(
       userId,
       'Profile Information Updated',
@@ -318,6 +349,14 @@ export async function resetEmployeePasswordAction(userId: string, newPassword: s
       details: { reset_by: adminProfile.email },
       severity: 'security',
       targetUserId: userId,
+    })
+    
+    await createAuditLog({
+      action: 'PASSWORD_RESET',
+      module: 'Users',
+      entityType: 'User',
+      entityId: userId,
+      description: 'Administrative password reset',
     })
 
     return { success: true }
@@ -370,6 +409,7 @@ export async function updateUserRoleAction(userId: string, role: string) {
   try {
     const adminProfile: any = await getUserProfileAction()
     if (adminProfile?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+    if (role === 'developer') return { success: false, error: 'Cannot promote user to developer' }
 
     const supabaseAdmin: any = createAdminClient()
     const { data: existing } = await (supabaseAdmin as any).from('profiles').select('role, email').eq('id', userId).maybeSingle()
@@ -471,7 +511,9 @@ export async function offboardEmployeeAction(userId: string) {
     if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
 
     const supabaseAdmin: any = createAdminClient()
-    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email').eq('id', userId).maybeSingle()
+    const { data: profile } = await (supabaseAdmin as any).from('profiles').select('email, role').eq('id', userId).maybeSingle()
+
+    if (profile?.role === 'developer') return { success: false, error: 'Cannot offboard developer account' }
 
     await supabaseAdmin
       .from('profiles')
@@ -500,7 +542,9 @@ export async function deleteEmployeeAction(userId: string) {
     if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'hr') return { success: false, error: 'Unauthorized' }
 
     const supabaseAdmin: any = createAdminClient()
-    const { data: deletedUser } = await (supabaseAdmin as any).from('profiles').select('email, first_name, last_name').eq('id', userId).maybeSingle()
+    const { data: deletedUser } = await (supabaseAdmin as any).from('profiles').select('email, first_name, last_name, role').eq('id', userId).maybeSingle()
+
+    if (deletedUser?.role === 'developer') return { success: false, error: 'Cannot delete developer account' }
 
     // Soft delete: We do NOT delete from auth.users or profiles. 
     // We update the profile to be terminated and inactive.
@@ -542,11 +586,12 @@ export async function addSalaryIncrementAction(employeeId: string, newSalary: nu
     // Fetch current profile
     const { data: emp, error: empError } = await supabaseAdmin
       .from('profiles')
-      .select('salary, first_name, last_name, department, designation, employee_id')
+      .select('salary, first_name, last_name, department, designation, employee_id, role')
       .eq('id', employeeId)
       .single()
       
     if (empError) throw new Error('Employee not found')
+    if (emp.role === 'developer') return { success: false, error: 'Cannot modify developer salary' }
     
     const previousSalary = emp.salary || 0
     const incrementAmount = newSalary - previousSalary
@@ -675,11 +720,13 @@ export async function getEmployeeHeavyDataAction(userId: string) {
     const supabaseAdmin: any = createAdminClient()
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .select('profile_photo, documents')
+      .select('profile_photo, documents, role')
       .eq('id', userId)
       .maybeSingle()
       
     if (error) throw error
+    if (data?.role === 'developer' && profile.role !== 'developer') return { success: false, error: 'Unauthorized' }
+
     return { success: true, data: normalizeData(data || {}) }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -949,5 +996,182 @@ export async function getMonthlyIncomeExpenseTrendAction(selectedYear?: number) 
   } catch (error: any) {
     console.error('Income Expense Trend Error:', error)
     return { success: false, error: error.message }
+  }
+}
+
+export async function getAuditLogsAction(params: { search?: string, limit?: number, page?: number, pageSize?: number, module?: string, action?: string, timeRange?: string } = {}) {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile || profile.role !== 'developer') {
+      return { success: false, error: 'Unauthorized: Only developers can view audit logs' };
+    }
+
+    const supabaseAdmin: any = createAdminClient();
+    
+    let query = supabaseAdmin
+      .from('audit_logs')
+      .select('id, user_id, user_name, user_role, action, module, entity_type, entity_id, description, old_value, new_value, metadata, ip_address, user_agent, created_at, profiles(first_name, last_name, role)', { count: 'exact' });
+
+    if (params.module) {
+      query = query.eq('module', params.module);
+    }
+    
+    if (params.action) {
+      query = query.eq('action', params.action);
+    }
+
+    if (params.search) {
+      query = query.or(`description.ilike.%${params.search}%,user_name.ilike.%${params.search}%`);
+    }
+
+    if (params.timeRange && params.timeRange !== 'all') {
+      const now = new Date();
+      let fromDate = new Date();
+      switch (params.timeRange) {
+        case '1h':
+          fromDate.setHours(now.getHours() - 1);
+          break;
+        case '24h':
+          fromDate.setHours(now.getHours() - 24);
+          break;
+        case '7d':
+          fromDate.setDate(now.getDate() - 7);
+          break;
+        case '30d':
+          fromDate.setDate(now.getDate() - 30);
+          break;
+        case '1y':
+          fromDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      query = query.gte('created_at', fromDate.toISOString());
+    }
+
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 50;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    query = query.order('created_at', { ascending: false }).range(from, to);
+
+    const { data, count, error } = await query;
+
+    if (error) throw error;
+
+    const formattedData = (data || []).map((log: any) => ({
+      id: log.id,
+      userId: log.user_id,
+      userName: (log.user_name && log.user_name !== 'Unknown User') ? log.user_name : (log.profiles ? `${log.profiles.first_name || ''} ${log.profiles.last_name || ''}`.trim() || 'System' : 'System'),
+      userRole: log.user_role || (log.profiles ? log.profiles.role : 'system'),
+      action: log.action,
+      module: log.module,
+      entityType: log.entity_type,
+      entityId: log.entity_id,
+      description: log.description,
+      oldValue: log.old_value,
+      newValue: log.new_value,
+      metadata: log.metadata,
+      ipAddress: log.ip_address,
+      userAgent: log.user_agent,
+      createdAt: log.created_at,
+    }));
+
+    return { 
+      success: true, 
+      data: {
+        items: formattedData,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / pageSize)
+      } 
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getErrorLogsAction(params: { page?: number, pageSize?: number, resolved?: boolean, severity?: string } = {}) {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile || profile.role !== 'developer') return { success: false, error: 'Unauthorized' };
+
+    const supabaseAdmin: any = createAdminClient();
+    let query = supabaseAdmin.from('error_logs').select('*, profiles(first_name, last_name, role)', { count: 'exact' });
+
+    if (params.resolved !== undefined) query = query.eq('resolved', params.resolved);
+    if (params.severity) query = query.eq('severity', params.severity);
+
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 50;
+    query = query.order('created_at', { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
+
+    const { data, count, error } = await query;
+    if (error) throw error;
+
+    return { success: true, data: { items: data || [], totalPages: Math.ceil((count || 0) / pageSize) } };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function toggleErrorResolvedAction(id: string, resolved: boolean) {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile || profile.role !== 'developer') return { success: false, error: 'Unauthorized' };
+
+    const supabaseAdmin: any = createAdminClient();
+    const { error } = await supabaseAdmin.from('error_logs').update({ resolved }).eq('id', id);
+    if (error) throw error;
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getPerformanceMetricsAction(params: { page?: number, pageSize?: number } = {}) {
+  try {
+    const profile = await getUserProfileAction();
+    if (!profile || profile.role !== 'developer') return { success: false, error: 'Unauthorized' };
+
+    const supabaseAdmin: any = createAdminClient();
+    
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 50;
+    const { data: items, count, error: itemsErr } = await supabaseAdmin
+      .from('performance_metrics')
+      .select('*, profiles(first_name, last_name)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range((page - 1) * pageSize, page * pageSize - 1);
+      
+    if (itemsErr) throw itemsErr;
+
+    // For averages, we can compute them on the fly if needed
+    const { data: allItems } = await supabaseAdmin.from('performance_metrics').select('duration_ms, path').order('created_at', { ascending: false }).limit(1000);
+    let avgResponseTime = 0;
+    const routeStats: Record<string, { total: number, count: number }> = {};
+    if (allItems && allItems.length > 0) {
+      avgResponseTime = Math.round(allItems.reduce((acc: number, item: any) => acc + item.duration_ms, 0) / allItems.length);
+      allItems.forEach((item: any) => {
+        if (!routeStats[item.path]) routeStats[item.path] = { total: 0, count: 0 };
+        routeStats[item.path].total += item.duration_ms;
+        routeStats[item.path].count++;
+      });
+    }
+
+    const slowestRoutes = Object.entries(routeStats)
+      .map(([path, stats]) => ({ path, avgDuration: Math.round(stats.total / stats.count) }))
+      .sort((a, b) => b.avgDuration - a.avgDuration)
+      .slice(0, 5);
+
+    return { 
+      success: true, 
+      data: { 
+        items: items || [], 
+        totalPages: Math.ceil((count || 0) / pageSize),
+        avgResponseTime,
+        slowestRoutes
+      } 
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message };
   }
 }

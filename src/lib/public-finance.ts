@@ -13,16 +13,22 @@ function publicSupabase() {
   })
 }
 
-export async function fetchPublicInvoice(id: string, token?: string | null) {
+export async function fetchPublicInvoice(
+  id: string,
+  token?: string | null
+) {
   if (token) {
     const resolved = await resolveShareToken(token)
     if (!resolved || resolved.resource_type !== 'invoice') return null
+    if (resolved.resource_id !== id) return null
     return resolved.data
   }
   if (!id || id.length > 80) return null
   const supabase = publicSupabase()
   try {
-    const { data, error } = await supabase.rpc('get_public_invoice', { p_id: id })
+    const { data, error } = await supabase.rpc('get_public_invoice', {
+      p_id: id,
+    })
     if (error) {
       console.error('get_public_invoice error:', error.message)
       return null

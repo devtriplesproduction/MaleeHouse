@@ -17,6 +17,7 @@ import {
 import { requireProjectAccess } from "@/lib/permissions/project-access";
 import { notifySupplementalUploadAction, notifyStageUpdateAction, notifyAdminDispatchOverrideRequestAction } from "@/actions/notification.actions";
 import { getTasksForStage } from "@/lib/workflow-engine";
+import { createAuditLog } from '@/lib/audit/createAuditLog';
 import { logWorkflowAudit } from "@/lib/workflow/logWorkflowAudit";
 
 export type WorkflowResponse = {
@@ -607,6 +608,16 @@ export async function transitionWorkflowAction(
 
     // Notifications stay in app (recipient rules) — fire-and-forget
     await notifyStageUpdateAction(projectId, fromStageFinal || "lead", newStage).catch(console.error);
+
+    await createAuditLog({
+      action: 'PROJECT_UPDATED',
+      module: 'Projects',
+      entityType: 'Project',
+      entityId: projectId,
+      description: `Project stage changed to ${newStage}`,
+      oldValue: { status: fromStageFinal },
+      newValue: { status: newStage },
+    });
 
     await revalidateAccountsPaths(projectId);
 

@@ -32,7 +32,7 @@ export function BankAccountSelector({
     getBankAccountsAction().then(res => {
       if (res.success && res.data) {
         setBanks(res.data);
-        if (!value) {
+        if (!value || !res.data.some((b: any) => b.id === value)) {
           const def = res.data.find((b: any) => b.is_default) ?? res.data[0];
           if (def) onChange(def.id);
         }

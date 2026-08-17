@@ -11,6 +11,8 @@ import {
   duplicateQuotationTemplateAction, 
   setDefaultQuotationTemplateAction 
 } from "@/actions/quotation.actions";
+import { PageHeader } from "@/components/modules/PageHeader";
+import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function TemplateManagementPanel() {
@@ -116,18 +118,19 @@ export function TemplateManagementPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">T&C Templates</h2>
-          <p className="text-xs text-slate-500 mt-1">Manage reusable terms and conditions for quotations.</p>
-        </div>
-        <button 
-          onClick={() => setEditingTemplate({ name: "", category: "General", clauses: [] })}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-all"
-        >
-          <Plus className="w-4 h-4" /> Create Template
-        </button>
-      </div>
+      <PageHeader
+        title="T&C Templates"
+        subtitle="Manage reusable terms and conditions for quotations."
+        icon={FileText}
+        actions={
+          <button 
+            onClick={() => setEditingTemplate({ name: "", category: "General", clauses: [] })}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-all"
+          >
+            <Plus className="w-4 h-4" /> Create Template
+          </button>
+        }
+      />
 
       {templates.length === 0 ? (
         <div className="py-20 text-center glass-card">

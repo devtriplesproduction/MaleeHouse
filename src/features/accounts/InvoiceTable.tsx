@@ -275,6 +275,7 @@ export function InvoiceTable({ invoices, searchQuery = "", onRefresh }: InvoiceT
         invoiceId={selectedPaymentInvoice?.id || ''}
         milestoneTitle={selectedPaymentInvoice?.invoice_number || ''}
         amount={selectedPaymentInvoice?.total_amount || 0}
+        initialBankId={selectedPaymentInvoice?.bank_id}
         onSuccess={() => {
           if (onRefresh) onRefresh();
         }}

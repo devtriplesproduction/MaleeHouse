@@ -18,6 +18,7 @@ import {
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DocumentHeader } from '../../components/shared/DocumentHeader';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { toast } from 'sonner';
 
@@ -402,22 +403,7 @@ export function PaymentReceiptsTable({ payments, searchQuery }: PaymentReceiptsT
                  <div className="space-y-8 flex-1">
                     {/* Document Header with Full Malee House Details */}
                     <div className="flex justify-between items-start border-b border-slate-100 pb-6">
-                       <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
-                             <div className="space-y-0.5">
-                                <h1 className="text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h1>
-                                <p className="text-[9px] text-emerald-600 font-semibold uppercase tracking-wider">Engineering & Survey Services</p>
-                             </div>
-                          </div>
-                          
-                          <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                             <p className="font-semibold text-slate-800">{companySettings?.name || 'Malee House Head Office'}</p>
-                             <p>{companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
-                             <p>{companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
-                             <p className="text-[10px] mt-0.5 font-semibold text-emerald-600/80">GSTIN: {companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
-                          </div>
-                       </div>
+                       <DocumentHeader companySettings={companySettings} />
 
                        <div className="text-right space-y-4">
                           <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none print:text-slate-300">Payment Receipt</h1>

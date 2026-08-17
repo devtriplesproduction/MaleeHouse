@@ -191,7 +191,7 @@ export function ProjectDetailTabs({
   return (
     <div className="space-y-6">
       {/* Old Simple Tab Header */}
-      <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 p-1.5 bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/60 dark:border-white/10 rounded-full w-full">
+      <div className="flex overflow-x-auto scrollbar-hide items-center gap-2 p-1.5 bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/60 dark:border-white/10 rounded-2xl lg:rounded-full w-full">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -201,7 +201,7 @@ export function ProjectDetailTabs({
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-full text-xs font-bold tracking-wide transition-all duration-200",
+                "flex-1 flex shrink-0 items-center justify-center gap-2.5 px-4 lg:px-6 py-2.5 rounded-full text-xs font-bold tracking-wide transition-all duration-200 whitespace-nowrap",
                 isActive 
                   ? cn("bg-white dark:bg-slate-800 shadow-sm border border-slate-200/50 dark:border-white/5", theme.text) 
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-200/40 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-200"

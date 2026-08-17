@@ -19,8 +19,8 @@ import {
   Printer
 } from "lucide-react";
 import { generateQuotationPDF } from "@/lib/pdf-generator";
+import { QuotationDocument } from "@/features/accounts/QuotationDocument";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 interface QuotationItem {
@@ -234,11 +234,6 @@ export default function ClientPortalPage() {
   }
 
   const isSentOrViewed = quotation.status === "Sent" || quotation.status === "Viewed";
-  const items = quotation.items || [];
-  const discountAmount = quotation.discount_amount || 0;
-  const discountPercentage = quotation.discount_pct || quotation.discount_percentage || 0;
-  const clauses = quotation.clauses || [];
-
   const clientName = quotation.project?.client_name || quotation.client_details?.company_name || 'Client';
   const projectName = quotation.project?.name || quotation.client_details?.project_title || 'Standalone Quotation';
 
@@ -305,293 +300,16 @@ export default function ClientPortalPage() {
             
             {/* ── Beautiful A4 Quotation Visuals (Left 2 cols) ── */}
             <div className="lg:col-span-2 space-y-6 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 min-w-0">
-              
-              {/* PAGE 1: Services Table and Totals */}
-              <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative min-w-[500px] w-full">
-                 <div className="absolute top-4 left-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Malee House Office Document</div>
-                 <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 1 of 2</div>
-
-                 <div className="space-y-6 flex-1">
-                    {/* Document Header */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-5">
-                       <div className="space-y-3 w-full sm:w-auto">
-                          <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-lg font-bold italic">M</div>
-                             <div className="space-y-0.5">
-                                <h1 className="text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h1>
-                                <p className="text-[9px] text-indigo-600 font-semibold uppercase tracking-wider">Engineering & Survey Services</p>
-                             </div>
-                          </div>
-                          
-                          <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                             <p className="font-semibold text-slate-800">{companySettings?.name || 'Malee House Head Office'}</p>
-                             <p>{companySettings?.address || '4th Floor, Alpha Block, Sigma Tech Park'}</p>
-                             <p>{companySettings?.cityStateZip || 'Whitefield, Bangalore, Karnataka 560066'}</p>
-                             <p className="text-[10px] mt-0.5 font-semibold text-indigo-600/80">GSTIN: {companySettings?.gstin || '36AAAAA1111A1Z1'} | Tel: {companySettings?.telephone || '+91 80 4987 6543'}</p>
-                          </div>
-                       </div>
-
-                       <div className="text-left sm:text-right space-y-4 w-full sm:w-auto">
-                          <h1 className="text-3xl font-extrabold text-slate-200 uppercase tracking-tight leading-none sm:text-right">Quotation</h1>
-                          
-                          <div className="space-y-2 text-xs flex flex-row sm:flex-col justify-between sm:justify-start gap-4 sm:gap-2">
-                             <div className="flex flex-col items-start sm:items-end">
-                                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Quote Number</p>
-                                <p className="font-semibold text-slate-800 nums">#{quotation.quotation_number}</p>
-                             </div>
-                             <div className="flex flex-col items-start sm:items-end">
-                                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Date Issued</p>
-                                <p className="font-semibold text-slate-800">{format(new Date(quotation.created_at), 'MMMM dd, yyyy')}</p>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-
-                    {/* Client Bill To & Project info */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/50 text-slate-700">
-                        <div>
-                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Client Bill To:</p>
-                           <h2 className="text-xs font-semibold text-slate-800 leading-tight">{clientName}</h2>
-                           {(quotation.project?.gst_number || quotation.client_details?.gst_number) && (
-                              <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase font-semibold">GSTIN: {quotation.project?.gst_number || quotation.client_details?.gst_number}</p>
-                           )}
-                        </div>
-                       <div>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Project Assignment:</p>
-                          <h2 className="text-xs font-semibold text-slate-800 leading-tight">{projectName}</h2>
-                       </div>
-                    </div>
-
-                    {/* Services Table */}
-                    <div className="overflow-x-auto no-scrollbar">
-                       <table className="w-full border-collapse min-w-[500px]">
-                          <thead>
-                             <tr className="border-b border-slate-900 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                                <th className="py-2 text-left w-10">#</th>
-                                <th className="py-2 text-left">Service Description</th>
-                                <th className="py-2 text-center w-16">Qty</th>
-                                <th className="py-2 text-right w-32">Unit Price</th>
-                                <th className="py-2 text-right w-32">Total</th>
-                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 text-slate-700">
-                             {items.map((item, i) => (
-                                <tr key={i} className="align-top">
-                                   <td className="py-3.5 text-xs font-semibold text-slate-400">{i + 1}</td>
-                                   <td className="py-3.5">
-                                      <p className="text-xs font-semibold text-slate-900 uppercase tracking-tight">{item.service_name}</p>
-                                      {item.hsn_code && (
-                                         <p className="text-[9px] text-indigo-500 font-bold uppercase mt-0.5 tracking-wider">HSN/SAC: {item.hsn_code}</p>
-                                      )}
-                                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{item.description || 'Professional survey services as per client requirements.'}</p>
-                                   </td>
-                                   <td className="py-3.5 text-center text-xs font-semibold text-slate-800">{item.quantity} {item.unit || ''}</td>
-                                   <td className="py-3.5 text-right text-xs font-medium text-slate-800 nums">INR {(item.unit_price ?? 0).toLocaleString('en-IN')} {item.unit ? `/ ${item.unit}` : ''}</td>
-                                   <td className="py-3.5 text-right text-xs font-semibold text-slate-900 nums">INR {(item.total ?? 0).toLocaleString('en-IN')}</td>
-                                </tr>
-                             ))}
-                          </tbody>
-                       </table>
-                    </div>
-                 </div>
-
-                 {/* Totals panel located right below services */}
-                 <div className="border-t-2 border-double border-slate-900 pt-5 mt-6 flex justify-end">
-                    <div className="w-full sm:w-64 space-y-2 text-slate-700">
-                       <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                          <span>Subtotal</span>
-                          <span>INR {(quotation.subtotal ?? 0).toLocaleString('en-IN')}</span>
-                       </div>
-
-                       {discountAmount > 0 && (
-                          <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider text-rose-500 nums">
-                             <span>Discount ({discountPercentage}%)</span>
-                             <span>- INR {discountAmount.toLocaleString('en-IN')}</span>
-                          </div>
-                       )}
-
-                       <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider nums">
-                          <span>
-                            {quotation.client_details?.gst_type === 'NO_GST' || (quotation.gst_amount ?? 0) === 0 ? 'GST (0%)' :
-                             quotation.client_details?.gst_type === 'IGST' ? 'IGST (18%)' : 
-                             'CGST & SGST (18%)'}
-                          </span>
-                          <span>INR {(quotation.gst_amount ?? 0).toLocaleString('en-IN')}</span>
-                       </div>
-                       <div className="pt-3 border-t border-slate-200 flex justify-between items-end">
-                          <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Grand Total</p>
-                          <p className="text-lg font-bold text-slate-900 tracking-tight nums">INR {(quotation.total_amount ?? 0).toLocaleString('en-IN')}</p>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-
-              {/* PAGE 2: Terms & Conditions, Privacy Policy & Notes */}
-              <div className="bg-white text-slate-800 shadow-2xl border border-slate-200/60 rounded-xl overflow-hidden flex flex-col p-6 sm:p-10 relative min-w-[500px] w-full">
-                 <div className="absolute top-4 left-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Malee House Office Document</div>
-                 <div className="absolute top-4 right-4 text-[8px] text-slate-300 uppercase tracking-widest pointer-events-none select-none font-medium">Page 2 of 2</div>
-
-                 <div className="space-y-6 flex-1">
-                    {/* Header section of Page 2 */}
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                       <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-base font-bold italic">M</div>
-                          <div className="space-y-0.5">
-                             <h2 className="text-sm font-bold text-slate-900 tracking-tight uppercase leading-none">Malee House</h2>
-                             <p className="text-[8px] text-slate-400 font-semibold uppercase tracking-wider">Proposal Appendix</p>
-                          </div>
-                       </div>
-                       <p className="text-xs text-slate-400 font-medium">Quote Ref: #{quotation.quotation_number}</p>
-                    </div>
-
-
-
-                    {/* Privacy & Data Protection Policy */}
-                    <div className="border-t border-slate-100 pt-5 space-y-2.5">
-                       <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Privacy & Data Security Policy</h3>
-                       <div className="space-y-2 text-[11px] text-slate-500 font-medium leading-relaxed">
-                          <div className="flex gap-2">
-                             <span className="text-indigo-600 font-bold">•</span>
-                             <p><span className="font-semibold text-slate-700">Data Security:</span> Drone imagery, GIS maps, and site technical measurements are encrypted and saved securely.</p>
-                          </div>
-                          <div className="flex gap-2">
-                             <span className="text-indigo-600 font-bold">•</span>
-                             <p><span className="font-semibold text-slate-700">Strict Confidentiality:</span> Customer parameters and records will never be shared with third parties.</p>
-                          </div>
-                       </div>
-                    </div>
-
-                    {/* Quotation Notes */}
-                    <div className="border-t border-slate-100 pt-5 space-y-3">
-                       <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quotation Notes</h3>
-                       <div className="space-y-3 pl-3 border-l-2 border-indigo-500">
-                          {(quotation.notes || 'Prices are valid for 30 days. 50% mobilization advance required for mobilization.').split('\n').map((paragraph: string, idx: number) => 
-                             paragraph.trim() ? (
-                                <div key={idx} className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                   {paragraph}
-                                </div>
-                             ) : null
-                          )}
-                          {clauses && clauses.length > 0 ? (
-                             clauses.map((clause: any, index: number) => (
-                                <div key={index} className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                   <strong className="text-slate-800 uppercase tracking-wide">{clause.title || clause.clause_title}:</strong> {clause.content || clause.clause_content}
-                                </div>
-                             ))
-                          ) : (
-                             // Legacy fallback parsing
-                             (() => {
-                                const terms = quotation.terms || '';
-                                if (!terms) return null;
-                                const headers = [
-                                   "VALIDITY OF QUOTATION",
-                                   "MOBILIZATION & ACCESS",
-                                   "PAYMENT SCHEDULE",
-                                   "ACCURACY & EXCLUSIONS",
-                                   "FORCE MAJEURE"
-                                ];
-                                const positions: { header: string; index: number }[] = [];
-                                headers.forEach((h: any) => {
-                                   const idx = terms.indexOf(h + ":");
-                                   if (idx !== -1) {
-                                      positions.push({ header: h, index: idx });
-                                   }
-                                });
-                                positions.sort((a: any, b: any) => a.index - b.index);
-                                
-                                if (positions.length === 0) {
-                                   const paragraphs = terms.split(/\n\n+/).map((p: string) => p.trim()).filter(Boolean);
-                                   if (paragraphs.length > 1) {
-                                      return paragraphs.map((p: string, idx: number) => {
-                                         const colonIdx = p.indexOf(":");
-                                         if (colonIdx > 0 && colonIdx < 30) {
-                                            return (
-                                               <div key={idx} className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                                  <strong className="text-slate-800 uppercase tracking-wide">{p.slice(0, colonIdx).trim()}:</strong> {p.slice(colonIdx + 1).trim()}
-                                               </div>
-                                            );
-                                         }
-                                         return (
-                                            <div key={idx} className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                               {p}
-                                            </div>
-                                         );
-                                      });
-                                   }
-                                   return (
-                                      <div className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                         {terms}
-                                      </div>
-                                   );
-                                }
-                                
-                                const result: any[] = [];
-                                for (let i = 0; i < positions.length; i++) {
-                                   const current = positions[i];
-                                   const next = positions[i + 1];
-                                   const startIdx = current.index + current.header.length + 1;
-                                   const endIdx = next ? next.index : terms.length;
-                                   const content = terms.slice(startIdx, endIdx).trim();
-                                   result.push(
-                                      <div key={i} className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                         <strong className="text-slate-800 uppercase tracking-wide">{current.header}:</strong> {content}
-                                      </div>
-                                   );
-                                }
-                                return result;
-                             })()
-                          )}
-                       </div>
-                    </div>
-
-                     {/* Payment Details */}
-                     {quotation.bank && (
-                        <div className="border-t border-slate-100 pt-5 space-y-3">
-                           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Details</h3>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-[11px] leading-relaxed text-slate-600 bg-slate-50/50 p-4 rounded-xl border border-slate-200/60">
-                              <div>
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Bank Name</p>
-                                 <p className="font-semibold">{quotation.bank.bank_name}</p>
-                              </div>
-                              <div>
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Account Name</p>
-                                 <p className="font-semibold">{quotation.bank.account_name}</p>
-                              </div>
-                              <div>
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Account Number</p>
-                                 <p className="font-semibold font-mono tracking-tight">{quotation.bank.account_number}</p>
-                              </div>
-                              <div>
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">IFSC Code</p>
-                                 <p className="font-semibold uppercase">{quotation.bank.ifsc_code}</p>
-                              </div>
-                           </div>
-                        </div>
-                     )}
-                  </div>
-
-                 {/* Signatures Section */}
-                 <div className="border-t border-slate-200 pt-6 mt-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 text-slate-700">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50 border border-slate-200/60 w-fit text-slate-500">
-                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                       <div className="text-left leading-none">
-                          <span className="text-[8px] font-bold uppercase tracking-wider block">Digitally Verified</span>
-                          <span className="text-[7.5px] font-medium text-slate-400 block mt-0.5">ID: {quotation.id?.slice(0, 12)}</span>
-                       </div>
-                    </div>
-
-                    <div className="flex gap-6 sm:gap-10 text-center text-[10px] text-slate-500 uppercase tracking-wider w-full sm:w-auto justify-between sm:justify-start">
-                       <div className="w-28 sm:w-32">
-                          <div className="h-8 border-b border-slate-300"></div>
-                          <p className="font-semibold text-slate-800 mt-2">Prepared By</p>
-                       </div>
-                       <div className="w-28 sm:w-32">
-                          <div className="h-8 border-b border-slate-300"></div>
-                          <p className="font-semibold text-slate-800 mt-2">Approved By Client</p>
-                       </div>
-                    </div>
-                 </div>
-              </div>
+              <QuotationDocument 
+                quotation={quotation} 
+                project={{
+                  name: projectName,
+                  client_name: clientName,
+                  gst_number: quotation.project?.gst_number || quotation.client_details?.gst_number
+                }}
+                companySettings={companySettings || {} as any}
+                bank={quotation.bank}
+              />
             </div>
 
             {/* ── Operations & Actions Bar (Right 1 col) ── */}

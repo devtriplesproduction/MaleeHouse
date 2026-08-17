@@ -53,5 +53,5 @@ export function getDesignationsForDepartment(deptId: string): DesignationConfig[
 export function getSystemRoleForDesignation(deptId: string, designationId: string): "admin" | "sales" | "accountant" | "engineer" | "cad" | "field" | "hr" {
   const dept = DEPARTMENTS.find((d: any) => d.id === deptId);
   const desig = dept?.designations.find((r: any) => r.id === designationId);
-  return desig?.systemRole || "engineer";
+  return (desig?.systemRole as "admin" | "sales" | "accountant" | "engineer" | "cad" | "field" | "hr") || "engineer";
 }

@@ -22,6 +22,7 @@ import {
 } from '@/validations/finance.schema';
 import { generateSequentialCode } from '@/lib/id-generator';
 import { isProjectDispatchedToOps } from '@/lib/project-commercial';
+import { createAuditLog } from '@/lib/audit/createAuditLog';
 
 export type ActionResponse<T = any> = {
   success: boolean;
@@ -138,6 +139,15 @@ export async function createInvoiceAction(payload: CreateInvoiceInput): Promise<
       created_at: new Date().toISOString()
     });
 
+    await createAuditLog({
+      action: 'INVOICE_CREATED',
+      module: 'Invoices',
+      entityType: 'Invoice',
+      entityId: data.id,
+      description: `Created invoice for ${total_amount.toFixed(2)}`,
+      newValue: data,
+    });
+
     await revalidateAccountsPaths(payload.project_id);
 
     return { success: true, data: normalizeData(data) };
@@ -182,6 +192,15 @@ export async function deleteInvoiceAction(invoiceId: string): Promise<ActionResp
       action: 'INVOICE_DELETED',
       details: { invoice_id: invoiceId },
       created_at: new Date().toISOString()
+    });
+
+    await createAuditLog({
+      action: 'INVOICE_DELETED',
+      module: 'Invoices',
+      entityType: 'Invoice',
+      entityId: invoiceId,
+      description: `Deleted invoice: ${invoiceId}`,
+      oldValue: invoice,
     });
 
     await revalidateAccountsPaths(invoice.project_id);
@@ -280,6 +299,15 @@ export async function logPaymentAction(payload: CreatePaymentInput): Promise<Act
       action: 'PAYMENT_LOGGED',
       details: { payment_id: data.id, amount: paymentData.amount },
       created_at: new Date().toISOString()
+    });
+
+    await createAuditLog({
+      action: 'PAYMENT_CREATED',
+      module: 'Payments',
+      entityType: 'Payment',
+      entityId: data.id,
+      description: `Logged payment of ${paymentData.amount}`,
+      newValue: data,
     });
 
     // Auto-verify if logged by accountant or admin
@@ -448,6 +476,16 @@ export async function verifyPaymentAction(paymentId: string, status: 'verified' 
       created_at: new Date().toISOString()
     });
 
+    await createAuditLog({
+      action: 'PAYMENT_UPDATED',
+      module: 'Payments',
+      entityType: 'Payment',
+      entityId: paymentId,
+      description: `Payment ${status}: ${reason || ''}`,
+      oldValue: { status: 'pending' },
+      newValue: { status, reason },
+    });
+
     await revalidateAccountsPaths(payment.project_id);
 
     if (payment.bank_id) {
@@ -476,7 +514,7 @@ export async function getInvoiceByIdAction(invoiceId: string): Promise<ActionRes
     const supabase: any = await createClient();
     const { data, error } = await supabase
       .from('invoices')
-      .select('*, projects(name, client_name, budget, payments(amount, status), gst_number), payments(amount, status)')
+      .select('*, projects(id, name, client_name, client_contact, client_address, budget, gst_number, payments(amount, status), quotations(total_amount, status, gst_rate, client_details)), payments(amount, status), project_milestones(title, sort_order)')
       .eq('id', invoiceId)
       .single();
 
@@ -488,7 +526,7 @@ export async function getInvoiceByIdAction(invoiceId: string): Promise<ActionRes
 }
 
 const INVOICE_LIST_SELECT =
-  'id, invoice_number, project_id, milestone_id, visit_id, amount, gst_amount, total_amount, status, due_date, created_at, bank_id, projects!inner(name, client_name, budget, deleted_at), payments(amount, status), project_milestones(title, sort_order)';
+  'id, invoice_number, project_id, milestone_id, visit_id, amount, gst_amount, total_amount, status, due_date, created_at, bank_id, projects!inner(id, name, client_name, client_contact, budget, gst_number, deleted_at, payments(amount, status), quotations(total_amount, status, gst_rate, client_details)), payments(amount, status), project_milestones(title, sort_order)';
 
 const PAYMENT_LIST_SELECT =
   'id, project_id, invoice_id, amount, status, payment_method, transaction_id, payment_date, created_at, bank_id, projects!inner(name, client_name, deleted_at), bank_accounts(bank_name), invoices(invoice_number, project_milestones(title))';
@@ -875,6 +913,15 @@ export async function createMilestonesAction(
       created_at: new Date().toISOString()
     });
 
+    await createAuditLog({
+      action: 'MILESTONE_UPDATED',
+      module: 'Projects',
+      entityType: 'Milestone',
+      entityId: projectId,
+      description: `Updated project milestone configuration totaling ₹${sum.toFixed(2)} for ${milestones.length} milestones.`,
+      newValue: { count: milestones.length, total: sum },
+    });
+
     await revalidateAccountsPaths(projectId);
 
     // Fetch the final dataset to return
@@ -1122,6 +1169,16 @@ export async function updateMilestoneStatusAction(
       details: { milestone_id: milestoneId, status, comment }
     });
 
+    await createAuditLog({
+      action: 'MILESTONE_UPDATED',
+      module: 'Projects',
+      entityType: 'Milestone',
+      entityId: milestoneId,
+      description: `Updated milestone status to ${status}`,
+      oldValue: { status: milestone.status },
+      newValue: { status, comment },
+    });
+
     if (status === 'paid') {
       const { data: project } = await supabase
         .from('projects')
@@ -1191,6 +1248,16 @@ export async function rescheduleMilestoneAction(
       user_id: profile.id,
       action: 'MILESTONE_RESCHEDULED',
       details: { milestone_id: milestoneId, new_due_date: newDueDate, reason }
+    });
+
+    await createAuditLog({
+      action: 'MILESTONE_UPDATED',
+      module: 'Projects',
+      entityType: 'Milestone',
+      entityId: milestoneId,
+      description: `Rescheduled milestone to ${newDueDate}`,
+      oldValue: { due_date: milestone.due_date },
+      newValue: { due_date: newDueDate, reason },
     });
 
     await revalidateAccountsPaths(milestone.project_id);
@@ -1882,7 +1949,7 @@ export async function updateInvoiceStatusAction(invoiceId: string, status: strin
 
     const supabase: any = await createClient();
     
-    const { data: invoice, error: fetchError } = await supabase.from('invoices').select('project_id').eq('id', invoiceId).single();
+    const { data: invoice, error: fetchError } = await supabase.from('invoices').select('project_id, invoice_number, total_amount, status').eq('id', invoiceId).single();
     if (fetchError || !invoice) return { success: false, error: 'Invoice not found.' };
 
     const lockCheck = await verifyProjectNotLocked(invoice.project_id);
@@ -1904,6 +1971,23 @@ export async function updateInvoiceStatusAction(invoiceId: string, status: strin
       action: 'INVOICE_STATUS_UPDATED',
       details: { invoice_id: invoiceId, status },
       created_at: new Date().toISOString()
+    });
+
+    let auditAction: any = 'INVOICE_UPDATED';
+    let description = `Updated invoice status to ${status}`;
+    if (status.toLowerCase() === 'paid') {
+      auditAction = 'INVOICE_MARKED_PAID';
+      description = `Marked invoice ${invoice.invoice_number} as Paid for ₹${invoice.total_amount}`;
+    }
+
+    await createAuditLog({
+      action: auditAction,
+      module: 'Invoices',
+      entityType: 'Invoice',
+      entityId: invoiceId,
+      description,
+      oldValue: { status: invoice.status },
+      newValue: { status },
     });
 
     await revalidateAccountsPaths(invoice.project_id);

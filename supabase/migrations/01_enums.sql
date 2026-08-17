@@ -54,7 +54,8 @@ DO $$ BEGIN
     'Approved',
     'Rejected',
     'Revision Requested',
-    'Expired'
+    'Expired',
+    'Superseded'
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
