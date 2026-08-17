@@ -546,7 +546,7 @@ export function ClientDirectory({ clients, userRole }: ClientDirectoryProps) {
                     </button>
                     <button
                       onClick={handleSaveClick}
-                      className="px-4 h-9 rounded-xl bg-emerald-500 hover:bg-indigo-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                      className="px-4 h-9 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
                       disabled={isSaving}
                     >
                       {isSaving ? <span className="animate-pulse">Saving...</span> : (

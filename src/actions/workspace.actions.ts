@@ -9,7 +9,7 @@ import { PERMISSIONS } from "@/lib/permissions/constants";
 import { getMyEODReportsAction } from "./eod.actions";
 import { getEngineerTasksAction } from "./task.actions";
 import { getNotificationsAction } from "./notification.actions";
-import { getAllMaterialRequestsAction, getMyVisitsAction, getMyPendingFieldReportsAction, getFieldMetricsAction } from "./field.actions";
+import { getAllMaterialRequestsAction, getMyMaterialRequestsAction, getMyVisitsAction, getMyPendingFieldReportsAction, getFieldMetricsAction } from "./field.actions";
 import { getSOPsAction } from "./sop.actions";
 
 export type WorkspaceResponse<T = null> = {
@@ -165,6 +165,9 @@ export async function getFieldWorkspaceDataAction(): Promise<WorkspaceResponse<a
 
     const projectsQuery = buildOpsProjectsQuery(supabase, auth.userId!, auth.role!);
 
+    const isFullOps = auth.role === "admin" || auth.role === "engineer";
+    const materialsPromise = isFullOps ? getAllMaterialRequestsAction() : getMyMaterialRequestsAction();
+
     const [
       projectsRes,
       sopsRes,
@@ -178,7 +181,7 @@ export async function getFieldWorkspaceDataAction(): Promise<WorkspaceResponse<a
       getSOPsAction(),
       getMyEODReportsAction(),
       getMyVisitsAction(),
-      getAllMaterialRequestsAction(),
+      materialsPromise,
       getMyPendingFieldReportsAction(),
       getFieldMetricsAction()
     ]);

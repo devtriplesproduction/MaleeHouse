@@ -202,7 +202,7 @@ export function QuotationApprovalPanel({ quotation, project, userRole, onUpdate 
               className={cn('flex-1 py-2.5 rounded-xl text-xs font-semibold text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-50',
                 action === 'approve_on_behalf' ? 'bg-indigo-600 hover:bg-indigo-700' :
                   action === 'reject' ? 'bg-indigo-600 hover:bg-indigo-700' :
-                    action === 'revision' ? 'bg-amber-500 hover:bg-indigo-600' :
+                    action === 'revision' ? 'bg-amber-500 hover:bg-amber-600' :
                       'bg-indigo-600 hover:bg-indigo-700')}>
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
               Confirm

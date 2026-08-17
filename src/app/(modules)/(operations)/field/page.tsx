@@ -147,7 +147,7 @@ export default async function FieldDashboardPage() {
                         </h4>
                         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{rev.title}</p>
                       </div>
-                      <Link href={`/projects/${rev.project_id}?tab=issues`} className="text-xs font-bold text-white bg-amber-500 hover:bg-indigo-600 px-4 py-2 rounded-lg transition-colors shadow-sm">
+                      <Link href={`/projects/${rev.project_id}?tab=issues`} className="text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded-lg transition-colors shadow-sm">
                         View Details
                       </Link>
                     </div>

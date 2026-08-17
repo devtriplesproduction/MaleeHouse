@@ -331,6 +331,10 @@ export async function createMaterialRequestAction(projectId: string, itemName: s
     await insertNotificationsBatch(payloads);
   }
 
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/field");
+  revalidatePath("/operations");
+
   return { success: true, message: "Material requested successfully" };
 }
 

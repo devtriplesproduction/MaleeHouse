@@ -461,7 +461,7 @@ export default function ClientPortalPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-2 bg-amber-500 hover:bg-indigo-600 text-white font-semibold text-xs flex items-center justify-center gap-1 rounded-lg shadow-sm"
+                    className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs flex items-center justify-center gap-1 rounded-lg shadow-sm"
                   >
                     {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                     Submit Revision Request <ArrowRight className="w-3.5 h-3.5" />
