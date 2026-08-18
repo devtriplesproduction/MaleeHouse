@@ -66,7 +66,7 @@ AS $$
       project_id, 
       total_amount
     FROM quotations 
-    WHERE status = 'Approved' 
+    WHERE quotations.status = 'Approved' 
     ORDER BY project_id, updated_at DESC, created_at DESC
   ) q ON p.id = q.project_id
   WHERE p.deleted_at IS NULL;
@@ -96,7 +96,7 @@ AS $$
             project_id,
             total_amount as approved_amt
         FROM quotations
-        WHERE status = 'Approved'
+        WHERE quotations.status = 'Approved'
         ORDER BY project_id, updated_at DESC, created_at DESC
     ),
     payment_aggs AS (
@@ -104,7 +104,7 @@ AS $$
             project_id,
             SUM(amount) as received_amount
         FROM payments
-        WHERE status = 'verified'
+        WHERE payments.status = 'verified'
         GROUP BY project_id
     )
     SELECT 
@@ -154,7 +154,7 @@ BEGIN
       project_id, 
       COALESCE(total_amount, 0) AS quotation_total
     FROM quotations
-    WHERE status = 'Approved'
+    WHERE quotations.status = 'Approved'
     ORDER BY project_id, updated_at DESC, created_at DESC
   ),
   billable_visits AS (
@@ -206,4 +206,5 @@ BEGIN
     aggregated.currentProfit
   FROM aggregated;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY INVOKER;
+

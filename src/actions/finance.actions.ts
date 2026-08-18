@@ -1584,10 +1584,12 @@ export async function getFinancialOverviewAction(): Promise<{ success: boolean; 
     });
     const accountsReceivable = Math.max(0, totalInvoiced - totalIncome);
     
-    // Outstanding Payments (same as Accounts Receivable for now, or just pending invoices)
+    // Outstanding Payments (pending/unpaid invoices)
     let outstandingPayments = 0;
     invoices.forEach((i: any) => {
-      if (i.status === 'pending' || i.status === 'issued') outstandingPayments += Number(i.total_amount || 0);
+      if (['pending', 'sent', 'in_review', 'overdue'].includes(i.status)) {
+        outstandingPayments += Number(i.total_amount || 0);
+      }
     });
 
     // Accounts Payable (Pending Expenses)
@@ -2038,7 +2040,7 @@ export async function getPendingInvoicesCountAction() {
     const { count, error } = await supabase
       .from('invoices')
       .select('*', { count: 'exact', head: true })
-      .in('status', ['pending', 'issued']);
+      .in('status', ['pending', 'sent', 'in_review', 'overdue']);
     if (error) throw error;
     return { success: true, data: count || 0 };
   } catch (err: any) {
