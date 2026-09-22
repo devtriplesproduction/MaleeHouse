@@ -10,12 +10,12 @@ export const PERMISSIONS = {
   // Pipeline/Global View Permissions
   VIEW_SALES_PIPELINE: ["admin", "sales"],
   VIEW_ACCOUNTS_PIPELINE: ["admin", "accountant", "sales"],
-  VIEW_ALL_PROJECTS: ["admin", "accountant", "engineer"], // Roles that can see all projects without assignment
+  VIEW_ALL_PROJECTS: ["admin", "accountant", "engineer"],
 
   // Workflow Stages Configuration
   STAGE_UPDATE: {
     admin: ["*", "final_review"],
-    sales: ["lead_created", "quotation_requested", "quotation_sent", "payment_pending"],
+    sales: ["lead_created", "quotation_requested", "quotation_sent", "payment_pending", "prototype"],
     accountant: ["quotation_sent", "payment_pending", "payment_done", "ready_for_dispatch", "project_created", "quotation_requested"],
     engineer: [
       "data_collection", "prototype", "field_work", "data_sync",
