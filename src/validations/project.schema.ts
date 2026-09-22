@@ -30,7 +30,6 @@ export const createProjectSchema = z.object({
       if (!domain) return true;
       const lowerDomain = domain.toLowerCase();
       if (FAKE_DOMAINS.includes(lowerDomain)) return false;
-      // Check against standard disposable list
       return !disposableDomains.includes(lowerDomain);
     }, { message: 'Please provide a valid, non-temporary business or personal email.' })
   ]).optional(),
@@ -54,6 +53,16 @@ export const createProjectSchema = z.object({
         message: 'Target completion date must be a valid today or future date.',
       }
     ),
+  channel: z.enum(['direct', 'vendor']).optional().default('direct'),
+  vendor_id: z.string().uuid().optional().nullable(),
+  vendor_intake: z.enum(['needs_prototype', 'survey_and_prototype_ready']).optional().nullable(),
+  vendor_pay_when: z.enum(['on_create', 'on_deliver']).optional().nullable(),
+  activation_amount: z.number().nonnegative().optional(),
+}).superRefine((val, ctx) => {
+  if ((val.channel ?? 'direct') !== 'vendor') return;
+  if (!val.vendor_id) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vendor is required for vendor-channel projects.', path: ['vendor_id'] });
+  if (!val.vendor_intake) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vendor intake type is required.', path: ['vendor_intake'] });
+  if (!val.vendor_pay_when) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vendor payment timing is required.', path: ['vendor_pay_when'] });
 });
 
 export const updateProjectSchema = createProjectSchema.partial().extend({
