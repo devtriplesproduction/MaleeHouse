@@ -1,0 +1,315 @@
+﻿
+  src\actions\activity.actions.ts:25:    const supabase: any = await createClient()
+  src\actions\activity.actions.ts:26:
+> src\actions\activity.actions.ts:27:    const [stageRes, fileRes, assignRes, commentRes, profileRes] = await 
+Promise.all([
+  src\actions\activity.actions.ts:28:      supabase.from('workflow_history').select('*, 
+profiles!changed_by(first_name, last_name, role)').order('created_at', { ascending: false }).limit(50),
+  src\actions\activity.actions.ts:29:      supabase.from('files').select('*, profiles!uploaded_by(first_name, 
+last_name, role)').order('uploaded_at', { ascending: false }).limit(50),
+  src\actions\admin.actions.ts:427:
+  src\actions\admin.actions.ts:428:    const supabaseAdmin: any = createAdminClient()
+> src\actions\admin.actions.ts:429:    await Promise.all([
+  src\actions\admin.actions.ts:430:      (supabaseAdmin as any).from('workflow_history').delete().neq('id', ''),
+  src\actions\admin.actions.ts:431:      (supabaseAdmin as any).from('comments').delete().neq('id', ''),
+  src\actions\finance.actions.ts:801:
+  src\actions\finance.actions.ts:802:        if (mDataList && mDataList.length > 0) {
+> src\actions\finance.actions.ts:803:          await Promise.all(mDataList.map((mData: any) => {
+  src\actions\finance.actions.ts:804:            const newTitle = mData.title.includes('[Archived]') ? mData.title : 
+`${mData.title} [Archived]`;
+  src\actions\finance.actions.ts:805:            return supabase
+  src\actions\finance.actions.ts:1387:    // We fetch all quotations instead of filtering by 'approved' only, because 
+some 
+  src\actions\finance.actions.ts:1388:    // active projects might have 'Sent' or other status quotations if they 
+skipped the formal approval flow.
+> src\actions\finance.actions.ts:1389:    const [quotesRes, paymentsRes] = await Promise.all([
+  src\actions\finance.actions.ts:1390:      supabase.from('quotations').select('project_id, total_amount, 
+status').in('project_id', projectIds),
+  src\actions\finance.actions.ts:1391:      supabase.from('payments').select('project_id, amount').in('project_id', 
+projectIds).eq('status', 'verified')
+  src\actions\finance.actions.ts:1449:
+  src\actions\finance.actions.ts:1450:    // Fallback: lean column selects (no select('*'))
+> src\actions\finance.actions.ts:1451:    const [paymentsRes, expensesRes, invoicesRes, visitsRes] = await 
+Promise.all([
+  src\actions\finance.actions.ts:1452:      supabase.from('payments').select('status, amount, payment_date, 
+created_at'),
+  src\actions\finance.actions.ts:1453:      supabase.from('expenses').select('amount, expense_date, created_at, 
+status, category'),
+  src\actions\finance.actions.ts:1617:    const supabase: any = await createClient();
+  src\actions\finance.actions.ts:1618:
+> src\actions\finance.actions.ts:1619:    const [projectsRes, invoicesRes, expensesRes] = await Promise.all([
+  src\actions\finance.actions.ts:1620:      supabase.from('projects').select('id, name').is('deleted_at', null),
+  src\actions\finance.actions.ts:1621:      supabase.from('invoices').select('project_id, total_amount, status'),
+  src\actions\finance.actions.ts:1871:    const projectIds = projects.map((p: any) => p.id);
+  src\actions\finance.actions.ts:1872:
+> src\actions\finance.actions.ts:1873:    const [invoicesRes, expensesRes, quotationsRes, visitsRes] = await 
+Promise.all([
+  src\actions\finance.actions.ts:1874:      supabase.from("invoices").select("project_id, status, 
+total_amount").in("project_id", projectIds),
+  src\actions\finance.actions.ts:1875:      supabase.from("expenses").select("project_id, amount").in("project_id", 
+projectIds),
+  src\actions\finance.actions.ts:2074:      paymentsRes,
+  src\actions\finance.actions.ts:2075:      expensesRes
+> src\actions\finance.actions.ts:2076:    ] = await Promise.all([
+  src\actions\finance.actions.ts:2077:      getProjectQuotationsAction(projectId),
+  src\actions\finance.actions.ts:2078:      getFieldVisitsAction(projectId),
+  src\actions\finance.actions.ts:2174:    );
+  src\actions\finance.actions.ts:2175:
+> src\actions\finance.actions.ts:2176:    const [projectsRes, invoicesRes, paymentsRes, milestonesRes] = await 
+Promise.all([
+  src\actions\finance.actions.ts:2177:      projectsQuery,
+  src\actions\finance.actions.ts:2178:      invoicesQuery,
+  src\actions\finance.actions.ts:2264:    }
+  src\actions\finance.actions.ts:2265:
+> src\actions\finance.actions.ts:2266:    const [projectsRes, invoicesRes, paymentsRes, expensesRes, visitsRes, 
+payrollRes] = await Promise.all([
+  src\actions\finance.actions.ts:2267:      projectsQuery,
+  src\actions\finance.actions.ts:2268:      invoicesQuery,
+  src\actions\notification.actions.ts:88:  if (!accountants || accountants.length === 0) return { success: true }
+  src\actions\notification.actions.ts:89:
+> src\actions\notification.actions.ts:90:  await Promise.all(
+  src\actions\notification.actions.ts:91:    accountants.map((acc: any) =>
+  src\actions\notification.actions.ts:92:      insertNotification({
+  src\actions\notification.actions.ts:109:  if (!admins || admins.length === 0) return { success: true }
+  src\actions\notification.actions.ts:110:
+> src\actions\notification.actions.ts:111:  await Promise.all(
+  src\actions\notification.actions.ts:112:    admins.map((admin: any) =>
+  src\actions\notification.actions.ts:113:      insertNotification({
+  src\actions\notification.actions.ts:134:  ])
+  src\actions\notification.actions.ts:135:
+> src\actions\notification.actions.ts:136:  await Promise.all(
+  src\actions\notification.actions.ts:137:    Array.from(recipientIds).map((userId: any) =>
+  src\actions\notification.actions.ts:138:      insertNotification({
+  src\actions\notification.actions.ts:156:  if (!admins || admins.length === 0) return { success: true }
+  src\actions\notification.actions.ts:157:
+> src\actions\notification.actions.ts:158:  await Promise.all(
+  src\actions\notification.actions.ts:159:    admins.map((admin: any) =>
+  src\actions\notification.actions.ts:160:      insertNotification({
+  src\actions\notification.actions.ts:184:  }
+  src\actions\notification.actions.ts:185:
+> src\actions\notification.actions.ts:186:  await Promise.all(
+  src\actions\notification.actions.ts:187:    users.map((u: any) =>
+  src\actions\notification.actions.ts:188:      insertNotification({
+  src\actions\notification.actions.ts:354:
+  src\actions\notification.actions.ts:355:  // Parallel fetch: project + team + admins (was sequential)
+> src\actions\notification.actions.ts:356:  const [projectRes, assignmentsRes, adminsRes] = await Promise.all([
+  src\actions\notification.actions.ts:357:    supabase.from('projects').select('name').eq('id', projectId).single(),
+  src\actions\notification.actions.ts:358:    supabase.from('project_assignments').select('user_id, 
+role').eq('project_id', projectId),
+  src\actions\notification.actions.ts:475:  if (!project) return { success: true }
+  src\actions\notification.actions.ts:476:
+> src\actions\notification.actions.ts:477:  await Promise.all(
+  src\actions\notification.actions.ts:478:    (assignments || []).map((asg: any) =>
+  src\actions\notification.actions.ts:479:      insertNotification({
+  src\actions\notification.actions.ts:546:    recipients = recipients.filter((id) => id !== profile.id)
+  src\actions\notification.actions.ts:547:
+> src\actions\notification.actions.ts:548:    await Promise.all(
+  src\actions\notification.actions.ts:549:      Array.from(new Set(recipients)).map((userId: any) =>
+  src\actions\notification.actions.ts:550:        insertNotification({
+  src\actions\notification.actions.ts:573:    const typeLabel = isOptional ? 'Optional Holiday' : 'Public Holiday'
+  src\actions\notification.actions.ts:574:    
+> src\actions\notification.actions.ts:575:    await Promise.all(
+  src\actions\notification.actions.ts:576:      users.map((u: any) =>
+  src\actions\notification.actions.ts:577:        insertNotification({
+  src\actions\notification.actions.ts:624:      const typeLabel = 'Public Holiday';
+  src\actions\notification.actions.ts:625:      
+> src\actions\notification.actions.ts:626:      await Promise.all(
+  src\actions\notification.actions.ts:627:        users.map((u: any) =>
+  src\actions\notification.actions.ts:628:          insertNotification({
+  src\actions\operations.actions.ts:1010:    ];
+  src\actions\operations.actions.ts:1011:
+> src\actions\operations.actions.ts:1012:    let [{ data: projects }, { data: assignments }] = await Promise.all([
+  src\actions\operations.actions.ts:1013:      supabase.from('projects').select('*').is('deleted_at', 
+null).in('status', operationalStages),
+  src\actions\operations.actions.ts:1014:      supabase.from('project_assignments').select('*')
+  src\actions\payroll.actions.ts:160:
+  src\actions\payroll.actions.ts:161:  // Check and upload storage files in parallel to prevent sequential latency 
+bottlenecks
+> src\actions\payroll.actions.ts:162:  await Promise.allSettled(
+  src\actions\payroll.actions.ts:163:    slipsToCheckStorage.map(async (slip) => {
+  src\actions\payroll.actions.ts:164:      if (!slip.pdf_url) return;
+  src\actions\project.actions.ts:221:    if (projectIds.length === 0) return { success: true, data: [] };
+  src\actions\project.actions.ts:222:
+> src\actions\project.actions.ts:223:    const [{ data: tasks }, { data: comments }] = await Promise.all([
+  src\actions\project.actions.ts:224:      supabase
+  src\actions\project.actions.ts:225:        .from('tasks')
+  src\actions\project.actions.ts:707:    const now = new Date().toISOString();
+  src\actions\project.actions.ts:708:    
+> src\actions\project.actions.ts:709:    const [delayedRes, onTrackRes] = await Promise.all([
+  src\actions\project.actions.ts:710:      supabase
+  src\actions\project.actions.ts:711:        .from('projects')
+  src\actions\quotation.actions.ts:178:    }
+  src\actions\quotation.actions.ts:179:
+> src\actions\quotation.actions.ts:180:    await Promise.all(promises);
+  src\actions\quotation.actions.ts:181:
+  src\actions\quotation.actions.ts:182:    try {
+  src\actions\quotation.actions.ts:647:    }
+  src\actions\quotation.actions.ts:648:
+> src\actions\quotation.actions.ts:649:    await Promise.all(promises);
+  src\actions\quotation.actions.ts:650:
+  src\actions\quotation.actions.ts:651:    if (payload.project_id) {
+  src\actions\reports.actions.ts:57:    const startISO = new Date(start).toISOString();
+  src\actions\reports.actions.ts:58:    
+> src\actions\reports.actions.ts:59:    const [revRes, expRes, details] = await Promise.all([
+  src\actions\reports.actions.ts:60:      supabase.rpc('get_revenue_by_project', { p_start_date: startISO, p_end_date: 
+endISO, p_project_id: pId }),
+  src\actions\reports.actions.ts:61:      supabase.rpc('get_expense_by_category', { p_start_date: startISO, 
+p_end_date: endISO, p_project_id: pId }),
+  src\actions\reports.actions.ts:119:    const startISO = new Date(start).toISOString();
+  src\actions\reports.actions.ts:120:    
+> src\actions\reports.actions.ts:121:    const [revRes, txRes, details] = await Promise.all([
+  src\actions\reports.actions.ts:122:      supabase.rpc('get_revenue_by_project', { p_start_date: startISO, 
+p_end_date: endISO, p_project_id: pId }),
+  src\actions\reports.actions.ts:123:      supabase.rpc('get_income_statement_transactions', { p_start_date: startISO, 
+p_end_date: endISO, p_project_id: pId }),
+  src\actions\reports.actions.ts:173:    const startISO = new Date(start).toISOString();
+  src\actions\reports.actions.ts:174:
+> src\actions\reports.actions.ts:175:    const [expensesRes, details] = await Promise.all([
+  src\actions\reports.actions.ts:176:      supabase.rpc('get_expense_by_category', { p_start_date: startISO, 
+p_end_date: endISO, p_project_id: pId }),
+  src\actions\reports.actions.ts:177:      getCompanyAndProjectDetails(supabase, projectId)
+  src\actions\reports.actions.ts:223:    const endISO = new Date(new Date(asOfDate).setHours(23, 59, 59, 
+999)).toISOString();
+  src\actions\reports.actions.ts:224:
+> src\actions\reports.actions.ts:225:    const [bsRes, details] = await Promise.all([
+  src\actions\reports.actions.ts:226:      supabase.rpc('get_balance_sheet_summary', { p_as_of_date: endISO, 
+p_project_id: pId }),
+  src\actions\reports.actions.ts:227:      getCompanyAndProjectDetails(supabase, projectId)
+  src\actions\reports.actions.ts:276:    const supabase: any = await createClient();
+  src\actions\reports.actions.ts:277:    
+> src\actions\reports.actions.ts:278:    const [projectRes, stmtRes, company] = await Promise.all([
+  src\actions\reports.actions.ts:279:      supabase.from('projects').select('name, client_name, client_contact, 
+client_address').eq('id', projectId).single(),
+  src\actions\reports.actions.ts:280:      supabase.rpc('get_project_statement_summary', { p_project_id: projectId }),
+  src\actions\reports.actions.ts:343:    const supabase: any = await createClient();
+  src\actions\reports.actions.ts:344:
+> src\actions\reports.actions.ts:345:    const [budgetRes, details, financesData] = await Promise.all([
+  src\actions\reports.actions.ts:346:      supabase.rpc('get_project_budget_sheet_summary', { p_project_id: projectId 
+}),
+  src\actions\reports.actions.ts:347:      getCompanyAndProjectDetails(supabase, projectId),
+  src\actions\reports.actions.ts:435:    const supabase: any = await createClient();
+  src\actions\reports.actions.ts:436:
+> src\actions\reports.actions.ts:437:    const [actualRes, details] = await Promise.all([
+  src\actions\reports.actions.ts:438:      supabase.rpc('get_project_actual_sheet_summary', { p_project_id: projectId 
+}),
+  src\actions\reports.actions.ts:439:      getCompanyAndProjectDetails(supabase, projectId)
+  src\actions\review.actions.ts:206:      const { insertNotification } = await 
+import('@/actions/notification.actions');
+  src\actions\review.actions.ts:207:
+> src\actions\review.actions.ts:208:      await Promise.all(
+  src\actions\review.actions.ts:209:        Array.from(recipientIds).map((userId: any) =>
+  src\actions\review.actions.ts:210:          insertNotification({
+  src\actions\review.actions.ts:303:
+  src\actions\review.actions.ts:304:      if (cadAssignments && cadAssignments.length > 0) {
+> src\actions\review.actions.ts:305:        await Promise.all(
+  src\actions\review.actions.ts:306:          cadAssignments.map((cad: any) =>
+  src\actions\review.actions.ts:307:            insertNotification({
+  src\actions\settings.actions.ts:139:
+  src\actions\settings.actions.ts:140:    // Check DB + Auth
+> src\actions\settings.actions.ts:141:    const [dbCheck, authCheck] = await Promise.all([
+  src\actions\settings.actions.ts:142:      supabase.from("system_settings").select("key").limit(1),
+  src\actions\settings.actions.ts:143:      supabase.auth.getSession()
+  src\actions\stats.actions.ts:20:      { count: fieldCount },
+  src\actions\stats.actions.ts:21:      { count: completedCount }
+> src\actions\stats.actions.ts:22:    ] = await Promise.all([
+  src\actions\stats.actions.ts:23:      supabase.from('projects').select('id', { count: 'exact', head: true 
+}).is('deleted_at', null),
+  src\actions\stats.actions.ts:24:      supabase.from('projects').select('id', { count: 'exact', head: true 
+}).is('deleted_at', null).eq('status', 'payment_pending'),
+  src\actions\stats.actions.ts:50:      { count: quoteCount },
+  src\actions\stats.actions.ts:51:      { count: paymentCount }
+> src\actions\stats.actions.ts:52:    ] = await Promise.all([
+  src\actions\stats.actions.ts:53:      supabase.from('projects').select('id', { count: 'exact', head: true 
+}).is('deleted_at', null).eq('status', 'lead'),
+  src\actions\stats.actions.ts:54:      supabase.from('projects').select('id', { count: 'exact', head: true 
+}).is('deleted_at', null).eq('status', 'quotation_sent'),
+  src\actions\stats.actions.ts:77:      { count: queueCount },
+  src\actions\stats.actions.ts:78:      { count: overdueCount }
+> src\actions\stats.actions.ts:79:    ] = await Promise.all([
+  src\actions\stats.actions.ts:80:      supabase.from('tasks').select('id', { count: 'exact', head: true 
+}).eq('assigned_to', userId).neq('status', 'completed'),
+  src\actions\stats.actions.ts:81:      supabase.from('tasks').select('id', { count: 'exact', head: true 
+}).eq('assigned_to', userId).neq('status', 'completed').lt('due_date', now)
+  src\actions\stats.actions.ts:105:      { count: totalQuotations },
+  src\actions\stats.actions.ts:106:      { data: recentQuotations }
+> src\actions\stats.actions.ts:107:    ] = await Promise.all([
+  src\actions\stats.actions.ts:108:      supabase.from('projects').select('id', { count: 'exact', head: true 
+}).is('deleted_at', null).gte('created_at', firstOfMonth),
+  src\actions\stats.actions.ts:109:      supabase.from('projects').select('id', { count: 'exact', head: true 
+}).is('deleted_at', null).not('status', 'in', '("completed","archived")'),
+  src\actions\stats.actions.ts:176:      { count: qcBacklog },
+  src\actions\stats.actions.ts:177:      { count: alertCount }
+> src\actions\stats.actions.ts:178:    ] = await Promise.all([
+  src\actions\stats.actions.ts:179:      supabase.from('projects').select('*', { count: 'exact', head: true 
+}).is('deleted_at', null).in('status', ['data_collection', 'prototype']),
+  src\actions\stats.actions.ts:180:      supabase.from('projects').select('*', { count: 'exact', head: true 
+}).is('deleted_at', null).eq('status', 'field_work'),
+  src\actions\workflow.actions.ts:290:      case "payment_done": {
+  src\actions\workflow.actions.ts:291:        // Parallel payment/invoice check
+> src\actions\workflow.actions.ts:292:        const [paymentRes, invoiceRes] = await Promise.all([
+  src\actions\workflow.actions.ts:293:          supabase.from("payments").select("status").eq("project_id", 
+projectId).eq("status", "verified").limit(1).maybeSingle(),
+  src\actions\workflow.actions.ts:294:          supabase.from("invoices").select("id").eq("project_id", 
+projectId).eq("status", "paid").limit(1).maybeSingle(),
+  src\actions\workflow.actions.ts:570:      updatedProject = proj;
+  src\actions\workflow.actions.ts:571:
+> src\actions\workflow.actions.ts:572:      await Promise.all([
+  src\actions\workflow.actions.ts:573:        adminClient.from("workflow_history").insert({
+  src\actions\workflow.actions.ts:574:          id: `wh-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+  src\actions\workflow.actions.ts:638:    const supabase: any = await createClient();
+  src\actions\workflow.actions.ts:639:
+> src\actions\workflow.actions.ts:640:    const [ { data: history }, { data: comments } ] = await Promise.all([
+  src\actions\workflow.actions.ts:641:      supabase
+  src\actions\workflow.actions.ts:642:        .from("workflow_history")
+  src\actions\workflow.actions.ts:862:
+  src\actions\workflow.actions.ts:863:    // 5. Notify Team
+> src\actions\workflow.actions.ts:864:    const [ { data: assignments }, { data: admins } ] = await Promise.all([
+  src\actions\workflow.actions.ts:865:      supabase.from("project_assignments").select("user_id").eq("project_id", 
+projectId),
+  src\actions\workflow.actions.ts:866:      supabase.from("profiles").select("id").eq("role", "admin")
+  src\actions\workflow.actions.ts:870:
+  src\actions\workflow.actions.ts:871:    const { insertNotification } = await 
+import("@/actions/notification.actions");
+> src\actions\workflow.actions.ts:872:    await Promise.all(
+  src\actions\workflow.actions.ts:873:      Array.from(recipientIds).map((userId: any) =>
+  src\actions\workflow.actions.ts:874:        insertNotification({
+  src\actions\workspace.actions.ts:100:      filesRes,
+  src\actions\workspace.actions.ts:101:      visitsRes
+> src\actions\workspace.actions.ts:102:    ] = await Promise.all([
+  src\actions\workspace.actions.ts:103:      getMyEODReportsAction(),
+  src\actions\workspace.actions.ts:104:      getEngineerTasksAction(auth.userId),
+  src\actions\workspace.actions.ts:174:      pendingReportsRes,
+  src\actions\workspace.actions.ts:175:      metricsRes
+> src\actions\workspace.actions.ts:176:    ] = await Promise.all([
+  src\actions\workspace.actions.ts:177:      projectsQuery,
+  src\actions\workspace.actions.ts:178:      getSOPsAction(),
+  src\actions\workspace.actions.ts:219:    const projectsQuery = buildOpsProjectsQuery(supabase, auth.userId!, 
+auth.role!);
+  src\actions\workspace.actions.ts:220:
+> src\actions\workspace.actions.ts:221:    const [projectsRes, sopsRes, eodRes] = await Promise.all([
+  src\actions\workspace.actions.ts:222:      projectsQuery,
+  src\actions\workspace.actions.ts:223:      getSOPsAction(),
+  src\actions\workspace.actions.ts:252:    if (auth.error) return { success: false, error: auth.error };
+  src\actions\workspace.actions.ts:253:
+> src\actions\workspace.actions.ts:254:    const [queueRes, sopsRes, eodRes] = await Promise.all([
+  src\actions\workspace.actions.ts:255:      getOperationsQueueAction(),
+  src\actions\workspace.actions.ts:256:      getSOPsAction(),
+  src\actions\workspace.actions.ts:309:      attendanceTodayRes,
+  src\actions\workspace.actions.ts:310:      usersRes,
+> src\actions\workspace.actions.ts:311:    ] = await Promise.all([
+  src\actions\workspace.actions.ts:312:      kpiPromise,
+  src\actions\workspace.actions.ts:313:      getActiveProjectsCountAction(),
+  src\actions\workspace.actions.ts:356:        pendingEodsQuery,
+  src\actions\workspace.actions.ts:357:        upcomingHolidayQuery,
+> src\actions\workspace.actions.ts:358:      ] = await Promise.all([
+  src\actions\workspace.actions.ts:359:        supabase.from('projects').select('id', { count: 'exact', head: true 
+}).in('status', ['prototype', 'review', 'field_work', 'data_sync', 'final_review']).is('deleted_at', null),
+  src\actions\workspace.actions.ts:360:        supabase.from('projects').select('status').is('deleted_at', 
+null).limit(500),
+  src\actions\workspace.actions.ts:440:      onboardingRes,
+  src\actions\workspace.actions.ts:441:      eodRes
+> src\actions\workspace.actions.ts:442:    ] = await Promise.all([
+  src\actions\workspace.actions.ts:443:       getHRDashboardStatsAction(),
+  src\actions\workspace.actions.ts:444:       getPendingLeaveRequestsAction(),
+
+

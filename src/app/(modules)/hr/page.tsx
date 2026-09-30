@@ -1,0 +1,97 @@
+import { Suspense } from "react";
+import { getHRWorkspaceDataAction } from "@/actions/workspace.actions";
+import { CreateEmployeeButton } from "@/components/modules/CreateEmployeeButton";
+import { EODFormModal } from "@/components/eod/EODFormModal";
+import { requireRole } from "@/lib/auth-guard";
+
+// HR Feature Widgets
+import { HRStatsRow } from "@/features/hr/HRStatsRow";
+import { LeaveApprovalWidget } from "@/features/hr/LeaveApprovalWidget";
+
+import { OnboardingInProgress } from "@/features/hr/OnboardingInProgress";
+import { TodayAttendanceSnapshot } from "@/features/hr/TodayAttendanceSnapshot";
+import { UpcomingHolidaysWidget } from "@/features/hr/UpcomingHolidaysWidget";
+import { MiniTeamLeaveCalendar } from "@/features/hr/MiniTeamLeaveCalendar";
+import { RecentAnnouncements } from "@/features/hr/RecentAnnouncements";
+
+export default async function HRDashboard() {
+  const { profile } = await requireRole("hr");
+  const currentUserRole = profile?.role || 'hr';
+
+  // Fetch data
+  const { success, data } = await getHRWorkspaceDataAction();
+  const workspaceData = success && data ? data : {};
+
+  const stats: any = workspaceData.stats || {};
+  const pendingLeaves = workspaceData.pendingLeaves || [];
+  const attendanceToday: any = workspaceData.attendanceToday || {};
+  const holidays = workspaceData.holidays || [];
+  const announcements = workspaceData.announcements || [];
+  const users = workspaceData.users || [];
+  const allLeaves = workspaceData.allLeaves || [];
+  const onboardings = workspaceData.onboarding || [];
+  const eodReports = workspaceData.eodReports || [];
+
+  return (
+    <div className="space-y-6 pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">HR Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">Overview of your team&apos;s pulse and tasks.</p>
+        </div>
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <EODFormModal reports={eodReports} roleColor="indigo" />
+          <CreateEmployeeButton existingUsers={users} />
+        </div>
+      </div>
+
+      <HRStatsRow 
+        stats={{
+          headcount: stats.headcount || 0,
+          presentCount: attendanceToday.present || 0,
+          onLeaveToday: allLeaves.filter((leave: any) => {
+            const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+            return leave.status === 'approved' && todayStr >= leave.start_date && todayStr <= leave.end_date;
+          }).length,
+          pendingLeavesCount: pendingLeaves.length,
+        }} 
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <TodayAttendanceSnapshot data={attendanceToday} headcount={stats.headcount || 0} users={users} />
+          </Suspense>
+        </div>
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <LeaveApprovalWidget leaves={pendingLeaves} />
+          </Suspense>
+        </div>
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <RecentAnnouncements announcements={announcements} />
+          </Suspense>
+        </div>
+
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <OnboardingInProgress data={onboardings} />
+          </Suspense>
+        </div>
+        
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <UpcomingHolidaysWidget holidays={holidays} />
+          </Suspense>
+        </div>
+
+        <div className="md:col-span-1 h-[380px]">
+          <Suspense fallback={<div className="animate-pulse bg-slate-100 dark:bg-slate-800 h-full w-full rounded-xl" />}>
+            <MiniTeamLeaveCalendar leaves={allLeaves} />
+          </Suspense>
+        </div>
+      </div>
+    </div>
+  );
+}
